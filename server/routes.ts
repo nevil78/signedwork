@@ -12,12 +12,14 @@ import { fromZodError } from "zod-validation-error";
 export async function registerRoutes(app: Express): Promise<Server> {
   // Session configuration
   app.use(session({
-    secret: process.env.SESSION_SECRET || "your-secret-key",
+    secret: process.env.SESSION_SECRET || "your-secret-key-dev-123",
     resave: false,
     saveUninitialized: false,
     cookie: {
       secure: false, // Set to true in production with HTTPS
+      httpOnly: true,
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      sameSite: 'lax'
     },
   }));
 

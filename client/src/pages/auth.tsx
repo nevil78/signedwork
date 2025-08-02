@@ -160,10 +160,13 @@ export default function AuthPage() {
       return await apiRequest("POST", "/api/auth/login", data);
     },
     onSuccess: (response: any) => {
+      console.log("Login successful, response:", response);
       // Redirect based on user type
       if (response.userType === "employee") {
+        console.log("Redirecting to employee profile");
         window.location.href = "/employee-profile";
       } else {
+        console.log("Redirecting to dashboard");
         window.location.href = "/dashboard";
       }
     },
