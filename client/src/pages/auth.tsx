@@ -159,8 +159,13 @@ export default function AuthPage() {
     mutationFn: async (data: LoginData) => {
       return await apiRequest("POST", "/api/auth/login", data);
     },
-    onSuccess: () => {
-      window.location.href = "/dashboard";
+    onSuccess: (response: any) => {
+      // Redirect based on user type
+      if (response.userType === "employee") {
+        window.location.href = "/employee-profile";
+      } else {
+        window.location.href = "/dashboard";
+      }
     },
     onError: (error: any) => {
       toast({

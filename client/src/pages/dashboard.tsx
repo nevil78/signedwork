@@ -45,7 +45,7 @@ export default function Dashboard() {
     return null;
   }
 
-  const { user, userType } = userResponse;
+  const { user, userType } = userResponse as any;
   const isEmployee = userType === "employee";
 
   return (

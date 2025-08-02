@@ -2,7 +2,11 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import session from "express-session";
 import { storage } from "./storage";
-import { insertEmployeeSchema, insertCompanySchema, loginSchema } from "@shared/schema";
+import { 
+  insertEmployeeSchema, insertCompanySchema, loginSchema,
+  insertExperienceSchema, insertEducationSchema, insertCertificationSchema,
+  insertProjectSchema, insertEndorsementSchema
+} from "@shared/schema";
 import { fromZodError } from "zod-validation-error";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -184,6 +188,277 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Get user error:", error);
       res.status(500).json({ message: "Failed to get user data" });
+    }
+  });
+
+  // Employee Profile Routes
+  
+  // Get employee profile data
+  app.get("/api/employee/profile/:id", async (req, res) => {
+    try {
+      const profileData = await storage.getEmployeeProfile(req.params.id);
+      res.json(profileData);
+    } catch (error) {
+      console.error("Get profile error:", error);
+      res.status(500).json({ message: "Failed to get profile data" });
+    }
+  });
+
+  // Update employee profile
+  app.patch("/api/employee/profile", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    if (!sessionUser || sessionUser.type !== "employee") {
+      return res.status(401).json({ message: "Not authenticated as employee" });
+    }
+    
+    try {
+      const updatedEmployee = await storage.updateEmployee(sessionUser.id, req.body);
+      const { password, ...employeeResponse } = updatedEmployee;
+      res.json(employeeResponse);
+    } catch (error) {
+      console.error("Update profile error:", error);
+      res.status(500).json({ message: "Failed to update profile" });
+    }
+  });
+
+  // Experience Routes
+  app.post("/api/employee/experience", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    if (!sessionUser || sessionUser.type !== "employee") {
+      return res.status(401).json({ message: "Not authenticated as employee" });
+    }
+    
+    try {
+      const validatedData = insertExperienceSchema.parse({
+        ...req.body,
+        employeeId: sessionUser.id
+      });
+      
+      const experience = await storage.createExperience(validatedData);
+      res.status(201).json(experience);
+    } catch (error: any) {
+      if (error.name === "ZodError") {
+        const validationError = fromZodError(error);
+        return res.status(400).json({ 
+          message: validationError.message,
+          errors: error.errors
+        });
+      }
+      
+      console.error("Create experience error:", error);
+      res.status(500).json({ message: "Failed to create experience" });
+    }
+  });
+
+  app.patch("/api/employee/experience/:id", async (req, res) => {
+    try {
+      const experience = await storage.updateExperience(req.params.id, req.body);
+      res.json(experience);
+    } catch (error) {
+      console.error("Update experience error:", error);
+      res.status(500).json({ message: "Failed to update experience" });
+    }
+  });
+
+  app.delete("/api/employee/experience/:id", async (req, res) => {
+    try {
+      await storage.deleteExperience(req.params.id);
+      res.json({ message: "Experience deleted successfully" });
+    } catch (error) {
+      console.error("Delete experience error:", error);
+      res.status(500).json({ message: "Failed to delete experience" });
+    }
+  });
+
+  // Education Routes
+  app.post("/api/employee/education", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    if (!sessionUser || sessionUser.type !== "employee") {
+      return res.status(401).json({ message: "Not authenticated as employee" });
+    }
+    
+    try {
+      const validatedData = insertEducationSchema.parse({
+        ...req.body,
+        employeeId: sessionUser.id
+      });
+      
+      const education = await storage.createEducation(validatedData);
+      res.status(201).json(education);
+    } catch (error: any) {
+      if (error.name === "ZodError") {
+        const validationError = fromZodError(error);
+        return res.status(400).json({ 
+          message: validationError.message,
+          errors: error.errors
+        });
+      }
+      
+      console.error("Create education error:", error);
+      res.status(500).json({ message: "Failed to create education" });
+    }
+  });
+
+  app.patch("/api/employee/education/:id", async (req, res) => {
+    try {
+      const education = await storage.updateEducation(req.params.id, req.body);
+      res.json(education);
+    } catch (error) {
+      console.error("Update education error:", error);
+      res.status(500).json({ message: "Failed to update education" });
+    }
+  });
+
+  app.delete("/api/employee/education/:id", async (req, res) => {
+    try {
+      await storage.deleteEducation(req.params.id);
+      res.json({ message: "Education deleted successfully" });
+    } catch (error) {
+      console.error("Delete education error:", error);
+      res.status(500).json({ message: "Failed to delete education" });
+    }
+  });
+
+  // Certification Routes
+  app.post("/api/employee/certification", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    if (!sessionUser || sessionUser.type !== "employee") {
+      return res.status(401).json({ message: "Not authenticated as employee" });
+    }
+    
+    try {
+      const validatedData = insertCertificationSchema.parse({
+        ...req.body,
+        employeeId: sessionUser.id
+      });
+      
+      const certification = await storage.createCertification(validatedData);
+      res.status(201).json(certification);
+    } catch (error: any) {
+      if (error.name === "ZodError") {
+        const validationError = fromZodError(error);
+        return res.status(400).json({ 
+          message: validationError.message,
+          errors: error.errors
+        });
+      }
+      
+      console.error("Create certification error:", error);
+      res.status(500).json({ message: "Failed to create certification" });
+    }
+  });
+
+  app.patch("/api/employee/certification/:id", async (req, res) => {
+    try {
+      const certification = await storage.updateCertification(req.params.id, req.body);
+      res.json(certification);
+    } catch (error) {
+      console.error("Update certification error:", error);
+      res.status(500).json({ message: "Failed to update certification" });
+    }
+  });
+
+  app.delete("/api/employee/certification/:id", async (req, res) => {
+    try {
+      await storage.deleteCertification(req.params.id);
+      res.json({ message: "Certification deleted successfully" });
+    } catch (error) {
+      console.error("Delete certification error:", error);
+      res.status(500).json({ message: "Failed to delete certification" });
+    }
+  });
+
+  // Project Routes
+  app.post("/api/employee/project", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    if (!sessionUser || sessionUser.type !== "employee") {
+      return res.status(401).json({ message: "Not authenticated as employee" });
+    }
+    
+    try {
+      const validatedData = insertProjectSchema.parse({
+        ...req.body,
+        employeeId: sessionUser.id
+      });
+      
+      const project = await storage.createProject(validatedData);
+      res.status(201).json(project);
+    } catch (error: any) {
+      if (error.name === "ZodError") {
+        const validationError = fromZodError(error);
+        return res.status(400).json({ 
+          message: validationError.message,
+          errors: error.errors
+        });
+      }
+      
+      console.error("Create project error:", error);
+      res.status(500).json({ message: "Failed to create project" });
+    }
+  });
+
+  app.patch("/api/employee/project/:id", async (req, res) => {
+    try {
+      const project = await storage.updateProject(req.params.id, req.body);
+      res.json(project);
+    } catch (error) {
+      console.error("Update project error:", error);
+      res.status(500).json({ message: "Failed to update project" });
+    }
+  });
+
+  app.delete("/api/employee/project/:id", async (req, res) => {
+    try {
+      await storage.deleteProject(req.params.id);
+      res.json({ message: "Project deleted successfully" });
+    } catch (error) {
+      console.error("Delete project error:", error);
+      res.status(500).json({ message: "Failed to delete project" });
+    }
+  });
+
+  // Endorsement Routes
+  app.post("/api/employee/endorsement", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    if (!sessionUser || sessionUser.type !== "employee") {
+      return res.status(401).json({ message: "Not authenticated as employee" });
+    }
+    
+    try {
+      const validatedData = insertEndorsementSchema.parse({
+        ...req.body,
+        employeeId: sessionUser.id
+      });
+      
+      const endorsement = await storage.createEndorsement(validatedData);
+      res.status(201).json(endorsement);
+    } catch (error: any) {
+      if (error.name === "ZodError") {
+        const validationError = fromZodError(error);
+        return res.status(400).json({ 
+          message: validationError.message,
+          errors: error.errors
+        });
+      }
+      
+      console.error("Create endorsement error:", error);
+      res.status(500).json({ message: "Failed to create endorsement" });
+    }
+  });
+
+  app.delete("/api/employee/endorsement/:id", async (req, res) => {
+    try {
+      await storage.deleteEndorsement(req.params.id);
+      res.json({ message: "Endorsement deleted successfully" });
+    } catch (error) {
+      console.error("Delete endorsement error:", error);
+      res.status(500).json({ message: "Failed to delete endorsement" });
     }
   });
 
