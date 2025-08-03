@@ -139,6 +139,7 @@ export const workEntries = pgTable("work_entries", {
 
 export const companies = pgTable("companies", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  companyId: varchar("company_id").notNull().unique(), // Human-readable unique ID like CMP-ABC123
   name: text("name").notNull(),
   description: text("description"),
   address: text("address").notNull(),
@@ -156,6 +157,28 @@ export const companies = pgTable("companies", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// New table for company invitation codes
+export const companyInvitationCodes = pgTable("company_invitation_codes", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  companyId: varchar("company_id").notNull().references(() => companies.id, { onDelete: "cascade" }),
+  code: varchar("code", { length: 8 }).notNull().unique(), // 8-character unique code
+  expiresAt: timestamp("expires_at").notNull(),
+  usedByEmployeeId: varchar("used_by_employee_id").references(() => employees.id),
+  usedAt: timestamp("used_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// New table for company-employee relationships
+export const companyEmployees = pgTable("company_employees", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  companyId: varchar("company_id").notNull().references(() => companies.id, { onDelete: "cascade" }),
+  employeeId: varchar("employee_id").notNull().references(() => employees.id, { onDelete: "cascade" }),
+  position: text("position"),
+  department: text("department"),
+  joinedAt: timestamp("joined_at").defaultNow(),
+  isActive: boolean("is_active").default(true),
+});
+
 // Relations
 export const employeesRelations = relations(employees, ({ many }) => ({
   experiences: many(experiences),
@@ -165,6 +188,7 @@ export const employeesRelations = relations(employees, ({ many }) => ({
   endorsements: many(endorsements),
   employeeCompanies: many(employeeCompanies),
   workEntries: many(workEntries),
+  companyEmployees: many(companyEmployees),
 }));
 
 export const experiencesRelations = relations(experiences, ({ one }) => ({
@@ -275,6 +299,7 @@ export const insertWorkEntrySchema = createInsertSchema(workEntries).omit({
 
 export const insertCompanySchema = createInsertSchema(companies).omit({
   id: true,
+  companyId: true,
   createdAt: true,
   updatedAt: true,
 }).extend({
@@ -293,6 +318,20 @@ export const insertCompanySchema = createInsertSchema(companies).omit({
     .max(new Date().getFullYear(), "Invalid establishment year"),
 });
 
+export const insertCompanyInvitationCodeSchema = createInsertSchema(companyInvitationCodes).omit({
+  id: true,
+  code: true,
+  expiresAt: true,
+  usedByEmployeeId: true,
+  usedAt: true,
+  createdAt: true,
+});
+
+export const insertCompanyEmployeeSchema = createInsertSchema(companyEmployees).omit({
+  id: true,
+  joinedAt: true,
+});
+
 export const loginSchema = z.object({
   email: z.string().email("Invalid email format"),
   password: z.string().min(1, "Password is required"),
@@ -300,6 +339,33 @@ export const loginSchema = z.object({
     required_error: "Please select an account type",
   }),
 });
+
+export const companiesRelations = relations(companies, ({ many }) => ({
+  invitationCodes: many(companyInvitationCodes),
+  companyEmployees: many(companyEmployees),
+}));
+
+export const companyInvitationCodesRelations = relations(companyInvitationCodes, ({ one }) => ({
+  company: one(companies, {
+    fields: [companyInvitationCodes.companyId],
+    references: [companies.id],
+  }),
+  usedByEmployee: one(employees, {
+    fields: [companyInvitationCodes.usedByEmployeeId],
+    references: [employees.id],
+  }),
+}));
+
+export const companyEmployeesRelations = relations(companyEmployees, ({ one }) => ({
+  company: one(companies, {
+    fields: [companyEmployees.companyId],
+    references: [companies.id],
+  }),
+  employee: one(employees, {
+    fields: [companyEmployees.employeeId],
+    references: [employees.id],
+  }),
+}));
 
 // Export types
 export type Employee = typeof employees.$inferSelect;
@@ -311,6 +377,8 @@ export type Endorsement = typeof endorsements.$inferSelect;
 export type EmployeeCompany = typeof employeeCompanies.$inferSelect;
 export type WorkEntry = typeof workEntries.$inferSelect;
 export type Company = typeof companies.$inferSelect;
+export type CompanyInvitationCode = typeof companyInvitationCodes.$inferSelect;
+export type CompanyEmployee = typeof companyEmployees.$inferSelect;
 
 export type InsertEmployee = z.infer<typeof insertEmployeeSchema>;
 export type InsertExperience = z.infer<typeof insertExperienceSchema>;
@@ -321,4 +389,6 @@ export type InsertEndorsement = z.infer<typeof insertEndorsementSchema>;
 export type InsertEmployeeCompany = z.infer<typeof insertEmployeeCompanySchema>;
 export type InsertWorkEntry = z.infer<typeof insertWorkEntrySchema>;
 export type InsertCompany = z.infer<typeof insertCompanySchema>;
+export type InsertCompanyInvitationCode = z.infer<typeof insertCompanyInvitationCodeSchema>;
+export type InsertCompanyEmployee = z.infer<typeof insertCompanyEmployeeSchema>;
 export type LoginData = z.infer<typeof loginSchema>;

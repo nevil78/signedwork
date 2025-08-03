@@ -1,0 +1,292 @@
+import { useState, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Building2, Copy, Users, Clock, CheckCircle, AlertCircle } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
+import { apiRequest } from '@/lib/queryClient';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Badge } from '@/components/ui/badge';
+import { format } from 'date-fns';
+import type { Company } from '@shared/schema';
+
+interface InvitationCode {
+  code: string;
+  expiresAt: string;
+  message: string;
+}
+
+interface CompanyEmployee {
+  id: string;
+  employeeId: string;
+  employeeName: string;
+  employeeEmail: string;
+  position: string | null;
+  joinedAt: string;
+}
+
+export default function CompanyDashboard() {
+  const [isGeneratingCode, setIsGeneratingCode] = useState(false);
+  const [currentCode, setCurrentCode] = useState<InvitationCode | null>(null);
+  const [copied, setCopied] = useState(false);
+  const queryClient = useQueryClient();
+
+  // Logout mutation
+  const logout = useMutation({
+    mutationFn: async () => {
+      const response = await fetch("/api/auth/logout", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      if (!response.ok) throw new Error("Failed to logout");
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.clear();
+      window.location.href = "/";
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to logout",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Get current user
+  const { data: user } = useQuery<Company>({
+    queryKey: ['/api/auth/user'],
+  });
+
+  // Get company employees
+  const { data: employees = [], isLoading: isLoadingEmployees } = useQuery<CompanyEmployee[]>({
+    queryKey: ['/api/company/employees'],
+  });
+
+  // Generate invitation code mutation
+  const generateCodeMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch('/api/company/invitation-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (!response.ok) throw new Error('Failed to generate code');
+      return response.json();
+    },
+    onSuccess: (data: InvitationCode) => {
+      setCurrentCode(data);
+      setIsGeneratingCode(true);
+      setCopied(false);
+      toast({
+        title: "Success",
+        description: "Invitation code generated successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to generate invitation code",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Check if code has expired
+  useEffect(() => {
+    if (currentCode) {
+      const checkExpiry = setInterval(() => {
+        if (new Date() > new Date(currentCode.expiresAt)) {
+          setCurrentCode(null);
+          setIsGeneratingCode(false);
+          setCopied(false);
+        }
+      }, 1000);
+
+      return () => clearInterval(checkExpiry);
+    }
+  }, [currentCode]);
+
+  const handleCopyCode = () => {
+    if (currentCode) {
+      navigator.clipboard.writeText(currentCode.code);
+      setCopied(true);
+      toast({
+        title: "Copied!",
+        description: "Invitation code copied to clipboard",
+      });
+    }
+  };
+
+  const getRemainingTime = () => {
+    if (!currentCode) return null;
+    const now = new Date();
+    const expires = new Date(currentCode.expiresAt);
+    const remaining = Math.max(0, Math.floor((expires.getTime() - now.getTime()) / 1000));
+    const minutes = Math.floor(remaining / 60);
+    const seconds = remaining % 60;
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      {/* Header */}
+      <header className="bg-white dark:bg-gray-800 shadow">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center">
+              <Building2 className="text-primary text-2xl mr-3" />
+              <span className="text-xl font-bold text-slate-800 dark:text-slate-200">Company Dashboard</span>
+            </div>
+            <Button
+              variant="outline"
+              onClick={() => logout.mutate()}
+              disabled={logout.isPending}
+            >
+              {logout.isPending ? "Logging out..." : "Logout"}
+            </Button>
+          </div>
+        </div>
+      </header>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Welcome Section */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold mb-2">Welcome, {user?.name}</h1>
+          <p className="text-muted-foreground">
+            Manage your employees and generate invitation codes
+          </p>
+          {user?.companyId && (
+            <Badge variant="secondary" className="mt-2">
+              Company ID: {user.companyId}
+            </Badge>
+          )}
+        </div>
+
+        <div className="grid gap-6 md:grid-cols-2">
+          {/* Invitation Code Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Invitation Codes</CardTitle>
+              <CardDescription>
+                Generate temporary codes for employees to join your company
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {!isGeneratingCode ? (
+                <div className="space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    Generate a new invitation code that's valid for 15 minutes.
+                    Share this code with employees to allow them to join your company.
+                  </p>
+                  <Button 
+                    onClick={() => generateCodeMutation.mutate()}
+                    disabled={generateCodeMutation.isPending}
+                    className="w-full"
+                  >
+                    {generateCodeMutation.isPending ? "Generating..." : "Generate New Code"}
+                  </Button>
+                </div>
+              ) : currentCode && (
+                <div className="space-y-4">
+                  <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-2xl font-mono font-bold tracking-wider">
+                        {currentCode.code}
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={handleCopyCode}
+                      >
+                        {copied ? (
+                          <CheckCircle className="h-5 w-5 text-green-600" />
+                        ) : (
+                          <Copy className="h-5 w-5" />
+                        )}
+                      </Button>
+                    </div>
+                    <div className="flex items-center text-sm text-muted-foreground">
+                      <Clock className="h-4 w-4 mr-1" />
+                      Expires in: {getRemainingTime()}
+                    </div>
+                  </div>
+                  <div className="flex items-start space-x-2">
+                    <AlertCircle className="h-4 w-4 text-yellow-600 mt-0.5" />
+                    <p className="text-sm text-muted-foreground">
+                      This code will expire in 15 minutes. Generate a new code if needed.
+                    </p>
+                  </div>
+                  <Button 
+                    onClick={() => generateCodeMutation.mutate()}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    Generate New Code
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Employees Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                Employees ({employees.length})
+              </CardTitle>
+              <CardDescription>
+                Employees who have joined your company
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoadingEmployees ? (
+                <p className="text-center text-muted-foreground py-4">Loading employees...</p>
+              ) : employees.length === 0 ? (
+                <div className="text-center py-8">
+                  <Users className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+                  <p className="text-muted-foreground">
+                    No employees have joined yet. Share an invitation code to get started.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3 max-h-96 overflow-y-auto">
+                  {employees.map((employee) => (
+                    <div 
+                      key={employee.id} 
+                      className="p-3 border rounded-lg hover:bg-accent/50 transition-colors"
+                    >
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="font-medium">{employee.employeeName}</p>
+                          <p className="text-sm text-muted-foreground">{employee.employeeEmail}</p>
+                          {employee.position && (
+                            <Badge variant="secondary" className="mt-1">
+                              {employee.position}
+                            </Badge>
+                          )}
+                        </div>
+                        <span className="text-xs text-muted-foreground">
+                          Joined {format(new Date(employee.joinedAt), 'MMM d, yyyy')}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+}

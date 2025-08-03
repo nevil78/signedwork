@@ -47,6 +47,15 @@ export default function Dashboard() {
 
   const { user, userType } = userResponse as any;
   const isEmployee = userType === "employee";
+  
+  // Redirect to appropriate dashboard
+  if (isEmployee) {
+    window.location.href = "/profile";
+    return null;
+  } else {
+    window.location.href = "/company-dashboard";
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">

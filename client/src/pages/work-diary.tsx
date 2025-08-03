@@ -35,6 +35,13 @@ import { apiRequest } from '@/lib/queryClient';
 import { insertEmployeeCompanySchema, type InsertEmployeeCompany, type EmployeeCompany } from '@shared/schema';
 import { z } from 'zod';
 
+// Define the invitation code form schema
+const invitationCodeSchema = z.object({
+  code: z.string().min(8, "Invitation code must be 8 characters").max(8, "Invitation code must be 8 characters"),
+});
+
+type InvitationCodeFormData = z.infer<typeof invitationCodeSchema>;
+
 export default function WorkDiary() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCompany, setEditingCompany] = useState<EmployeeCompany | null>(null);
@@ -70,6 +77,13 @@ export default function WorkDiary() {
     queryKey: ['/api/employee-companies'],
   });
 
+  const invitationForm = useForm<InvitationCodeFormData>({
+    resolver: zodResolver(invitationCodeSchema),
+    defaultValues: {
+      code: '',
+    },
+  });
+
   const form = useForm<InsertEmployeeCompany>({
     resolver: zodResolver(insertEmployeeCompanySchema.omit({ employeeId: true })),
     defaultValues: {
@@ -78,6 +92,37 @@ export default function WorkDiary() {
       startDate: '',
       endDate: '',
       isCurrent: false,
+    },
+  });
+
+  const joinCompanyMutation = useMutation({
+    mutationFn: async (data: InvitationCodeFormData) => {
+      const response = await fetch('/api/employee/join-company', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to join company');
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/employee-companies'] });
+      toast({
+        title: "Success",
+        description: "Successfully joined the company",
+      });
+      setIsDialogOpen(false);
+      invitationForm.reset();
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
     },
   });
 
@@ -171,6 +216,10 @@ export default function WorkDiary() {
     }
   };
 
+  const onInvitationSubmit = (data: InvitationCodeFormData) => {
+    joinCompanyMutation.mutate(data);
+  };
+
   const handleEdit = (company: EmployeeCompany) => {
     setEditingCompany(company);
     form.reset({
@@ -241,7 +290,7 @@ export default function WorkDiary() {
             setIsDialogOpen(true);
           }}>
             <Plus className="mr-2 h-4 w-4" />
-            Add Company
+            Join Company
           </Button>
         </div>
 
@@ -257,14 +306,14 @@ export default function WorkDiary() {
             </div>
             <h3 className="text-lg font-semibold mb-2">No companies yet</h3>
             <p className="text-muted-foreground text-center mb-4">
-              Start by adding the companies you've worked for
+              Join a company using an invitation code from your employer
             </p>
             <Button onClick={() => {
               setEditingCompany(null);
               form.reset();
               setIsDialogOpen(true);
             }}>
-              Add Your First Company
+              Join Your First Company
             </Button>
           </CardContent>
         </Card>
@@ -333,17 +382,19 @@ export default function WorkDiary() {
         if (!open) {
           setEditingCompany(null);
           form.reset();
+          invitationForm.reset();
         }
       }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>{editingCompany ? "Edit Company" : "Add Company"}</DialogTitle>
+            <DialogTitle>{editingCompany ? "Edit Company" : "Join Company"}</DialogTitle>
             <DialogDescription>
-              {editingCompany ? "Update company details" : "Add a company you've worked for"}
+              {editingCompany ? "Update company details" : "Enter the invitation code provided by your company"}
             </DialogDescription>
           </DialogHeader>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          {editingCompany ? (
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <FormField
                 control={form.control}
                 name="companyName"
@@ -445,6 +496,50 @@ export default function WorkDiary() {
               </div>
             </form>
           </Form>
+          ) : (
+            <Form {...invitationForm}>
+              <form onSubmit={invitationForm.handleSubmit(onInvitationSubmit)} className="space-y-4">
+                <FormField
+                  control={invitationForm.control}
+                  name="code"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Invitation Code</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="Enter 8-character code" 
+                          {...field} 
+                          maxLength={8}
+                          className="font-mono uppercase"
+                          onChange={(e) => field.onChange(e.target.value.toUpperCase())}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Ask your company administrator for the invitation code
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <div className="flex justify-end space-x-2 pt-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsDialogOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    type="submit" 
+                    disabled={joinCompanyMutation.isPending}
+                  >
+                    {joinCompanyMutation.isPending ? "Joining..." : "Join Company"}
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          )}
         </DialogContent>
       </Dialog>
       </div>

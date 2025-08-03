@@ -466,6 +466,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Company Invitation Routes
+  app.post("/api/company/invitation-code", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    if (!sessionUser || sessionUser.type !== "company") {
+      return res.status(401).json({ message: "Not authenticated as company" });
+    }
+    
+    try {
+      const invitationCode = await storage.generateInvitationCode(sessionUser.id);
+      res.json({
+        code: invitationCode.code,
+        expiresAt: invitationCode.expiresAt,
+        message: "Invitation code generated successfully. Valid for 15 minutes."
+      });
+    } catch (error) {
+      console.error("Generate invitation code error:", error);
+      res.status(500).json({ message: "Failed to generate invitation code" });
+    }
+  });
+
+  app.post("/api/employee/join-company", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    if (!sessionUser || sessionUser.type !== "employee") {
+      return res.status(401).json({ message: "Not authenticated as employee" });
+    }
+    
+    try {
+      const { code } = req.body;
+      
+      if (!code) {
+        return res.status(400).json({ message: "Invitation code is required" });
+      }
+      
+      const companyEmployee = await storage.useInvitationCode(code, sessionUser.id);
+      res.json({
+        message: "Successfully joined the company",
+        companyEmployee
+      });
+    } catch (error: any) {
+      if (error.message === "Invalid or expired invitation code") {
+        return res.status(400).json({ message: error.message });
+      }
+      console.error("Join company error:", error);
+      res.status(500).json({ message: "Failed to join company" });
+    }
+  });
+
+  app.get("/api/company/employees", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    if (!sessionUser || sessionUser.type !== "company") {
+      return res.status(401).json({ message: "Not authenticated as company" });
+    }
+    
+    try {
+      const employees = await storage.getCompanyEmployees(sessionUser.id);
+      res.json(employees);
+    } catch (error) {
+      console.error("Get company employees error:", error);
+      res.status(500).json({ message: "Failed to get employees" });
+    }
+  });
+
   // Employee Company Routes  
   app.get("/api/employee-companies", async (req, res) => {
     const sessionUser = (req.session as any).user;

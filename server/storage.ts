@@ -1,12 +1,14 @@
 import { 
   employees, companies, experiences, educations, certifications, projects, endorsements, workEntries, employeeCompanies,
+  companyInvitationCodes, companyEmployees,
   type Employee, type Company, type InsertEmployee, type InsertCompany,
   type Experience, type Education, type Certification, type Project, type Endorsement, type WorkEntry, type EmployeeCompany,
   type InsertExperience, type InsertEducation, type InsertCertification, 
-  type InsertProject, type InsertEndorsement, type InsertWorkEntry, type InsertEmployeeCompany
+  type InsertProject, type InsertEndorsement, type InsertWorkEntry, type InsertEmployeeCompany,
+  type CompanyInvitationCode, type CompanyEmployee, type InsertCompanyInvitationCode, type InsertCompanyEmployee
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import bcrypt from "bcrypt";
 
 // Generate a short, memorable employee ID
@@ -28,6 +30,40 @@ function generateEmployeeId(): string {
   }
   
   return result;
+}
+
+// Generate a short, memorable company ID
+function generateCompanyId(): string {
+  const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const numbers = '0123456789';
+  
+  // Format: CMP-ABC123 (3 letters + 3 numbers)
+  let result = 'CMP-';
+  
+  // Add 3 random letters
+  for (let i = 0; i < 3; i++) {
+    result += letters.charAt(Math.floor(Math.random() * letters.length));
+  }
+  
+  // Add 3 random numbers
+  for (let i = 0; i < 3; i++) {
+    result += numbers.charAt(Math.floor(Math.random() * numbers.length));
+  }
+  
+  return result;
+}
+
+// Generate a unique invitation code
+function generateInvitationCode(): string {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let code = '';
+  
+  // Generate 8-character code
+  for (let i = 0; i < 8; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  
+  return code;
 }
 
 export interface IStorage {
@@ -90,6 +126,15 @@ export interface IStorage {
   createWorkEntry(workEntry: InsertWorkEntry): Promise<WorkEntry>;
   updateWorkEntry(id: string, data: Partial<WorkEntry>): Promise<WorkEntry>;
   deleteWorkEntry(id: string): Promise<void>;
+  
+  // Company invitation operations
+  generateInvitationCode(companyId: string): Promise<CompanyInvitationCode>;
+  validateInvitationCode(code: string): Promise<CompanyInvitationCode | null>;
+  useInvitationCode(code: string, employeeId: string): Promise<CompanyEmployee>;
+  
+  // Company employees operations
+  getCompanyEmployees(companyId: string): Promise<CompanyEmployee[]>;
+  getEmployeeCompaniesNew(employeeId: string): Promise<CompanyEmployee[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -148,10 +193,31 @@ export class DatabaseStorage implements IStorage {
 
   async createCompany(companyData: InsertCompany): Promise<Company> {
     const hashedPassword = await bcrypt.hash(companyData.password, 10);
+    
+    // Generate a unique company ID
+    let companyId = generateCompanyId();
+    let attempts = 0;
+    const maxAttempts = 10;
+    
+    // Ensure the company ID is unique
+    while (attempts < maxAttempts) {
+      const existing = await db.select().from(companies).where(eq(companies.companyId, companyId));
+      if (existing.length === 0) {
+        break;
+      }
+      companyId = generateCompanyId();
+      attempts++;
+    }
+    
+    if (attempts >= maxAttempts) {
+      throw new Error("Failed to generate unique company ID");
+    }
+    
     const [company] = await db
       .insert(companies)
       .values({
         ...companyData,
+        companyId,
         password: hashedPassword,
       })
       .returning();
@@ -367,6 +433,143 @@ export class DatabaseStorage implements IStorage {
 
   async deleteWorkEntry(id: string): Promise<void> {
     await db.delete(workEntries).where(eq(workEntries.id, id));
+  }
+
+  // Company invitation operations
+  async generateInvitationCode(companyId: string): Promise<CompanyInvitationCode> {
+    // Generate unique code
+    let code = generateInvitationCode();
+    let attempts = 0;
+    const maxAttempts = 10;
+    
+    // Ensure code is unique
+    while (attempts < maxAttempts) {
+      const existing = await db.select().from(companyInvitationCodes).where(eq(companyInvitationCodes.code, code));
+      if (existing.length === 0) {
+        break;
+      }
+      code = generateInvitationCode();
+      attempts++;
+    }
+    
+    if (attempts >= maxAttempts) {
+      throw new Error("Failed to generate unique invitation code");
+    }
+    
+    // Set expiration to 15 minutes from now
+    const expiresAt = new Date();
+    expiresAt.setMinutes(expiresAt.getMinutes() + 15);
+    
+    const [invitationCode] = await db
+      .insert(companyInvitationCodes)
+      .values({
+        companyId,
+        code,
+        expiresAt,
+      })
+      .returning();
+      
+    return invitationCode;
+  }
+
+  async validateInvitationCode(code: string): Promise<CompanyInvitationCode | null> {
+    const [invitationCode] = await db
+      .select()
+      .from(companyInvitationCodes)
+      .where(eq(companyInvitationCodes.code, code));
+      
+    if (!invitationCode) {
+      return null;
+    }
+    
+    // Check if expired
+    if (new Date() > invitationCode.expiresAt) {
+      return null;
+    }
+    
+    // Check if already used
+    if (invitationCode.usedByEmployeeId) {
+      return null;
+    }
+    
+    return invitationCode;
+  }
+
+  async useInvitationCode(code: string, employeeId: string): Promise<CompanyEmployee> {
+    // Validate the code first
+    const invitationCode = await this.validateInvitationCode(code);
+    if (!invitationCode) {
+      throw new Error("Invalid or expired invitation code");
+    }
+    
+    // Mark the code as used
+    await db
+      .update(companyInvitationCodes)
+      .set({
+        usedByEmployeeId: employeeId,
+        usedAt: new Date(),
+      })
+      .where(eq(companyInvitationCodes.id, invitationCode.id));
+    
+    // Check if employee is already part of this company
+    const existingRelation = await db
+      .select()
+      .from(companyEmployees)
+      .where(and(
+        eq(companyEmployees.companyId, invitationCode.companyId),
+        eq(companyEmployees.employeeId, employeeId)
+      ));
+      
+    if (existingRelation.length > 0) {
+      // Update existing relation to active
+      const [updated] = await db
+        .update(companyEmployees)
+        .set({ isActive: true })
+        .where(eq(companyEmployees.id, existingRelation[0].id))
+        .returning();
+      return updated;
+    }
+    
+    // Create new company-employee relationship
+    const [companyEmployee] = await db
+      .insert(companyEmployees)
+      .values({
+        companyId: invitationCode.companyId,
+        employeeId,
+        isActive: true,
+      })
+      .returning();
+      
+    return companyEmployee;
+  }
+
+  async getCompanyEmployees(companyId: string): Promise<any[]> {
+    const result = await db
+      .select({
+        id: companyEmployees.id,
+        employeeId: companyEmployees.employeeId,
+        employeeName: sql<string>`CONCAT(${employees.firstName}, ' ', ${employees.lastName})`,
+        employeeEmail: employees.email,
+        position: companyEmployees.position,
+        joinedAt: companyEmployees.joinedAt,
+      })
+      .from(companyEmployees)
+      .innerJoin(employees, eq(companyEmployees.employeeId, employees.id))
+      .where(
+        and(
+          eq(companyEmployees.companyId, companyId),
+          eq(companyEmployees.isActive, true)
+        )
+      );
+      
+    return result;
+  }
+
+  async getEmployeeCompaniesNew(employeeId: string): Promise<CompanyEmployee[]> {
+    return await db
+      .select()
+      .from(companyEmployees)
+      .where(eq(companyEmployees.employeeId, employeeId));
   }
 }
 
