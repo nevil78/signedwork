@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Award, Briefcase, GraduationCap, FolderOpen, MessageSquare, User, Calendar, MapPin, Globe, Building, ExternalLink, Trash2, Camera, Upload, Edit2, Phone, Heart, Github, Linkedin, Twitter, Folder, Languages, Trophy, Home, Flag } from "lucide-react";
+import { Link } from "wouter";
+import { Plus, Award, Briefcase, GraduationCap, FolderOpen, MessageSquare, User, Calendar, MapPin, Globe, Building, ExternalLink, Trash2, Camera, Upload, Edit2, Phone, Heart, Github, Linkedin, Twitter, Folder, Languages, Trophy, Home, Flag, BookOpen } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { apiRequest } from "@/lib/queryClient";
@@ -140,9 +141,30 @@ export default function Profile() {
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <div className="flex items-center">
-              <User className="text-primary text-2xl mr-3" />
-              <span className="text-xl font-bold text-slate-800">Profile</span>
+            <div className="flex items-center space-x-8">
+              <div className="flex items-center">
+                <User className="text-primary text-2xl mr-3" />
+                <span className="text-xl font-bold text-slate-800">Employee Dashboard</span>
+              </div>
+              {/* Page Navigation */}
+              <div className="flex space-x-1 bg-slate-100 rounded-lg p-1">
+                <Link to="/profile">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="bg-white shadow-sm text-blue-700"
+                  >
+                    <User className="w-4 h-4 mr-2" />
+                    Profile
+                  </Button>
+                </Link>
+                <Link to="/work-diary">
+                  <Button variant="ghost" size="sm">
+                    <BookOpen className="w-4 h-4 mr-2" />
+                    Work Diary
+                  </Button>
+                </Link>
+              </div>
             </div>
             <Button
               variant="outline"

@@ -110,6 +110,21 @@ export const endorsements = pgTable("endorsements", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const workEntries = pgTable("work_entries", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  employeeId: varchar("employee_id").notNull().references(() => employees.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  description: text("description"),
+  date: text("date").notNull(),
+  status: text("status").notNull().default("todo"), // todo, in_progress, completed
+  priority: text("priority").notNull().default("medium"), // low, medium, high
+  estimatedHours: integer("estimated_hours").default(1),
+  actualHours: integer("actual_hours").default(0),
+  tags: text("tags").array(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 export const companies = pgTable("companies", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
@@ -136,6 +151,7 @@ export const employeesRelations = relations(employees, ({ many }) => ({
   certifications: many(certifications),
   projects: many(projects),
   endorsements: many(endorsements),
+  workEntries: many(workEntries),
 }));
 
 export const experiencesRelations = relations(experiences, ({ one }) => ({
@@ -169,6 +185,13 @@ export const projectsRelations = relations(projects, ({ one }) => ({
 export const endorsementsRelations = relations(endorsements, ({ one }) => ({
   employee: one(employees, {
     fields: [endorsements.employeeId],
+    references: [employees.id],
+  }),
+}));
+
+export const workEntriesRelations = relations(workEntries, ({ one }) => ({
+  employee: one(employees, {
+    fields: [workEntries.employeeId],
     references: [employees.id],
   }),
 }));
@@ -213,6 +236,12 @@ export const insertEndorsementSchema = createInsertSchema(endorsements).omit({
   createdAt: true,
 });
 
+export const insertWorkEntrySchema = createInsertSchema(workEntries).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export const insertCompanySchema = createInsertSchema(companies).omit({
   id: true,
   createdAt: true,
@@ -248,6 +277,7 @@ export type Education = typeof educations.$inferSelect;
 export type Certification = typeof certifications.$inferSelect;
 export type Project = typeof projects.$inferSelect;
 export type Endorsement = typeof endorsements.$inferSelect;
+export type WorkEntry = typeof workEntries.$inferSelect;
 export type Company = typeof companies.$inferSelect;
 
 export type InsertEmployee = z.infer<typeof insertEmployeeSchema>;
@@ -256,23 +286,6 @@ export type InsertEducation = z.infer<typeof insertEducationSchema>;
 export type InsertCertification = z.infer<typeof insertCertificationSchema>;
 export type InsertProject = z.infer<typeof insertProjectSchema>;
 export type InsertEndorsement = z.infer<typeof insertEndorsementSchema>;
+export type InsertWorkEntry = z.infer<typeof insertWorkEntrySchema>;
 export type InsertCompany = z.infer<typeof insertCompanySchema>;
 export type LoginData = z.infer<typeof loginSchema>;
-
-// Type exports
-export type InsertEmployee = z.infer<typeof insertEmployeeSchema>;
-export type Employee = typeof employees.$inferSelect;
-export type InsertCompany = z.infer<typeof insertCompanySchema>;
-export type Company = typeof companies.$inferSelect;
-export type LoginData = z.infer<typeof loginSchema>;
-
-export type Experience = typeof experiences.$inferSelect;
-export type InsertExperience = z.infer<typeof insertExperienceSchema>;
-export type Education = typeof educations.$inferSelect;
-export type InsertEducation = z.infer<typeof insertEducationSchema>;
-export type Certification = typeof certifications.$inferSelect;
-export type InsertCertification = z.infer<typeof insertCertificationSchema>;
-export type Project = typeof projects.$inferSelect;
-export type InsertProject = z.infer<typeof insertProjectSchema>;
-export type Endorsement = typeof endorsements.$inferSelect;
-export type InsertEndorsement = z.infer<typeof insertEndorsementSchema>;

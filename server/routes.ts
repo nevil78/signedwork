@@ -6,7 +6,7 @@ import { ObjectStorageService } from "./objectStorage";
 import { 
   insertEmployeeSchema, insertCompanySchema, loginSchema,
   insertExperienceSchema, insertEducationSchema, insertCertificationSchema,
-  insertProjectSchema, insertEndorsementSchema
+  insertProjectSchema, insertEndorsementSchema, insertWorkEntrySchema
 } from "@shared/schema";
 import { fromZodError } from "zod-validation-error";
 
@@ -462,6 +462,84 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Delete endorsement error:", error);
       res.status(500).json({ message: "Failed to delete endorsement" });
+    }
+  });
+
+  // Work Diary Routes
+  app.get("/api/work-diary", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    if (!sessionUser || sessionUser.type !== "employee") {
+      return res.status(401).json({ message: "Not authenticated as employee" });
+    }
+    
+    try {
+      const workEntries = await storage.getWorkEntries(sessionUser.id);
+      res.json(workEntries);
+    } catch (error) {
+      console.error("Get work entries error:", error);
+      res.status(500).json({ message: "Failed to get work entries" });
+    }
+  });
+
+  app.post("/api/work-diary", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    if (!sessionUser || sessionUser.type !== "employee") {
+      return res.status(401).json({ message: "Not authenticated as employee" });
+    }
+    
+    try {
+      const validatedData = insertWorkEntrySchema.parse({
+        ...req.body,
+        employeeId: sessionUser.id
+      });
+      
+      const workEntry = await storage.createWorkEntry(validatedData);
+      res.status(201).json(workEntry);
+    } catch (error: any) {
+      if (error.name === "ZodError") {
+        const validationError = fromZodError(error);
+        return res.status(400).json({ 
+          message: validationError.message,
+          errors: error.errors
+        });
+      }
+      
+      console.error("Create work entry error:", error);
+      res.status(500).json({ message: "Failed to create work entry" });
+    }
+  });
+
+  app.patch("/api/work-diary/:id", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    if (!sessionUser || sessionUser.type !== "employee") {
+      return res.status(401).json({ message: "Not authenticated as employee" });
+    }
+    
+    try {
+      const workEntry = await storage.updateWorkEntry(req.params.id, req.body);
+      res.json(workEntry);
+    } catch (error) {
+      console.error("Update work entry error:", error);
+      res.status(500).json({ message: "Failed to update work entry" });
+    }
+  });
+
+  app.delete("/api/work-diary/:id", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    if (!sessionUser || sessionUser.type !== "employee") {
+      return res.status(401).json({ message: "Not authenticated as employee" });
+    }
+    
+    try {
+      await storage.deleteWorkEntry(req.params.id);
+      res.json({ message: "Work entry deleted successfully" });
+    } catch (error) {
+      console.error("Delete work entry error:", error);
+      res.status(500).json({ message: "Failed to delete work entry" });
     }
   });
 

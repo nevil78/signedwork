@@ -1,9 +1,9 @@
 import { 
-  employees, companies, experiences, educations, certifications, projects, endorsements,
+  employees, companies, experiences, educations, certifications, projects, endorsements, workEntries,
   type Employee, type Company, type InsertEmployee, type InsertCompany,
-  type Experience, type Education, type Certification, type Project, type Endorsement,
+  type Experience, type Education, type Certification, type Project, type Endorsement, type WorkEntry,
   type InsertExperience, type InsertEducation, type InsertCertification, 
-  type InsertProject, type InsertEndorsement
+  type InsertProject, type InsertEndorsement, type InsertWorkEntry
 } from "@shared/schema";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
@@ -78,6 +78,12 @@ export interface IStorage {
   // Endorsement operations
   createEndorsement(endorsement: InsertEndorsement): Promise<Endorsement>;
   deleteEndorsement(id: string): Promise<void>;
+  
+  // Work entry operations
+  getWorkEntries(employeeId: string): Promise<WorkEntry[]>;
+  createWorkEntry(workEntry: InsertWorkEntry): Promise<WorkEntry>;
+  updateWorkEntry(id: string, data: Partial<WorkEntry>): Promise<WorkEntry>;
+  deleteWorkEntry(id: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -296,6 +302,32 @@ export class DatabaseStorage implements IStorage {
 
   async deleteEndorsement(id: string): Promise<void> {
     await db.delete(endorsements).where(eq(endorsements.id, id));
+  }
+
+  // Work entry operations
+  async getWorkEntries(employeeId: string): Promise<WorkEntry[]> {
+    return await db.select().from(workEntries).where(eq(workEntries.employeeId, employeeId));
+  }
+
+  async createWorkEntry(workEntry: InsertWorkEntry): Promise<WorkEntry> {
+    const [newWorkEntry] = await db
+      .insert(workEntries)
+      .values(workEntry)
+      .returning();
+    return newWorkEntry;
+  }
+
+  async updateWorkEntry(id: string, data: Partial<WorkEntry>): Promise<WorkEntry> {
+    const [workEntry] = await db
+      .update(workEntries)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(workEntries.id, id))
+      .returning();
+    return workEntry;
+  }
+
+  async deleteWorkEntry(id: string): Promise<void> {
+    await db.delete(workEntries).where(eq(workEntries.id, id));
   }
 }
 
