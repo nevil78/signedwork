@@ -571,6 +571,63 @@ export class DatabaseStorage implements IStorage {
       .from(companyEmployees)
       .where(eq(companyEmployees.employeeId, employeeId));
   }
+
+  async leaveCompany(employeeId: string, companyId: string): Promise<CompanyEmployee> {
+    const [updatedRelation] = await db
+      .update(companyEmployees)
+      .set({ 
+        status: "ex-employee",
+        leftAt: new Date(),
+        isActive: false
+      })
+      .where(
+        and(
+          eq(companyEmployees.employeeId, employeeId),
+          eq(companyEmployees.companyId, companyId),
+          eq(companyEmployees.status, "employed")
+        )
+      )
+      .returning();
+      
+    if (!updatedRelation) {
+      throw new Error("Active employment relationship not found");
+    }
+    
+    return updatedRelation;
+  }
+
+  async getEmployeeCompanyRelations(employeeId: string): Promise<any[]> {
+    const relations = await db
+      .select({
+        id: companyEmployees.id,
+        employeeId: companyEmployees.employeeId,
+        companyId: companies.id,
+        companyName: companies.name,
+        position: companyEmployees.position,
+        createdAt: companyEmployees.joinedAt,
+        updatedAt: companyEmployees.joinedAt,
+        isCurrent: sql<boolean>`${companyEmployees.status} = 'employed'`,
+      })
+      .from(companyEmployees)
+      .innerJoin(companies, eq(companyEmployees.companyId, companies.id))
+      .where(
+        and(
+          eq(companyEmployees.employeeId, employeeId),
+          eq(companyEmployees.status, "employed")
+        )
+      );
+      
+    return relations;
+  }
+
+  async getCompanyEmployeeRelation(relationId: string): Promise<CompanyEmployee | null> {
+    const [relation] = await db
+      .select()
+      .from(companyEmployees)
+      .where(eq(companyEmployees.id, relationId));
+      
+    return relation || null;
+  }
 }
 
 export const storage = new DatabaseStorage();

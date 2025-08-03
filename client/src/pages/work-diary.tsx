@@ -4,7 +4,7 @@ import { useLocation, Link } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, Building2, Calendar, Clock, ChevronRight, Edit, Trash2, User, BookOpen } from 'lucide-react';
+import { Plus, Building2, Calendar, Clock, ChevronRight, Edit, LogOut, User, BookOpen } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -183,26 +183,26 @@ export default function WorkDiary() {
     },
   });
 
-  const deleteCompanyMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const response = await fetch(`/api/employee-companies/${id}`, {
-        method: 'DELETE',
+  const leaveCompanyMutation = useMutation({
+    mutationFn: async (companyId: string) => {
+      const response = await fetch(`/api/employee/leave-company/${companyId}`, {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
       });
-      if (!response.ok) throw new Error('Failed to delete company');
+      if (!response.ok) throw new Error('Failed to leave company');
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/employee-companies'] });
       toast({
         title: "Success",
-        description: "Company deleted successfully",
+        description: "You have successfully left the company",
       });
     },
     onError: () => {
       toast({
         title: "Error",
-        description: "Failed to delete company",
+        description: "Failed to leave company",
         variant: "destructive",
       });
     },
@@ -232,9 +232,9 @@ export default function WorkDiary() {
     setIsDialogOpen(true);
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm('Are you sure you want to delete this company? All associated work entries will also be deleted.')) {
-      deleteCompanyMutation.mutate(id);
+  const handleLeaveCompany = (companyId: string) => {
+    if (confirm('Are you sure you want to leave this company? You will no longer have access to work entries for this company.')) {
+      leaveCompanyMutation.mutate(companyId);
     }
   };
 
@@ -364,10 +364,11 @@ export default function WorkDiary() {
                       size="icon"
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleDelete(company.id);
+                        handleLeaveCompany(company.id);
                       }}
+                      title="Leave Company"
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <LogOut className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>

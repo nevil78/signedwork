@@ -37,6 +37,14 @@ This is a comprehensive LinkedIn-like professional networking platform built wit
   * Main Work Diary page shows list of companies with "Add Company" functionality
   * Clicking a company navigates to a dedicated page showing work entries for that company
   * Full CRUD operations for both companies and work entries within companies
+- ✅ Implemented company invitation system (August 4, 2025):
+  * Companies have unique IDs (e.g., CMP-ABC123) and can generate 15-minute temporary invitation codes
+  * Employees join companies using invitation codes instead of manual addition
+  * Created Company Dashboard for companies to generate codes and view employee lists
+  * Fixed company data immutability - companies cannot be deleted after employees join
+  * Added status-based employment tracking ("employed" vs "ex-employee") 
+  * Replaced delete functionality with "Leave Company" option that updates status
+  * Added companyEmployees table with status, joinedAt, and leftAt fields
 
 # User Preferences
 

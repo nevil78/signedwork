@@ -176,6 +176,8 @@ export const companyEmployees = pgTable("company_employees", {
   position: text("position"),
   department: text("department"),
   joinedAt: timestamp("joined_at").defaultNow(),
+  leftAt: timestamp("left_at"),
+  status: varchar("status", { length: 20 }).default("employed").notNull(), // "employed" or "ex-employee"
   isActive: boolean("is_active").default(true),
 });
 
