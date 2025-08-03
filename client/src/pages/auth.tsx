@@ -163,8 +163,8 @@ export default function AuthPage() {
       console.log("Login successful, response:", response);
       // Redirect based on user type
       if (response.userType === "employee") {
-        console.log("Redirecting to employee profile");
-        window.location.href = "/employee-profile";
+        console.log("Redirecting to profile");
+        window.location.href = "/profile";
       } else {
         console.log("Redirecting to dashboard");
         window.location.href = "/dashboard";

@@ -5,7 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import AuthPage from "@/pages/auth";
 import Dashboard from "@/pages/dashboard";
-import EmployeeProfile from "@/pages/employee-profile";
+import Profile from "@/pages/profile";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -13,7 +13,8 @@ function Router() {
     <Switch>
       <Route path="/" component={AuthPage} />
       <Route path="/dashboard" component={Dashboard} />
-      <Route path="/employee-profile" component={EmployeeProfile} />
+      <Route path="/profile" component={Profile} />
+      <Route path="/employee-profile" component={() => { window.location.href = "/profile"; return null; }} />
       <Route component={NotFound} />
     </Switch>
   );
