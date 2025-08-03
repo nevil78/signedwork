@@ -691,6 +691,8 @@ function EducationSection({ educations }: { educations: Education[] }) {
                             <Input 
                               type="number" 
                               placeholder="2020" 
+                              min="1900"
+                              max={new Date().getFullYear()}
                               {...field}
                               onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
                             />
@@ -709,6 +711,8 @@ function EducationSection({ educations }: { educations: Education[] }) {
                             <Input 
                               type="number" 
                               placeholder="2024" 
+                              min="1900"
+                              max={new Date().getFullYear() + 10}
                               {...field}
                               value={field.value || ""}
                               onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
@@ -923,7 +927,11 @@ function CertificationSection({ certifications }: { certifications: Certificatio
                         <FormItem>
                           <FormLabel>Issue Date*</FormLabel>
                           <FormControl>
-                            <Input type="month" {...field} />
+                            <Input 
+                              type="date" 
+                              {...field}
+                              max={new Date().toISOString().split('T')[0]}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -936,7 +944,12 @@ function CertificationSection({ certifications }: { certifications: Certificatio
                         <FormItem>
                           <FormLabel>Expiration Date</FormLabel>
                           <FormControl>
-                            <Input type="month" {...field} value={field.value || ""} />
+                            <Input 
+                              type="date" 
+                              {...field} 
+                              value={field.value || ""}
+                              min={new Date().toISOString().split('T')[0]}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -1160,7 +1173,11 @@ function ProjectSection({ projects }: { projects: Project[] }) {
                         <FormItem>
                           <FormLabel>Start Date*</FormLabel>
                           <FormControl>
-                            <Input type="month" {...field} />
+                            <Input 
+                              type="date" 
+                              {...field}
+                              max={new Date().toISOString().split('T')[0]}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -1173,7 +1190,12 @@ function ProjectSection({ projects }: { projects: Project[] }) {
                         <FormItem>
                           <FormLabel>End Date</FormLabel>
                           <FormControl>
-                            <Input type="month" {...field} value={field.value || ""} />
+                            <Input 
+                              type="date" 
+                              {...field} 
+                              value={field.value || ""}
+                              max={new Date().toISOString().split('T')[0]}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
