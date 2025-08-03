@@ -11,6 +11,14 @@ This is a comprehensive LinkedIn-like professional networking platform built wit
 - ✅ Fixed all API request errors - all Add buttons now work properly
 - ✅ Implemented profile picture upload with object storage integration
 - ✅ Added edit button functionality for changing profile pictures with tooltip
+- ✅ Added short, memorable employee IDs (EMP-ABC123 format) replacing long UUIDs
+- ✅ Enhanced profile overview with comprehensive CV fields including:
+  * Personal information (address, phone, date of birth, nationality, marital status)
+  * Professional summary (headline, summary, current position/company, industry)
+  * Skills and languages with proper badge displays
+  * Hobbies and interests section
+  * Online presence (website, portfolio, GitHub, LinkedIn, Twitter links)
+  * Key achievements section
 
 # User Preferences
 

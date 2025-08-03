@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Award, Briefcase, GraduationCap, FolderOpen, MessageSquare, User, Calendar, MapPin, Globe, Building, ExternalLink, Trash2, Camera, Upload, Edit2 } from "lucide-react";
+import { Plus, Award, Briefcase, GraduationCap, FolderOpen, MessageSquare, User, Calendar, MapPin, Globe, Building, ExternalLink, Trash2, Camera, Upload, Edit2, Phone, Heart, Github, Linkedin, Twitter, Folder, Languages, Trophy, Home, Flag } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { apiRequest } from "@/lib/queryClient";
@@ -248,87 +248,278 @@ export default function Profile() {
 // Profile Overview Component
 function ProfileOverview({ user }: { user: Employee }) {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <User className="w-5 h-5" />
-          Profile Overview
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <h3 className="font-semibold text-slate-900 mb-3">Personal Information</h3>
-            <div className="space-y-2 text-sm">
-              <div className="flex items-center gap-2">
+    <div className="space-y-6">
+      {/* Personal Information */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <User className="w-5 h-5" />
+            Personal Information
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 text-sm">
                 <User className="w-4 h-4 text-slate-400" />
+                <span className="font-medium">Name:</span>
                 <span>{user?.firstName} {user?.lastName}</span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 text-sm">
                 <Globe className="w-4 h-4 text-slate-400" />
+                <span className="font-medium">Email:</span>
                 <span>{user?.email}</span>
               </div>
+              <div className="flex items-center gap-2 text-sm">
+                <Phone className="w-4 h-4 text-slate-400" />
+                <span className="font-medium">Phone:</span>
+                <span>{user?.countryCode} {user?.phone}</span>
+              </div>
+              {user?.dateOfBirth && (
+                <div className="flex items-center gap-2 text-sm">
+                  <Calendar className="w-4 h-4 text-slate-400" />
+                  <span className="font-medium">Date of Birth:</span>
+                  <span>{new Date(user.dateOfBirth).toLocaleDateString()}</span>
+                </div>
+              )}
+              {user?.nationality && (
+                <div className="flex items-center gap-2 text-sm">
+                  <Flag className="w-4 h-4 text-slate-400" />
+                  <span className="font-medium">Nationality:</span>
+                  <span>{user.nationality}</span>
+                </div>
+              )}
+              {user?.maritalStatus && (
+                <div className="flex items-center gap-2 text-sm">
+                  <Heart className="w-4 h-4 text-slate-400" />
+                  <span className="font-medium">Marital Status:</span>
+                  <span>{user.maritalStatus}</span>
+                </div>
+              )}
+            </div>
+            
+            <div className="space-y-3">
+              {(user?.address || user?.city || user?.state) && (
+                <div className="flex items-start gap-2 text-sm">
+                  <Home className="w-4 h-4 text-slate-400 mt-0.5" />
+                  <div>
+                    <span className="font-medium">Address:</span>
+                    <div className="text-slate-600">
+                      {user?.address && <div>{user.address}</div>}
+                      {(user?.city || user?.state || user?.zipCode) && (
+                        <div>
+                          {user?.city}{user?.city && user?.state ? ", " : ""}{user?.state} {user?.zipCode}
+                        </div>
+                      )}
+                      {user?.country && <div>{user.country}</div>}
+                    </div>
+                  </div>
+                </div>
+              )}
               {user?.location && (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 text-sm">
                   <MapPin className="w-4 h-4 text-slate-400" />
+                  <span className="font-medium">Current Location:</span>
                   <span>{user.location}</span>
                 </div>
               )}
-              {user?.website && (
-                <div className="flex items-center gap-2">
-                  <ExternalLink className="w-4 h-4 text-slate-400" />
-                  <a href={user.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                    {user.website}
-                  </a>
-                </div>
-              )}
             </div>
           </div>
-          
-          <div>
-            <h3 className="font-semibold text-slate-900 mb-3">Professional Details</h3>
-            <div className="space-y-2 text-sm">
-              {user?.currentPosition && (
-                <div className="flex items-center gap-2">
-                  <Briefcase className="w-4 h-4 text-slate-400" />
-                  <span>{user.currentPosition}</span>
-                </div>
-              )}
-              {user?.currentCompany && (
-                <div className="flex items-center gap-2">
-                  <Building className="w-4 h-4 text-slate-400" />
-                  <span>{user.currentCompany}</span>
-                </div>
-              )}
-              {user?.industry && (
-                <div className="flex items-center gap-2">
-                  <Award className="w-4 h-4 text-slate-400" />
-                  <span>{user.industry}</span>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
+        </CardContent>
+      </Card>
 
-        {user?.summary && (
-          <div>
-            <h3 className="font-semibold text-slate-900 mb-3">About</h3>
-            <p className="text-slate-600 text-sm leading-relaxed">{user.summary}</p>
+      {/* Professional Summary */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Briefcase className="w-5 h-5" />
+            Professional Summary
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {user?.headline && (
+            <div>
+              <h4 className="font-medium text-slate-900 mb-2">Professional Headline</h4>
+              <p className="text-slate-600 text-sm">{user.headline}</p>
+            </div>
+          )}
+          {user?.summary && (
+            <div>
+              <h4 className="font-medium text-slate-900 mb-2">Summary</h4>
+              <p className="text-slate-600 text-sm leading-relaxed">{user.summary}</p>
+            </div>
+          )}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {user?.currentPosition && (
+              <div className="flex items-center gap-2 text-sm">
+                <Briefcase className="w-4 h-4 text-slate-400" />
+                <span className="font-medium">Current Position:</span>
+                <span>{user.currentPosition}</span>
+              </div>
+            )}
+            {user?.currentCompany && (
+              <div className="flex items-center gap-2 text-sm">
+                <Building className="w-4 h-4 text-slate-400" />
+                <span className="font-medium">Current Company:</span>
+                <span>{user.currentCompany}</span>
+              </div>
+            )}
+            {user?.industry && (
+              <div className="flex items-center gap-2 text-sm">
+                <Award className="w-4 h-4 text-slate-400" />
+                <span className="font-medium">Industry:</span>
+                <span>{user.industry}</span>
+              </div>
+            )}
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Skills & Languages */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {user?.skills && user.skills.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Trophy className="w-5 h-5" />
+                Skills
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-2">
+                {user.skills.map((skill, index) => (
+                  <Badge key={index} variant="secondary" className="text-xs">
+                    {skill}
+                  </Badge>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         )}
 
-        {user?.skills && user.skills.length > 0 && (
-          <div>
-            <h3 className="font-semibold text-slate-900 mb-3">Skills</h3>
+        {user?.languages && user.languages.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Languages className="w-5 h-5" />
+                Languages
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-2">
+                {user.languages.map((language, index) => (
+                  <Badge key={index} variant="outline" className="text-xs">
+                    {language}
+                  </Badge>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
+      {/* Hobbies & Interests */}
+      {user?.hobbies && user.hobbies.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Heart className="w-5 h-5" />
+              Hobbies & Interests
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
             <div className="flex flex-wrap gap-2">
-              {user.skills.map((skill, index) => (
-                <Badge key={index} variant="secondary">{skill}</Badge>
+              {user.hobbies.map((hobby, index) => (
+                <Badge key={index} variant="secondary" className="text-xs bg-blue-50 text-blue-700">
+                  {hobby}
+                </Badge>
               ))}
             </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Online Presence */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Globe className="w-5 h-5" />
+            Online Presence
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {user?.website && (
+              <div className="flex items-center gap-2 text-sm">
+                <ExternalLink className="w-4 h-4 text-slate-400" />
+                <span className="font-medium">Website:</span>
+                <a href={user.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                  {user.website}
+                </a>
+              </div>
+            )}
+            {user?.portfolioUrl && (
+              <div className="flex items-center gap-2 text-sm">
+                <Folder className="w-4 h-4 text-slate-400" />
+                <span className="font-medium">Portfolio:</span>
+                <a href={user.portfolioUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                  View Portfolio
+                </a>
+              </div>
+            )}
+            {user?.githubUrl && (
+              <div className="flex items-center gap-2 text-sm">
+                <Github className="w-4 h-4 text-slate-400" />
+                <span className="font-medium">GitHub:</span>
+                <a href={user.githubUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                  GitHub Profile
+                </a>
+              </div>
+            )}
+            {user?.linkedinUrl && (
+              <div className="flex items-center gap-2 text-sm">
+                <Linkedin className="w-4 h-4 text-slate-400" />
+                <span className="font-medium">LinkedIn:</span>
+                <a href={user.linkedinUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                  LinkedIn Profile
+                </a>
+              </div>
+            )}
+            {user?.twitterUrl && (
+              <div className="flex items-center gap-2 text-sm">
+                <Twitter className="w-4 h-4 text-slate-400" />
+                <span className="font-medium">Twitter:</span>
+                <a href={user.twitterUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                  Twitter Profile
+                </a>
+              </div>
+            )}
           </div>
-        )}
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+
+      {/* Achievements */}
+      {user?.achievements && user.achievements.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Trophy className="w-5 h-5" />
+              Key Achievements
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ul className="space-y-2 text-sm text-slate-600">
+              {user.achievements.map((achievement, index) => (
+                <li key={index} className="flex items-start gap-2">
+                  <span className="text-primary mt-1">•</span>
+                  <span>{achievement}</span>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
+    </div>
   );
 }
 
