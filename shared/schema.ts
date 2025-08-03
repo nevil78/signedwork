@@ -224,6 +224,24 @@ export const loginSchema = z.object({
   }),
 });
 
+// Export types
+export type Employee = typeof employees.$inferSelect;
+export type Experience = typeof experiences.$inferSelect;
+export type Education = typeof educations.$inferSelect;
+export type Certification = typeof certifications.$inferSelect;
+export type Project = typeof projects.$inferSelect;
+export type Endorsement = typeof endorsements.$inferSelect;
+export type Company = typeof companies.$inferSelect;
+
+export type InsertEmployee = z.infer<typeof insertEmployeeSchema>;
+export type InsertExperience = z.infer<typeof insertExperienceSchema>;
+export type InsertEducation = z.infer<typeof insertEducationSchema>;
+export type InsertCertification = z.infer<typeof insertCertificationSchema>;
+export type InsertProject = z.infer<typeof insertProjectSchema>;
+export type InsertEndorsement = z.infer<typeof insertEndorsementSchema>;
+export type InsertCompany = z.infer<typeof insertCompanySchema>;
+export type LoginData = z.infer<typeof loginSchema>;
+
 // Type exports
 export type InsertEmployee = z.infer<typeof insertEmployeeSchema>;
 export type Employee = typeof employees.$inferSelect;

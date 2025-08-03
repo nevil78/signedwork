@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import session from "express-session";
 import { storage } from "./storage";
+import { ObjectStorageService } from "./objectStorage";
 import { 
   insertEmployeeSchema, insertCompanySchema, loginSchema,
   insertExperienceSchema, insertEducationSchema, insertCertificationSchema,
@@ -461,6 +462,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Delete endorsement error:", error);
       res.status(500).json({ message: "Failed to delete endorsement" });
+    }
+  });
+
+  // Object Storage Routes
+  app.post("/api/objects/upload", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    if (!sessionUser) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    
+    try {
+      const objectStorageService = new ObjectStorageService();
+      const uploadURL = await objectStorageService.getObjectEntityUploadURL();
+      res.json({ uploadURL });
+    } catch (error) {
+      console.error("Get upload URL error:", error);
+      res.status(500).json({ message: "Failed to get upload URL" });
+    }
+  });
+
+  // Profile picture update
+  app.put("/api/employee/profile-picture", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    if (!sessionUser || sessionUser.type !== "employee") {
+      return res.status(401).json({ message: "Not authenticated as employee" });
+    }
+    
+    if (!req.body.profilePictureURL) {
+      return res.status(400).json({ error: "profilePictureURL is required" });
+    }
+
+    try {
+      const objectStorageService = new ObjectStorageService();
+      const objectPath = objectStorageService.normalizeObjectEntityPath(
+        req.body.profilePictureURL,
+      );
+
+      // Update employee profile picture
+      const updatedEmployee = await storage.updateEmployee(sessionUser.id, {
+        profilePhoto: objectPath
+      });
+      
+      const { password, ...employeeResponse } = updatedEmployee;
+      
+      res.status(200).json({
+        objectPath: objectPath,
+        employee: employeeResponse
+      });
+    } catch (error) {
+      console.error("Error setting profile picture:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Serve uploaded objects
+  app.get("/objects/:objectPath(*)", async (req, res) => {
+    const objectStorageService = new ObjectStorageService();
+    try {
+      const objectFile = await objectStorageService.getObjectEntityFile(
+        `/objects/${req.params.objectPath}`,
+      );
+      objectStorageService.downloadObject(objectFile, res);
+    } catch (error) {
+      console.error("Error downloading object:", error);
+      return res.sendStatus(404);
     }
   });
 

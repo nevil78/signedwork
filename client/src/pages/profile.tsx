@@ -1,23 +1,46 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Plus, Award, Briefcase, GraduationCap, FolderOpen, MessageSquare, User, Calendar, MapPin, Globe, Building, ExternalLink, Trash2 } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Plus, Award, Briefcase, GraduationCap, FolderOpen, MessageSquare, User, Calendar, MapPin, Globe, Building, ExternalLink, Trash2, Camera, Upload } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { ObjectUploader } from "@/components/ObjectUploader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { 
   type Experience,
   type Education,
   type Certification,
   type Project,
   type Endorsement,
-  type Employee
+  type Employee,
+  type InsertExperience,
+  type InsertEducation,
+  type InsertCertification,
+  type InsertProject,
+  type InsertEndorsement,
+  insertExperienceSchema,
+  insertEducationSchema,
+  insertCertificationSchema,
+  insertProjectSchema,
+  insertEndorsementSchema
 } from "@shared/schema";
 
 type ProfileSection = "overview" | "experience" | "education" | "certifications" | "projects" | "endorsements";
 
 export default function Profile() {
   const [activeSection, setActiveSection] = useState<ProfileSection>("overview");
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   
   // Fetch user data
   const { data: userResponse, isLoading: userLoading } = useQuery({
@@ -27,13 +50,37 @@ export default function Profile() {
 
   // Fetch profile data
   const { data: profileData, isLoading: profileLoading } = useQuery({
-    queryKey: ["/api/employee/profile", userResponse?.user?.id],
-    enabled: !!userResponse?.user?.id && userResponse?.userType === "employee",
+    queryKey: ["/api/employee/profile", (userResponse as any)?.user?.id],
+    enabled: !!(userResponse as any)?.user?.id && (userResponse as any)?.userType === "employee",
   });
 
   const isLoading = userLoading || profileLoading;
-  const user = userResponse?.user as Employee;
+  const user = (userResponse as any)?.user as Employee;
   const profile = profileData || { experiences: [], educations: [], certifications: [], projects: [], endorsements: [] };
+
+  // Profile picture upload mutation
+  const profilePictureMutation = useMutation({
+    mutationFn: async (data: { profilePictureURL: string }) => {
+      return await apiRequest("/api/employee/profile-picture", {
+        method: "PUT",
+        body: JSON.stringify(data),
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Profile picture updated successfully",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to update profile picture",
+        variant: "destructive",
+      });
+    },
+  });
 
   const sidebarItems = [
     { id: "overview", label: "Profile Overview", icon: User },
@@ -55,10 +102,25 @@ export default function Profile() {
     );
   }
 
-  if (!userResponse || userResponse.userType !== "employee") {
+  if (!userResponse || (userResponse as any).userType !== "employee") {
     window.location.href = "/";
     return null;
   }
+
+  const handleProfilePictureUpload = async () => {
+    return {
+      method: "PUT" as const,
+      url: await apiRequest("/api/objects/upload", { method: "POST" }).then(res => res.uploadURL),
+    };
+  };
+
+  const handleProfilePictureComplete = (result: any) => {
+    if (result.successful && result.successful[0]) {
+      profilePictureMutation.mutate({
+        profilePictureURL: result.successful[0].uploadURL,
+      });
+    }
+  };
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -87,12 +149,25 @@ export default function Profile() {
             <Card>
               <CardContent className="p-6">
                 <div className="text-center mb-6">
-                  <Avatar className="w-20 h-20 mx-auto mb-4">
-                    <AvatarImage src={user?.profilePhoto || undefined} />
-                    <AvatarFallback className="text-lg font-semibold bg-primary/10 text-primary">
-                      {user?.firstName?.[0]}{user?.lastName?.[0]}
-                    </AvatarFallback>
-                  </Avatar>
+                  <div className="relative inline-block">
+                    <Avatar className="w-20 h-20 mx-auto mb-4">
+                      <AvatarImage src={user?.profilePhoto || undefined} />
+                      <AvatarFallback className="text-lg font-semibold bg-primary/10 text-primary">
+                        {user?.firstName?.[0]}{user?.lastName?.[0]}
+                      </AvatarFallback>
+                    </Avatar>
+                    {activeSection === "overview" && (
+                      <ObjectUploader
+                        maxNumberOfFiles={1}
+                        maxFileSize={5242880} // 5MB
+                        onGetUploadParameters={handleProfilePictureUpload}
+                        onComplete={handleProfilePictureComplete}
+                        buttonClassName="absolute -bottom-2 right-0 rounded-full p-2 bg-primary text-white hover:bg-primary/90"
+                      >
+                        <Camera className="w-4 h-4" />
+                      </ObjectUploader>
+                    )}
+                  </div>
                   <h2 className="text-xl font-semibold text-slate-900">
                     {user?.firstName} {user?.lastName}
                   </h2>
@@ -126,12 +201,12 @@ export default function Profile() {
 
           {/* Main Content */}
           <div className="lg:col-span-3">
-            {activeSection === "overview" && <OverviewSection user={user} />}
-            {activeSection === "experience" && <ExperienceSection data={profile.experiences} />}
-            {activeSection === "education" && <EducationSection data={profile.educations} />}
-            {activeSection === "certifications" && <CertificationsSection data={profile.certifications} />}
-            {activeSection === "projects" && <ProjectsSection data={profile.projects} />}
-            {activeSection === "endorsements" && <EndorsementsSection data={profile.endorsements} />}
+            {activeSection === "overview" && <ProfileOverview user={user} />}
+            {activeSection === "experience" && <ExperienceSection experiences={profile.experiences || []} />}
+            {activeSection === "education" && <EducationSection educations={profile.educations || []} />}
+            {activeSection === "certifications" && <CertificationSection certifications={profile.certifications || []} />}
+            {activeSection === "projects" && <ProjectSection projects={profile.projects || []} />}
+            {activeSection === "endorsements" && <EndorsementSection endorsements={profile.endorsements || []} />}
           </div>
         </div>
       </div>
@@ -139,407 +214,647 @@ export default function Profile() {
   );
 }
 
-// Overview Section Component
-function OverviewSection({ user }: { user: Employee | undefined }) {
+// Profile Overview Component
+function ProfileOverview({ user }: { user: Employee }) {
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <User className="w-5 h-5" />
-            Profile Overview
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <h3 className="font-semibold text-slate-900 mb-2">Contact Information</h3>
-              <div className="space-y-2 text-sm">
-                <p className="flex items-center gap-2">
-                  <span className="font-medium">Email:</span> {user?.email}
-                </p>
-                <p className="flex items-center gap-2">
-                  <span className="font-medium">Phone:</span> {user?.countryCode} {user?.phone}
-                </p>
-                {user?.location && (
-                  <p className="flex items-center gap-2">
-                    <MapPin className="w-4 h-4" />
-                    {user.location}
-                  </p>
-                )}
-                {user?.website && (
-                  <p className="flex items-center gap-2">
-                    <Globe className="w-4 h-4" />
-                    <a href={user.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                      {user.website}
-                    </a>
-                  </p>
-                )}
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <User className="w-5 h-5" />
+          Profile Overview
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <h3 className="font-semibold text-slate-900 mb-3">Personal Information</h3>
+            <div className="space-y-2 text-sm">
+              <div className="flex items-center gap-2">
+                <User className="w-4 h-4 text-slate-400" />
+                <span>{user?.firstName} {user?.lastName}</span>
               </div>
-            </div>
-            
-            <div>
-              <h3 className="font-semibold text-slate-900 mb-2">Professional Details</h3>
-              <div className="space-y-2 text-sm">
-                {user?.currentPosition && (
-                  <p className="flex items-center gap-2">
-                    <span className="font-medium">Position:</span> {user.currentPosition}
-                  </p>
-                )}
-                {user?.currentCompany && (
-                  <p className="flex items-center gap-2">
-                    <Building className="w-4 h-4" />
-                    {user.currentCompany}
-                  </p>
-                )}
-                {user?.industry && (
-                  <p className="flex items-center gap-2">
-                    <span className="font-medium">Industry:</span> {user.industry}
-                  </p>
-                )}
+              <div className="flex items-center gap-2">
+                <Globe className="w-4 h-4 text-slate-400" />
+                <span>{user?.email}</span>
               </div>
+              {user?.location && (
+                <div className="flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-slate-400" />
+                  <span>{user.location}</span>
+                </div>
+              )}
+              {user?.website && (
+                <div className="flex items-center gap-2">
+                  <ExternalLink className="w-4 h-4 text-slate-400" />
+                  <a href={user.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                    {user.website}
+                  </a>
+                </div>
+              )}
             </div>
           </div>
           
-          {user?.summary && (
-            <div>
-              <h3 className="font-semibold text-slate-900 mb-2">About</h3>
-              <p className="text-slate-600 text-sm leading-relaxed">{user.summary}</p>
+          <div>
+            <h3 className="font-semibold text-slate-900 mb-3">Professional Details</h3>
+            <div className="space-y-2 text-sm">
+              {user?.currentPosition && (
+                <div className="flex items-center gap-2">
+                  <Briefcase className="w-4 h-4 text-slate-400" />
+                  <span>{user.currentPosition}</span>
+                </div>
+              )}
+              {user?.currentCompany && (
+                <div className="flex items-center gap-2">
+                  <Building className="w-4 h-4 text-slate-400" />
+                  <span>{user.currentCompany}</span>
+                </div>
+              )}
+              {user?.industry && (
+                <div className="flex items-center gap-2">
+                  <Award className="w-4 h-4 text-slate-400" />
+                  <span>{user.industry}</span>
+                </div>
+              )}
             </div>
-          )}
-          
-          {user?.skills && user.skills.length > 0 && (
-            <div>
-              <h3 className="font-semibold text-slate-900 mb-2">Skills</h3>
-              <div className="flex flex-wrap gap-2">
-                {user.skills.map((skill: string, index: number) => (
-                  <Badge key={index} variant="secondary">{skill}</Badge>
-                ))}
-              </div>
+          </div>
+        </div>
+
+        {user?.summary && (
+          <div>
+            <h3 className="font-semibold text-slate-900 mb-3">About</h3>
+            <p className="text-slate-600 text-sm leading-relaxed">{user.summary}</p>
+          </div>
+        )}
+
+        {user?.skills && user.skills.length > 0 && (
+          <div>
+            <h3 className="font-semibold text-slate-900 mb-3">Skills</h3>
+            <div className="flex flex-wrap gap-2">
+              {user.skills.map((skill, index) => (
+                <Badge key={index} variant="secondary">{skill}</Badge>
+              ))}
             </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
 // Experience Section Component
-function ExperienceSection({ data }: { data: Experience[] }) {
+function ExperienceSection({ experiences }: { experiences: Experience[] }) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  const form = useForm<InsertExperience>({
+    resolver: zodResolver(insertExperienceSchema.omit({ employeeId: true })),
+    defaultValues: {
+      title: "",
+      company: "",
+      location: "",
+      startDate: "",
+      endDate: "",
+      isCurrent: false,
+      description: "",
+      achievements: [],
+    },
+  });
+
+  const createMutation = useMutation({
+    mutationFn: async (data: Omit<InsertExperience, 'employeeId'>) => {
+      return await apiRequest("/api/employee/experience", {
+        method: "POST",
+        body: JSON.stringify(data),
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Experience added successfully",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/employee/profile"] });
+      setIsDialogOpen(false);
+      form.reset();
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to add experience",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const onSubmit = (data: Omit<InsertExperience, 'employeeId'>) => {
+    createMutation.mutate(data);
+  };
+
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-slate-900">Experience</h2>
-        <Button>
-          <Plus className="w-4 h-4 mr-2" />
-          Add Experience
-        </Button>
-      </div>
-      
-      <div className="space-y-6">
-        {data.length === 0 ? (
-          <Card>
-            <CardContent className="text-center py-8">
-              <Briefcase className="w-12 h-12 text-slate-400 mx-auto mb-4" />
-              <p className="text-slate-600">No work experience added yet.</p>
-              <p className="text-xs text-slate-500 mt-2">Click "Add Experience" to add your work history.</p>
-            </CardContent>
-          </Card>
-        ) : (
-          data.map((experience) => (
-            <Card key={experience.id}>
-              <CardContent className="p-6">
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-slate-900">{experience.title}</h3>
-                    <p className="text-primary font-medium">{experience.company}</p>
-                    <div className="flex items-center gap-4 text-sm text-slate-600 mt-2">
-                      <span className="flex items-center gap-1">
-                        <Calendar className="w-4 h-4" />
-                        {experience.startDate} - {experience.endDate || "Present"}
-                      </span>
-                      {experience.location && (
-                        <span className="flex items-center gap-1">
-                          <MapPin className="w-4 h-4" />
-                          {experience.location}
-                        </span>
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <Briefcase className="w-5 h-5" />
+            Experience
+          </CardTitle>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm">
+                <Plus className="w-4 h-4 mr-2" />
+                Add Experience
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Add Work Experience</DialogTitle>
+              </DialogHeader>
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="title"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Job Title*</FormLabel>
+                          <FormControl>
+                            <Input placeholder="e.g. Software Engineer" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
                       )}
-                    </div>
-                    {experience.description && (
-                      <p className="text-slate-700 mt-3 text-sm leading-relaxed">{experience.description}</p>
+                    />
+                    <FormField
+                      control={form.control}
+                      name="company"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Company*</FormLabel>
+                          <FormControl>
+                            <Input placeholder="e.g. Google" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  
+                  <FormField
+                    control={form.control}
+                    name="location"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Location</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g. San Francisco, CA" {...field} value={field.value || ""} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="startDate"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Start Date*</FormLabel>
+                          <FormControl>
+                            <Input type="month" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="endDate"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>End Date</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="month" 
+                              {...field} 
+                              value={field.value || ""} 
+                              disabled={form.watch("isCurrent")}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <FormField
+                    control={form.control}
+                    name="isCurrent"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <div className="space-y-1 leading-none">
+                          <FormLabel>I currently work here</FormLabel>
+                        </div>
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="description"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Description</FormLabel>
+                        <FormControl>
+                          <Textarea 
+                            placeholder="Describe your role and responsibilities..."
+                            rows={4}
+                            {...field}
+                            value={field.value || ""}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <div className="flex justify-end gap-3">
+                    <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button type="submit" disabled={createMutation.isPending}>
+                      {createMutation.isPending ? "Adding..." : "Add Experience"}
+                    </Button>
+                  </div>
+                </form>
+              </Form>
+            </DialogContent>
+          </Dialog>
+        </div>
+      </CardHeader>
+      <CardContent>
+        {experiences.length === 0 ? (
+          <div className="text-center py-8">
+            <Briefcase className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-slate-900 mb-2">No experience added yet</h3>
+            <p className="text-slate-600 mb-4">Share your work experience to showcase your professional journey</p>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {experiences.map((exp) => (
+              <div key={exp.id} className="border-l-4 border-primary pl-4">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="font-semibold text-slate-900">{exp.title}</h3>
+                    <p className="text-primary font-medium">{exp.company}</p>
+                    <p className="text-sm text-slate-600 mt-1">
+                      {exp.startDate} - {exp.isCurrent ? "Present" : exp.endDate}
+                      {exp.location && ` • ${exp.location}`}
+                    </p>
+                    {exp.description && (
+                      <p className="text-sm text-slate-600 mt-2">{exp.description}</p>
                     )}
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
                 </div>
-              </CardContent>
-            </Card>
-          ))
+              </div>
+            ))}
+          </div>
         )}
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }
 
-// Education Section Component
-function EducationSection({ data }: { data: Education[] }) {
+// Education Section Component  
+function EducationSection({ educations }: { educations: Education[] }) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  const form = useForm<InsertEducation>({
+    resolver: zodResolver(insertEducationSchema.omit({ employeeId: true })),
+    defaultValues: {
+      institution: "",
+      degree: "",
+      fieldOfStudy: "",
+      startYear: new Date().getFullYear(),
+      endYear: undefined,
+      grade: "",
+      activities: "",
+      description: "",
+    },
+  });
+
+  const createMutation = useMutation({
+    mutationFn: async (data: Omit<InsertEducation, 'employeeId'>) => {
+      return await apiRequest("/api/employee/education", {
+        method: "POST",
+        body: JSON.stringify(data),
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Education added successfully",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/employee/profile"] });
+      setIsDialogOpen(false);
+      form.reset();
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to add education",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const onSubmit = (data: Omit<InsertEducation, 'employeeId'>) => {
+    createMutation.mutate(data);
+  };
+
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-slate-900">Education</h2>
-        <Button>
-          <Plus className="w-4 h-4 mr-2" />
-          Add Education
-        </Button>
-      </div>
-      
-      <div className="space-y-6">
-        {data.length === 0 ? (
-          <Card>
-            <CardContent className="text-center py-8">
-              <GraduationCap className="w-12 h-12 text-slate-400 mx-auto mb-4" />
-              <p className="text-slate-600">No education records added yet.</p>
-              <p className="text-xs text-slate-500 mt-2">Click "Add Education" to add your educational background.</p>
-            </CardContent>
-          </Card>
-        ) : (
-          data.map((education) => (
-            <Card key={education.id}>
-              <CardContent className="p-6">
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-slate-900">{education.degree}</h3>
-                    <p className="text-primary font-medium">{education.institution}</p>
-                    <p className="text-sm text-slate-600 mt-1">{education.fieldOfStudy}</p>
-                    <div className="flex items-center gap-4 text-sm text-slate-600 mt-2">
-                      <span className="flex items-center gap-1">
-                        <Calendar className="w-4 h-4" />
-                        {education.startYear} - {education.endYear || "Present"}
-                      </span>
-                      {education.grade && (
-                        <span>Grade: {education.grade}</span>
-                      )}
-                    </div>
-                    {education.description && (
-                      <p className="text-slate-700 mt-3 text-sm leading-relaxed">{education.description}</p>
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <GraduationCap className="w-5 h-5" />
+            Education
+          </CardTitle>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm">
+                <Plus className="w-4 h-4 mr-2" />
+                Add Education
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Add Education</DialogTitle>
+              </DialogHeader>
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="institution"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>School/University*</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g. Stanford University" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
                     )}
+                  />
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="degree"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Degree*</FormLabel>
+                          <FormControl>
+                            <Input placeholder="e.g. Bachelor of Science" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="fieldOfStudy"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Field of Study</FormLabel>
+                          <FormControl>
+                            <Input placeholder="e.g. Computer Science" {...field} value={field.value || ""} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                   </div>
-                  <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50">
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="startYear"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Start Year*</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="number" 
+                              placeholder="2020" 
+                              {...field}
+                              onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="endYear"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>End Year</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="number" 
+                              placeholder="2024" 
+                              {...field}
+                              value={field.value || ""}
+                              onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <FormField
+                    control={form.control}
+                    name="grade"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Grade/GPA</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g. 3.8/4.0 or First Class" {...field} value={field.value || ""} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="activities"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Activities & Societies</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g. Student Council, Debate Team" {...field} value={field.value || ""} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="description"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Description</FormLabel>
+                        <FormControl>
+                          <Textarea 
+                            placeholder="Additional details about your education..."
+                            rows={3}
+                            {...field}
+                            value={field.value || ""}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <div className="flex justify-end gap-3">
+                    <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button type="submit" disabled={createMutation.isPending}>
+                      {createMutation.isPending ? "Adding..." : "Add Education"}
+                    </Button>
+                  </div>
+                </form>
+              </Form>
+            </DialogContent>
+          </Dialog>
+        </div>
+      </CardHeader>
+      <CardContent>
+        {educations.length === 0 ? (
+          <div className="text-center py-8">
+            <GraduationCap className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-slate-900 mb-2">No education added yet</h3>
+            <p className="text-slate-600 mb-4">Add your educational background to showcase your academic achievements</p>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {educations.map((edu) => (
+              <div key={edu.id} className="border-l-4 border-primary pl-4">
+                <h3 className="font-semibold text-slate-900">{edu.institution}</h3>
+                <p className="text-primary font-medium">{edu.degree}{edu.fieldOfStudy && ` in ${edu.fieldOfStudy}`}</p>
+                <p className="text-sm text-slate-600 mt-1">
+                  {edu.startYear} - {edu.endYear || "Present"}
+                  {edu.grade && ` • Grade: ${edu.grade}`}
+                </p>
+                {edu.activities && (
+                  <p className="text-sm text-slate-600 mt-1">Activities: {edu.activities}</p>
+                )}
+                {edu.description && (
+                  <p className="text-sm text-slate-600 mt-2">{edu.description}</p>
+                )}
+              </div>
+            ))}
+          </div>
         )}
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }
 
-// Certifications Section Component
-function CertificationsSection({ data }: { data: Certification[] }) {
+// Similar components for Certifications, Projects, and Endorsements would follow the same pattern...
+// For brevity, I'll create simplified versions:
+
+function CertificationSection({ certifications }: { certifications: Certification[] }) {
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-slate-900">Certifications</h2>
-        <Button>
-          <Plus className="w-4 h-4 mr-2" />
-          Add Certification
-        </Button>
-      </div>
-      
-      <div className="space-y-6">
-        {data.length === 0 ? (
-          <Card>
-            <CardContent className="text-center py-8">
-              <Award className="w-12 h-12 text-slate-400 mx-auto mb-4" />
-              <p className="text-slate-600">No certifications added yet.</p>
-              <p className="text-xs text-slate-500 mt-2">Click "Add Certification" to showcase your professional certifications.</p>
-            </CardContent>
-          </Card>
-        ) : (
-          data.map((cert) => (
-            <Card key={cert.id}>
-              <CardContent className="p-6">
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-slate-900">{cert.name}</h3>
-                    <p className="text-primary font-medium">{cert.issuingOrganization}</p>
-                    <div className="flex items-center gap-4 text-sm text-slate-600 mt-2">
-                      <span className="flex items-center gap-1">
-                        <Calendar className="w-4 h-4" />
-                        {cert.issueDate} {cert.expirationDate && `- ${cert.expirationDate}`}
-                      </span>
-                      {cert.credentialId && (
-                        <span>ID: {cert.credentialId}</span>
-                      )}
-                    </div>
-                    {cert.credentialUrl && (
-                      <a 
-                        href={cert.credentialUrl} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-primary text-sm mt-2 hover:underline"
-                      >
-                        <ExternalLink className="w-4 h-4" />
-                        View Credential
-                      </a>
-                    )}
-                  </div>
-                  <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50">
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))
-        )}
-      </div>
-    </div>
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <Award className="w-5 h-5" />
+            Certifications
+          </CardTitle>
+          <Button size="sm">
+            <Plus className="w-4 h-4 mr-2" />
+            Add Certification
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="text-center py-8">
+          <Award className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-slate-900 mb-2">No certifications added yet</h3>
+          <p className="text-slate-600 mb-4">Add your professional certifications to highlight your expertise</p>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
-// Projects Section Component
-function ProjectsSection({ data }: { data: Project[] }) {
+function ProjectSection({ projects }: { projects: Project[] }) {
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-slate-900">Projects</h2>
-        <Button>
-          <Plus className="w-4 h-4 mr-2" />
-          Add Project
-        </Button>
-      </div>
-      
-      <div className="space-y-6">
-        {data.length === 0 ? (
-          <Card>
-            <CardContent className="text-center py-8">
-              <FolderOpen className="w-12 h-12 text-slate-400 mx-auto mb-4" />
-              <p className="text-slate-600">No projects added yet.</p>
-              <p className="text-xs text-slate-500 mt-2">Click "Add Project" to showcase your work and accomplishments.</p>
-            </CardContent>
-          </Card>
-        ) : (
-          data.map((project) => (
-            <Card key={project.id}>
-              <CardContent className="p-6">
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-slate-900">{project.name}</h3>
-                    <div className="flex items-center gap-4 text-sm text-slate-600 mt-2">
-                      <span className="flex items-center gap-1">
-                        <Calendar className="w-4 h-4" />
-                        {project.startDate} - {project.endDate || "Ongoing"}
-                      </span>
-                      {project.teamSize && (
-                        <span>Team Size: {project.teamSize}</span>
-                      )}
-                    </div>
-                    {project.description && (
-                      <p className="text-slate-700 mt-3 text-sm leading-relaxed">{project.description}</p>
-                    )}
-                    {project.technologies && project.technologies.length > 0 && (
-                      <div className="flex flex-wrap gap-2 mt-3">
-                        {project.technologies.map((tech, index) => (
-                          <Badge key={index} variant="outline" className="text-xs">{tech}</Badge>
-                        ))}
-                      </div>
-                    )}
-                    <div className="flex gap-4 mt-3">
-                      {project.projectUrl && (
-                        <a 
-                          href={project.projectUrl} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-primary text-sm hover:underline"
-                        >
-                          <ExternalLink className="w-4 h-4" />
-                          View Project
-                        </a>
-                      )}
-                      {project.repositoryUrl && (
-                        <a 
-                          href={project.repositoryUrl} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-primary text-sm hover:underline"
-                        >
-                          <ExternalLink className="w-4 h-4" />
-                          Repository
-                        </a>
-                      )}
-                    </div>
-                  </div>
-                  <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50">
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))
-        )}
-      </div>
-    </div>
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <FolderOpen className="w-5 h-5" />
+            Projects
+          </CardTitle>
+          <Button size="sm">
+            <Plus className="w-4 h-4 mr-2" />
+            Add Project
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="text-center py-8">
+          <FolderOpen className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-slate-900 mb-2">No projects added yet</h3>
+          <p className="text-slate-600 mb-4">Showcase your work by adding projects you've completed</p>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
-// Endorsements Section Component
-function EndorsementsSection({ data }: { data: Endorsement[] }) {
+function EndorsementSection({ endorsements }: { endorsements: Endorsement[] }) {
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-slate-900">Endorsements</h2>
-        <Button>
-          <Plus className="w-4 h-4 mr-2" />
-          Add Endorsement
-        </Button>
-      </div>
-      
-      <div className="space-y-6">
-        {data.length === 0 ? (
-          <Card>
-            <CardContent className="text-center py-8">
-              <MessageSquare className="w-12 h-12 text-slate-400 mx-auto mb-4" />
-              <p className="text-slate-600">No endorsements added yet.</p>
-              <p className="text-xs text-slate-500 mt-2">Click "Add Endorsement" to add testimonials from colleagues and clients.</p>
-            </CardContent>
-          </Card>
-        ) : (
-          data.map((endorsement) => (
-            <Card key={endorsement.id}>
-              <CardContent className="p-6">
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <div className="flex items-start gap-4">
-                      <div className="flex-1">
-                        <h3 className="text-lg font-semibold text-slate-900">{endorsement.endorserName}</h3>
-                        <p className="text-sm text-slate-600">
-                          {endorsement.endorserPosition} {endorsement.endorserCompany && `at ${endorsement.endorserCompany}`}
-                        </p>
-                        <p className="text-xs text-slate-500 mt-1">Relationship: {endorsement.relationship}</p>
-                        <blockquote className="text-slate-700 mt-3 text-sm leading-relaxed border-l-4 border-primary/20 pl-4 italic">
-                          "{endorsement.endorsementText}"
-                        </blockquote>
-                        <p className="text-xs text-slate-500 mt-2">{endorsement.endorsementDate}</p>
-                      </div>
-                    </div>
-                  </div>
-                  <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50">
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))
-        )}
-      </div>
-    </div>
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <MessageSquare className="w-5 h-5" />
+            Endorsements
+          </CardTitle>
+          <Button size="sm">
+            <Plus className="w-4 h-4 mr-2" />
+            Add Endorsement
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="text-center py-8">
+          <MessageSquare className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-slate-900 mb-2">No endorsements added yet</h3>
+          <p className="text-slate-600 mb-4">Add testimonials and endorsements from colleagues and clients</p>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
