@@ -62,7 +62,11 @@ export default function WorkDiaryCompany() {
   // Fetch work entries for this company
   const { data: workEntries = [], isLoading } = useQuery<WorkEntry[]>({
     queryKey: ['/api/work-diary', companyId],
-    queryFn: () => apiRequest(`/api/work-diary?companyId=${companyId}`),
+    queryFn: async () => {
+      const response = await fetch(`/api/work-diary?companyId=${companyId}`);
+      if (!response.ok) throw new Error('Failed to fetch work entries');
+      return response.json();
+    },
     enabled: !!companyId,
   });
 
@@ -81,10 +85,13 @@ export default function WorkDiaryCompany() {
 
   const createEntryMutation = useMutation({
     mutationFn: async (data: InsertWorkEntry) => {
-      await apiRequest('/api/work-diary', {
+      const response = await fetch('/api/work-diary', {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...data, companyId }),
       });
+      if (!response.ok) throw new Error('Failed to create work entry');
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/work-diary', companyId] });
@@ -106,10 +113,13 @@ export default function WorkDiaryCompany() {
 
   const updateEntryMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<InsertWorkEntry> }) => {
-      await apiRequest(`/api/work-diary/${id}`, {
+      const response = await fetch(`/api/work-diary/${id}`, {
         method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
+      if (!response.ok) throw new Error('Failed to update work entry');
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/work-diary', companyId] });
@@ -132,9 +142,12 @@ export default function WorkDiaryCompany() {
 
   const deleteEntryMutation = useMutation({
     mutationFn: async (id: string) => {
-      await apiRequest(`/api/work-diary/${id}`, {
+      const response = await fetch(`/api/work-diary/${id}`, {
         method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
       });
+      if (!response.ok) throw new Error('Failed to delete work entry');
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/work-diary', companyId] });
@@ -155,7 +168,7 @@ export default function WorkDiaryCompany() {
   const onSubmit = (data: InsertWorkEntry) => {
     const payload = {
       ...data,
-      tags: Array.isArray(data.tags) ? data.tags : (data.tags as string)?.split(',').map(tag => tag.trim()).filter(Boolean) || [],
+      tags: Array.isArray(data.tags) ? data.tags : (data.tags as string | null | undefined)?.split(',').map(tag => tag.trim()).filter(Boolean) || [],
     };
     
     if (editingEntry) {
@@ -322,17 +335,17 @@ export default function WorkDiaryCompany() {
                     </div>
                   </div>
                 </CardHeader>
-                {(entry.description || entry.tags?.length > 0) && (
+                {(entry.description || (entry.tags && entry.tags.length > 0)) && (
                   <CardContent>
                     {entry.description && (
                       <p className="text-muted-foreground mb-3 whitespace-pre-wrap">
                         {entry.description}
                       </p>
                     )}
-                    {entry.tags?.length > 0 && (
+                    {entry.tags && entry.tags.length > 0 && (
                       <div className="flex items-center gap-2 flex-wrap">
                         <Tag className="h-3 w-3 text-muted-foreground" />
-                        {entry.tags.map((tag, index) => (
+                        {entry.tags?.map((tag, index) => (
                           <span
                             key={index}
                             className="px-2 py-1 text-xs bg-secondary text-secondary-foreground rounded-md"
