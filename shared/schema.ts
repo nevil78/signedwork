@@ -115,11 +115,10 @@ export const workEntries = pgTable("work_entries", {
   employeeId: varchar("employee_id").notNull().references(() => employees.id, { onDelete: "cascade" }),
   title: text("title").notNull(),
   description: text("description"),
-  date: text("date").notNull(),
-  status: text("status").notNull().default("todo"), // todo, in_progress, completed
+  startDate: text("start_date").notNull(),
+  endDate: text("end_date"),
   priority: text("priority").notNull().default("medium"), // low, medium, high
-  estimatedHours: integer("estimated_hours").default(1),
-  actualHours: integer("actual_hours").default(0),
+  hours: integer("hours"), // optional hours field
   tags: text("tags").array(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),

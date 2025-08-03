@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { Plus, Calendar, Clock, CheckCircle, Circle, Edit2, Trash2, Filter, Search, BookOpen, User } from "lucide-react";
+import { Plus, Edit2, Trash2, Filter, Search, BookOpen, User } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { apiRequest } from "@/lib/queryClient";
@@ -14,14 +14,12 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
 import { 
   type WorkEntry,
   type InsertWorkEntry,
   insertWorkEntrySchema
 } from "@shared/schema";
 
-type WorkEntryStatus = "todo" | "in_progress" | "completed";
 type WorkEntryPriority = "low" | "medium" | "high";
 
 export default function WorkDiary() {
@@ -29,7 +27,6 @@ export default function WorkDiary() {
   const queryClient = useQueryClient();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState<WorkEntry | null>(null);
-  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
 
   // Fetch work entries
@@ -42,11 +39,10 @@ export default function WorkDiary() {
     defaultValues: {
       title: "",
       description: "",
-      status: "todo",
       priority: "medium",
-      date: new Date().toISOString().split('T')[0],
-      estimatedHours: 1,
-      actualHours: 0,
+      startDate: new Date().toISOString().split('T')[0],
+      endDate: "",
+      hours: undefined,
       tags: [],
     },
   });
@@ -111,7 +107,7 @@ export default function WorkDiary() {
   const onSubmit = (data: InsertWorkEntry) => {
     const payload = {
       ...data,
-      tags: typeof data.tags === 'string' ? data.tags.split(',').map(tag => tag.trim()).filter(Boolean) : data.tags || [],
+      tags: Array.isArray(data.tags) ? data.tags : (data.tags as string)?.split(',').map(tag => tag.trim()).filter(Boolean) || [],
     };
     createEntryMutation.mutate(payload);
   };
@@ -120,7 +116,7 @@ export default function WorkDiary() {
     setEditingEntry(entry);
     form.reset({
       ...entry,
-      tags: entry.tags?.join(', ') || '',
+      tags: entry.tags?.join(', ') as any || '',
     });
     setIsDialogOpen(true);
   };
@@ -131,24 +127,12 @@ export default function WorkDiary() {
     }
   };
 
-  const filteredEntries = workEntries.filter((entry: WorkEntry) => {
-    const matchesStatus = statusFilter === "all" || entry.status === statusFilter;
+  const filteredEntries = (workEntries as WorkEntry[]).filter((entry: WorkEntry) => {
     const matchesSearch = !searchQuery || 
       entry.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       entry.description?.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesStatus && matchesSearch;
+    return matchesSearch;
   });
-
-  const getStatusIcon = (status: WorkEntryStatus) => {
-    switch (status) {
-      case "completed":
-        return <CheckCircle className="w-4 h-4 text-green-600" />;
-      case "in_progress":
-        return <Clock className="w-4 h-4 text-blue-600" />;
-      default:
-        return <Circle className="w-4 h-4 text-gray-400" />;
-    }
-  };
 
   const getPriorityColor = (priority: WorkEntryPriority) => {
     switch (priority) {
@@ -193,7 +177,7 @@ export default function WorkDiary() {
                 <Link to="/work-diary">
                   <Button
                     variant="ghost"
-                    size="sm"
+                    size="sm" 
                     className="bg-white shadow-sm text-blue-700"
                   >
                     <BookOpen className="w-4 h-4 mr-2" />
@@ -218,83 +202,72 @@ export default function WorkDiary() {
           <p className="text-slate-600">Track your daily work activities, tasks, and progress</p>
         </div>
 
-      {/* Header Actions */}
-      <div className="flex flex-col sm:flex-row gap-4 mb-6">
-        <div className="flex-1">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
-            <Input
-              placeholder="Search work entries..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
+        {/* Header Actions */}
+        <div className="flex flex-col sm:flex-row gap-4 mb-6">
+          <div className="flex-1">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
+              <Input
+                placeholder="Search work entries..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
           </div>
-        </div>
-        
-        <div className="flex gap-2">
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-40">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="todo">To Do</SelectItem>
-              <SelectItem value="in_progress">In Progress</SelectItem>
-              <SelectItem value="completed">Completed</SelectItem>
-            </SelectContent>
-          </Select>
-
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-              <Button onClick={() => {
-                setEditingEntry(null);
-                form.reset({
-                  title: "",
-                  description: "",
-                  status: "todo",
-                  priority: "medium",
-                  date: new Date().toISOString().split('T')[0],
-                  estimatedHours: 1,
-                  actualHours: 0,
-                  tags: "",
-                });
-              }}>
+              <Button onClick={() => setEditingEntry(null)}>
                 <Plus className="w-4 h-4 mr-2" />
                 Add Entry
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="sm:max-w-md">
               <DialogHeader>
                 <DialogTitle>{editingEntry ? "Edit Work Entry" : "Add Work Entry"}</DialogTitle>
                 <DialogDescription>
-                  {editingEntry ? "Update your work entry details" : "Create a new work diary entry"}
+                  Create a new work diary entry
                 </DialogDescription>
               </DialogHeader>
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="title"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Title *</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter task title" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <div className="grid grid-cols-2 gap-4">
                     <FormField
                       control={form.control}
-                      name="title"
+                      name="startDate"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Title *</FormLabel>
+                          <FormLabel>Start Date *</FormLabel>
                           <FormControl>
-                            <Input placeholder="Work task title" {...field} />
+                            <Input type="date" {...field} value={field.value || ''} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
+
                     <FormField
                       control={form.control}
-                      name="date"
+                      name="endDate"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Date *</FormLabel>
+                          <FormLabel>End Date</FormLabel>
                           <FormControl>
-                            <Input type="date" {...field} />
+                            <Input type="date" {...field} value={field.value || ''} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -311,8 +284,9 @@ export default function WorkDiary() {
                         <FormControl>
                           <Textarea 
                             placeholder="Describe the work task or activity..."
-                            rows={3}
+                            className="min-h-[80px]"
                             {...field}
+                            value={field.value || ''}
                           />
                         </FormControl>
                         <FormMessage />
@@ -320,29 +294,7 @@ export default function WorkDiary() {
                     )}
                   />
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="status"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Status</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="todo">To Do</SelectItem>
-                              <SelectItem value="in_progress">In Progress</SelectItem>
-                              <SelectItem value="completed">Completed</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                  <div className="grid grid-cols-2 gap-4">
                     <FormField
                       control={form.control}
                       name="priority"
@@ -352,7 +304,7 @@ export default function WorkDiary() {
                           <Select onValueChange={field.onChange} defaultValue={field.value}>
                             <FormControl>
                               <SelectTrigger>
-                                <SelectValue />
+                                <SelectValue placeholder="Select priority" />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
@@ -365,39 +317,22 @@ export default function WorkDiary() {
                         </FormItem>
                       )}
                     />
-                  </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField
                       control={form.control}
-                      name="estimatedHours"
+                      name="hours"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Estimated Hours</FormLabel>
+                          <FormLabel>Hours</FormLabel>
                           <FormControl>
                             <Input 
                               type="number" 
                               min="0" 
                               step="0.5"
+                              placeholder="0"
                               {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="actualHours"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Actual Hours</FormLabel>
-                          <FormControl>
-                            <Input 
-                              type="number" 
-                              min="0" 
-                              step="0.5"
-                              {...field}
+                              value={field.value || ''}
+                              onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
                             />
                           </FormControl>
                           <FormMessage />
@@ -416,6 +351,7 @@ export default function WorkDiary() {
                           <Input 
                             placeholder="e.g. development, meeting, research"
                             {...field}
+                            value={typeof field.value === 'string' ? field.value : field.value?.join(', ') || ''}
                           />
                         </FormControl>
                         <FormMessage />
@@ -423,12 +359,16 @@ export default function WorkDiary() {
                     )}
                   />
 
-                  <div className="flex justify-end gap-3">
-                    <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                  <div className="flex justify-end space-x-2 pt-4">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setIsDialogOpen(false)}
+                    >
                       Cancel
                     </Button>
                     <Button type="submit" disabled={createEntryMutation.isPending}>
-                      {createEntryMutation.isPending ? "Saving..." : editingEntry ? "Update Entry" : "Create Entry"}
+                      {createEntryMutation.isPending ? "Saving..." : (editingEntry ? "Update Entry" : "Create Entry")}
                     </Button>
                   </div>
                 </form>
@@ -436,82 +376,73 @@ export default function WorkDiary() {
             </DialogContent>
           </Dialog>
         </div>
-      </div>
 
-      {/* Work Entries */}
-      <div className="space-y-4">
-        {filteredEntries.length === 0 ? (
-          <Card>
-            <CardContent className="py-12 text-center">
-              <Calendar className="w-12 h-12 text-slate-400 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-slate-900 mb-2">No work entries found</h3>
-              <p className="text-slate-600 mb-4">
-                {searchQuery || statusFilter !== "all" 
-                  ? "Try adjusting your search or filter criteria"
-                  : "Start tracking your work by creating your first diary entry"
-                }
-              </p>
-              {!searchQuery && statusFilter === "all" && (
+        {/* Work Entries */}
+        <div className="space-y-4">
+          {filteredEntries.length === 0 ? (
+            <Card>
+              <CardContent className="text-center py-12">
+                <BookOpen className="w-12 h-12 text-slate-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-slate-900 mb-2">No work entries yet</h3>
+                <p className="text-slate-500 mb-4">Start tracking your daily work activities by creating your first entry.</p>
                 <Button onClick={() => setIsDialogOpen(true)}>
                   <Plus className="w-4 h-4 mr-2" />
                   Add Your First Entry
                 </Button>
-              )}
-            </CardContent>
-          </Card>
-        ) : (
-          filteredEntries.map((entry: WorkEntry) => (
-            <Card key={entry.id} className="hover:shadow-md transition-shadow">
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      {getStatusIcon(entry.status as WorkEntryStatus)}
-                      <h3 className="text-lg font-semibold text-slate-900">{entry.title}</h3>
+              </CardContent>
+            </Card>
+          ) : (
+            filteredEntries.map((entry: WorkEntry) => (
+              <Card key={entry.id} className="hover:shadow-md transition-shadow">
+                <CardHeader className="pb-3">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <CardTitle className="text-lg mb-2">{entry.title}</CardTitle>
+                      <div className="flex items-center gap-3 text-sm text-slate-600">
+                        <span>Start: {entry.startDate}</span>
+                        {entry.endDate && <span>End: {entry.endDate}</span>}
+                        {entry.hours && <span>{entry.hours} hours</span>}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
                       <Badge className={getPriorityColor(entry.priority as WorkEntryPriority)}>
                         {entry.priority}
                       </Badge>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleEdit(entry)}
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDelete(entry.id)}
+                        className="text-red-600 hover:text-red-700"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
                     </div>
-                    
-                    {entry.description && (
-                      <p className="text-slate-600 mb-3">{entry.description}</p>
-                    )}
-                    
-                    <div className="flex flex-wrap items-center gap-4 text-sm text-slate-500">
-                      <div className="flex items-center gap-1">
-                        <Calendar className="w-4 h-4" />
-                        {new Date(entry.date).toLocaleDateString()}
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Clock className="w-4 h-4" />
-                        {entry.actualHours || 0}h / {entry.estimatedHours}h
-                      </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  {entry.description && (
+                    <p className="text-slate-700 mb-3">{entry.description}</p>
+                  )}
+                  {entry.tags && entry.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {entry.tags.map((tag: string, index: number) => (
+                        <Badge key={index} variant="secondary" className="text-xs">
+                          {tag}
+                        </Badge>
+                      ))}
                     </div>
-                    
-                    {entry.tags && entry.tags.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-3">
-                        {entry.tags.map((tag, index) => (
-                          <Badge key={index} variant="outline" className="text-xs">
-                            {tag}
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  
-                  <div className="flex gap-2 ml-4">
-                    <Button size="sm" variant="outline" onClick={() => handleEdit(entry)}>
-                      <Edit2 className="w-4 h-4" />
-                    </Button>
-                    <Button size="sm" variant="outline" onClick={() => handleDelete(entry.id)}>
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))
-        )}
+                  )}
+                </CardContent>
+              </Card>
+            ))
+          )}
         </div>
       </div>
     </div>
