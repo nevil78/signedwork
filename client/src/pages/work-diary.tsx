@@ -41,6 +41,31 @@ export default function WorkDiary() {
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();
 
+  // Logout mutation
+  const logout = useMutation({
+    mutationFn: async () => {
+      const response = await fetch("/api/auth/logout", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      if (!response.ok) throw new Error("Failed to logout");
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.clear();
+      window.location.href = "/";
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to logout",
+        variant: "destructive",
+      });
+    },
+  });
+
   const { data: companies = [], isLoading } = useQuery<EmployeeCompany[]>({
     queryKey: ['/api/employee-companies'],
   });
@@ -196,9 +221,10 @@ export default function WorkDiary() {
             </div>
             <Button
               variant="outline"
-              onClick={() => window.location.href = "/api/auth/logout"}
+              onClick={() => logout.mutate()}
+              disabled={logout.isPending}
             >
-              Logout
+              {logout.isPending ? "Logging out..." : "Logout"}
             </Button>
           </div>
         </div>
