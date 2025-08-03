@@ -6,7 +6,8 @@ import { ObjectStorageService } from "./objectStorage";
 import { 
   insertEmployeeSchema, insertCompanySchema, loginSchema,
   insertExperienceSchema, insertEducationSchema, insertCertificationSchema,
-  insertProjectSchema, insertEndorsementSchema, insertWorkEntrySchema
+  insertProjectSchema, insertEndorsementSchema, insertWorkEntrySchema,
+  insertEmployeeCompanySchema
 } from "@shared/schema";
 import { fromZodError } from "zod-validation-error";
 
@@ -465,6 +466,84 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Employee Company Routes  
+  app.get("/api/employee-companies", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    if (!sessionUser || sessionUser.type !== "employee") {
+      return res.status(401).json({ message: "Not authenticated as employee" });
+    }
+    
+    try {
+      const companies = await storage.getEmployeeCompanies(sessionUser.id);
+      res.json(companies);
+    } catch (error) {
+      console.error("Get employee companies error:", error);
+      res.status(500).json({ message: "Failed to get companies" });
+    }
+  });
+
+  app.post("/api/employee-companies", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    if (!sessionUser || sessionUser.type !== "employee") {
+      return res.status(401).json({ message: "Not authenticated as employee" });
+    }
+    
+    try {
+      const validatedData = insertEmployeeCompanySchema.parse({
+        ...req.body,
+        employeeId: sessionUser.id
+      });
+      
+      const company = await storage.createEmployeeCompany(validatedData);
+      res.status(201).json(company);
+    } catch (error: any) {
+      if (error.name === "ZodError") {
+        const validationError = fromZodError(error);
+        return res.status(400).json({ 
+          message: validationError.message,
+          errors: error.errors
+        });
+      }
+      
+      console.error("Create employee company error:", error);
+      res.status(500).json({ message: "Failed to create company" });
+    }
+  });
+
+  app.patch("/api/employee-companies/:id", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    if (!sessionUser || sessionUser.type !== "employee") {
+      return res.status(401).json({ message: "Not authenticated as employee" });
+    }
+    
+    try {
+      const company = await storage.updateEmployeeCompany(req.params.id, req.body);
+      res.json(company);
+    } catch (error) {
+      console.error("Update employee company error:", error);
+      res.status(500).json({ message: "Failed to update company" });
+    }
+  });
+
+  app.delete("/api/employee-companies/:id", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    if (!sessionUser || sessionUser.type !== "employee") {
+      return res.status(401).json({ message: "Not authenticated as employee" });
+    }
+    
+    try {
+      await storage.deleteEmployeeCompany(req.params.id);
+      res.json({ message: "Company deleted successfully" });
+    } catch (error) {
+      console.error("Delete employee company error:", error);
+      res.status(500).json({ message: "Failed to delete company" });
+    }
+  });
+
   // Work Diary Routes
   app.get("/api/work-diary", async (req, res) => {
     const sessionUser = (req.session as any).user;
@@ -474,7 +553,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     try {
-      const workEntries = await storage.getWorkEntries(sessionUser.id);
+      const { companyId } = req.query;
+      const workEntries = await storage.getWorkEntries(sessionUser.id, companyId as string);
       res.json(workEntries);
     } catch (error) {
       console.error("Get work entries error:", error);

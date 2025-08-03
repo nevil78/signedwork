@@ -31,6 +31,12 @@ This is a comprehensive LinkedIn-like professional networking platform built wit
   * Search and filter capabilities by status and keywords
   * Full CRUD operations (create, read, update, delete) for work entries
   * Database schema and API endpoints for work entries management
+- ✅ Restructured Work Diary to be company-based with hierarchical organization:
+  * Added companies table and employee_companies relationship table for many-to-many associations
+  * Work entries now belong to specific companies instead of directly to employees
+  * Main Work Diary page shows list of companies with "Add Company" functionality
+  * Clicking a company navigates to a dedicated page showing work entries for that company
+  * Full CRUD operations for both companies and work entries within companies
 
 # User Preferences
 

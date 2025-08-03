@@ -1,12 +1,12 @@
 import { 
-  employees, companies, experiences, educations, certifications, projects, endorsements, workEntries,
+  employees, companies, experiences, educations, certifications, projects, endorsements, workEntries, employeeCompanies,
   type Employee, type Company, type InsertEmployee, type InsertCompany,
-  type Experience, type Education, type Certification, type Project, type Endorsement, type WorkEntry,
+  type Experience, type Education, type Certification, type Project, type Endorsement, type WorkEntry, type EmployeeCompany,
   type InsertExperience, type InsertEducation, type InsertCertification, 
-  type InsertProject, type InsertEndorsement, type InsertWorkEntry
+  type InsertProject, type InsertEndorsement, type InsertWorkEntry, type InsertEmployeeCompany
 } from "@shared/schema";
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import bcrypt from "bcrypt";
 
 // Generate a short, memorable employee ID
@@ -79,8 +79,14 @@ export interface IStorage {
   createEndorsement(endorsement: InsertEndorsement): Promise<Endorsement>;
   deleteEndorsement(id: string): Promise<void>;
   
+  // Employee Company operations
+  getEmployeeCompanies(employeeId: string): Promise<EmployeeCompany[]>;
+  createEmployeeCompany(company: InsertEmployeeCompany): Promise<EmployeeCompany>;
+  updateEmployeeCompany(id: string, data: Partial<EmployeeCompany>): Promise<EmployeeCompany>;
+  deleteEmployeeCompany(id: string): Promise<void>;
+  
   // Work entry operations
-  getWorkEntries(employeeId: string): Promise<WorkEntry[]>;
+  getWorkEntries(employeeId: string, companyId?: string): Promise<WorkEntry[]>;
   createWorkEntry(workEntry: InsertWorkEntry): Promise<WorkEntry>;
   updateWorkEntry(id: string, data: Partial<WorkEntry>): Promise<WorkEntry>;
   deleteWorkEntry(id: string): Promise<void>;
@@ -304,8 +310,41 @@ export class DatabaseStorage implements IStorage {
     await db.delete(endorsements).where(eq(endorsements.id, id));
   }
 
+  // Employee Company operations
+  async getEmployeeCompanies(employeeId: string): Promise<EmployeeCompany[]> {
+    return await db.select().from(employeeCompanies).where(eq(employeeCompanies.employeeId, employeeId));
+  }
+
+  async createEmployeeCompany(company: InsertEmployeeCompany): Promise<EmployeeCompany> {
+    const [newCompany] = await db
+      .insert(employeeCompanies)
+      .values(company)
+      .returning();
+    return newCompany;
+  }
+
+  async updateEmployeeCompany(id: string, data: Partial<EmployeeCompany>): Promise<EmployeeCompany> {
+    const [company] = await db
+      .update(employeeCompanies)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(employeeCompanies.id, id))
+      .returning();
+    return company;
+  }
+
+  async deleteEmployeeCompany(id: string): Promise<void> {
+    await db.delete(employeeCompanies).where(eq(employeeCompanies.id, id));
+  }
+
   // Work entry operations
-  async getWorkEntries(employeeId: string): Promise<WorkEntry[]> {
+  async getWorkEntries(employeeId: string, companyId?: string): Promise<WorkEntry[]> {
+    if (companyId) {
+      return await db.select().from(workEntries)
+        .where(and(
+          eq(workEntries.employeeId, employeeId),
+          eq(workEntries.companyId, companyId)
+        ));
+    }
     return await db.select().from(workEntries).where(eq(workEntries.employeeId, employeeId));
   }
 

@@ -110,9 +110,22 @@ export const endorsements = pgTable("endorsements", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const employeeCompanies = pgTable("employee_companies", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  employeeId: varchar("employee_id").notNull().references(() => employees.id, { onDelete: "cascade" }),
+  companyName: text("company_name").notNull(),
+  position: text("position"),
+  startDate: text("start_date"),
+  endDate: text("end_date"),
+  isCurrent: boolean("is_current").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 export const workEntries = pgTable("work_entries", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   employeeId: varchar("employee_id").notNull().references(() => employees.id, { onDelete: "cascade" }),
+  companyId: varchar("company_id").notNull().references(() => employeeCompanies.id, { onDelete: "cascade" }),
   title: text("title").notNull(),
   description: text("description"),
   startDate: text("start_date").notNull(),
@@ -150,6 +163,7 @@ export const employeesRelations = relations(employees, ({ many }) => ({
   certifications: many(certifications),
   projects: many(projects),
   endorsements: many(endorsements),
+  employeeCompanies: many(employeeCompanies),
   workEntries: many(workEntries),
 }));
 
@@ -188,10 +202,22 @@ export const endorsementsRelations = relations(endorsements, ({ one }) => ({
   }),
 }));
 
+export const employeeCompaniesRelations = relations(employeeCompanies, ({ one, many }) => ({
+  employee: one(employees, {
+    fields: [employeeCompanies.employeeId],
+    references: [employees.id],
+  }),
+  workEntries: many(workEntries),
+}));
+
 export const workEntriesRelations = relations(workEntries, ({ one }) => ({
   employee: one(employees, {
     fields: [workEntries.employeeId],
     references: [employees.id],
+  }),
+  company: one(employeeCompanies, {
+    fields: [workEntries.companyId],
+    references: [employeeCompanies.id],
   }),
 }));
 
@@ -235,6 +261,12 @@ export const insertEndorsementSchema = createInsertSchema(endorsements).omit({
   createdAt: true,
 });
 
+export const insertEmployeeCompanySchema = createInsertSchema(employeeCompanies).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export const insertWorkEntrySchema = createInsertSchema(workEntries).omit({
   id: true,
   createdAt: true,
@@ -276,6 +308,7 @@ export type Education = typeof educations.$inferSelect;
 export type Certification = typeof certifications.$inferSelect;
 export type Project = typeof projects.$inferSelect;
 export type Endorsement = typeof endorsements.$inferSelect;
+export type EmployeeCompany = typeof employeeCompanies.$inferSelect;
 export type WorkEntry = typeof workEntries.$inferSelect;
 export type Company = typeof companies.$inferSelect;
 
@@ -285,6 +318,7 @@ export type InsertEducation = z.infer<typeof insertEducationSchema>;
 export type InsertCertification = z.infer<typeof insertCertificationSchema>;
 export type InsertProject = z.infer<typeof insertProjectSchema>;
 export type InsertEndorsement = z.infer<typeof insertEndorsementSchema>;
+export type InsertEmployeeCompany = z.infer<typeof insertEmployeeCompanySchema>;
 export type InsertWorkEntry = z.infer<typeof insertWorkEntrySchema>;
 export type InsertCompany = z.infer<typeof insertCompanySchema>;
 export type LoginData = z.infer<typeof loginSchema>;
