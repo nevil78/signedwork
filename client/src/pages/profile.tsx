@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -398,6 +398,9 @@ function ExperienceSection({ experiences }: { experiences: Experience[] }) {
             <DialogContent className="max-w-2xl">
               <DialogHeader>
                 <DialogTitle>Add Work Experience</DialogTitle>
+                <DialogDescription>
+                  Add your professional work experience to build your profile
+                </DialogDescription>
               </DialogHeader>
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -452,7 +455,11 @@ function ExperienceSection({ experiences }: { experiences: Experience[] }) {
                         <FormItem>
                           <FormLabel>Start Date*</FormLabel>
                           <FormControl>
-                            <Input type="month" {...field} />
+                            <Input 
+                              type="date" 
+                              {...field}
+                              max={new Date().toISOString().split('T')[0]}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -466,10 +473,11 @@ function ExperienceSection({ experiences }: { experiences: Experience[] }) {
                           <FormLabel>End Date</FormLabel>
                           <FormControl>
                             <Input 
-                              type="month" 
+                              type="date" 
                               {...field} 
                               value={field.value || ""} 
-                              disabled={form.watch("isCurrent")}
+                              disabled={form.watch("isCurrent") || false}
+                              max={new Date().toISOString().split('T')[0]}
                             />
                           </FormControl>
                           <FormMessage />
@@ -634,6 +642,9 @@ function EducationSection({ educations }: { educations: Education[] }) {
             <DialogContent className="max-w-2xl">
               <DialogHeader>
                 <DialogTitle>Add Education</DialogTitle>
+                <DialogDescription>
+                  Add your educational background and achievements
+                </DialogDescription>
               </DialogHeader>
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -888,6 +899,9 @@ function CertificationSection({ certifications }: { certifications: Certificatio
             <DialogContent className="max-w-2xl">
               <DialogHeader>
                 <DialogTitle>Add Certification</DialogTitle>
+                <DialogDescription>
+                  Add your professional certifications and credentials
+                </DialogDescription>
               </DialogHeader>
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
