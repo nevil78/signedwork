@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useLocation } from 'wouter';
+import { useLocation, Link } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, Building2, Calendar, Clock, ChevronRight, Edit, Trash2 } from 'lucide-react';
+import { Plus, Building2, Calendar, Clock, ChevronRight, Edit, Trash2, User, BookOpen } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -156,22 +156,61 @@ export default function WorkDiary() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <h1 className="text-3xl font-bold mb-2">Work Diary</h1>
-      <p className="text-muted-foreground mb-6">Organize your work entries by company</p>
+    <div className="min-h-screen bg-slate-50">
+      {/* Header */}
+      <header className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center space-x-8">
+              <div className="flex items-center">
+                <User className="text-primary text-2xl mr-3" />
+                <span className="text-xl font-bold text-slate-800">Employee Dashboard</span>
+              </div>
+              {/* Page Navigation */}
+              <div className="flex space-x-1 bg-slate-100 rounded-lg p-1">
+                <Link to="/profile">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                  >
+                    <User className="w-4 h-4 mr-2" />
+                    Profile
+                  </Button>
+                </Link>
+                <Link to="/work-diary">
+                  <Button variant="ghost" size="sm" className="bg-white shadow-sm text-blue-700">
+                    <BookOpen className="w-4 h-4 mr-2" />
+                    Work Diary
+                  </Button>
+                </Link>
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              onClick={() => window.location.href = "/api/auth/logout"}
+            >
+              Logout
+            </Button>
+          </div>
+        </div>
+      </header>
 
-      <div className="mb-6 flex justify-end">
-        <Button onClick={() => {
-          setEditingCompany(null);
-          form.reset();
-          setIsDialogOpen(true);
-        }}>
-          <Plus className="mr-2 h-4 w-4" />
-          Add Company
-        </Button>
-      </div>
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <h1 className="text-3xl font-bold mb-2">Work Diary</h1>
+        <p className="text-muted-foreground mb-6">Organize your work entries by company</p>
 
-      {isLoading ? (
+        <div className="mb-6 flex justify-end">
+          <Button onClick={() => {
+            setEditingCompany(null);
+            form.reset();
+            setIsDialogOpen(true);
+          }}>
+            <Plus className="mr-2 h-4 w-4" />
+            Add Company
+          </Button>
+        </div>
+
+        {isLoading ? (
         <div className="text-center py-8">
           <p className="text-muted-foreground">Loading companies...</p>
         </div>
@@ -373,6 +412,7 @@ export default function WorkDiary() {
           </Form>
         </DialogContent>
       </Dialog>
+      </div>
     </div>
   );
 }
