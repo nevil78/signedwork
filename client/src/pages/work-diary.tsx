@@ -58,10 +58,13 @@ export default function WorkDiary() {
 
   const createCompanyMutation = useMutation({
     mutationFn: async (data: InsertEmployeeCompany) => {
-      await apiRequest('/api/employee-companies', {
+      const response = await fetch('/api/employee-companies', {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
+      if (!response.ok) throw new Error('Failed to create company');
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/employee-companies'] });
@@ -83,10 +86,13 @@ export default function WorkDiary() {
 
   const updateCompanyMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<InsertEmployeeCompany> }) => {
-      await apiRequest(`/api/employee-companies/${id}`, {
+      const response = await fetch(`/api/employee-companies/${id}`, {
         method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
+      if (!response.ok) throw new Error('Failed to update company');
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/employee-companies'] });
@@ -109,9 +115,12 @@ export default function WorkDiary() {
 
   const deleteCompanyMutation = useMutation({
     mutationFn: async (id: string) => {
-      await apiRequest(`/api/employee-companies/${id}`, {
+      const response = await fetch(`/api/employee-companies/${id}`, {
         method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
       });
+      if (!response.ok) throw new Error('Failed to delete company');
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/employee-companies'] });
@@ -330,7 +339,7 @@ export default function WorkDiary() {
                   <FormItem>
                     <FormLabel>Position</FormLabel>
                     <FormControl>
-                      <Input placeholder="Your role at the company" {...field} />
+                      <Input placeholder="Your role at the company" {...field} value={field.value || ''} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -345,7 +354,7 @@ export default function WorkDiary() {
                     <FormItem>
                       <FormLabel>Start Date</FormLabel>
                       <FormControl>
-                        <Input type="date" {...field} />
+                        <Input type="date" {...field} value={field.value || ''} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -359,7 +368,7 @@ export default function WorkDiary() {
                     <FormItem>
                       <FormLabel>End Date</FormLabel>
                       <FormControl>
-                        <Input type="date" {...field} />
+                        <Input type="date" {...field} value={field.value || ''} />
                       </FormControl>
                       <FormDescription>Leave empty if current</FormDescription>
                       <FormMessage />
@@ -384,7 +393,7 @@ export default function WorkDiary() {
                     <FormControl>
                       <input
                         type="checkbox"
-                        checked={field.value}
+                        checked={field.value || false}
                         onChange={field.onChange}
                         className="h-4 w-4"
                       />
