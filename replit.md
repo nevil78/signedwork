@@ -1,6 +1,6 @@
 # Overview
 
-This is a comprehensive LinkedIn-like professional networking platform built with Express.js and React. The application provides advanced profile management for employees with features including professional experience, education, certifications, projects, and skills tracking. Companies can register and manage their accounts separately. The platform features a modern UI built with shadcn/ui components and handles complex user data with PostgreSQL and session-based authentication.
+This is a comprehensive LinkedIn-like professional networking platform built with Express.js and React. The application provides advanced profile management for employees with features including professional experience, education, certifications, projects, and skills tracking. Companies can register with detailed business information including industry categorization, legal registration details, and optional company descriptions. The platform features a modern UI built with shadcn/ui components and handles complex user data with PostgreSQL and session-based authentication.
 
 # User Preferences
 

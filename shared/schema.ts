@@ -97,6 +97,7 @@ export const endorsements = pgTable("endorsements", {
 export const companies = pgTable("companies", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
+  description: text("description"),
   address: text("address").notNull(),
   city: text("city").notNull(),
   state: text("state").notNull(),

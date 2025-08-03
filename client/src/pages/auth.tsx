@@ -516,6 +516,25 @@ export default function AuthPage() {
                         )}
                       />
                       
+                      <FormField
+                        control={companyForm.control}
+                        name="description"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Company Description</FormLabel>
+                            <FormControl>
+                              <Textarea 
+                                placeholder="Brief description of your company's mission, services, and values..."
+                                rows={4}
+                                className="resize-none"
+                                {...field} 
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
                       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <FormField
                           control={companyForm.control}
