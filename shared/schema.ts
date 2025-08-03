@@ -5,6 +5,7 @@ import { z } from "zod";
 
 export const employees = pgTable("employees", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  employeeId: varchar("employee_id").notNull().unique(),
   firstName: text("first_name").notNull(),
   lastName: text("last_name").notNull(),
   email: text("email").notNull().unique(),
@@ -160,6 +161,7 @@ export const endorsementsRelations = relations(endorsements, ({ one }) => ({
 // Insert schemas
 export const insertEmployeeSchema = createInsertSchema(employees).omit({
   id: true,
+  employeeId: true,
   createdAt: true,
   updatedAt: true,
 }).extend({

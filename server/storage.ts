@@ -9,6 +9,27 @@ import { db } from "./db";
 import { eq } from "drizzle-orm";
 import bcrypt from "bcrypt";
 
+// Generate a short, memorable employee ID
+function generateEmployeeId(): string {
+  const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const numbers = '0123456789';
+  
+  // Format: EMP-ABC123 (3 letters + 3 numbers)
+  let result = 'EMP-';
+  
+  // Add 3 random letters
+  for (let i = 0; i < 3; i++) {
+    result += letters.charAt(Math.floor(Math.random() * letters.length));
+  }
+  
+  // Add 3 random numbers
+  for (let i = 0; i < 3; i++) {
+    result += numbers.charAt(Math.floor(Math.random() * numbers.length));
+  }
+  
+  return result;
+}
+
 export interface IStorage {
   // Employee operations
   getEmployee(id: string): Promise<Employee | undefined>;
@@ -72,10 +93,31 @@ export class DatabaseStorage implements IStorage {
 
   async createEmployee(employeeData: InsertEmployee): Promise<Employee> {
     const hashedPassword = await bcrypt.hash(employeeData.password, 10);
+    
+    // Generate a unique employee ID
+    let employeeId = generateEmployeeId();
+    let attempts = 0;
+    const maxAttempts = 10;
+    
+    // Ensure the employee ID is unique
+    while (attempts < maxAttempts) {
+      const existing = await db.select().from(employees).where(eq(employees.employeeId, employeeId));
+      if (existing.length === 0) {
+        break;
+      }
+      employeeId = generateEmployeeId();
+      attempts++;
+    }
+    
+    if (attempts >= maxAttempts) {
+      throw new Error("Failed to generate unique employee ID");
+    }
+    
     const [employee] = await db
       .insert(employees)
       .values({
         ...employeeData,
+        employeeId,
         password: hashedPassword,
       })
       .returning();
