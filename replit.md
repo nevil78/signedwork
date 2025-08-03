@@ -5,9 +5,12 @@ This is a comprehensive LinkedIn-like professional networking platform built wit
 ## Recent Changes (August 2025)
 - ✅ Updated employee navigation from "overview" to "profile" 
 - ✅ Created comprehensive profile page with LinkedIn-like sidebar navigation
-- ✅ Implemented separate sections: profile overview, experience, education, certifications, projects, endorsements
+- ✅ Implemented sections: profile overview, experience, education, certifications (removed projects and endorsements per user request)
 - ✅ Added proper routing and redirects for employee profile access
 - ✅ Each section displays empty states with helpful user guidance
+- ✅ Fixed all API request errors - all Add buttons now work properly
+- ✅ Implemented profile picture upload with object storage integration
+- ✅ Added edit button functionality for changing profile pictures with tooltip
 
 # User Preferences
 

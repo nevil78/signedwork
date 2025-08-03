@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Award, Briefcase, GraduationCap, FolderOpen, MessageSquare, User, Calendar, MapPin, Globe, Building, ExternalLink, Trash2, Camera, Upload } from "lucide-react";
+import { Plus, Award, Briefcase, GraduationCap, FolderOpen, MessageSquare, User, Calendar, MapPin, Globe, Building, ExternalLink, Trash2, Camera, Upload, Edit2 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { apiRequest } from "@/lib/queryClient";
@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { 
   type Experience,
   type Education,
@@ -35,7 +36,7 @@ import {
   insertEndorsementSchema
 } from "@shared/schema";
 
-type ProfileSection = "overview" | "experience" | "education" | "certifications" | "projects" | "endorsements";
+type ProfileSection = "overview" | "experience" | "education" | "certifications";
 
 export default function Profile() {
   const [activeSection, setActiveSection] = useState<ProfileSection>("overview");
@@ -92,8 +93,6 @@ export default function Profile() {
     { id: "experience", label: "Experience", icon: Briefcase },
     { id: "education", label: "Education", icon: GraduationCap },
     { id: "certifications", label: "Certifications", icon: Award },
-    { id: "projects", label: "Projects", icon: FolderOpen },
-    { id: "endorsements", label: "Endorsements", icon: MessageSquare },
   ];
 
   if (isLoading) {
@@ -170,15 +169,30 @@ export default function Profile() {
                       </AvatarFallback>
                     </Avatar>
                     {activeSection === "overview" && (
-                      <ObjectUploader
-                        maxNumberOfFiles={1}
-                        maxFileSize={5242880} // 5MB
-                        onGetUploadParameters={handleProfilePictureUpload}
-                        onComplete={handleProfilePictureComplete}
-                        buttonClassName="absolute -bottom-2 right-0 rounded-full p-2 bg-primary text-white hover:bg-primary/90"
-                      >
-                        <Camera className="w-4 h-4" />
-                      </ObjectUploader>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="absolute -bottom-2 -right-2">
+                              <ObjectUploader
+                                maxNumberOfFiles={1}
+                                maxFileSize={5242880} // 5MB
+                                onGetUploadParameters={handleProfilePictureUpload}
+                                onComplete={handleProfilePictureComplete}
+                                buttonClassName="rounded-full p-2 bg-primary text-white hover:bg-primary/90 shadow-lg"
+                              >
+                                {user?.profilePhoto ? (
+                                  <Edit2 className="w-4 h-4" />
+                                ) : (
+                                  <Camera className="w-4 h-4" />
+                                )}
+                              </ObjectUploader>
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>{user?.profilePhoto ? "Change profile picture" : "Add profile picture"}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     )}
                   </div>
                   <h2 className="text-xl font-semibold text-slate-900">
@@ -218,8 +232,6 @@ export default function Profile() {
             {activeSection === "experience" && <ExperienceSection experiences={(profile as any)?.experiences || []} />}
             {activeSection === "education" && <EducationSection educations={(profile as any)?.educations || []} />}
             {activeSection === "certifications" && <CertificationSection certifications={(profile as any)?.certifications || []} />}
-            {activeSection === "projects" && <ProjectSection projects={(profile as any)?.projects || []} />}
-            {activeSection === "endorsements" && <EndorsementSection endorsements={(profile as any)?.endorsements || []} />}
           </div>
         </div>
       </div>
