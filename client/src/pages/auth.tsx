@@ -527,7 +527,8 @@ export default function AuthPage() {
                                 placeholder="Brief description of your company's mission, services, and values..."
                                 rows={4}
                                 className="resize-none"
-                                {...field} 
+                                {...field}
+                                value={field.value || ""}
                               />
                             </FormControl>
                             <FormMessage />
