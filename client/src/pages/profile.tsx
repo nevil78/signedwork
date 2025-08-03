@@ -198,6 +198,12 @@ export default function Profile() {
                   <h2 className="text-xl font-semibold text-slate-900">
                     {user?.firstName} {user?.lastName}
                   </h2>
+                  <div className="flex items-center justify-center gap-2 mt-2 mb-1">
+                    <span className="text-xs text-slate-500">ID:</span>
+                    <code className="text-xs text-slate-600 bg-slate-100 px-2 py-1 rounded font-mono">
+                      {user?.id}
+                    </code>
+                  </div>
                   <p className="text-sm text-slate-600 mt-1">
                     {user?.headline || "Professional"}
                   </p>
