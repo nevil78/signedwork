@@ -433,6 +433,34 @@ export default function AuthPage() {
   }
 
   if (currentView === "company") {
+    const industries = [
+      "Technology",
+      "Healthcare", 
+      "Finance",
+      "Education",
+      "Manufacturing",
+      "Retail",
+      "Construction",
+      "Transportation",
+      "Energy",
+      "Media & Entertainment",
+      "Real Estate",
+      "Consulting",
+      "Food & Beverage",
+      "Telecommunications",
+      "Government",
+      "Non-profit",
+      "Other"
+    ];
+
+    const indianStates = [
+      "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", 
+      "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka",
+      "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram",
+      "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu",
+      "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal"
+    ];
+
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
         <header className="bg-white shadow-sm border-b border-slate-200">
@@ -447,7 +475,7 @@ export default function AuthPage() {
         </header>
 
         <main className="flex-1 py-12 px-4 sm:px-6 lg:px-8">
-          <div className="max-w-md mx-auto">
+          <div className="max-w-3xl mx-auto">
             <Card className="rounded-2xl shadow-xl">
               <CardContent className="p-8">
                 <div className="flex items-center mb-6">
@@ -466,114 +494,87 @@ export default function AuthPage() {
                 </div>
                 
                 <Form {...companyForm}>
-                  <form onSubmit={companyForm.handleSubmit(onCompanySubmit)} className="space-y-6">
-                    <FormField
-                      control={companyForm.control}
-                      name="name"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Organization Name</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Acme Corporation" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={companyForm.control}
-                      name="address"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Business Address</FormLabel>
-                          <FormControl>
-                            <Textarea 
-                              placeholder="123 Business Street, Suite 100, City, State" 
-                              rows={3}
-                              className="resize-none"
-                              {...field} 
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <form onSubmit={companyForm.handleSubmit(onCompanySubmit)} className="space-y-8">
+                    {/* Company Information Section */}
+                    <div className="space-y-6">
+                      <div className="border-b border-slate-200 pb-4">
+                        <h3 className="text-lg font-semibold text-slate-900">Company Information</h3>
+                        <p className="text-sm text-slate-600">Basic details about your organization</p>
+                      </div>
+                      
                       <FormField
                         control={companyForm.control}
-                        name="pincode"
+                        name="name"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Pincode</FormLabel>
+                            <FormLabel>Organization Name *</FormLabel>
                             <FormControl>
-                              <Input placeholder="12345" {...field} />
+                              <Input placeholder="Acme Corporation Pvt Ltd" {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
-                      <FormField
-                        control={companyForm.control}
-                        name="registrationNumber"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>CIN/PAN Number</FormLabel>
-                            <FormControl>
-                              <Input placeholder="ABCDE1234F" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                    
-                    <FormField
-                      control={companyForm.control}
-                      name="email"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Company Email</FormLabel>
-                          <FormControl>
-                            <Input type="email" placeholder="contact@acmecorp.com" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                      <FormField
-                        control={companyForm.control}
-                        name="size"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Company Size</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select size" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="1-10">1-10 employees</SelectItem>
-                                <SelectItem value="11-50">11-50 employees</SelectItem>
-                                <SelectItem value="51-200">51-200 employees</SelectItem>
-                                <SelectItem value="201-500">201-500 employees</SelectItem>
-                                <SelectItem value="500+">500+ employees</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                      
+                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <FormField
+                          control={companyForm.control}
+                          name="industry"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Industry Sector *</FormLabel>
+                              <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select industry" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {industries.map((industry) => (
+                                    <SelectItem key={industry} value={industry}>
+                                      {industry}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <FormField
+                          control={companyForm.control}
+                          name="size"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Company Size *</FormLabel>
+                              <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select size" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="1-10">1-10 employees</SelectItem>
+                                  <SelectItem value="11-50">11-50 employees</SelectItem>
+                                  <SelectItem value="51-200">51-200 employees</SelectItem>
+                                  <SelectItem value="201-500">201-500 employees</SelectItem>
+                                  <SelectItem value="501-1000">501-1000 employees</SelectItem>
+                                  <SelectItem value="1000+">1000+ employees</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      
                       <FormField
                         control={companyForm.control}
                         name="establishmentYear"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Establishment Year</FormLabel>
+                            <FormLabel>Establishment Year *</FormLabel>
                             <FormControl>
                               <Input 
                                 type="number" 
@@ -589,21 +590,174 @@ export default function AuthPage() {
                         )}
                       />
                     </div>
-                    
-                    <FormField
-                      control={companyForm.control}
-                      name="password"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Password</FormLabel>
-                          <FormControl>
-                            <PasswordInput field={field} placeholder="••••••••" />
-                          </FormControl>
-                          <PasswordStrengthIndicator password={field.value || ""} />
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+
+                    {/* Legal Information Section */}
+                    <div className="space-y-6">
+                      <div className="border-b border-slate-200 pb-4">
+                        <h3 className="text-lg font-semibold text-slate-900">Legal Information</h3>
+                        <p className="text-sm text-slate-600">Registration and compliance details</p>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <FormField
+                          control={companyForm.control}
+                          name="registrationType"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Registration Type *</FormLabel>
+                              <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select type" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="CIN">CIN (Corporate Identification Number)</SelectItem>
+                                  <SelectItem value="PAN">PAN (Permanent Account Number)</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <FormField
+                          control={companyForm.control}
+                          name="registrationNumber"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Registration Number *</FormLabel>
+                              <FormControl>
+                                <Input 
+                                  placeholder="L12345MH2020PTC123456" 
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Address Information Section */}
+                    <div className="space-y-6">
+                      <div className="border-b border-slate-200 pb-4">
+                        <h3 className="text-lg font-semibold text-slate-900">Headquarters Address</h3>
+                        <p className="text-sm text-slate-600">Primary business location</p>
+                      </div>
+                      
+                      <FormField
+                        control={companyForm.control}
+                        name="address"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Business Address *</FormLabel>
+                            <FormControl>
+                              <Textarea 
+                                placeholder="Building Name, Street Address, Area" 
+                                rows={3}
+                                className="resize-none"
+                                {...field} 
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                        <FormField
+                          control={companyForm.control}
+                          name="city"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>City *</FormLabel>
+                              <FormControl>
+                                <Input placeholder="Mumbai" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <FormField
+                          control={companyForm.control}
+                          name="state"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>State *</FormLabel>
+                              <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select state" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {indianStates.map((state) => (
+                                    <SelectItem key={state} value={state}>
+                                      {state}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <FormField
+                          control={companyForm.control}
+                          name="pincode"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Pincode *</FormLabel>
+                              <FormControl>
+                                <Input placeholder="400001" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Account Information Section */}
+                    <div className="space-y-6">
+                      <div className="border-b border-slate-200 pb-4">
+                        <h3 className="text-lg font-semibold text-slate-900">Account Information</h3>
+                        <p className="text-sm text-slate-600">Login credentials and contact details</p>
+                      </div>
+                      
+                      <FormField
+                        control={companyForm.control}
+                        name="email"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Company Email *</FormLabel>
+                            <FormControl>
+                              <Input type="email" placeholder="contact@acmecorp.com" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={companyForm.control}
+                        name="password"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Password *</FormLabel>
+                            <FormControl>
+                              <PasswordInput field={field} placeholder="••••••••" />
+                            </FormControl>
+                            <PasswordStrengthIndicator password={field.value || ""} />
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
                     
                     <div className="flex items-center space-x-2">
                       <Checkbox id="company-terms" required />
@@ -617,7 +771,7 @@ export default function AuthPage() {
                     
                     <Button 
                       type="submit" 
-                      className="w-full" 
+                      className="w-full py-3" 
                       disabled={companyRegistration.isPending}
                     >
                       {companyRegistration.isPending ? "Creating Account..." : "Create Company Account"}
