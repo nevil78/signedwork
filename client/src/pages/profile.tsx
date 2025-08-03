@@ -247,15 +247,478 @@ export default function Profile() {
 
 // Profile Overview Component
 function ProfileOverview({ user }: { user: Employee }) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+
+  const form = useForm({
+    defaultValues: {
+      headline: user?.headline || "",
+      summary: user?.summary || "",
+      location: user?.location || "",
+      website: user?.website || "",
+      currentPosition: user?.currentPosition || "",
+      currentCompany: user?.currentCompany || "",
+      industry: user?.industry || "",
+      address: user?.address || "",
+      city: user?.city || "",
+      state: user?.state || "",
+      zipCode: user?.zipCode || "",
+      country: user?.country || "",
+      dateOfBirth: user?.dateOfBirth || "",
+      nationality: user?.nationality || "",
+      maritalStatus: user?.maritalStatus || "",
+      portfolioUrl: user?.portfolioUrl || "",
+      githubUrl: user?.githubUrl || "",
+      linkedinUrl: user?.linkedinUrl || "",
+      twitterUrl: user?.twitterUrl || "",
+      skills: user?.skills?.join(", ") || "",
+      languages: user?.languages?.join(", ") || "",
+      hobbies: user?.hobbies?.join(", ") || "",
+      achievements: user?.achievements?.join("; ") || "",
+    },
+  });
+
+  const updateProfileMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const payload = {
+        ...data,
+        skills: data.skills ? data.skills.split(",").map((s: string) => s.trim()).filter(Boolean) : [],
+        languages: data.languages ? data.languages.split(",").map((l: string) => l.trim()).filter(Boolean) : [],
+        hobbies: data.hobbies ? data.hobbies.split(",").map((h: string) => h.trim()).filter(Boolean) : [],
+        achievements: data.achievements ? data.achievements.split(";").map((a: string) => a.trim()).filter(Boolean) : [],
+      };
+      
+      const response = await fetch("/api/employee/profile", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+      if (!response.ok) throw new Error("Failed to update profile");
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Profile updated successfully",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      setIsEditDialogOpen(false);
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update profile",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const onSubmit = (data: any) => {
+    updateProfileMutation.mutate(data);
+  };
+
   return (
     <div className="space-y-6">
       {/* Personal Information */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <User className="w-5 h-5" />
-            Personal Information
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <User className="w-5 h-5" />
+              Personal Information
+            </CardTitle>
+            <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm" variant="outline">
+                  <Edit2 className="w-4 h-4 mr-2" />
+                  Edit Profile
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Edit Profile Information</DialogTitle>
+                  <DialogDescription>
+                    Update your comprehensive profile information
+                  </DialogDescription>
+                </DialogHeader>
+                <Form {...form}>
+                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                    {/* Personal Information Section */}
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold text-slate-900 border-b pb-2">Personal Information</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="dateOfBirth"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Date of Birth</FormLabel>
+                              <FormControl>
+                                <Input type="date" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="nationality"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Nationality</FormLabel>
+                              <FormControl>
+                                <Input placeholder="e.g. American" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="maritalStatus"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Marital Status</FormLabel>
+                              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select status" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="single">Single</SelectItem>
+                                  <SelectItem value="married">Married</SelectItem>
+                                  <SelectItem value="divorced">Divorced</SelectItem>
+                                  <SelectItem value="widowed">Widowed</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Address Information */}
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold text-slate-900 border-b pb-2">Address Information</h3>
+                      <div className="grid grid-cols-1 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="address"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Street Address</FormLabel>
+                              <FormControl>
+                                <Input placeholder="e.g. 123 Main Street, Apt 4B" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <FormField
+                            control={form.control}
+                            name="city"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>City</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="e.g. New York" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="state"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>State/Province</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="e.g. NY" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="zipCode"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>ZIP/Postal Code</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="e.g. 10001" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                        <FormField
+                          control={form.control}
+                          name="country"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Country</FormLabel>
+                              <FormControl>
+                                <Input placeholder="e.g. United States" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="location"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Current Location (Brief)</FormLabel>
+                              <FormControl>
+                                <Input placeholder="e.g. New York, NY" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Professional Information */}
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold text-slate-900 border-b pb-2">Professional Information</h3>
+                      <div className="grid grid-cols-1 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="headline"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Professional Headline</FormLabel>
+                              <FormControl>
+                                <Input placeholder="e.g. Senior Software Engineer at Tech Corp" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="summary"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Professional Summary</FormLabel>
+                              <FormControl>
+                                <Textarea 
+                                  placeholder="Write a brief summary of your professional background, skills, and career goals..."
+                                  rows={4}
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <FormField
+                            control={form.control}
+                            name="currentPosition"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Current Position</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="e.g. Senior Software Engineer" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="currentCompany"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Current Company</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="e.g. Tech Corporation" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                        <FormField
+                          control={form.control}
+                          name="industry"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Industry</FormLabel>
+                              <FormControl>
+                                <Input placeholder="e.g. Technology, Healthcare, Finance" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Skills and Interests */}
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold text-slate-900 border-b pb-2">Skills & Interests</h3>
+                      <div className="grid grid-cols-1 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="skills"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Skills (comma-separated)</FormLabel>
+                              <FormControl>
+                                <Textarea 
+                                  placeholder="e.g. JavaScript, React, Node.js, Python, Project Management"
+                                  rows={3}
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="languages"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Languages (comma-separated)</FormLabel>
+                              <FormControl>
+                                <Input placeholder="e.g. English (Native), Spanish (Fluent), French (Basic)" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="hobbies"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Hobbies & Interests (comma-separated)</FormLabel>
+                              <FormControl>
+                                <Input placeholder="e.g. Photography, Hiking, Reading, Chess, Cooking" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="achievements"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Key Achievements (semicolon-separated)</FormLabel>
+                              <FormControl>
+                                <Textarea 
+                                  placeholder="e.g. Led team of 5 developers; Increased system performance by 40%; Published 3 technical articles"
+                                  rows={3}
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Online Presence */}
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold text-slate-900 border-b pb-2">Online Presence</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="website"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Personal Website</FormLabel>
+                              <FormControl>
+                                <Input placeholder="https://yourwebsite.com" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="portfolioUrl"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Portfolio URL</FormLabel>
+                              <FormControl>
+                                <Input placeholder="https://portfolio.com" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="githubUrl"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>GitHub Profile</FormLabel>
+                              <FormControl>
+                                <Input placeholder="https://github.com/username" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="linkedinUrl"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>LinkedIn Profile</FormLabel>
+                              <FormControl>
+                                <Input placeholder="https://linkedin.com/in/username" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="twitterUrl"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Twitter Profile</FormLabel>
+                              <FormControl>
+                                <Input placeholder="https://twitter.com/username" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end gap-3">
+                      <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                        Cancel
+                      </Button>
+                      <Button type="submit" disabled={updateProfileMutation.isPending}>
+                        {updateProfileMutation.isPending ? "Saving..." : "Save Changes"}
+                      </Button>
+                    </div>
+                  </form>
+                </Form>
+              </DialogContent>
+            </Dialog>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
