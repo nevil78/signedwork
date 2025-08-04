@@ -10,7 +10,7 @@ import {
   type InsertJobListing, type InsertJobApplication, type InsertSavedJob, type InsertJobAlert
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, sql, desc } from "drizzle-orm";
+import { eq, and, sql, desc, inArray } from "drizzle-orm";
 import bcrypt from "bcrypt";
 
 // Generate a short, memorable employee ID
@@ -775,7 +775,6 @@ export class DatabaseStorage implements IStorage {
     let query = db.select().from(jobListings);
     
     const conditions = [];
-    // Filter for active jobs (remove this line since status column doesn't exist in current DB)
     
     if (filters.keywords) {
       conditions.push(sql`(${jobListings.title} ILIKE ${'%' + filters.keywords + '%'} OR ${jobListings.description} ILIKE ${'%' + filters.keywords + '%'})`);
@@ -786,15 +785,23 @@ export class DatabaseStorage implements IStorage {
     }
     
     if (filters.employmentType && filters.employmentType.length > 0) {
-      conditions.push(sql`${jobListings.employmentType} = ANY(${filters.employmentType})`);
+      conditions.push(inArray(jobListings.employmentType, filters.employmentType));
     }
     
     if (filters.experienceLevel && filters.experienceLevel.length > 0) {
-      conditions.push(sql`${jobListings.experienceLevel} = ANY(${filters.experienceLevel})`);
+      conditions.push(inArray(jobListings.experienceLevel, filters.experienceLevel));
     }
     
     if (filters.remoteType && filters.remoteType.length > 0) {
-      conditions.push(sql`${jobListings.remoteType} = ANY(${filters.remoteType})`);
+      conditions.push(inArray(jobListings.remoteType, filters.remoteType));
+    }
+    
+    if (filters.salaryMin && filters.salaryMax) {
+      conditions.push(sql`${jobListings.salaryMin} >= ${filters.salaryMin} AND ${jobListings.salaryMax} <= ${filters.salaryMax}`);
+    } else if (filters.salaryMin) {
+      conditions.push(sql`${jobListings.salaryMax} >= ${filters.salaryMin}`);
+    } else if (filters.salaryMax) {
+      conditions.push(sql`${jobListings.salaryMin} <= ${filters.salaryMax}`);
     }
     
     if (filters.companyId) {
