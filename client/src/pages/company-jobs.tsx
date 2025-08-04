@@ -17,7 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Plus, Edit2, Eye, Users, Calendar, MapPin, Building2, Trash2 } from "lucide-react";
 
-// Job posting form schema
+// Job posting form schema - aligned with actual database structure
 const jobPostingSchema = z.object({
   title: z.string().min(1, "Job title is required"),
   description: z.string().min(50, "Description must be at least 50 characters"),
@@ -28,8 +28,6 @@ const jobPostingSchema = z.object({
   remoteType: z.enum(["office", "remote", "hybrid"]),
   salaryRange: z.string().optional(),
   skills: z.string().min(1, "At least one skill is required"),
-  department: z.string().optional(),
-  industry: z.string().min(1, "Industry is required"),
   applicationDeadline: z.string().optional(),
 });
 
@@ -46,8 +44,6 @@ interface JobListing {
   remoteType: string;
   salaryRange?: string;
   skills: string[];
-  department?: string;
-  industry: string;
   applicationDeadline?: string;
   status: string;
   views: number;
@@ -325,33 +321,7 @@ export default function CompanyJobsPage() {
                     )}
                   />
 
-                  <FormField
-                    control={form.control}
-                    name="industry"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Industry *</FormLabel>
-                        <FormControl>
-                          <Input placeholder="e.g. Technology, Healthcare" {...field} data-testid="input-industry" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
 
-                  <FormField
-                    control={form.control}
-                    name="department"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Department</FormLabel>
-                        <FormControl>
-                          <Input placeholder="e.g. Engineering, Marketing" {...field} data-testid="input-department" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
 
                   <FormField
                     control={form.control}
