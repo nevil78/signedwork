@@ -1201,11 +1201,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     try {
-      const jobs = await storage.searchJobs({ companyId: sessionUser.id });
+      const jobs = await storage.getCompanyJobs(sessionUser.id);
       res.json(jobs);
     } catch (error) {
       console.error("Get company jobs error:", error);
       res.status(500).json({ message: "Failed to get job listings" });
+    }
+  });
+
+  // Company updates job listing
+  app.put("/api/company/jobs/:jobId", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    if (!sessionUser || sessionUser.type !== "company") {
+      return res.status(401).json({ message: "Not authenticated as company" });
+    }
+    
+    try {
+      // First verify this job belongs to the company
+      const existingJob = await storage.getJobById(req.params.jobId);
+      if (!existingJob || existingJob.companyId !== sessionUser.id) {
+        return res.status(403).json({ message: "Access denied to this job" });
+      }
+      
+      const job = await storage.updateJobListing(req.params.jobId, req.body);
+      res.json({
+        message: "Job listing updated successfully",
+        job
+      });
+    } catch (error) {
+      console.error("Update job listing error:", error);
+      res.status(500).json({ message: "Failed to update job listing" });
+    }
+  });
+
+  // Company deletes job listing
+  app.delete("/api/company/jobs/:jobId", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    if (!sessionUser || sessionUser.type !== "company") {
+      return res.status(401).json({ message: "Not authenticated as company" });
+    }
+    
+    try {
+      // First verify this job belongs to the company
+      const existingJob = await storage.getJobById(req.params.jobId);
+      if (!existingJob || existingJob.companyId !== sessionUser.id) {
+        return res.status(403).json({ message: "Access denied to this job" });
+      }
+      
+      await storage.deleteJobListing(req.params.jobId);
+      res.json({ message: "Job listing deleted successfully" });
+    } catch (error) {
+      console.error("Delete job listing error:", error);
+      res.status(500).json({ message: "Failed to delete job listing" });
     }
   });
   

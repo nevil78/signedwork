@@ -12,6 +12,7 @@ import JobDiscoveryPage from "@/pages/job-discovery";
 import CompanyDashboard from "@/pages/company-dashboard";
 import CompanyWorkEntries from "@/pages/company-work-entries";
 import CompanyEmployeeProfile from "@/pages/company-employee-profile";
+import CompanyJobsPage from "@/pages/company-jobs";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -25,6 +26,7 @@ function Router() {
       <Route path="/job-discovery" component={JobDiscoveryPage} />
       <Route path="/company-dashboard" component={CompanyDashboard} />
       <Route path="/company-work-entries" component={CompanyWorkEntries} />
+      <Route path="/company-jobs" component={CompanyJobsPage} />
       <Route path="/company-employee/:employeeId" component={CompanyEmployeeProfile} />
       <Route path="/employee-profile" component={() => { window.location.href = "/profile"; return null; }} />
       <Route component={NotFound} />

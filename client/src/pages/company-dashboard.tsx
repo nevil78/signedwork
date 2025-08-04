@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Building2, Copy, Users, Clock, CheckCircle, AlertCircle, FileText, BarChart3, Settings } from 'lucide-react';
+import { Building2, Copy, Users, Clock, CheckCircle, AlertCircle, FileText, BarChart3, Settings, Briefcase } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import {
@@ -188,14 +188,14 @@ export default function CompanyDashboard() {
               </CardHeader>
             </Card>
             
-            <Card className="cursor-pointer hover:shadow-lg transition-shadow opacity-50" title="Coming Soon">
+            <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/company-jobs')}>
               <CardHeader className="text-center">
-                <div className="w-12 h-12 mx-auto mb-2 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
-                  <BarChart3 className="w-6 h-6 text-gray-500" />
+                <div className="w-12 h-12 mx-auto mb-2 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
+                  <Briefcase className="w-6 h-6 text-green-600 dark:text-green-400" />
                 </div>
-                <CardTitle className="text-lg">Analytics</CardTitle>
+                <CardTitle className="text-lg">Job Postings</CardTitle>
                 <CardDescription>
-                  View productivity insights
+                  Create and manage job listings
                 </CardDescription>
               </CardHeader>
             </Card>

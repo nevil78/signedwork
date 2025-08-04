@@ -754,7 +754,7 @@ export class DatabaseStorage implements IStorage {
     let query = db.select().from(jobListings);
     
     const conditions = [];
-    conditions.push(eq(jobListings.status, "active"));
+    // Filter for active jobs (remove this line since status column doesn't exist in current DB)
     
     if (filters.keywords) {
       conditions.push(sql`(${jobListings.title} ILIKE ${'%' + filters.keywords + '%'} OR ${jobListings.description} ILIKE ${'%' + filters.keywords + '%'})`);
@@ -781,7 +781,7 @@ export class DatabaseStorage implements IStorage {
     }
     
     if (conditions.length > 0) {
-      query = query.where(and(...conditions));
+      return await query.where(and(...conditions));
     }
     
     return await query;
@@ -811,6 +811,11 @@ export class DatabaseStorage implements IStorage {
 
   async deleteJobListing(id: string): Promise<void> {
     await db.delete(jobListings).where(eq(jobListings.id, id));
+  }
+
+  // Company-specific job management methods
+  async getCompanyJobs(companyId: string): Promise<JobListing[]> {
+    return await db.select().from(jobListings).where(eq(jobListings.companyId, companyId));
   }
 
   // Job application operations
@@ -890,20 +895,20 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Profile views operations
-  async recordProfileView(viewerCompanyId: string, viewedEmployeeId: string, context: string): Promise<ProfileView> {
+  async recordProfileView(companyId: string, employeeId: string, jobId?: string): Promise<ProfileView> {
     const [view] = await db
       .insert(profileViews)
       .values({
-        viewerCompanyId,
-        viewedEmployeeId,
-        viewContext: context as any
+        companyId,
+        employeeId,
+        jobId
       })
       .returning();
     return view;
   }
 
   async getProfileViews(employeeId: string): Promise<ProfileView[]> {
-    return await db.select().from(profileViews).where(eq(profileViews.viewedEmployeeId, employeeId));
+    return await db.select().from(profileViews).where(eq(profileViews.employeeId, employeeId));
   }
 }
 

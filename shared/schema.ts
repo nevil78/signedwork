@@ -188,21 +188,16 @@ export const jobListings = pgTable("job_listings", {
   companyId: varchar("company_id").notNull().references(() => companies.id, { onDelete: "cascade" }),
   title: text("title").notNull(),
   description: text("description").notNull(),
-  requirements: text("requirements").array().notNull().default(sql`'{}'::text[]`),
+  requirements: text("requirements").notNull(),
   location: text("location").notNull(),
-  locationType: text("location_type").notNull().default("office"), // office, remote, hybrid
+  remoteType: text("remote_type").notNull().default("office"), // office, remote, hybrid
   employmentType: text("employment_type").notNull(), // full-time, part-time, contract, internship
   experienceLevel: text("experience_level").notNull(), // entry, mid, senior, executive
-  salaryMin: integer("salary_min"),
-  salaryMax: integer("salary_max"),
-  salaryCurrency: text("salary_currency").default("INR"),
+  salaryRange: text("salary_range"),
   benefits: text("benefits").array().default(sql`'{}'::text[]`),
-  skills: text("skills").array().notNull().default(sql`'{}'::text[]`),
-  department: text("department"),
-  industry: text("industry").notNull(),
+  skills: text("skills").array().default(sql`'{}'::text[]`),
   applicationDeadline: timestamp("application_deadline"),
-  isActive: boolean("is_active").default(true),
-  isPremium: boolean("is_premium").default(false),
+  status: text("status").notNull().default("active"), // active, paused, closed
   views: integer("views").default(0),
   applicationsCount: integer("applications_count").default(0),
   createdAt: timestamp("created_at").defaultNow(),
