@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { CheckCircle, AlertCircle, Clock, Calendar, User, Building, ArrowLeft, Building2, Lock } from 'lucide-react';
+import { CheckCircle, AlertCircle, Clock, Calendar, User, Users, Building, ArrowLeft, Building2, Lock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 type WorkEntryStatus = "pending" | "approved" | "needs_changes";
@@ -44,6 +44,8 @@ export default function CompanyWorkEntries() {
   const [showApprovalDialog, setShowApprovalDialog] = useState(false);
   const [showChangesDialog, setShowChangesDialog] = useState(false);
   const [feedback, setFeedback] = useState('');
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'employees' | 'entries'>('employees');
 
   // Fetch all work entries for the company
   const { data: allWorkEntries = [], isLoading: loadingAll } = useQuery<WorkEntry[]>({
@@ -90,6 +92,36 @@ export default function CompanyWorkEntries() {
     const employee = employees.find(emp => emp.id === employeeId);
     return employee ? `${employee.firstName} ${employee.lastName}` : 'Unknown Employee';
   };
+
+  // Group entries by employee for organized view
+  const groupEntriesByEmployee = (entries: WorkEntry[]) => {
+    const grouped = entries.reduce((acc, entry) => {
+      if (!acc[entry.employeeId]) {
+        acc[entry.employeeId] = {
+          employee: employees.find(emp => emp.id === entry.employeeId),
+          entries: []
+        };
+      }
+      acc[entry.employeeId].entries.push(entry);
+      return acc;
+    }, {} as Record<string, { employee?: Employee; entries: WorkEntry[] }>);
+
+    return Object.entries(grouped).map(([employeeId, data]) => ({
+      employeeId,
+      employee: data.employee,
+      entries: data.entries,
+      totalCount: data.entries.length,
+      pendingCount: data.entries.filter(e => e.status === 'pending').length,
+      approvedCount: data.entries.filter(e => e.status === 'approved').length,
+      needsChangesCount: data.entries.filter(e => e.status === 'needs_changes').length
+    }));
+  };
+
+  const employeeGroups = groupEntriesByEmployee(allWorkEntries);
+  const selectedEmployeeEntries = selectedEmployeeId 
+    ? allWorkEntries.filter(entry => entry.employeeId === selectedEmployeeId)
+    : [];
+  const selectedEmployeeName = selectedEmployeeId ? getEmployeeName(selectedEmployeeId) : '';
 
   const approveMutation = useMutation({
     mutationFn: async (entryId: string) => {
@@ -331,77 +363,190 @@ export default function CompanyWorkEntries() {
           </p>
         </div>
 
-        <Tabs defaultValue="pending" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="pending" data-testid="tab-pending">
-            Pending ({pendingEntries.length})
-          </TabsTrigger>
-          <TabsTrigger value="all" data-testid="tab-all">
-            All Entries ({allWorkEntries.length})
-          </TabsTrigger>
-          <TabsTrigger value="reviewed" data-testid="tab-reviewed">
-            Reviewed ({allWorkEntries.filter(e => e.status !== 'pending').length})
-          </TabsTrigger>
-        </TabsList>
+        {/* Navigation breadcrumb */}
+        {viewMode === 'entries' && selectedEmployeeId && (
+          <div className="mb-6">
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setViewMode('employees');
+                setSelectedEmployeeId(null);
+              }}
+              className="mb-4"
+              data-testid="button-back-employees"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Employee List
+            </Button>
+            <h2 className="text-2xl font-semibold" data-testid="selected-employee-title">
+              Work Entries for {selectedEmployeeName}
+            </h2>
+          </div>
+        )}
 
-        <TabsContent value="pending" className="mt-6">
-          {loadingPending ? (
-            <div className="text-center py-8" data-testid="loading-pending">Loading pending entries...</div>
-          ) : pendingEntries.length === 0 ? (
-            <Card>
-              <CardContent className="text-center py-8">
-                <Clock className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">No Pending Entries</h3>
-                <p className="text-muted-foreground">
-                  All work entries have been reviewed. New submissions will appear here.
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="space-y-4">
-              {pendingEntries.map(entry => (
-                <WorkEntryCard key={entry.id} entry={entry} showActions={true} />
-              ))}
-            </div>
-          )}
-        </TabsContent>
-
-        <TabsContent value="all" className="mt-6">
-          {loadingAll ? (
-            <div className="text-center py-8" data-testid="loading-all">Loading all entries...</div>
-          ) : allWorkEntries.length === 0 ? (
-            <Card>
-              <CardContent className="text-center py-8">
-                <Building className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">No Work Entries</h3>
-                <p className="text-muted-foreground">
-                  No work entries have been submitted yet.
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="space-y-4">
-              {allWorkEntries.map(entry => (
-                <WorkEntryCard key={entry.id} entry={entry} />
-              ))}
-            </div>
-          )}
-        </TabsContent>
-
-        <TabsContent value="reviewed" className="mt-6">
-          {loadingAll ? (
-            <div className="text-center py-8" data-testid="loading-reviewed">Loading reviewed entries...</div>
-          ) : (
-            <div className="space-y-4">
-              {allWorkEntries
-                .filter(entry => entry.status !== 'pending')
-                .map(entry => (
-                  <WorkEntryCard key={entry.id} entry={entry} />
+        {viewMode === 'employees' ? (
+          /* Employee List View */
+          <div className="space-y-4">
+            {loadingAll ? (
+              <div className="text-center py-8" data-testid="loading-employees">Loading employees...</div>
+            ) : employeeGroups.length === 0 ? (
+              <Card>
+                <CardContent className="text-center py-8">
+                  <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">No Work Entries</h3>
+                  <p className="text-muted-foreground">
+                    No work entries have been submitted yet by any employees.
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid gap-4">
+                {employeeGroups.map(({ employeeId, employee, totalCount, pendingCount, approvedCount, needsChangesCount }) => (
+                  <Card 
+                    key={employeeId} 
+                    className="cursor-pointer hover:shadow-lg transition-shadow" 
+                    onClick={() => {
+                      setSelectedEmployeeId(employeeId);
+                      setViewMode('entries');
+                    }}
+                    data-testid={`employee-entries-card-${employeeId}`}
+                  >
+                    <CardHeader>
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <CardTitle className="text-lg font-semibold text-primary hover:underline" data-testid={`employee-entries-name-${employeeId}`}>
+                            {employee ? `${employee.firstName} ${employee.lastName}` : 'Unknown Employee'}
+                          </CardTitle>
+                          <CardDescription className="flex items-center gap-2 mt-1">
+                            <User className="w-4 h-4" />
+                            <span data-testid={`employee-entries-email-${employeeId}`}>
+                              {employee?.email || 'No email available'}
+                            </span>
+                          </CardDescription>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="bg-blue-50 text-blue-700" data-testid={`employee-entries-total-${employeeId}`}>
+                            {totalCount} {totalCount === 1 ? 'entry' : 'entries'}
+                          </Badge>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-3 gap-4 text-sm">
+                        <div className="text-center p-3 bg-yellow-50 rounded-lg">
+                          <div className="flex items-center justify-center gap-1 mb-1">
+                            <Clock className="w-4 h-4 text-yellow-600" />
+                            <span className="font-medium text-yellow-800">Pending</span>
+                          </div>
+                          <div className="text-xl font-bold text-yellow-700" data-testid={`employee-pending-count-${employeeId}`}>
+                            {pendingCount}
+                          </div>
+                        </div>
+                        <div className="text-center p-3 bg-green-50 rounded-lg">
+                          <div className="flex items-center justify-center gap-1 mb-1">
+                            <CheckCircle className="w-4 h-4 text-green-600" />
+                            <span className="font-medium text-green-800">Approved</span>
+                          </div>
+                          <div className="text-xl font-bold text-green-700" data-testid={`employee-approved-count-${employeeId}`}>
+                            {approvedCount}
+                          </div>
+                        </div>
+                        <div className="text-center p-3 bg-red-50 rounded-lg">
+                          <div className="flex items-center justify-center gap-1 mb-1">
+                            <AlertCircle className="w-4 h-4 text-red-600" />
+                            <span className="font-medium text-red-800">Changes</span>
+                          </div>
+                          <div className="text-xl font-bold text-red-700" data-testid={`employee-changes-count-${employeeId}`}>
+                            {needsChangesCount}
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
                 ))}
-            </div>
-          )}
-        </TabsContent>
-      </Tabs>
+              </div>
+            )}
+          </div>
+        ) : (
+          /* Individual Employee Entries View */
+          <Tabs defaultValue="pending" className="w-full">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="pending" data-testid="tab-pending">
+                Pending ({selectedEmployeeEntries.filter(e => e.status === 'pending').length})
+              </TabsTrigger>
+              <TabsTrigger value="all" data-testid="tab-all">
+                All ({selectedEmployeeEntries.length})
+              </TabsTrigger>
+              <TabsTrigger value="reviewed" data-testid="tab-reviewed">
+                Reviewed ({selectedEmployeeEntries.filter(e => e.status !== 'pending').length})
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="pending" className="mt-6">
+              {selectedEmployeeEntries.filter(e => e.status === 'pending').length === 0 ? (
+                <Card>
+                  <CardContent className="text-center py-8">
+                    <Clock className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">No Pending Entries</h3>
+                    <p className="text-muted-foreground">
+                      This employee has no pending work entries to review.
+                    </p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="space-y-4">
+                  {selectedEmployeeEntries
+                    .filter(entry => entry.status === 'pending')
+                    .map(entry => (
+                      <WorkEntryCard key={entry.id} entry={entry} showActions={true} />
+                    ))}
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="all" className="mt-6">
+              {selectedEmployeeEntries.length === 0 ? (
+                <Card>
+                  <CardContent className="text-center py-8">
+                    <Building className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">No Work Entries</h3>
+                    <p className="text-muted-foreground">
+                      This employee hasn't submitted any work entries yet.
+                    </p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="space-y-4">
+                  {selectedEmployeeEntries.map(entry => (
+                    <WorkEntryCard key={entry.id} entry={entry} />
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="reviewed" className="mt-6">
+              {selectedEmployeeEntries.filter(e => e.status !== 'pending').length === 0 ? (
+                <Card>
+                  <CardContent className="text-center py-8">
+                    <CheckCircle className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">No Reviewed Entries</h3>
+                    <p className="text-muted-foreground">
+                      This employee has no reviewed work entries yet.
+                    </p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="space-y-4">
+                  {selectedEmployeeEntries
+                    .filter(entry => entry.status !== 'pending')
+                    .map(entry => (
+                      <WorkEntryCard key={entry.id} entry={entry} />
+                    ))}
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
+        )}
 
       {/* Approval Confirmation Dialog */}
       <Dialog open={showApprovalDialog} onOpenChange={setShowApprovalDialog}>
