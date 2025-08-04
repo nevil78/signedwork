@@ -651,21 +651,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     try {
-      console.log("Received request body:", JSON.stringify(req.body, null, 2));
-      
       const validatedData = insertWorkEntrySchema.parse({
         ...req.body,
         employeeId: sessionUser.id
       });
       
-      console.log("Validated data:", JSON.stringify(validatedData, null, 2));
-      
       const workEntry = await storage.createWorkEntry(validatedData);
       res.status(201).json(workEntry);
     } catch (error: any) {
-      console.error("Full error object:", error);
       if (error.name === "ZodError") {
-        console.log("Zod validation errors:", JSON.stringify(error.errors, null, 2));
         const validationError = fromZodError(error);
         return res.status(400).json({ 
           message: validationError.message,

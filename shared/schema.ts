@@ -132,7 +132,6 @@ export const workEntries = pgTable("work_entries", {
   endDate: text("end_date"),
   priority: text("priority").notNull().default("medium"), // low, medium, high
   hours: integer("hours"), // optional hours field
-  tags: text("tags").array(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

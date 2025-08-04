@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, ArrowLeft, Calendar, Clock, Tag, Edit, Trash2, Search } from 'lucide-react';
+import { Plus, ArrowLeft, Calendar, Clock, Edit, Trash2, Search } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -44,6 +44,18 @@ import { z } from 'zod';
 
 type WorkEntryPriority = "low" | "medium" | "high";
 
+// Form schema without backend-only fields
+const workEntryFormSchema = z.object({
+  title: z.string().min(1, "Title is required"),
+  description: z.string().optional(),
+  startDate: z.string().min(1, "Start date is required"),
+  endDate: z.string().optional(),
+  priority: z.enum(["low", "medium", "high"]).default("medium"),
+  hours: z.number().optional(),
+});
+
+type WorkEntryFormData = z.infer<typeof workEntryFormSchema>;
+
 export default function WorkDiaryCompany() {
   const { companyId } = useParams();
   const [, navigate] = useLocation();
@@ -70,8 +82,8 @@ export default function WorkDiaryCompany() {
     enabled: !!companyId,
   });
 
-  const form = useForm<InsertWorkEntry>({
-    resolver: zodResolver(insertWorkEntrySchema.omit({ employeeId: true, companyId: true })),
+  const form = useForm<WorkEntryFormData>({
+    resolver: zodResolver(workEntryFormSchema),
     defaultValues: {
       title: '',
       description: '',
@@ -79,12 +91,11 @@ export default function WorkDiaryCompany() {
       endDate: '',
       priority: 'medium',
       hours: undefined,
-      tags: '' as any, // Handle as string in form, convert to array on submit
     },
   });
 
   const createEntryMutation = useMutation({
-    mutationFn: async (data: InsertWorkEntry) => {
+    mutationFn: async (data: WorkEntryFormData) => {
       const response = await fetch('/api/work-diary', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -112,7 +123,7 @@ export default function WorkDiaryCompany() {
   });
 
   const updateEntryMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: Partial<InsertWorkEntry> }) => {
+    mutationFn: async ({ id, data }: { id: string; data: Partial<WorkEntryFormData> }) => {
       const response = await fetch(`/api/work-diary/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -165,28 +176,23 @@ export default function WorkDiaryCompany() {
     },
   });
 
-  const onSubmit = (data: InsertWorkEntry) => {
-    console.log('Form data before processing:', data);
-    
-    const payload = {
-      ...data,
-      tags: Array.isArray(data.tags) ? data.tags : (data.tags as string | null | undefined)?.split(',').map(tag => tag.trim()).filter(Boolean) || [],
-    };
-    
-    console.log('Payload after processing:', payload);
-    
+  const onSubmit = (data: WorkEntryFormData) => {
     if (editingEntry) {
-      updateEntryMutation.mutate({ id: editingEntry.id, data: payload });
+      updateEntryMutation.mutate({ id: editingEntry.id, data });
     } else {
-      createEntryMutation.mutate(payload);
+      createEntryMutation.mutate(data);
     }
   };
 
   const handleEdit = (entry: WorkEntry) => {
     setEditingEntry(entry);
     form.reset({
-      ...entry,
-      tags: entry.tags?.join(', ') as any || '',
+      title: entry.title,
+      description: entry.description || '',
+      startDate: entry.startDate,
+      endDate: entry.endDate || '',
+      priority: entry.priority as "low" | "medium" | "high",
+      hours: entry.hours || undefined,
     });
     setIsDialogOpen(true);
   };
@@ -339,26 +345,11 @@ export default function WorkDiaryCompany() {
                     </div>
                   </div>
                 </CardHeader>
-                {(entry.description || (entry.tags && entry.tags.length > 0)) && (
+                {entry.description && (
                   <CardContent>
-                    {entry.description && (
-                      <p className="text-muted-foreground mb-3 whitespace-pre-wrap">
-                        {entry.description}
-                      </p>
-                    )}
-                    {entry.tags && entry.tags.length > 0 && (
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <Tag className="h-3 w-3 text-muted-foreground" />
-                        {entry.tags?.map((tag, index) => (
-                          <span
-                            key={index}
-                            className="px-2 py-1 text-xs bg-secondary text-secondary-foreground rounded-md"
-                          >
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                    )}
+                    <p className="text-muted-foreground whitespace-pre-wrap">
+                      {entry.description}
+                    </p>
                   </CardContent>
                 )}
               </Card>
@@ -492,23 +483,7 @@ export default function WorkDiaryCompany() {
                   />
                 </div>
 
-                <FormField
-                  control={form.control}
-                  name="tags"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Tags (comma-separated)</FormLabel>
-                      <FormControl>
-                        <Input 
-                          placeholder="e.g. development, meeting, research"
-                          value={typeof field.value === 'string' ? field.value : field.value?.join(', ') || ''}
-                          onChange={(e) => field.onChange(e.target.value)}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+
 
                 <div className="flex justify-end space-x-2 pt-4">
                   <Button
