@@ -306,14 +306,21 @@ export default function CompanyDashboard() {
                   {employees.map((employee) => (
                     <div 
                       key={employee.id} 
-                      className="p-3 border rounded-lg hover:bg-accent/50 transition-colors"
+                      className="p-3 border rounded-lg hover:bg-accent/50 transition-colors cursor-pointer"
+                      onClick={() => navigate(`/company-employee/${employee.employeeId}`)}
+                      data-testid={`employee-card-${employee.employeeId}`}
+                      title="Click to view employee profile"
                     >
                       <div className="flex justify-between items-start">
                         <div>
-                          <p className="font-medium">{employee.employeeName}</p>
-                          <p className="text-sm text-muted-foreground">{employee.employeeEmail}</p>
+                          <p className="font-medium text-primary hover:underline" data-testid={`employee-name-${employee.employeeId}`}>
+                            {employee.employeeName}
+                          </p>
+                          <p className="text-sm text-muted-foreground" data-testid={`employee-email-${employee.employeeId}`}>
+                            {employee.employeeEmail}
+                          </p>
                           {employee.position && (
-                            <Badge variant="secondary" className="mt-1">
+                            <Badge variant="secondary" className="mt-1" data-testid={`employee-position-${employee.employeeId}`}>
                               {employee.position}
                             </Badge>
                           )}

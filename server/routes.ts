@@ -759,7 +759,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Work entry not found" });
       }
       
-      if (existingEntry.verificationStatus === 'approved') {
+      if (existingEntry.status === 'approved') {
         return res.status(403).json({ 
           message: "Cannot edit approved work entry. Approved entries are immutable." 
         });
@@ -787,7 +787,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Work entry not found" });
       }
       
-      if (existingEntry.verificationStatus === 'approved') {
+      if (existingEntry.status === 'approved') {
         return res.status(403).json({ 
           message: "Cannot delete approved work entry. Approved entries are immutable." 
         });
@@ -851,6 +851,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error setting profile picture:", error);
       res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Company employee profile viewing routes
+  app.get("/api/company/employee/:employeeId", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    if (!sessionUser || sessionUser.type !== "company") {
+      return res.status(401).json({ message: "Not authenticated as company" });
+    }
+    
+    try {
+      // Check if this employee is associated with the company
+      const employees = await storage.getCompanyEmployees(sessionUser.id);
+      const hasAccess = employees.some(emp => emp.employeeId === req.params.employeeId);
+      
+      if (!hasAccess) {
+        return res.status(403).json({ message: "No access to this employee's profile" });
+      }
+      
+      const employee = await storage.getEmployee(req.params.employeeId);
+      if (!employee) {
+        return res.status(404).json({ message: "Employee not found" });
+      }
+      
+      // Remove sensitive data like password
+      const { password, ...employeeData } = employee;
+      res.json(employeeData);
+    } catch (error) {
+      console.error("Get company employee error:", error);
+      res.status(500).json({ message: "Failed to get employee profile" });
+    }
+  });
+
+  app.get("/api/company/employee/:employeeId/profile", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    if (!sessionUser || sessionUser.type !== "company") {
+      return res.status(401).json({ message: "Not authenticated as company" });
+    }
+    
+    try {
+      // Check if this employee is associated with the company
+      const employees = await storage.getCompanyEmployees(sessionUser.id);
+      const hasAccess = employees.some(emp => emp.employeeId === req.params.employeeId);
+      
+      if (!hasAccess) {
+        return res.status(403).json({ message: "No access to this employee's profile" });
+      }
+      
+      const profileData = await storage.getEmployeeProfile(req.params.employeeId);
+      res.json(profileData);
+    } catch (error) {
+      console.error("Get company employee profile error:", error);
+      res.status(500).json({ message: "Failed to get employee profile data" });
     }
   });
 
