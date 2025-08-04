@@ -531,6 +531,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Company Work Entry Verification Routes
+  app.get("/api/company/work-entries", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    if (!sessionUser || sessionUser.type !== "company") {
+      return res.status(401).json({ message: "Not authenticated as company" });
+    }
+    
+    try {
+      const workEntries = await storage.getWorkEntriesForCompany(sessionUser.id);
+      res.json(workEntries);
+    } catch (error) {
+      console.error("Get company work entries error:", error);
+      res.status(500).json({ message: "Failed to get work entries" });
+    }
+  });
+
+  app.get("/api/company/work-entries/pending", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    if (!sessionUser || sessionUser.type !== "company") {
+      return res.status(401).json({ message: "Not authenticated as company" });
+    }
+    
+    try {
+      const pendingEntries = await storage.getPendingWorkEntriesForCompany(sessionUser.id);
+      res.json(pendingEntries);
+    } catch (error) {
+      console.error("Get pending work entries error:", error);
+      res.status(500).json({ message: "Failed to get pending work entries" });
+    }
+  });
+
+  app.post("/api/company/work-entries/:id/approve", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    if (!sessionUser || sessionUser.type !== "company") {
+      return res.status(401).json({ message: "Not authenticated as company" });
+    }
+    
+    try {
+      const { id } = req.params;
+      const workEntry = await storage.approveWorkEntry(id);
+      res.json(workEntry);
+    } catch (error) {
+      console.error("Approve work entry error:", error);
+      res.status(500).json({ message: "Failed to approve work entry" });
+    }
+  });
+
+  app.post("/api/company/work-entries/:id/request-changes", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    if (!sessionUser || sessionUser.type !== "company") {
+      return res.status(401).json({ message: "Not authenticated as company" });
+    }
+    
+    try {
+      const { id } = req.params;
+      const { feedback } = req.body;
+      
+      if (!feedback || feedback.trim() === '') {
+        return res.status(400).json({ message: "Feedback is required when requesting changes" });
+      }
+      
+      const workEntry = await storage.requestWorkEntryChanges(id, feedback);
+      res.json(workEntry);
+    } catch (error) {
+      console.error("Request work entry changes error:", error);
+      res.status(500).json({ message: "Failed to request changes" });
+    }
+  });
+
   // Employee Company Routes  
   app.get("/api/employee-companies", async (req, res) => {
     const sessionUser = (req.session as any).user;

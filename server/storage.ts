@@ -435,6 +435,33 @@ export class DatabaseStorage implements IStorage {
     await db.delete(workEntries).where(eq(workEntries.id, id));
   }
 
+  async getWorkEntriesForCompany(companyId: string): Promise<WorkEntry[]> {
+    return await db.select().from(workEntries).where(eq(workEntries.companyId, companyId));
+  }
+
+  async getPendingWorkEntriesForCompany(companyId: string): Promise<WorkEntry[]> {
+    return await db.select().from(workEntries)
+      .where(and(eq(workEntries.companyId, companyId), eq(workEntries.status, "pending")));
+  }
+
+  async approveWorkEntry(id: string): Promise<WorkEntry> {
+    const [workEntry] = await db
+      .update(workEntries)
+      .set({ status: "approved", updatedAt: new Date() })
+      .where(eq(workEntries.id, id))
+      .returning();
+    return workEntry;
+  }
+
+  async requestWorkEntryChanges(id: string, feedback: string): Promise<WorkEntry> {
+    const [workEntry] = await db
+      .update(workEntries)
+      .set({ status: "needs_changes", companyFeedback: feedback, updatedAt: new Date() })
+      .where(eq(workEntries.id, id))
+      .returning();
+    return workEntry;
+  }
+
   // Company invitation operations
   async generateInvitationCode(companyId: string): Promise<CompanyInvitationCode> {
     // Generate unique code

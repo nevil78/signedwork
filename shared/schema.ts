@@ -132,6 +132,8 @@ export const workEntries = pgTable("work_entries", {
   endDate: text("end_date"),
   priority: text("priority").notNull().default("medium"), // low, medium, high
   hours: integer("hours"), // optional hours field
+  status: text("status").notNull().default("pending"), // pending, approved, needs_changes
+  companyFeedback: text("company_feedback"), // feedback from company when requesting changes
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

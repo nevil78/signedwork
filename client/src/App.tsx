@@ -9,6 +9,7 @@ import Profile from "@/pages/profile";
 import WorkDiary from "@/pages/work-diary";
 import WorkDiaryCompany from "@/pages/work-diary-company";
 import CompanyDashboard from "@/pages/company-dashboard";
+import CompanyWorkEntries from "@/pages/company-work-entries";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -20,6 +21,7 @@ function Router() {
       <Route path="/work-diary" component={WorkDiary} />
       <Route path="/work-diary/:companyId" component={WorkDiaryCompany} />
       <Route path="/company-dashboard" component={CompanyDashboard} />
+      <Route path="/company-work-entries" component={CompanyWorkEntries} />
       <Route path="/employee-profile" component={() => { window.location.href = "/profile"; return null; }} />
       <Route component={NotFound} />
     </Switch>

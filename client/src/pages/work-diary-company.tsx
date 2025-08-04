@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { useParams, useLocation } from 'wouter';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, ArrowLeft, Calendar, Clock, Edit, Trash2, Search } from 'lucide-react';
+import { Plus, ArrowLeft, Calendar, Clock, Edit, Trash2, Search, CheckCircle, AlertCircle, MessageSquare } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -56,6 +57,21 @@ const workEntryFormSchema = z.object({
 
 type WorkEntryFormData = z.infer<typeof workEntryFormSchema>;
 
+type WorkEntryStatus = "pending" | "approved" | "needs_changes";
+
+const getStatusBadge = (status: WorkEntryStatus) => {
+  switch (status) {
+    case 'pending':
+      return <Badge variant="secondary" className="bg-yellow-100 text-yellow-800"><Clock className="w-3 h-3 mr-1" />Pending Review</Badge>;
+    case 'approved':
+      return <Badge variant="secondary" className="bg-green-100 text-green-800"><CheckCircle className="w-3 h-3 mr-1" />Verified</Badge>;
+    case 'needs_changes':
+      return <Badge variant="secondary" className="bg-red-100 text-red-800"><AlertCircle className="w-3 h-3 mr-1" />Needs Changes</Badge>;
+    default:
+      return <Badge variant="secondary">Pending Review</Badge>;
+  }
+};
+
 export default function WorkDiaryCompany() {
   const { companyId } = useParams();
   const [, navigate] = useLocation();
@@ -70,8 +86,8 @@ export default function WorkDiaryCompany() {
   });
 
   const company = companies?.find(c => c.id === companyId);
-  // Get the actual company ID for the new schema structure
-  const actualCompanyId = company?.companyId || companyId;
+  // For the new company employee system, we need to get the actual company ID
+  const actualCompanyId = (company as any)?.companyId || companyId;
 
   // Fetch work entries for this company
   const { data: workEntries = [], isLoading } = useQuery<WorkEntry[]>({
@@ -327,6 +343,7 @@ export default function WorkDiaryCompany() {
                       </CardDescription>
                     </div>
                     <div className="flex items-center gap-2">
+                      {getStatusBadge((entry as any).status || 'pending')}
                       <span className={`px-2 py-1 text-xs font-medium rounded-full ${getPriorityBadgeClass(entry.priority as WorkEntryPriority)}`}>
                         {entry.priority}
                       </span>
@@ -347,13 +364,27 @@ export default function WorkDiaryCompany() {
                     </div>
                   </div>
                 </CardHeader>
-                {entry.description && (
-                  <CardContent>
-                    <p className="text-muted-foreground whitespace-pre-wrap">
-                      {entry.description}
-                    </p>
-                  </CardContent>
-                )}
+                <CardContent>
+                  {entry.description && (
+                    <div className="mb-3">
+                      <p className="text-muted-foreground whitespace-pre-wrap">
+                        {entry.description}
+                      </p>
+                    </div>
+                  )}
+                  
+                  {(entry as any).status === 'needs_changes' && (entry as any).companyFeedback && (
+                    <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                      <div className="flex items-center gap-2 mb-2">
+                        <MessageSquare className="w-4 h-4 text-red-600" />
+                        <span className="font-medium text-red-800">Company Feedback:</span>
+                      </div>
+                      <p className="text-sm text-red-700">
+                        {(entry as any).companyFeedback}
+                      </p>
+                    </div>
+                  )}
+                </CardContent>
               </Card>
             ))}
           </div>

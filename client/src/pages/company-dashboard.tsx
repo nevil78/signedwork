@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Building2, Copy, Users, Clock, CheckCircle, AlertCircle } from 'lucide-react';
+import { Building2, Copy, Users, Clock, CheckCircle, AlertCircle, FileText, BarChart3, Settings } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import {
@@ -35,6 +36,7 @@ export default function CompanyDashboard() {
   const [isGeneratingCode, setIsGeneratingCode] = useState(false);
   const [currentCode, setCurrentCode] = useState<InvitationCode | null>(null);
   const [copied, setCopied] = useState(false);
+  const [location, navigate] = useLocation();
   const queryClient = useQueryClient();
 
   // Logout mutation
@@ -169,6 +171,47 @@ export default function CompanyDashboard() {
               Company ID: {user.companyId}
             </Badge>
           )}
+        </div>
+
+        {/* Navigation Section */}
+        <div className="mb-8">
+          <div className="grid gap-4 md:grid-cols-3">
+            <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/company-work-entries')}>
+              <CardHeader className="text-center">
+                <div className="w-12 h-12 mx-auto mb-2 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
+                  <FileText className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                </div>
+                <CardTitle className="text-lg">Work Entry Reviews</CardTitle>
+                <CardDescription>
+                  Review and verify employee work entries
+                </CardDescription>
+              </CardHeader>
+            </Card>
+            
+            <Card className="cursor-pointer hover:shadow-lg transition-shadow opacity-50" title="Coming Soon">
+              <CardHeader className="text-center">
+                <div className="w-12 h-12 mx-auto mb-2 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+                  <BarChart3 className="w-6 h-6 text-gray-500" />
+                </div>
+                <CardTitle className="text-lg">Analytics</CardTitle>
+                <CardDescription>
+                  View productivity insights
+                </CardDescription>
+              </CardHeader>
+            </Card>
+            
+            <Card className="cursor-pointer hover:shadow-lg transition-shadow opacity-50" title="Coming Soon">
+              <CardHeader className="text-center">
+                <div className="w-12 h-12 mx-auto mb-2 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+                  <Settings className="w-6 h-6 text-gray-500" />
+                </div>
+                <CardTitle className="text-lg">Settings</CardTitle>
+                <CardDescription>
+                  Manage company preferences
+                </CardDescription>
+              </CardHeader>
+            </Card>
+          </div>
         </div>
 
         <div className="grid gap-6 md:grid-cols-2">
