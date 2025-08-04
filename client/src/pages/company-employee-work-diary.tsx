@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useParams, Link } from 'wouter';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -13,7 +14,9 @@ import {
   CheckCircle, 
   AlertCircle, 
   Play,
-  Tag
+  Tag,
+  ChevronDown,
+  ChevronRight
 } from 'lucide-react';
 import { format } from 'date-fns';
 import type { WorkEntry, Employee, Company } from '@shared/schema';
@@ -24,6 +27,7 @@ interface WorkEntryWithCompany extends WorkEntry {
 
 export default function CompanyEmployeeWorkDiary() {
   const { employeeId } = useParams();
+  const [expandedCompanies, setExpandedCompanies] = useState<Set<string>>(new Set());
 
   // Get employee details
   const { data: employee, isLoading: employeeLoading } = useQuery<Employee>({
@@ -60,6 +64,16 @@ export default function CompanyEmployeeWorkDiary() {
       case 'todo': return <AlertCircle className="h-4 w-4" />;
       default: return <AlertCircle className="h-4 w-4" />;
     }
+  };
+
+  const toggleCompany = (companyName: string) => {
+    const newExpanded = new Set(expandedCompanies);
+    if (newExpanded.has(companyName)) {
+      newExpanded.delete(companyName);
+    } else {
+      newExpanded.add(companyName);
+    }
+    setExpandedCompanies(newExpanded);
   };
 
   if (employeeLoading || workEntriesLoading) {
@@ -177,8 +191,17 @@ export default function CompanyEmployeeWorkDiary() {
 
                 return Object.entries(groupedEntries).map(([companyName, entries]) => (
                   <div key={companyName} className="space-y-4">
-                    {/* Company Header */}
-                    <div className="flex items-center gap-3 p-4 bg-muted/30 rounded-lg border">
+                    {/* Company Header - Clickable */}
+                    <button
+                      onClick={() => toggleCompany(companyName)}
+                      className="flex items-center gap-3 p-4 bg-muted/30 rounded-lg border w-full text-left hover:bg-muted/40 transition-colors"
+                      data-testid={`button-toggle-company-${companyName}`}
+                    >
+                      {expandedCompanies.has(companyName) ? (
+                        <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                      ) : (
+                        <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                      )}
                       <Building2 className="h-6 w-6 text-primary" />
                       <div>
                         <h3 className="text-xl font-semibold">{companyName}</h3>
@@ -186,10 +209,11 @@ export default function CompanyEmployeeWorkDiary() {
                           {entries.length} work {entries.length === 1 ? 'entry' : 'entries'}
                         </p>
                       </div>
-                    </div>
+                    </button>
 
-                    {/* Work Entries Grid for this Company */}
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 pl-4">
+                    {/* Work Entries Grid for this Company - Only show when expanded */}
+                    {expandedCompanies.has(companyName) && (
+                      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 pl-4">
                       {entries.map((entry) => (
                         <Card key={entry.id} className="hover:shadow-md transition-shadow">
                           <CardHeader className="pb-3">
@@ -243,7 +267,8 @@ export default function CompanyEmployeeWorkDiary() {
                           </CardContent>
                         </Card>
                       ))}
-                    </div>
+                      </div>
+                    )}
                   </div>
                 ));
               })()}
