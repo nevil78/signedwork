@@ -4,6 +4,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -13,7 +14,7 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Users, Building, Briefcase, TrendingUp, LogOut, 
-  ShieldCheck, UserCheck, UserX, Calendar, Mail
+  ShieldCheck, UserCheck, UserX, Calendar, Mail, Search
 } from "lucide-react";
 import { format } from "date-fns";
 import type { Employee, Company, Admin } from "@shared/schema";
@@ -34,6 +35,8 @@ export default function AdminDashboard() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("overview");
+  const [employeeSearch, setEmployeeSearch] = useState("");
+  const [companySearch, setCompanySearch] = useState("");
 
   // Fetch current admin user
   const { data: userData, isLoading: userLoading } = useQuery<UserData>({
@@ -53,15 +56,31 @@ export default function AdminDashboard() {
     enabled: userData?.userType === "admin",
   });
 
-  // Fetch employees
+  // Fetch employees with search
   const { data: employees } = useQuery<Employee[]>({
-    queryKey: ["/api/admin/employees"],
+    queryKey: ["/api/admin/employees", employeeSearch],
+    queryFn: () => {
+      const params = new URLSearchParams();
+      if (employeeSearch.trim()) {
+        params.append('search', employeeSearch.trim());
+      }
+      const url = `/api/admin/employees${params.toString() ? `?${params.toString()}` : ''}`;
+      return fetch(url).then(res => res.json());
+    },
     enabled: userData?.userType === "admin" && activeTab === "employees",
   });
 
-  // Fetch companies
+  // Fetch companies with search
   const { data: companies } = useQuery<Company[]>({
-    queryKey: ["/api/admin/companies"],
+    queryKey: ["/api/admin/companies", companySearch],
+    queryFn: () => {
+      const params = new URLSearchParams();
+      if (companySearch.trim()) {
+        params.append('search', companySearch.trim());
+      }
+      const url = `/api/admin/companies${params.toString() ? `?${params.toString()}` : ''}`;
+      return fetch(url).then(res => res.json());
+    },
     enabled: userData?.userType === "admin" && activeTab === "companies",
   });
 
@@ -229,6 +248,22 @@ export default function AdminDashboard() {
                 <CardTitle>Manage Employees</CardTitle>
               </CardHeader>
               <CardContent>
+                {/* Employee Search */}
+                <div className="mb-6">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                    <Input
+                      data-testid="input-employee-search"
+                      placeholder="Search by name, email, phone, or employee ID..."
+                      value={employeeSearch}
+                      onChange={(e) => setEmployeeSearch(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Search employees by name, email, phone number, or employee ID
+                  </p>
+                </div>
                 {employees && employees.length > 0 ? (
                   <Table>
                     <TableHeader>
@@ -302,6 +337,22 @@ export default function AdminDashboard() {
                 <CardTitle>Manage Companies</CardTitle>
               </CardHeader>
               <CardContent>
+                {/* Company Search */}
+                <div className="mb-6">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                    <Input
+                      data-testid="input-company-search"
+                      placeholder="Search by company name, email, company ID, or industry..."
+                      value={companySearch}
+                      onChange={(e) => setCompanySearch(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Search companies by name, email, company ID, or industry
+                  </p>
+                </div>
                 {companies && companies.length > 0 ? (
                   <Table>
                     <TableHeader>
@@ -309,6 +360,7 @@ export default function AdminDashboard() {
                         <TableHead>Company ID</TableHead>
                         <TableHead>Name</TableHead>
                         <TableHead>Email</TableHead>
+                        <TableHead>Phone</TableHead>
                         <TableHead>Industry</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead>Created</TableHead>
@@ -319,13 +371,14 @@ export default function AdminDashboard() {
                       {companies.map((company) => (
                         <TableRow key={company.id}>
                           <TableCell className="font-medium">{company.companyId}</TableCell>
-                          <TableCell>{company.name}</TableCell>
+                          <TableCell>{company.companyName}</TableCell>
                           <TableCell>
                             <div className="flex items-center">
                               <Mail className="h-3 w-3 mr-1 text-muted-foreground" />
                               {company.email}
                             </div>
                           </TableCell>
+                          <TableCell>{company.phone}</TableCell>
                           <TableCell>{company.industry}</TableCell>
                           <TableCell>
                             <Badge variant={company.isActive ? "default" : "secondary"}>

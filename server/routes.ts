@@ -318,7 +318,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get all employees (admin only)
+  // Get all employees (admin only) with search support
   app.get("/api/admin/employees", async (req, res) => {
     const sessionUser = (req.session as any).user;
     
@@ -327,9 +327,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     try {
+      const { search } = req.query;
       const employees = await storage.getAllEmployees();
+      
+      let filteredEmployees = employees;
+      
+      if (search && typeof search === 'string') {
+        const searchTerm = search.toLowerCase().trim();
+        filteredEmployees = employees.filter(emp => 
+          emp.email.toLowerCase().includes(searchTerm) ||
+          emp.phone?.toLowerCase().includes(searchTerm) ||
+          emp.firstName.toLowerCase().includes(searchTerm) ||
+          emp.lastName.toLowerCase().includes(searchTerm) ||
+          `${emp.firstName} ${emp.lastName}`.toLowerCase().includes(searchTerm) ||
+          emp.employeeId.toLowerCase().includes(searchTerm)
+        );
+      }
+      
       // Remove passwords from response
-      const employeesResponse = employees.map(({ password, ...emp }) => emp);
+      const employeesResponse = filteredEmployees.map(({ password, ...emp }) => emp);
       res.json(employeesResponse);
     } catch (error) {
       console.error("Get employees error:", error);
@@ -337,7 +353,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get all companies (admin only)
+  // Get all companies (admin only) with search support
   app.get("/api/admin/companies", async (req, res) => {
     const sessionUser = (req.session as any).user;
     
@@ -346,9 +362,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     try {
+      const { search } = req.query;
       const companies = await storage.getAllCompanies();
+      
+      let filteredCompanies = companies;
+      
+      if (search && typeof search === 'string') {
+        const searchTerm = search.toLowerCase().trim();
+        filteredCompanies = companies.filter(comp => 
+          comp.email.toLowerCase().includes(searchTerm) ||
+          comp.phone?.toLowerCase().includes(searchTerm) ||
+          comp.companyName.toLowerCase().includes(searchTerm) ||
+          comp.companyId.toLowerCase().includes(searchTerm) ||
+          comp.industry?.toLowerCase().includes(searchTerm)
+        );
+      }
+      
       // Remove passwords from response
-      const companiesResponse = companies.map(({ password, ...comp }) => comp);
+      const companiesResponse = filteredCompanies.map(({ password, ...comp }) => comp);
       res.json(companiesResponse);
     } catch (error) {
       console.error("Get companies error:", error);
