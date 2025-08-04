@@ -1171,10 +1171,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log("Received job data:", req.body);
       
-      const jobData = insertJobListingSchema.parse({
+      // Convert applicationDeadline string to Date if present
+      const dataToValidate = {
         ...req.body,
-        companyId: sessionUser.id
-      });
+        companyId: sessionUser.id,
+        applicationDeadline: req.body.applicationDeadline ? new Date(req.body.applicationDeadline) : null
+      };
+      
+      const jobData = insertJobListingSchema.parse(dataToValidate);
       
       console.log("Parsed job data:", jobData);
       
@@ -1229,7 +1233,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Access denied to this job" });
       }
       
-      const job = await storage.updateJobListing(req.params.jobId, req.body);
+      // Convert applicationDeadline string to Date if present
+      const updateData = {
+        ...req.body,
+        applicationDeadline: req.body.applicationDeadline ? new Date(req.body.applicationDeadline) : null
+      };
+      
+      const job = await storage.updateJobListing(req.params.jobId, updateData);
       res.json({
         message: "Job listing updated successfully",
         job

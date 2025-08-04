@@ -69,7 +69,7 @@ export default function CompanyJobsPage() {
       return apiRequest("POST", "/api/company/jobs", {
         ...data,
         skills: data.skills.split(',').map(skill => skill.trim()).filter(Boolean),
-        applicationDeadline: data.applicationDeadline ? new Date(data.applicationDeadline).toISOString() : null,
+        applicationDeadline: data.applicationDeadline || null,
       });
     },
     onSuccess: () => {
@@ -96,7 +96,7 @@ export default function CompanyJobsPage() {
       return apiRequest("PUT", `/api/company/jobs/${id}`, {
         ...data,
         skills: data.skills.split(',').map(skill => skill.trim()).filter(Boolean),
-        applicationDeadline: data.applicationDeadline ? new Date(data.applicationDeadline).toISOString() : null,
+        applicationDeadline: data.applicationDeadline || null,
       });
     },
     onSuccess: () => {
