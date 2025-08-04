@@ -41,11 +41,29 @@ export default function JobDiscoveryPage() {
   const [searchKeywords, setSearchKeywords] = useState('');
   const [selectedTab, setSelectedTab] = useState('discover');
   
-  // Job search query
+  // Job search query with proper query string formatting
   const { data: jobs = [], isLoading: jobsLoading, refetch: searchJobs } = useQuery({
     queryKey: ['/api/jobs/search', filters],
-    enabled: false
+    queryFn: async () => {
+      const searchParams = new URLSearchParams();
+      if (filters.keywords) searchParams.append('keywords', filters.keywords);
+      if (filters.location) searchParams.append('location', filters.location);
+      if (filters.employmentType?.length) searchParams.append('employmentType', filters.employmentType.join(','));
+      if (filters.experienceLevel?.length) searchParams.append('experienceLevel', filters.experienceLevel.join(','));
+      if (filters.remoteType?.length) searchParams.append('remoteType', filters.remoteType.join(','));
+      if (filters.salaryMin) searchParams.append('salaryMin', filters.salaryMin.toString());
+      if (filters.salaryMax) searchParams.append('salaryMax', filters.salaryMax.toString());
+      
+      const response = await fetch(`/api/jobs/search?${searchParams}`);
+      if (!response.ok) throw new Error('Failed to search jobs');
+      return response.json();
+    }
   });
+
+  // Load all jobs on initial page load
+  React.useEffect(() => {
+    searchJobs();
+  }, []);
 
   // Saved jobs query
   const { data: savedJobs = [] } = useQuery({
@@ -67,10 +85,7 @@ export default function JobDiscoveryPage() {
 
   // Mutations
   const saveJobMutation = useMutation({
-    mutationFn: (jobId: string) => apiRequest(`/api/jobs/${jobId}/save`, {
-      method: 'POST',
-      body: { notes: '' }
-    }),
+    mutationFn: (jobId: string) => apiRequest('POST', `/api/jobs/${jobId}/save`, { notes: '' }),
     onSuccess: () => {
       toast({ title: "Job saved successfully!" });
       queryClient.invalidateQueries({ queryKey: ['/api/jobs/saved'] });
@@ -85,9 +100,7 @@ export default function JobDiscoveryPage() {
   });
 
   const unsaveJobMutation = useMutation({
-    mutationFn: (jobId: string) => apiRequest(`/api/jobs/${jobId}/save`, {
-      method: 'DELETE'
-    }),
+    mutationFn: (jobId: string) => apiRequest('DELETE', `/api/jobs/${jobId}/save`),
     onSuccess: () => {
       toast({ title: "Job removed from saved list" });
       queryClient.invalidateQueries({ queryKey: ['/api/jobs/saved'] });
@@ -96,10 +109,7 @@ export default function JobDiscoveryPage() {
 
   const applyJobMutation = useMutation({
     mutationFn: ({ jobId, coverLetter }: { jobId: string; coverLetter: string }) => 
-      apiRequest(`/api/jobs/${jobId}/apply`, {
-        method: 'POST',
-        body: { coverLetter }
-      }),
+      apiRequest('POST', `/api/jobs/${jobId}/apply`, { coverLetter }),
     onSuccess: () => {
       toast({ title: "Application submitted successfully!" });
       queryClient.invalidateQueries({ queryKey: ['/api/jobs/my-applications'] });
@@ -114,10 +124,7 @@ export default function JobDiscoveryPage() {
   });
 
   const createAlertMutation = useMutation({
-    mutationFn: (alertData: any) => apiRequest('/api/job-alerts', {
-      method: 'POST',
-      body: alertData
-    }),
+    mutationFn: (alertData: any) => apiRequest('POST', '/api/job-alerts', alertData),
     onSuccess: () => {
       toast({ title: "Job alert created successfully!" });
       queryClient.invalidateQueries({ queryKey: ['/api/job-alerts'] });
