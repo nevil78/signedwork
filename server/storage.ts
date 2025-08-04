@@ -10,7 +10,7 @@ import {
   type InsertJobListing, type InsertJobApplication, type InsertSavedJob, type InsertJobAlert
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, sql } from "drizzle-orm";
+import { eq, and, sql, desc } from "drizzle-orm";
 import bcrypt from "bcrypt";
 
 // Generate a short, memorable employee ID
@@ -857,7 +857,7 @@ export class DatabaseStorage implements IStorage {
       ...application,
       job,
       employee
-    }));
+    })) as any;
   }
 
   async getJobApplicationWithEmployee(applicationId: string): Promise<JobApplication | null> {
