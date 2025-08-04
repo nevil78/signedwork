@@ -182,6 +182,81 @@ export const companyEmployees = pgTable("company_employees", {
   isActive: boolean("is_active").default(true),
 });
 
+// Job listings table for job discovery
+export const jobListings = pgTable("job_listings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  companyId: varchar("company_id").notNull().references(() => companies.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  requirements: text("requirements").array().notNull().default(sql`'{}'::text[]`),
+  location: text("location").notNull(),
+  locationType: text("location_type").notNull().default("office"), // office, remote, hybrid
+  employmentType: text("employment_type").notNull(), // full-time, part-time, contract, internship
+  experienceLevel: text("experience_level").notNull(), // entry, mid, senior, executive
+  salaryMin: integer("salary_min"),
+  salaryMax: integer("salary_max"),
+  salaryCurrency: text("salary_currency").default("INR"),
+  benefits: text("benefits").array().default(sql`'{}'::text[]`),
+  skills: text("skills").array().notNull().default(sql`'{}'::text[]`),
+  department: text("department"),
+  industry: text("industry").notNull(),
+  applicationDeadline: timestamp("application_deadline"),
+  isActive: boolean("is_active").default(true),
+  isPremium: boolean("is_premium").default(false),
+  views: integer("views").default(0),
+  applicationsCount: integer("applications_count").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Job applications table
+export const jobApplications = pgTable("job_applications", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  jobId: varchar("job_id").notNull().references(() => jobListings.id, { onDelete: "cascade" }),
+  employeeId: varchar("employee_id").notNull().references(() => employees.id, { onDelete: "cascade" }),
+  status: text("status").notNull().default("applied"), // applied, viewed, shortlisted, interviewed, offered, rejected, withdrawn
+  coverLetter: text("cover_letter"),
+  resumeUrl: text("resume_url"),
+  appliedAt: timestamp("applied_at").defaultNow(),
+  statusUpdatedAt: timestamp("status_updated_at").defaultNow(),
+  companyNotes: text("company_notes"),
+});
+
+// Job saved/bookmarked by employees
+export const savedJobs = pgTable("saved_jobs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  jobId: varchar("job_id").notNull().references(() => jobListings.id, { onDelete: "cascade" }),
+  employeeId: varchar("employee_id").notNull().references(() => employees.id, { onDelete: "cascade" }),
+  savedAt: timestamp("saved_at").defaultNow(),
+});
+
+// Job alerts/preferences for employees
+export const jobAlerts = pgTable("job_alerts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  employeeId: varchar("employee_id").notNull().references(() => employees.id, { onDelete: "cascade" }),
+  alertName: text("alert_name").notNull(),
+  keywords: text("keywords").array().default(sql`'{}'::text[]`),
+  locations: text("locations").array().default(sql`'{}'::text[]`),
+  employmentTypes: text("employment_types").array().default(sql`'{}'::text[]`),
+  experienceLevels: text("experience_levels").array().default(sql`'{}'::text[]`),
+  salaryMin: integer("salary_min"),
+  industries: text("industries").array().default(sql`'{}'::text[]`),
+  isActive: boolean("is_active").default(true),
+  emailNotifications: boolean("email_notifications").default(true),
+  frequency: text("frequency").default("daily"), // instant, daily, weekly
+  lastSent: timestamp("last_sent"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Employee profile views by companies (analytics)
+export const profileViews = pgTable("profile_views", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  employeeId: varchar("employee_id").notNull().references(() => employees.id, { onDelete: "cascade" }),
+  companyId: varchar("company_id").notNull().references(() => companies.id, { onDelete: "cascade" }),
+  jobId: varchar("job_id").references(() => jobListings.id, { onDelete: "set null" }),
+  viewedAt: timestamp("viewed_at").defaultNow(),
+});
+
 // Relations
 export const employeesRelations = relations(employees, ({ many }) => ({
   experiences: many(experiences),
@@ -192,6 +267,10 @@ export const employeesRelations = relations(employees, ({ many }) => ({
   employeeCompanies: many(employeeCompanies),
   workEntries: many(workEntries),
   companyEmployees: many(companyEmployees),
+  jobApplications: many(jobApplications),
+  savedJobs: many(savedJobs),
+  jobAlerts: many(jobAlerts),
+  profileViews: many(profileViews),
 }));
 
 export const experiencesRelations = relations(experiences, ({ one }) => ({
@@ -245,6 +324,66 @@ export const workEntriesRelations = relations(workEntries, ({ one }) => ({
   company: one(employeeCompanies, {
     fields: [workEntries.companyId],
     references: [employeeCompanies.id],
+  }),
+}));
+
+export const companiesRelations = relations(companies, ({ many }) => ({
+  jobListings: many(jobListings),
+  profileViews: many(profileViews),
+  companyEmployees: many(companyEmployees),
+  invitationCodes: many(companyInvitationCodes),
+}));
+
+export const jobListingsRelations = relations(jobListings, ({ one, many }) => ({
+  company: one(companies, {
+    fields: [jobListings.companyId],
+    references: [companies.id],
+  }),
+  applications: many(jobApplications),
+  savedJobs: many(savedJobs),
+}));
+
+export const jobApplicationsRelations = relations(jobApplications, ({ one }) => ({
+  job: one(jobListings, {
+    fields: [jobApplications.jobId],
+    references: [jobListings.id],
+  }),
+  employee: one(employees, {
+    fields: [jobApplications.employeeId],
+    references: [employees.id],
+  }),
+}));
+
+export const savedJobsRelations = relations(savedJobs, ({ one }) => ({
+  job: one(jobListings, {
+    fields: [savedJobs.jobId],
+    references: [jobListings.id],
+  }),
+  employee: one(employees, {
+    fields: [savedJobs.employeeId],
+    references: [employees.id],
+  }),
+}));
+
+export const jobAlertsRelations = relations(jobAlerts, ({ one }) => ({
+  employee: one(employees, {
+    fields: [jobAlerts.employeeId],
+    references: [employees.id],
+  }),
+}));
+
+export const profileViewsRelations = relations(profileViews, ({ one }) => ({
+  employee: one(employees, {
+    fields: [profileViews.employeeId],
+    references: [employees.id],
+  }),
+  company: one(companies, {
+    fields: [profileViews.companyId],
+    references: [companies.id],
+  }),
+  job: one(jobListings, {
+    fields: [profileViews.jobId],
+    references: [jobListings.id],
   }),
 }));
 
@@ -335,6 +474,31 @@ export const insertCompanyEmployeeSchema = createInsertSchema(companyEmployees).
   joinedAt: true,
 });
 
+export const insertJobListingSchema = createInsertSchema(jobListings).omit({
+  id: true,
+  views: true,
+  applicationsCount: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertJobApplicationSchema = createInsertSchema(jobApplications).omit({
+  id: true,
+  appliedAt: true,
+  statusUpdatedAt: true,
+});
+
+export const insertSavedJobSchema = createInsertSchema(savedJobs).omit({
+  id: true,
+  savedAt: true,
+});
+
+export const insertJobAlertSchema = createInsertSchema(jobAlerts).omit({
+  id: true,
+  lastSent: true,
+  createdAt: true,
+});
+
 export const loginSchema = z.object({
   email: z.string().email("Invalid email format"),
   password: z.string().min(1, "Password is required"),
@@ -343,10 +507,7 @@ export const loginSchema = z.object({
   }),
 });
 
-export const companiesRelations = relations(companies, ({ many }) => ({
-  invitationCodes: many(companyInvitationCodes),
-  companyEmployees: many(companyEmployees),
-}));
+
 
 export const companyInvitationCodesRelations = relations(companyInvitationCodes, ({ one }) => ({
   company: one(companies, {
@@ -395,3 +556,15 @@ export type InsertCompany = z.infer<typeof insertCompanySchema>;
 export type InsertCompanyInvitationCode = z.infer<typeof insertCompanyInvitationCodeSchema>;
 export type InsertCompanyEmployee = z.infer<typeof insertCompanyEmployeeSchema>;
 export type LoginData = z.infer<typeof loginSchema>;
+
+// Job-related types
+export type JobListing = typeof jobListings.$inferSelect;
+export type JobApplication = typeof jobApplications.$inferSelect;
+export type SavedJob = typeof savedJobs.$inferSelect;
+export type JobAlert = typeof jobAlerts.$inferSelect;
+export type ProfileView = typeof profileViews.$inferSelect;
+
+export type InsertJobListing = z.infer<typeof insertJobListingSchema>;
+export type InsertJobApplication = z.infer<typeof insertJobApplicationSchema>;
+export type InsertSavedJob = z.infer<typeof insertSavedJobSchema>;
+export type InsertJobAlert = z.infer<typeof insertJobAlertSchema>;

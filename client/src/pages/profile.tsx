@@ -189,6 +189,12 @@ export default function Profile() {
                     Work Diary
                   </Button>
                 </Link>
+                <Link to="/job-discovery">
+                  <Button variant="ghost" size="sm">
+                    <Building className="w-4 h-4 mr-2" />
+                    Job Discovery
+                  </Button>
+                </Link>
               </div>
             </div>
             <Button

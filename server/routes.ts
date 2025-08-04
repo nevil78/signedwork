@@ -7,7 +7,8 @@ import {
   insertEmployeeSchema, insertCompanySchema, loginSchema,
   insertExperienceSchema, insertEducationSchema, insertCertificationSchema,
   insertProjectSchema, insertEndorsementSchema, insertWorkEntrySchema,
-  insertEmployeeCompanySchema
+  insertEmployeeCompanySchema, insertJobListingSchema, insertJobApplicationSchema,
+  insertSavedJobSchema, insertJobAlertSchema
 } from "@shared/schema";
 import { fromZodError } from "zod-validation-error";
 
@@ -914,6 +915,339 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Get company employee profile error:", error);
       res.status(500).json({ message: "Failed to get employee profile data" });
+    }
+  });
+
+  // === JOB DISCOVERY ROUTES ===
+  
+  // Search jobs with filters
+  app.get("/api/jobs/search", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    if (!sessionUser || sessionUser.type !== "employee") {
+      return res.status(401).json({ message: "Not authenticated as employee" });
+    }
+    
+    try {
+      const filters = {
+        keywords: req.query.keywords as string,
+        location: req.query.location as string,
+        employmentType: req.query.employmentType ? (req.query.employmentType as string).split(',') : undefined,
+        experienceLevel: req.query.experienceLevel ? (req.query.experienceLevel as string).split(',') : undefined,
+        remoteType: req.query.remoteType ? (req.query.remoteType as string).split(',') : undefined,
+        salaryMin: req.query.salaryMin ? parseInt(req.query.salaryMin as string) : undefined,
+        salaryMax: req.query.salaryMax ? parseInt(req.query.salaryMax as string) : undefined,
+      };
+      
+      const jobs = await storage.searchJobs(filters);
+      res.json(jobs);
+    } catch (error) {
+      console.error("Job search error:", error);
+      res.status(500).json({ message: "Failed to search jobs" });
+    }
+  });
+  
+  // Get job by ID
+  app.get("/api/jobs/:jobId", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    if (!sessionUser || sessionUser.type !== "employee") {
+      return res.status(401).json({ message: "Not authenticated as employee" });
+    }
+    
+    try {
+      const job = await storage.getJobById(req.params.jobId);
+      if (!job) {
+        return res.status(404).json({ message: "Job not found" });
+      }
+      res.json(job);
+    } catch (error) {
+      console.error("Get job error:", error);
+      res.status(500).json({ message: "Failed to get job details" });
+    }
+  });
+  
+  // Apply for a job
+  app.post("/api/jobs/:jobId/apply", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    if (!sessionUser || sessionUser.type !== "employee") {
+      return res.status(401).json({ message: "Not authenticated as employee" });
+    }
+    
+    try {
+      const applicationData = insertJobApplicationSchema.parse({
+        ...req.body,
+        jobId: req.params.jobId,
+        employeeId: sessionUser.id
+      });
+      
+      const application = await storage.createJobApplication(applicationData);
+      res.status(201).json({
+        message: "Application submitted successfully",
+        application
+      });
+    } catch (error: any) {
+      if (error.name === "ZodError") {
+        const validationError = fromZodError(error);
+        return res.status(400).json({ 
+          message: validationError.message,
+          errors: error.errors
+        });
+      }
+      
+      // Handle duplicate application
+      if (error.message?.includes('duplicate') || error.code === '23505') {
+        return res.status(400).json({ message: "You have already applied for this job" });
+      }
+      
+      console.error("Job application error:", error);
+      res.status(500).json({ message: "Failed to submit application" });
+    }
+  });
+  
+  // Get employee's job applications
+  app.get("/api/jobs/my-applications", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    if (!sessionUser || sessionUser.type !== "employee") {
+      return res.status(401).json({ message: "Not authenticated as employee" });
+    }
+    
+    try {
+      const applications = await storage.getJobApplications(sessionUser.id);
+      res.json(applications);
+    } catch (error) {
+      console.error("Get applications error:", error);
+      res.status(500).json({ message: "Failed to get applications" });
+    }
+  });
+  
+  // Save/unsave a job
+  app.post("/api/jobs/:jobId/save", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    if (!sessionUser || sessionUser.type !== "employee") {
+      return res.status(401).json({ message: "Not authenticated as employee" });
+    }
+    
+    try {
+      const saveData = insertSavedJobSchema.parse({
+        jobId: req.params.jobId,
+        employeeId: sessionUser.id,
+        notes: req.body.notes
+      });
+      
+      const savedJob = await storage.saveJob(saveData);
+      res.status(201).json({
+        message: "Job saved successfully",
+        savedJob
+      });
+    } catch (error: any) {
+      if (error.message?.includes('duplicate') || error.code === '23505') {
+        return res.status(400).json({ message: "Job already saved" });
+      }
+      
+      console.error("Save job error:", error);
+      res.status(500).json({ message: "Failed to save job" });
+    }
+  });
+  
+  app.delete("/api/jobs/:jobId/save", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    if (!sessionUser || sessionUser.type !== "employee") {
+      return res.status(401).json({ message: "Not authenticated as employee" });
+    }
+    
+    try {
+      await storage.unsaveJob(sessionUser.id, req.params.jobId);
+      res.json({ message: "Job unsaved successfully" });
+    } catch (error) {
+      console.error("Unsave job error:", error);
+      res.status(500).json({ message: "Failed to unsave job" });
+    }
+  });
+  
+  // Get saved jobs
+  app.get("/api/jobs/saved", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    if (!sessionUser || sessionUser.type !== "employee") {
+      return res.status(401).json({ message: "Not authenticated as employee" });
+    }
+    
+    try {
+      const savedJobs = await storage.getSavedJobs(sessionUser.id);
+      res.json(savedJobs);
+    } catch (error) {
+      console.error("Get saved jobs error:", error);
+      res.status(500).json({ message: "Failed to get saved jobs" });
+    }
+  });
+  
+  // Job alerts management
+  app.get("/api/job-alerts", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    if (!sessionUser || sessionUser.type !== "employee") {
+      return res.status(401).json({ message: "Not authenticated as employee" });
+    }
+    
+    try {
+      const alerts = await storage.getJobAlerts(sessionUser.id);
+      res.json(alerts);
+    } catch (error) {
+      console.error("Get job alerts error:", error);
+      res.status(500).json({ message: "Failed to get job alerts" });
+    }
+  });
+  
+  app.post("/api/job-alerts", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    if (!sessionUser || sessionUser.type !== "employee") {
+      return res.status(401).json({ message: "Not authenticated as employee" });
+    }
+    
+    try {
+      const alertData = insertJobAlertSchema.parse({
+        ...req.body,
+        employeeId: sessionUser.id
+      });
+      
+      const alert = await storage.createJobAlert(alertData);
+      res.status(201).json({
+        message: "Job alert created successfully",
+        alert
+      });
+    } catch (error: any) {
+      if (error.name === "ZodError") {
+        const validationError = fromZodError(error);
+        return res.status(400).json({ 
+          message: validationError.message,
+          errors: error.errors
+        });
+      }
+      
+      console.error("Create job alert error:", error);
+      res.status(500).json({ message: "Failed to create job alert" });
+    }
+  });
+  
+  app.put("/api/job-alerts/:alertId", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    if (!sessionUser || sessionUser.type !== "employee") {
+      return res.status(401).json({ message: "Not authenticated as employee" });
+    }
+    
+    try {
+      const alert = await storage.updateJobAlert(req.params.alertId, req.body);
+      res.json({
+        message: "Job alert updated successfully",
+        alert
+      });
+    } catch (error) {
+      console.error("Update job alert error:", error);
+      res.status(500).json({ message: "Failed to update job alert" });
+    }
+  });
+  
+  app.delete("/api/job-alerts/:alertId", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    if (!sessionUser || sessionUser.type !== "employee") {
+      return res.status(401).json({ message: "Not authenticated as employee" });
+    }
+    
+    try {
+      await storage.deleteJobAlert(req.params.alertId);
+      res.json({ message: "Job alert deleted successfully" });
+    } catch (error) {
+      console.error("Delete job alert error:", error);
+      res.status(500).json({ message: "Failed to delete job alert" });
+    }
+  });
+
+  // === COMPANY JOB MANAGEMENT ROUTES ===
+  
+  // Company creates job listing
+  app.post("/api/company/jobs", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    if (!sessionUser || sessionUser.type !== "company") {
+      return res.status(401).json({ message: "Not authenticated as company" });
+    }
+    
+    try {
+      const jobData = insertJobListingSchema.parse({
+        ...req.body,
+        companyId: sessionUser.id
+      });
+      
+      const job = await storage.createJobListing(jobData);
+      res.status(201).json({
+        message: "Job listing created successfully",
+        job
+      });
+    } catch (error: any) {
+      if (error.name === "ZodError") {
+        const validationError = fromZodError(error);
+        return res.status(400).json({ 
+          message: validationError.message,
+          errors: error.errors
+        });
+      }
+      
+      console.error("Create job listing error:", error);
+      res.status(500).json({ message: "Failed to create job listing" });
+    }
+  });
+  
+  // Company gets their job listings
+  app.get("/api/company/jobs", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    if (!sessionUser || sessionUser.type !== "company") {
+      return res.status(401).json({ message: "Not authenticated as company" });
+    }
+    
+    try {
+      const jobs = await storage.searchJobs({ companyId: sessionUser.id });
+      res.json(jobs);
+    } catch (error) {
+      console.error("Get company jobs error:", error);
+      res.status(500).json({ message: "Failed to get job listings" });
+    }
+  });
+  
+  // Company gets applications for a specific job
+  app.get("/api/company/jobs/:jobId/applications", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    if (!sessionUser || sessionUser.type !== "company") {
+      return res.status(401).json({ message: "Not authenticated as company" });
+    }
+    
+    try {
+      // First verify this job belongs to the company
+      const job = await storage.getJobById(req.params.jobId);
+      if (!job || job.companyId !== sessionUser.id) {
+        return res.status(403).json({ message: "Access denied to this job" });
+      }
+      
+      const applications = await storage.getJobApplicationsForJob(req.params.jobId);
+      res.json(applications);
+    } catch (error) {
+      console.error("Get job applications error:", error);
+      res.status(500).json({ message: "Failed to get job applications" });
+    }
+  });
+  
+  // Company updates application status
+  app.put("/api/company/applications/:applicationId", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    if (!sessionUser || sessionUser.type !== "company") {
+      return res.status(401).json({ message: "Not authenticated as company" });
+    }
+    
+    try {
+      const { status, notes } = req.body;
+      const application = await storage.updateJobApplicationStatus(req.params.applicationId, status, notes);
+      res.json({
+        message: "Application status updated successfully",
+        application
+      });
+    } catch (error) {
+      console.error("Update application status error:", error);
+      res.status(500).json({ message: "Failed to update application status" });
     }
   });
 

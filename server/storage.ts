@@ -1,11 +1,13 @@
 import { 
   employees, companies, experiences, educations, certifications, projects, endorsements, workEntries, employeeCompanies,
-  companyInvitationCodes, companyEmployees,
+  companyInvitationCodes, companyEmployees, jobListings, jobApplications, savedJobs, jobAlerts, profileViews,
   type Employee, type Company, type InsertEmployee, type InsertCompany,
   type Experience, type Education, type Certification, type Project, type Endorsement, type WorkEntry, type EmployeeCompany,
   type InsertExperience, type InsertEducation, type InsertCertification, 
   type InsertProject, type InsertEndorsement, type InsertWorkEntry, type InsertEmployeeCompany,
-  type CompanyInvitationCode, type CompanyEmployee, type InsertCompanyInvitationCode, type InsertCompanyEmployee
+  type CompanyInvitationCode, type CompanyEmployee, type InsertCompanyInvitationCode, type InsertCompanyEmployee,
+  type JobListing, type JobApplication, type SavedJob, type JobAlert, type ProfileView,
+  type InsertJobListing, type InsertJobApplication, type InsertSavedJob, type InsertJobAlert
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, sql } from "drizzle-orm";
@@ -136,6 +138,45 @@ export interface IStorage {
   // Company employees operations
   getCompanyEmployees(companyId: string): Promise<CompanyEmployee[]>;
   getEmployeeCompaniesNew(employeeId: string): Promise<CompanyEmployee[]>;
+  
+  // Job discovery operations
+  searchJobs(filters: JobSearchFilters): Promise<JobListing[]>;
+  getJobById(id: string): Promise<JobListing | undefined>;
+  createJobListing(job: InsertJobListing): Promise<JobListing>;
+  updateJobListing(id: string, data: Partial<JobListing>): Promise<JobListing>;
+  deleteJobListing(id: string): Promise<void>;
+  
+  // Job application operations  
+  getJobApplications(employeeId: string): Promise<JobApplication[]>;
+  getJobApplicationsForJob(jobId: string): Promise<JobApplication[]>;
+  createJobApplication(application: InsertJobApplication): Promise<JobApplication>;
+  updateJobApplicationStatus(id: string, status: string, notes?: string): Promise<JobApplication>;
+  
+  // Saved jobs operations
+  getSavedJobs(employeeId: string): Promise<SavedJob[]>;
+  saveJob(data: InsertSavedJob): Promise<SavedJob>;
+  unsaveJob(employeeId: string, jobId: string): Promise<void>;
+  
+  // Job alerts operations
+  getJobAlerts(employeeId: string): Promise<JobAlert[]>;
+  createJobAlert(alert: InsertJobAlert): Promise<JobAlert>;
+  updateJobAlert(id: string, data: Partial<JobAlert>): Promise<JobAlert>;
+  deleteJobAlert(id: string): Promise<void>;
+  
+  // Profile views operations
+  recordProfileView(viewerCompanyId: string, viewedEmployeeId: string, context: string): Promise<ProfileView>;
+  getProfileViews(employeeId: string): Promise<ProfileView[]>;
+}
+
+export interface JobSearchFilters {
+  keywords?: string;
+  location?: string;
+  employmentType?: string[];
+  experienceLevel?: string[];
+  remoteType?: string[];
+  salaryMin?: number;
+  salaryMax?: number;
+  companyId?: string;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -706,6 +747,163 @@ export class DatabaseStorage implements IStorage {
       .where(eq(companyEmployees.id, relationId));
       
     return relation || null;
+  }
+
+  // Job discovery operations
+  async searchJobs(filters: JobSearchFilters): Promise<JobListing[]> {
+    let query = db.select().from(jobListings);
+    
+    const conditions = [];
+    conditions.push(eq(jobListings.status, "active"));
+    
+    if (filters.keywords) {
+      conditions.push(sql`(${jobListings.title} ILIKE ${'%' + filters.keywords + '%'} OR ${jobListings.description} ILIKE ${'%' + filters.keywords + '%'})`);
+    }
+    
+    if (filters.location) {
+      conditions.push(sql`${jobListings.location} ILIKE ${'%' + filters.location + '%'}`);
+    }
+    
+    if (filters.employmentType && filters.employmentType.length > 0) {
+      conditions.push(sql`${jobListings.employmentType} = ANY(${filters.employmentType})`);
+    }
+    
+    if (filters.experienceLevel && filters.experienceLevel.length > 0) {
+      conditions.push(sql`${jobListings.experienceLevel} = ANY(${filters.experienceLevel})`);
+    }
+    
+    if (filters.remoteType && filters.remoteType.length > 0) {
+      conditions.push(sql`${jobListings.remoteType} = ANY(${filters.remoteType})`);
+    }
+    
+    if (filters.companyId) {
+      conditions.push(eq(jobListings.companyId, filters.companyId));
+    }
+    
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+    
+    return await query;
+  }
+
+  async getJobById(id: string): Promise<JobListing | undefined> {
+    const [job] = await db.select().from(jobListings).where(eq(jobListings.id, id));
+    return job || undefined;
+  }
+
+  async createJobListing(job: InsertJobListing): Promise<JobListing> {
+    const [newJob] = await db
+      .insert(jobListings)
+      .values(job)
+      .returning();
+    return newJob;
+  }
+
+  async updateJobListing(id: string, data: Partial<JobListing>): Promise<JobListing> {
+    const [job] = await db
+      .update(jobListings)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(jobListings.id, id))
+      .returning();
+    return job;
+  }
+
+  async deleteJobListing(id: string): Promise<void> {
+    await db.delete(jobListings).where(eq(jobListings.id, id));
+  }
+
+  // Job application operations
+  async getJobApplications(employeeId: string): Promise<JobApplication[]> {
+    return await db.select().from(jobApplications).where(eq(jobApplications.employeeId, employeeId));
+  }
+
+  async getJobApplicationsForJob(jobId: string): Promise<JobApplication[]> {
+    return await db.select().from(jobApplications).where(eq(jobApplications.jobId, jobId));
+  }
+
+  async createJobApplication(application: InsertJobApplication): Promise<JobApplication> {
+    const [newApplication] = await db
+      .insert(jobApplications)
+      .values(application)
+      .returning();
+    return newApplication;
+  }
+
+  async updateJobApplicationStatus(id: string, status: string, notes?: string): Promise<JobApplication> {
+    const updateData: any = { status, statusUpdatedAt: new Date() };
+    if (notes) updateData.notes = notes;
+    
+    const [application] = await db
+      .update(jobApplications)
+      .set(updateData)
+      .where(eq(jobApplications.id, id))
+      .returning();
+    return application;
+  }
+
+  // Saved jobs operations
+  async getSavedJobs(employeeId: string): Promise<SavedJob[]> {
+    return await db.select().from(savedJobs).where(eq(savedJobs.employeeId, employeeId));
+  }
+
+  async saveJob(data: InsertSavedJob): Promise<SavedJob> {
+    const [saved] = await db
+      .insert(savedJobs)
+      .values(data)
+      .returning();
+    return saved;
+  }
+
+  async unsaveJob(employeeId: string, jobId: string): Promise<void> {
+    await db.delete(savedJobs)
+      .where(and(
+        eq(savedJobs.employeeId, employeeId),
+        eq(savedJobs.jobId, jobId)
+      ));
+  }
+
+  // Job alerts operations
+  async getJobAlerts(employeeId: string): Promise<JobAlert[]> {
+    return await db.select().from(jobAlerts).where(eq(jobAlerts.employeeId, employeeId));
+  }
+
+  async createJobAlert(alert: InsertJobAlert): Promise<JobAlert> {
+    const [newAlert] = await db
+      .insert(jobAlerts)
+      .values(alert)
+      .returning();
+    return newAlert;
+  }
+
+  async updateJobAlert(id: string, data: Partial<JobAlert>): Promise<JobAlert> {
+    const [alert] = await db
+      .update(jobAlerts)
+      .set(data)
+      .where(eq(jobAlerts.id, id))
+      .returning();
+    return alert;
+  }
+
+  async deleteJobAlert(id: string): Promise<void> {
+    await db.delete(jobAlerts).where(eq(jobAlerts.id, id));
+  }
+
+  // Profile views operations
+  async recordProfileView(viewerCompanyId: string, viewedEmployeeId: string, context: string): Promise<ProfileView> {
+    const [view] = await db
+      .insert(profileViews)
+      .values({
+        viewerCompanyId,
+        viewedEmployeeId,
+        viewContext: context as any
+      })
+      .returning();
+    return view;
+  }
+
+  async getProfileViews(employeeId: string): Promise<ProfileView[]> {
+    return await db.select().from(profileViews).where(eq(profileViews.viewedEmployeeId, employeeId));
   }
 }
 

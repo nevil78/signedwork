@@ -8,6 +8,7 @@ import Dashboard from "@/pages/dashboard";
 import Profile from "@/pages/profile";
 import WorkDiary from "@/pages/work-diary";
 import WorkDiaryCompany from "@/pages/work-diary-company";
+import JobDiscoveryPage from "@/pages/job-discovery";
 import CompanyDashboard from "@/pages/company-dashboard";
 import CompanyWorkEntries from "@/pages/company-work-entries";
 import CompanyEmployeeProfile from "@/pages/company-employee-profile";
@@ -21,6 +22,7 @@ function Router() {
       <Route path="/profile" component={Profile} />
       <Route path="/work-diary" component={WorkDiary} />
       <Route path="/work-diary/:companyId" component={WorkDiaryCompany} />
+      <Route path="/job-discovery" component={JobDiscoveryPage} />
       <Route path="/company-dashboard" component={CompanyDashboard} />
       <Route path="/company-work-entries" component={CompanyWorkEntries} />
       <Route path="/company-employee/:employeeId" component={CompanyEmployeeProfile} />
