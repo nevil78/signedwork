@@ -997,9 +997,11 @@ export class DatabaseStorage implements IStorage {
         status: workEntries.status,
         companyFeedback: workEntries.companyFeedback,
         createdAt: workEntries.createdAt,
-        updatedAt: workEntries.updatedAt
+        updatedAt: workEntries.updatedAt,
+        companyName: companies.name
       })
       .from(workEntries)
+      .leftJoin(companies, eq(workEntries.companyId, companies.id))
       .where(
         and(
           eq(workEntries.employeeId, employeeId),
@@ -1008,7 +1010,10 @@ export class DatabaseStorage implements IStorage {
       )
       .orderBy(desc(workEntries.createdAt));
 
-    return entries;
+    return entries.map(entry => ({
+      ...entry,
+      company: { name: entry.companyName }
+    })) as WorkEntry[];
   }
 }
 

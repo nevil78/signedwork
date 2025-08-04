@@ -1456,7 +1456,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Get work entries for this employee for this company only
       const workEntries = await storage.getWorkEntriesForEmployeeAndCompany(req.params.employeeId, sessionUser.id);
-      res.json(workEntries);
+      
+      // Add company name to each entry
+      const company = await storage.getCompany(sessionUser.id);
+      const entriesWithCompany = workEntries.map((entry: any) => ({
+        ...entry,
+        companyName: company?.name || 'Unknown Company'
+      }));
+      
+      res.json(entriesWithCompany);
     } catch (error) {
       console.error("Get employee work entries error:", error);
       res.status(500).json({ message: "Failed to get employee work entries" });

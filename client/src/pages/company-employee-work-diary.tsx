@@ -193,18 +193,20 @@ export default function CompanyEmployeeWorkDiary() {
                     <div className="space-y-2 text-sm">
                       <div className="flex items-center gap-2">
                         <Building2 className="h-4 w-4 text-muted-foreground" />
-                        <span>{entry.company?.name || 'Unknown Company'}</span>
+                        <span>{(entry as any).companyName || employee?.currentCompany || 'Company'}</span>
                       </div>
                       
                       <div className="flex items-center gap-2">
                         <Calendar className="h-4 w-4 text-muted-foreground" />
-                        <span>{entry.createdAt ? format(new Date(entry.createdAt), 'MMM dd, yyyy') : 'Unknown'}</span>
+                        <span>
+                          {entry.startDate} {entry.endDate ? `to ${entry.endDate}` : '(ongoing)'}
+                        </span>
                       </div>
 
                       <div className="flex items-center gap-2">
                         <Clock className="h-4 w-4 text-muted-foreground" />
                         <span>
-                          {entry.hours || 0}h logged
+                          {entry.hours ? `${entry.hours}h logged` : 'N/A'}
                         </span>
                       </div>
                     </div>
