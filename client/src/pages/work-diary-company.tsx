@@ -70,16 +70,18 @@ export default function WorkDiaryCompany() {
   });
 
   const company = companies?.find(c => c.id === companyId);
+  // Get the actual company ID for the new schema structure
+  const actualCompanyId = company?.companyId || companyId;
 
   // Fetch work entries for this company
   const { data: workEntries = [], isLoading } = useQuery<WorkEntry[]>({
-    queryKey: ['/api/work-diary', companyId],
+    queryKey: ['/api/work-diary', actualCompanyId],
     queryFn: async () => {
-      const response = await fetch(`/api/work-diary?companyId=${companyId}`);
+      const response = await fetch(`/api/work-diary?companyId=${actualCompanyId}`);
       if (!response.ok) throw new Error('Failed to fetch work entries');
       return response.json();
     },
-    enabled: !!companyId,
+    enabled: !!actualCompanyId,
   });
 
   const form = useForm<WorkEntryFormData>({
@@ -99,13 +101,13 @@ export default function WorkDiaryCompany() {
       const response = await fetch('/api/work-diary', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...data, companyId }),
+        body: JSON.stringify({ ...data, companyId: actualCompanyId }),
       });
       if (!response.ok) throw new Error('Failed to create work entry');
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/work-diary', companyId] });
+      queryClient.invalidateQueries({ queryKey: ['/api/work-diary', actualCompanyId] });
       toast({
         title: "Success",
         description: "Work entry created successfully",
@@ -133,7 +135,7 @@ export default function WorkDiaryCompany() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/work-diary', companyId] });
+      queryClient.invalidateQueries({ queryKey: ['/api/work-diary', actualCompanyId] });
       toast({
         title: "Success",
         description: "Work entry updated successfully",
@@ -161,7 +163,7 @@ export default function WorkDiaryCompany() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/work-diary', companyId] });
+      queryClient.invalidateQueries({ queryKey: ['/api/work-diary', actualCompanyId] });
       toast({
         title: "Success",
         description: "Work entry deleted successfully",

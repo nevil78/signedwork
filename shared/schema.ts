@@ -125,7 +125,7 @@ export const employeeCompanies = pgTable("employee_companies", {
 export const workEntries = pgTable("work_entries", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   employeeId: varchar("employee_id").notNull().references(() => employees.id, { onDelete: "cascade" }),
-  companyId: varchar("company_id").notNull().references(() => employeeCompanies.id, { onDelete: "cascade" }),
+  companyId: varchar("company_id").notNull().references(() => companies.id, { onDelete: "cascade" }),
   title: text("title").notNull(),
   description: text("description"),
   startDate: text("start_date").notNull(),
