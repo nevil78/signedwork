@@ -79,7 +79,7 @@ export default function WorkDiaryCompany() {
       endDate: '',
       priority: 'medium',
       hours: undefined,
-      tags: [],
+      tags: '' as any, // Handle as string in form, convert to array on submit
     },
   });
 
@@ -497,8 +497,8 @@ export default function WorkDiaryCompany() {
                       <FormControl>
                         <Input 
                           placeholder="e.g. development, meeting, research"
-                          {...field}
                           value={typeof field.value === 'string' ? field.value : field.value?.join(', ') || ''}
+                          onChange={(e) => field.onChange(e.target.value)}
                         />
                       </FormControl>
                       <FormMessage />
