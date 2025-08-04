@@ -765,7 +765,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      const workEntry = await storage.updateWorkEntry(req.params.id, req.body);
+      // When updating a work entry, reset status to pending for re-review
+      const updateData = {
+        ...req.body,
+        status: 'pending', // Always reset to pending when employee updates
+        companyFeedback: null, // Clear any previous company feedback
+        updatedAt: new Date()
+      };
+      
+      const workEntry = await storage.updateWorkEntry(req.params.id, updateData);
       res.json(workEntry);
     } catch (error) {
       console.error("Update work entry error:", error);
