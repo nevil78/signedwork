@@ -194,6 +194,8 @@ export const jobListings = pgTable("job_listings", {
   employmentType: text("employment_type").notNull(), // full-time, part-time, contract, internship
   experienceLevel: text("experience_level").notNull(), // entry, mid, senior, executive
   salaryRange: text("salary_range"),
+  salaryMin: integer("salary_min"),
+  salaryMax: integer("salary_max"),
   benefits: text("benefits").array().default(sql`'{}'::text[]`),
   skills: text("skills").array().default(sql`'{}'::text[]`),
   applicationDeadline: timestamp("application_deadline"),

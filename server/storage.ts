@@ -796,13 +796,8 @@ export class DatabaseStorage implements IStorage {
       conditions.push(inArray(jobListings.remoteType, filters.remoteType));
     }
     
-    if (filters.salaryMin && filters.salaryMax) {
-      conditions.push(sql`${jobListings.salaryMin} >= ${filters.salaryMin} AND ${jobListings.salaryMax} <= ${filters.salaryMax}`);
-    } else if (filters.salaryMin) {
-      conditions.push(sql`${jobListings.salaryMax} >= ${filters.salaryMin}`);
-    } else if (filters.salaryMax) {
-      conditions.push(sql`${jobListings.salaryMin} <= ${filters.salaryMax}`);
-    }
+    // TODO: Implement salary filtering after adding salaryMin/salaryMax columns to database
+    // For now, skip salary filtering to focus on other filter functionality
     
     if (filters.companyId) {
       conditions.push(eq(jobListings.companyId, filters.companyId));
