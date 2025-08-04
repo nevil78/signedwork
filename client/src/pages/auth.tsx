@@ -205,6 +205,7 @@ export default function AuthPage() {
                 <a href="#" className="text-slate-600 hover:text-primary transition-colors">About</a>
                 <a href="#" className="text-slate-600 hover:text-primary transition-colors">Support</a>
                 <a href="#" className="text-slate-600 hover:text-primary transition-colors">Contact</a>
+                <a href="/admin/setup" className="text-slate-600 hover:text-primary transition-colors font-medium">Admin Panel</a>
               </nav>
             </div>
           </div>
@@ -245,7 +246,7 @@ export default function AuthPage() {
               </Card>
             </div>
             
-            <div className="text-center">
+            <div className="text-center space-y-4">
               <p className="text-sm text-slate-600">
                 Already have an account?{" "}
                 <Button 
@@ -256,6 +257,17 @@ export default function AuthPage() {
                   Sign in
                 </Button>
               </p>
+              
+              <div className="pt-4 border-t border-slate-200">
+                <p className="text-xs text-slate-500 mb-2">Platform Administration</p>
+                <a 
+                  href="/admin/setup" 
+                  className="inline-flex items-center px-3 py-2 text-sm font-medium text-slate-600 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors"
+                >
+                  <Shield className="w-4 h-4 mr-2" />
+                  Admin Panel
+                </a>
+              </div>
             </div>
           </div>
         </main>
