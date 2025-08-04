@@ -32,13 +32,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = insertEmployeeSchema.parse(req.body);
       
-      // Check if employee already exists
+      // Check if employee already exists (including deactivated accounts)
       const existingEmployee = await storage.getEmployeeByEmail(validatedData.email);
       if (existingEmployee) {
-        return res.status(400).json({ 
-          message: "An account with this email already exists",
-          field: "email"
-        });
+        if (existingEmployee.isActive === false) {
+          return res.status(403).json({ 
+            message: "This email is associated with a deactivated account. Please contact support for account reactivation.",
+            field: "email"
+          });
+        } else {
+          return res.status(400).json({ 
+            message: "An account with this email already exists",
+            field: "email"
+          });
+        }
       }
       
       const employee = await storage.createEmployee(validatedData);
@@ -69,13 +76,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = insertCompanySchema.parse(req.body);
       
-      // Check if company already exists
+      // Check if company already exists (including deactivated accounts)
       const existingCompany = await storage.getCompanyByEmail(validatedData.email);
       if (existingCompany) {
-        return res.status(400).json({ 
-          message: "An account with this email already exists",
-          field: "email"
-        });
+        if (existingCompany.isActive === false) {
+          return res.status(403).json({ 
+            message: "This email is associated with a deactivated account. Please contact support for account reactivation.",
+            field: "email"
+          });
+        } else {
+          return res.status(400).json({ 
+            message: "An account with this email already exists",
+            field: "email"
+          });
+        }
       }
       
       const company = await storage.createCompany(validatedData);
@@ -393,6 +407,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Toggle company status error:", error);
       res.status(500).json({ message: "Failed to update company status" });
+    }
+  });
+
+  // Admin endpoint to reactivate account by email (for support requests)
+  app.post("/api/admin/reactivate", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    if (!sessionUser || sessionUser.type !== "admin") {
+      return res.status(401).json({ message: "Not authenticated as admin" });
+    }
+    
+    try {
+      const { email, accountType } = req.body;
+      
+      if (accountType === "employee") {
+        const employee = await storage.getEmployeeByEmail(email);
+        if (!employee) {
+          return res.status(404).json({ message: "Employee not found" });
+        }
+        await storage.activateEmployee(employee.id);
+        res.json({ message: "Employee account reactivated successfully" });
+      } else {
+        const company = await storage.getCompanyByEmail(email);
+        if (!company) {
+          return res.status(404).json({ message: "Company not found" });
+        }
+        await storage.activateCompany(company.id);
+        res.json({ message: "Company account reactivated successfully" });
+      }
+    } catch (error) {
+      console.error("Reactivate account error:", error);
+      res.status(500).json({ message: "Failed to reactivate account" });
     }
   });
 
