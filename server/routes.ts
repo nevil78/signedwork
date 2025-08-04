@@ -918,6 +918,81 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Company employee experience routes
+  app.get("/api/company/employee-experience/:employeeId", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    if (!sessionUser || sessionUser.type !== "company") {
+      return res.status(401).json({ message: "Not authenticated as company" });
+    }
+    
+    try {
+      // Check if this employee is associated with the company
+      const employees = await storage.getCompanyEmployees(sessionUser.id);
+      const hasAccess = employees.some(emp => emp.employeeId === req.params.employeeId);
+      
+      if (!hasAccess) {
+        return res.status(403).json({ message: "No access to this employee's profile" });
+      }
+      
+      const experiences = await storage.getEmployeeExperiences(req.params.employeeId);
+      res.json(experiences);
+    } catch (error) {
+      console.error("Get company employee experience error:", error);
+      res.status(500).json({ message: "Failed to get employee experience data" });
+    }
+  });
+
+  // Company employee education routes
+  app.get("/api/company/employee-education/:employeeId", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    if (!sessionUser || sessionUser.type !== "company") {
+      return res.status(401).json({ message: "Not authenticated as company" });
+    }
+    
+    try {
+      // Check if this employee is associated with the company
+      const employees = await storage.getCompanyEmployees(sessionUser.id);
+      const hasAccess = employees.some(emp => emp.employeeId === req.params.employeeId);
+      
+      if (!hasAccess) {
+        return res.status(403).json({ message: "No access to this employee's profile" });
+      }
+      
+      const educations = await storage.getEmployeeEducations(req.params.employeeId);
+      res.json(educations);
+    } catch (error) {
+      console.error("Get company employee education error:", error);
+      res.status(500).json({ message: "Failed to get employee education data" });
+    }
+  });
+
+  // Company employee certifications routes
+  app.get("/api/company/employee-certifications/:employeeId", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    if (!sessionUser || sessionUser.type !== "company") {
+      return res.status(401).json({ message: "Not authenticated as company" });
+    }
+    
+    try {
+      // Check if this employee is associated with the company
+      const employees = await storage.getCompanyEmployees(sessionUser.id);
+      const hasAccess = employees.some(emp => emp.employeeId === req.params.employeeId);
+      
+      if (!hasAccess) {
+        return res.status(403).json({ message: "No access to this employee's profile" });
+      }
+      
+      const certifications = await storage.getEmployeeCertifications(req.params.employeeId);
+      res.json(certifications);
+    } catch (error) {
+      console.error("Get company employee certifications error:", error);
+      res.status(500).json({ message: "Failed to get employee certifications data" });
+    }
+  });
+
   // === JOB DISCOVERY ROUTES ===
   
   // Search jobs with filters

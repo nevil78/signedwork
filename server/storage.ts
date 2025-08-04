@@ -325,6 +325,19 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
+  // Individual employee data getters for company views
+  async getEmployeeExperiences(employeeId: string): Promise<Experience[]> {
+    return await db.select().from(experiences).where(eq(experiences.employeeId, employeeId));
+  }
+
+  async getEmployeeEducations(employeeId: string): Promise<Education[]> {
+    return await db.select().from(educations).where(eq(educations.employeeId, employeeId));
+  }
+
+  async getEmployeeCertifications(employeeId: string): Promise<Certification[]> {
+    return await db.select().from(certifications).where(eq(certifications.employeeId, employeeId));
+  }
+
   // Experience operations
   async createExperience(experience: InsertExperience): Promise<Experience> {
     const [newExperience] = await db

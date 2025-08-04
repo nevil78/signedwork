@@ -24,7 +24,8 @@ import {
   Star,
   Award,
   Languages,
-  BookOpen
+  BookOpen,
+  Phone
 } from 'lucide-react';
 import type { Employee } from '@shared/schema';
 
@@ -32,8 +33,24 @@ export default function CompanyEmployeeProfile() {
   const { employeeId } = useParams<{ employeeId: string }>();
   const [, setLocation] = useLocation();
 
-  const { data: employee, isLoading: employeeLoading, error: employeeError } = useQuery({
+  const { data: employee, isLoading: employeeLoading, error: employeeError } = useQuery<Employee>({
     queryKey: ['/api/company/employee', employeeId],
+    enabled: !!employeeId
+  });
+
+  // Get employee experience, education, and certifications
+  const { data: experiences = [] } = useQuery({
+    queryKey: ['/api/company/employee-experience', employeeId],
+    enabled: !!employeeId
+  });
+
+  const { data: educations = [] } = useQuery({
+    queryKey: ['/api/company/employee-education', employeeId],
+    enabled: !!employeeId
+  });
+
+  const { data: certifications = [] } = useQuery({
+    queryKey: ['/api/company/employee-certifications', employeeId],
     enabled: !!employeeId
   });
 
@@ -314,6 +331,252 @@ export default function CompanyEmployeeProfile() {
           </Card>
         </div>
 
+        {/* Personal Information */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+          {/* Contact & Personal Details */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <User className="h-5 w-5" />
+                Personal Information
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {employee.phone && (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium">Phone:</span>
+                  <span className="text-sm text-muted-foreground">
+                    {employee.countryCode} {employee.phone}
+                  </span>
+                </div>
+              )}
+              {employee.location && (
+                <div className="flex items-center gap-2">
+                  <MapPin className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm">{employee.location}</span>
+                </div>
+              )}
+              {(employee.address || employee.city || employee.state || employee.country) && (
+                <div className="space-y-1">
+                  <span className="text-sm font-medium">Address:</span>
+                  <div className="text-sm text-muted-foreground">
+                    {employee.address && <div>{employee.address}</div>}
+                    {(employee.city || employee.state || employee.zipCode) && (
+                      <div>
+                        {[employee.city, employee.state, employee.zipCode].filter(Boolean).join(', ')}
+                      </div>
+                    )}
+                    {employee.country && <div>{employee.country}</div>}
+                  </div>
+                </div>
+              )}
+              {employee.dateOfBirth && (
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm">Born: {employee.dateOfBirth}</span>
+                </div>
+              )}
+              {employee.nationality && (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium">Nationality:</span>
+                  <span className="text-sm text-muted-foreground">{employee.nationality}</span>
+                </div>
+              )}
+              {employee.maritalStatus && (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium">Marital Status:</span>
+                  <span className="text-sm text-muted-foreground">{employee.maritalStatus}</span>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Hobbies & Interests */}
+          {employee.hobbies && employee.hobbies.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Star className="h-5 w-5" />
+                  Hobbies & Interests
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-wrap gap-2">
+                  {employee.hobbies.map((hobby: string, index: number) => (
+                    <Badge key={index} variant="outline" className="text-xs">
+                      {hobby}
+                    </Badge>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+
+        {/* Experience Section */}
+        {experiences.length > 0 && (
+          <Card className="mt-6">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Briefcase className="h-5 w-5" />
+                Professional Experience
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                {experiences.map((exp: any, index: number) => (
+                  <div key={exp.id} className="border-l-2 border-muted pl-4 pb-4">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <h3 className="font-semibold">{exp.title}</h3>
+                        <p className="text-sm text-muted-foreground">{exp.company}</p>
+                        {exp.location && (
+                          <p className="text-xs text-muted-foreground">{exp.location}</p>
+                        )}
+                      </div>
+                      <div className="text-xs text-muted-foreground text-right">
+                        {exp.startDate} - {exp.isCurrent ? 'Present' : exp.endDate}
+                      </div>
+                    </div>
+                    {exp.description && (
+                      <p className="text-sm mt-2 text-muted-foreground">{exp.description}</p>
+                    )}
+                    {exp.achievements && exp.achievements.length > 0 && (
+                      <div className="mt-2">
+                        <ul className="text-xs space-y-1">
+                          {exp.achievements.map((achievement: string, achIndex: number) => (
+                            <li key={achIndex} className="flex items-start gap-1">
+                              <span className="text-muted-foreground">•</span>
+                              <span>{achievement}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Education Section */}
+        {educations.length > 0 && (
+          <Card className="mt-6">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BookOpen className="h-5 w-5" />
+                Education
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {educations.map((edu: any, index: number) => (
+                  <div key={edu.id} className="border-l-2 border-muted pl-4">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <h3 className="font-semibold">{edu.degree}</h3>
+                        <p className="text-sm text-muted-foreground">{edu.institution}</p>
+                        {edu.fieldOfStudy && (
+                          <p className="text-xs text-muted-foreground">{edu.fieldOfStudy}</p>
+                        )}
+                        {edu.grade && (
+                          <p className="text-xs text-muted-foreground">Grade: {edu.grade}</p>
+                        )}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {edu.startYear} - {edu.endYear || 'Present'}
+                      </div>
+                    </div>
+                    {edu.description && (
+                      <p className="text-sm mt-2 text-muted-foreground">{edu.description}</p>
+                    )}
+                    {edu.activities && (
+                      <p className="text-xs mt-1 text-muted-foreground">
+                        Activities: {edu.activities}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Certifications Section */}
+        {certifications.length > 0 && (
+          <Card className="mt-6">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Award className="h-5 w-5" />
+                Certifications
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {certifications.map((cert: any, index: number) => (
+                  <div key={cert.id} className="border-l-2 border-muted pl-4">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <h3 className="font-semibold">{cert.name}</h3>
+                        <p className="text-sm text-muted-foreground">{cert.issuer}</p>
+                        {cert.credentialId && (
+                          <p className="text-xs text-muted-foreground font-mono">
+                            ID: {cert.credentialId}
+                          </p>
+                        )}
+                      </div>
+                      <div className="text-xs text-muted-foreground text-right">
+                        {cert.issueDate}
+                        {cert.expiryDate && (
+                          <div>Expires: {cert.expiryDate}</div>
+                        )}
+                      </div>
+                    </div>
+                    {cert.description && (
+                      <p className="text-sm mt-2 text-muted-foreground">{cert.description}</p>
+                    )}
+                    {cert.verificationUrl && (
+                      <a
+                        href={cert.verificationUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-blue-600 hover:text-blue-800 mt-1 inline-block"
+                      >
+                        Verify Certificate →
+                      </a>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Additional Online Presence - Twitter */}
+        {employee.twitterUrl && (
+          <Card className="mt-6">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Twitter className="h-5 w-5" />
+                Additional Links
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <a
+                href={employee.twitterUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 transition-colors"
+                data-testid="link-twitter"
+              >
+                <Twitter className="h-4 w-4" />
+                Twitter Profile
+              </a>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Privacy Notice */}
         <Card className="mt-6 border-yellow-200 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-950/20">
           <CardContent className="p-4">
@@ -321,12 +584,10 @@ export default function CompanyEmployeeProfile() {
               <div className="w-2 h-2 bg-yellow-500 rounded-full mt-2 flex-shrink-0"></div>
               <div>
                 <h4 className="font-medium text-yellow-800 dark:text-yellow-200 mb-1">
-                  Privacy Protected View
+                  Comprehensive Professional Profile
                 </h4>
                 <p className="text-sm text-yellow-700 dark:text-yellow-300">
-                  This is a company-restricted view showing only professional information. 
-                  Personal details like phone numbers, addresses, and personal social media are not visible 
-                  to maintain employee privacy.
+                  This company view shows the employee's complete professional information including personal details, experience, education, certifications, and skills as provided by the employee.
                 </p>
               </div>
             </div>
