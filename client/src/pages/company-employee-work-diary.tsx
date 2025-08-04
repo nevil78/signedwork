@@ -193,7 +193,7 @@ export default function CompanyEmployeeWorkDiary() {
                     <div className="space-y-2 text-sm">
                       <div className="flex items-center gap-2">
                         <Building2 className="h-4 w-4 text-muted-foreground" />
-                        <span>{entry.company.name}</span>
+                        <span>{entry.company?.name || 'Unknown Company'}</span>
                       </div>
                       
                       <div className="flex items-center gap-2">
