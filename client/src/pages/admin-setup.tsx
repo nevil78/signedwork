@@ -53,7 +53,7 @@ export default function AdminSetup() {
     onSuccess: (exists) => {
       setAdminExists(exists);
       if (exists) {
-        navigate("/admin/login");
+        setTimeout(() => navigate("/admin/login"), 2000);
       }
     },
   });
@@ -89,6 +89,39 @@ export default function AdminSetup() {
         <div className="text-center">
           <p className="text-muted-foreground">Checking admin status...</p>
         </div>
+      </div>
+    );
+  }
+
+  if (adminExists) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
+              <ShieldCheck className="h-6 w-6 text-blue-600" />
+            </div>
+            <CardTitle className="text-2xl font-bold">Admin Already Set Up</CardTitle>
+            <CardDescription>
+              An admin account has already been created for this platform
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="text-center space-y-4">
+            <p className="text-sm text-muted-foreground">
+              You can now log in with your admin credentials to access the dashboard.
+            </p>
+            <Button asChild className="w-full">
+              <a href="/admin/login">
+                Go to Admin Login
+              </a>
+            </Button>
+          </CardContent>
+          <CardFooter className="text-center">
+            <p className="text-xs text-muted-foreground w-full">
+              If you've forgotten your credentials, contact your system administrator
+            </p>
+          </CardFooter>
+        </Card>
       </div>
     );
   }
