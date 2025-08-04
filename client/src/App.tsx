@@ -30,6 +30,7 @@ function Router() {
       <Route path="/company-jobs" component={CompanyJobsPage} />
       <Route path="/company-recruiter" component={CompanyRecruiterPage} />
       <Route path="/company-employee/:employeeId" component={CompanyEmployeeProfile} />
+      <Route path="/employee-work-diary/:employeeId" component={WorkDiaryCompany} />
       <Route path="/employee-profile" component={() => { window.location.href = "/profile"; return null; }} />
       <Route component={NotFound} />
     </Switch>

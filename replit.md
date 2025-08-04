@@ -45,6 +45,11 @@ This is a comprehensive LinkedIn-like professional networking platform built wit
   * Added status-based employment tracking ("employed" vs "ex-employee") 
   * Replaced delete functionality with "Leave Company" option that updates status
   * Added companyEmployees table with status, joinedAt, and leftAt fields
+- ✅ Fixed routing issues for company recruiter dashboard:
+  * Added Company Recruiter navigation link to company dashboard
+  * Fixed TypeScript errors and authentication flow for job applications
+  * Added missing employee work diary route (/employee-work-diary/:employeeId) to router
+  * Job applications now persist properly after company relogin
 
 # User Preferences
 
