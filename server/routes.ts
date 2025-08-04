@@ -210,12 +210,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const { username, email, password } = req.body;
-      const hashedPassword = await bcrypt.hash(password, 10);
 
       const admin = await storage.createAdmin({
         username,
         email,
-        password: hashedPassword,
+        password, // Let storage.createAdmin handle the hashing
         role: "super_admin"
       });
 
@@ -272,36 +271,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Create first admin (only works if no admins exist)
-  app.post("/api/admin/auth/create-first", async (req, res) => {
-    try {
-      // Check if any admin exists
-      const adminCount = await storage.getAdminCount();
-      if (adminCount > 0) {
-        return res.status(403).json({ 
-          message: "Admin already exists. Contact existing admin to create new accounts." 
-        });
-      }
-      
-      const validatedData = insertAdminSchema.parse(req.body);
-      
-      // Check if email or username already exists
-      const existingEmail = await storage.getAdminByEmail(validatedData.email);
-      const existingUsername = await storage.getAdminByUsername(validatedData.username);
-      
-      if (existingEmail) {
-        return res.status(400).json({ 
-          message: "An admin with this email already exists",
-          field: "email"
-        });
-      }
-      
-      if (existingUsername) {
-        return res.status(400).json({ 
-          message: "An admin with this username already exists",
-          field: "username"
-        });
-      }
+
       
       // Create the first admin with super_admin role
       const admin = await storage.createAdmin({
