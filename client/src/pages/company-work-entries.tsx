@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
+import { useLocation } from 'wouter';
 import { queryClient } from '@/lib/queryClient';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { CheckCircle, AlertCircle, Clock, Calendar, User, Building } from 'lucide-react';
+import { CheckCircle, AlertCircle, Clock, Calendar, User, Building, ArrowLeft, Building2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 type WorkEntryStatus = "pending" | "approved" | "needs_changes";
@@ -38,6 +39,7 @@ interface Employee {
 
 export default function CompanyWorkEntries() {
   const { toast } = useToast();
+  const [location, navigate] = useLocation();
   const [selectedEntry, setSelectedEntry] = useState<WorkEntry | null>(null);
   const [showApprovalDialog, setShowApprovalDialog] = useState(false);
   const [showChangesDialog, setShowChangesDialog] = useState(false);
@@ -56,6 +58,32 @@ export default function CompanyWorkEntries() {
   // Fetch employees to get names
   const { data: employees = [] } = useQuery<Employee[]>({
     queryKey: ['/api/company/employees'],
+  });
+
+  // Logout mutation
+  const logout = useMutation({
+    mutationFn: async () => {
+      const response = await fetch("/api/auth/logout", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      if (!response.ok) {
+        throw new Error("Logout failed");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      navigate("/");
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to logout",
+        variant: "destructive",
+      });
+    },
   });
 
   const getEmployeeName = (employeeId: string) => {
@@ -257,15 +285,45 @@ export default function CompanyWorkEntries() {
   );
 
   return (
-    <div className="container mx-auto p-6 max-w-6xl">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold mb-2" data-testid="page-title">Work Entry Reviews</h1>
-        <p className="text-muted-foreground">
-          Review and verify work entries submitted by your employees
-        </p>
-      </div>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      {/* Header */}
+      <header className="bg-white dark:bg-gray-800 shadow">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center">
+              <Button
+                variant="ghost"
+                onClick={() => navigate('/company-dashboard')}
+                className="mr-4"
+                data-testid="button-back-dashboard"
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Dashboard
+              </Button>
+              <Building2 className="text-primary text-2xl mr-3" />
+              <span className="text-xl font-bold text-slate-800 dark:text-slate-200">Work Entry Reviews</span>
+            </div>
+            <Button
+              variant="outline"
+              onClick={() => logout.mutate()}
+              disabled={logout.isPending}
+              data-testid="button-logout"
+            >
+              {logout.isPending ? "Logging out..." : "Logout"}
+            </Button>
+          </div>
+        </div>
+      </header>
 
-      <Tabs defaultValue="pending" className="w-full">
+      <div className="container mx-auto p-6 max-w-6xl">
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold mb-2" data-testid="page-title">Work Entry Reviews</h1>
+          <p className="text-muted-foreground">
+            Review and verify work entries submitted by your employees
+          </p>
+        </div>
+
+        <Tabs defaultValue="pending" className="w-full">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="pending" data-testid="tab-pending">
             Pending ({pendingEntries.length})
@@ -412,6 +470,7 @@ export default function CompanyWorkEntries() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      </div>
     </div>
   );
 }
