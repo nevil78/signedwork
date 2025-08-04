@@ -15,7 +15,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { Plus, Edit2, Eye, Users, Calendar, MapPin, Building2, Trash2 } from "lucide-react";
+import { Plus, Edit2, Eye, Users, Calendar, MapPin, Building2, Trash2, ArrowLeft } from "lucide-react";
+import { Link } from "wouter";
 
 // Job posting form schema - aligned with actual database structure
 const jobPostingSchema = z.object({
@@ -193,6 +194,14 @@ export default function CompanyJobsPage() {
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-8">
         <div>
+          <div className="flex items-center gap-4 mb-4">
+            <Link href="/company-dashboard">
+              <Button variant="outline" size="sm" data-testid="button-back-to-dashboard">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Dashboard
+              </Button>
+            </Link>
+          </div>
           <h1 className="text-3xl font-bold">Job Postings</h1>
           <p className="text-muted-foreground mt-2">Manage your company's job listings</p>
         </div>
