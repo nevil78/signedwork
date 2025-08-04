@@ -66,7 +66,7 @@ export default function CompanyJobsPage() {
   // Create job mutation
   const createJobMutation = useMutation({
     mutationFn: async (data: JobPostingFormData) => {
-      return apiRequest("/api/company/jobs", "POST", {
+      return apiRequest("POST", "/api/company/jobs", {
         ...data,
         skills: data.skills.split(',').map(skill => skill.trim()).filter(Boolean),
         applicationDeadline: data.applicationDeadline ? new Date(data.applicationDeadline).toISOString() : null,
@@ -93,7 +93,7 @@ export default function CompanyJobsPage() {
   // Update job mutation
   const updateJobMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: JobPostingFormData }) => {
-      return apiRequest(`/api/company/jobs/${id}`, "PUT", {
+      return apiRequest("PUT", `/api/company/jobs/${id}`, {
         ...data,
         skills: data.skills.split(',').map(skill => skill.trim()).filter(Boolean),
         applicationDeadline: data.applicationDeadline ? new Date(data.applicationDeadline).toISOString() : null,
@@ -120,7 +120,7 @@ export default function CompanyJobsPage() {
   // Delete job mutation
   const deleteJobMutation = useMutation({
     mutationFn: async (jobId: string) => {
-      return apiRequest(`/api/company/jobs/${jobId}`, "DELETE");
+      return apiRequest("DELETE", `/api/company/jobs/${jobId}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/company/jobs"] });
@@ -150,8 +150,6 @@ export default function CompanyJobsPage() {
       remoteType: "office",
       salaryRange: "",
       skills: "",
-      department: "",
-      industry: "",
       applicationDeadline: "",
     },
   });
@@ -178,8 +176,6 @@ export default function CompanyJobsPage() {
       remoteType: job.remoteType as any,
       salaryRange: job.salaryRange || "",
       skills: job.skills.join(", "),
-      department: job.department || "",
-      industry: job.industry,
       applicationDeadline: job.applicationDeadline ? new Date(job.applicationDeadline).toISOString().split('T')[0] : "",
     });
   };

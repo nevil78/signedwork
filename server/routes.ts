@@ -1169,10 +1169,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     try {
+      console.log("Received job data:", req.body);
+      
       const jobData = insertJobListingSchema.parse({
         ...req.body,
         companyId: sessionUser.id
       });
+      
+      console.log("Parsed job data:", jobData);
       
       const job = await storage.createJobListing(jobData);
       res.status(201).json({
@@ -1182,6 +1186,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       if (error.name === "ZodError") {
         const validationError = fromZodError(error);
+        console.error("Validation error:", error.errors);
         return res.status(400).json({ 
           message: validationError.message,
           errors: error.errors
@@ -1189,6 +1194,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       console.error("Create job listing error:", error);
+      console.error("Error stack:", error.stack);
       res.status(500).json({ message: "Failed to create job listing" });
     }
   });
