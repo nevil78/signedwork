@@ -444,13 +444,56 @@ export class DatabaseStorage implements IStorage {
     await db.delete(workEntries).where(eq(workEntries.id, id));
   }
 
-  async getWorkEntriesForCompany(companyId: string): Promise<WorkEntry[]> {
-    return await db.select().from(workEntries).where(eq(workEntries.companyId, companyId));
+  async getWorkEntriesForCompany(companyId: string): Promise<any[]> {
+    const result = await db
+      .select({
+        id: workEntries.id,
+        employeeId: workEntries.employeeId,
+        companyId: workEntries.companyId,
+        title: workEntries.title,
+        description: workEntries.description,
+        startDate: workEntries.startDate,
+        endDate: workEntries.endDate,
+        priority: workEntries.priority,
+        hours: workEntries.hours,
+        status: workEntries.status,
+        companyFeedback: workEntries.companyFeedback,
+        createdAt: workEntries.createdAt,
+        updatedAt: workEntries.updatedAt,
+        employeeName: sql<string>`CONCAT(${employees.firstName}, ' ', ${employees.lastName})`,
+        employeeEmail: employees.email,
+      })
+      .from(workEntries)
+      .innerJoin(employees, eq(workEntries.employeeId, employees.id))
+      .where(eq(workEntries.companyId, companyId));
+      
+    return result;
   }
 
-  async getPendingWorkEntriesForCompany(companyId: string): Promise<WorkEntry[]> {
-    return await db.select().from(workEntries)
+  async getPendingWorkEntriesForCompany(companyId: string): Promise<any[]> {
+    const result = await db
+      .select({
+        id: workEntries.id,
+        employeeId: workEntries.employeeId,
+        companyId: workEntries.companyId,
+        title: workEntries.title,
+        description: workEntries.description,
+        startDate: workEntries.startDate,
+        endDate: workEntries.endDate,
+        priority: workEntries.priority,
+        hours: workEntries.hours,
+        status: workEntries.status,
+        companyFeedback: workEntries.companyFeedback,
+        createdAt: workEntries.createdAt,
+        updatedAt: workEntries.updatedAt,
+        employeeName: sql<string>`CONCAT(${employees.firstName}, ' ', ${employees.lastName})`,
+        employeeEmail: employees.email,
+      })
+      .from(workEntries)
+      .innerJoin(employees, eq(workEntries.employeeId, employees.id))
       .where(and(eq(workEntries.companyId, companyId), eq(workEntries.status, "pending")));
+      
+    return result;
   }
 
   async approveWorkEntry(id: string): Promise<WorkEntry> {

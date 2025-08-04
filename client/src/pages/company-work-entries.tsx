@@ -88,23 +88,27 @@ export default function CompanyWorkEntries() {
     },
   });
 
-  const getEmployeeName = (employeeId: string) => {
-    const employee = employees.find(emp => emp.id === employeeId);
-    return employee ? `${employee.firstName} ${employee.lastName}` : 'Unknown Employee';
+  const getEmployeeName = (entry: any) => {
+    return entry.employeeName || 'Unknown Employee';
   };
 
   // Group entries by employee for organized view
-  const groupEntriesByEmployee = (entries: WorkEntry[]) => {
+  const groupEntriesByEmployee = (entries: any[]) => {
     const grouped = entries.reduce((acc, entry) => {
       if (!acc[entry.employeeId]) {
         acc[entry.employeeId] = {
-          employee: employees.find(emp => emp.id === entry.employeeId),
+          employee: {
+            id: entry.employeeId,
+            firstName: entry.employeeName?.split(' ')[0] || '',
+            lastName: entry.employeeName?.split(' ').slice(1).join(' ') || '',
+            email: entry.employeeEmail || ''
+          },
           entries: []
         };
       }
       acc[entry.employeeId].entries.push(entry);
       return acc;
-    }, {} as Record<string, { employee?: Employee; entries: WorkEntry[] }>);
+    }, {} as Record<string, { employee?: any; entries: any[] }>);
 
     return Object.entries(grouped).map(([employeeId, data]) => ({
       employeeId,
@@ -239,7 +243,7 @@ export default function CompanyWorkEntries() {
             </CardTitle>
             <CardDescription className="flex items-center gap-2 mt-1">
               <User className="w-4 h-4" />
-              <span data-testid={`employee-name-${entry.id}`}>{getEmployeeName(entry.employeeId)}</span>
+              <span data-testid={`employee-name-${entry.id}`}>{getEmployeeName(entry)}</span>
             </CardDescription>
           </div>
           <div className="flex items-center gap-2">
@@ -561,7 +565,7 @@ export default function CompanyWorkEntries() {
             <div className="py-4">
               <h4 className="font-semibold">{selectedEntry.title}</h4>
               <p className="text-sm text-muted-foreground">
-                Submitted by: {getEmployeeName(selectedEntry.employeeId)}
+                Submitted by: {getEmployeeName(selectedEntry)}
               </p>
             </div>
           )}
