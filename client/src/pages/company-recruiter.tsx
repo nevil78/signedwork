@@ -60,12 +60,12 @@ export default function CompanyRecruiterPage() {
   const [selectedApplication, setSelectedApplication] = useState<ApplicationWithDetails | null>(null);
 
   // Get all job applications for this company
-  const { data: applications = [], isLoading: applicationsLoading } = useQuery({
+  const { data: applications = [], isLoading: applicationsLoading } = useQuery<ApplicationWithDetails[]>({
     queryKey: ['/api/company/applications'],
   });
 
   // Get company jobs for filtering
-  const { data: companyJobs = [] } = useQuery({
+  const { data: companyJobs = [] } = useQuery<JobListing[]>({
     queryKey: ['/api/company/jobs'],
   });
 
@@ -340,7 +340,7 @@ function ApplicationCard({
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-1">
                   <Calendar className="h-4 w-4" />
-                  Applied {new Date(application.appliedAt).toLocaleDateString()}
+                  Applied {application.appliedAt ? new Date(application.appliedAt).toLocaleDateString() : 'Unknown'}
                 </div>
                 {application.includeProfile && (
                   <Badge variant="outline" className="text-xs">
@@ -501,7 +501,7 @@ function ApplicationDetailsModal({
                 <span className="font-medium">Email:</span> {application.employee.email}
               </div>
               <div>
-                <span className="font-medium">Applied:</span> {new Date(application.appliedAt).toLocaleDateString()}
+                <span className="font-medium">Applied:</span> {application.appliedAt ? new Date(application.appliedAt).toLocaleDateString() : 'Unknown'}
               </div>
               <div>
                 <span className="font-medium">Status:</span> 
@@ -582,8 +582,8 @@ function ApplicationDetailsModal({
                     size="sm"
                     onClick={() => {
                       const link = document.createElement('a');
-                      link.href = application.attachmentUrl;
-                      link.download = application.attachmentName;
+                      link.href = application.attachmentUrl || '';
+                      link.download = application.attachmentName || 'document';
                       link.target = '_blank';
                       document.body.appendChild(link);
                       link.click();

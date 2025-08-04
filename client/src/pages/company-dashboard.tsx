@@ -200,14 +200,14 @@ export default function CompanyDashboard() {
               </CardHeader>
             </Card>
             
-            <Card className="cursor-pointer hover:shadow-lg transition-shadow opacity-50" title="Coming Soon">
+            <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/company-recruiter')}>
               <CardHeader className="text-center">
-                <div className="w-12 h-12 mx-auto mb-2 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
-                  <Settings className="w-6 h-6 text-gray-500" />
+                <div className="w-12 h-12 mx-auto mb-2 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center">
+                  <Users className="w-6 h-6 text-purple-600 dark:text-purple-400" />
                 </div>
-                <CardTitle className="text-lg">Settings</CardTitle>
+                <CardTitle className="text-lg">Company Recruiter</CardTitle>
                 <CardDescription>
-                  Manage company preferences
+                  View and manage job applications
                 </CardDescription>
               </CardHeader>
             </Card>
