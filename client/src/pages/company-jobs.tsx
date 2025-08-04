@@ -15,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { Plus, Edit2, Eye, Users, Calendar, MapPin, Building2, Trash2, ArrowLeft } from "lucide-react";
+import { Plus, Edit2, Eye, Users, Calendar, MapPin, Building2, Trash2, ArrowLeft, Briefcase } from "lucide-react";
 import { Link } from "wouter";
 
 // Job posting form schema - aligned with actual database structure
@@ -259,292 +259,292 @@ export default function CompanyJobsPage() {
                   Post New Job
                 </Button>
               </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>
-                {editingJob ? "Edit Job Posting" : "Create New Job Posting"}
-              </DialogTitle>
-            </DialogHeader>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(editingJob ? handleUpdateJob : handleCreateJob)} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="title"
-                    render={({ field }) => (
-                      <FormItem className="col-span-2">
-                        <FormLabel>Job Title *</FormLabel>
-                        <FormControl>
-                          <Input placeholder="e.g. Senior Software Engineer" {...field} data-testid="input-job-title" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>
+                    {editingJob ? "Edit Job Posting" : "Create New Job Posting"}
+                  </DialogTitle>
+                </DialogHeader>
+                <Form {...form}>
+                  <form onSubmit={form.handleSubmit(editingJob ? handleUpdateJob : handleCreateJob)} className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="title"
+                        render={({ field }) => (
+                          <FormItem className="col-span-2">
+                            <FormLabel>Job Title *</FormLabel>
+                            <FormControl>
+                              <Input placeholder="e.g. Senior Software Engineer" {...field} data-testid="input-job-title" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
 
-                  <FormField
-                    control={form.control}
-                    name="location"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Location *</FormLabel>
-                        <FormControl>
-                          <Input placeholder="e.g. San Francisco, CA" {...field} data-testid="input-location" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                      <FormField
+                        control={form.control}
+                        name="location"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Location *</FormLabel>
+                            <FormControl>
+                              <Input placeholder="e.g. San Francisco, CA" {...field} data-testid="input-location" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
 
-                  <FormField
-                    control={form.control}
-                    name="remoteType"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Work Type *</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormField
+                        control={form.control}
+                        name="remoteType"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Work Type *</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl>
+                                <SelectTrigger data-testid="select-remote-type">
+                                  <SelectValue placeholder="Select work type" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="office">Office</SelectItem>
+                                <SelectItem value="remote">Remote</SelectItem>
+                                <SelectItem value="hybrid">Hybrid</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="employmentType"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Employment Type *</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl>
+                                <SelectTrigger data-testid="select-employment-type">
+                                  <SelectValue placeholder="Select employment type" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="full-time">Full-time</SelectItem>
+                                <SelectItem value="part-time">Part-time</SelectItem>
+                                <SelectItem value="contract">Contract</SelectItem>
+                                <SelectItem value="internship">Internship</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="experienceLevel"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Experience Level *</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl>
+                                <SelectTrigger data-testid="select-experience-level">
+                                  <SelectValue placeholder="Select experience level" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="entry">Entry Level</SelectItem>
+                                <SelectItem value="mid">Mid Level</SelectItem>
+                                <SelectItem value="senior">Senior Level</SelectItem>
+                                <SelectItem value="executive">Executive</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="salaryRange"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Salary Range</FormLabel>
+                            <FormControl>
+                              <Input placeholder="e.g. $80,000 - $120,000" {...field} data-testid="input-salary-range" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="applicationDeadline"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Application Deadline</FormLabel>
+                            <FormControl>
+                              <Input type="date" {...field} data-testid="input-deadline" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="skills"
+                        render={({ field }) => (
+                          <FormItem className="col-span-2">
+                            <FormLabel>Required Skills * (comma-separated)</FormLabel>
+                            <FormControl>
+                              <Input placeholder="e.g. React, TypeScript, Node.js" {...field} data-testid="input-skills" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <FormField
+                      control={form.control}
+                      name="description"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Job Description *</FormLabel>
                           <FormControl>
-                            <SelectTrigger data-testid="select-remote-type">
-                              <SelectValue placeholder="Select work type" />
-                            </SelectTrigger>
+                            <Textarea 
+                              placeholder="Describe the role, responsibilities, and what makes this opportunity exciting..."
+                              className="min-h-[120px]"
+                              {...field}
+                              data-testid="textarea-description"
+                            />
                           </FormControl>
-                          <SelectContent>
-                            <SelectItem value="office">Office</SelectItem>
-                            <SelectItem value="remote">Remote</SelectItem>
-                            <SelectItem value="hybrid">Hybrid</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                  <FormField
-                    control={form.control}
-                    name="employmentType"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Employment Type *</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormField
+                      control={form.control}
+                      name="requirements"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Requirements & Qualifications *</FormLabel>
                           <FormControl>
-                            <SelectTrigger data-testid="select-employment-type">
-                              <SelectValue placeholder="Select employment type" />
-                            </SelectTrigger>
+                            <Textarea 
+                              placeholder="List the required qualifications, experience, and skills..."
+                              className="min-h-[120px]"
+                              {...field}
+                              data-testid="textarea-requirements"
+                            />
                           </FormControl>
-                          <SelectContent>
-                            <SelectItem value="full-time">Full-time</SelectItem>
-                            <SelectItem value="part-time">Part-time</SelectItem>
-                            <SelectItem value="contract">Contract</SelectItem>
-                            <SelectItem value="internship">Internship</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                  <FormField
-                    control={form.control}
-                    name="experienceLevel"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Experience Level *</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl>
-                            <SelectTrigger data-testid="select-experience-level">
-                              <SelectValue placeholder="Select experience level" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="entry">Entry Level</SelectItem>
-                            <SelectItem value="mid">Mid Level</SelectItem>
-                            <SelectItem value="senior">Senior Level</SelectItem>
-                            <SelectItem value="executive">Executive</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-
-
-                  <FormField
-                    control={form.control}
-                    name="salaryRange"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Salary Range</FormLabel>
-                        <FormControl>
-                          <Input placeholder="e.g. $80,000 - $120,000" {...field} data-testid="input-salary-range" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="applicationDeadline"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Application Deadline</FormLabel>
-                        <FormControl>
-                          <Input type="date" {...field} data-testid="input-deadline" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="skills"
-                    render={({ field }) => (
-                      <FormItem className="col-span-2">
-                        <FormLabel>Required Skills * (comma-separated)</FormLabel>
-                        <FormControl>
-                          <Input placeholder="e.g. React, TypeScript, Node.js" {...field} data-testid="input-skills" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <FormField
-                  control={form.control}
-                  name="description"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Job Description *</FormLabel>
-                      <FormControl>
-                        <Textarea 
-                          placeholder="Describe the role, responsibilities, and what makes this opportunity exciting..."
-                          className="min-h-[120px]"
-                          {...field}
-                          data-testid="textarea-description"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="requirements"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Requirements & Qualifications *</FormLabel>
-                      <FormControl>
-                        <Textarea 
-                          placeholder="List the required qualifications, experience, and skills..."
-                          className="min-h-[120px]"
-                          {...field}
-                          data-testid="textarea-requirements"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <div className="flex justify-end gap-3 pt-4">
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    onClick={() => {
-                      setShowCreateModal(false);
-                      setEditingJob(null);
-                      form.reset();
-                    }}
-                    data-testid="button-cancel"
-                  >
-                    Cancel
-                  </Button>
-                  <Button 
-                    type="submit" 
-                    disabled={createJobMutation.isPending || updateJobMutation.isPending}
-                    data-testid="button-submit-job"
-                  >
-                    {createJobMutation.isPending || updateJobMutation.isPending 
-                      ? (editingJob ? 'Updating...' : 'Publishing...') 
-                      : (editingJob ? 'Update Job' : 'Publish Job')
-                    }
-                  </Button>
-                </div>
-              </form>
-            </Form>
-          </DialogContent>
-        </Dialog>
+                    <div className="flex justify-end gap-3 pt-4">
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        onClick={() => {
+                          setShowCreateModal(false);
+                          setEditingJob(null);
+                          form.reset();
+                        }}
+                        data-testid="button-cancel"
+                      >
+                        Cancel
+                      </Button>
+                      <Button 
+                        type="submit" 
+                        disabled={createJobMutation.isPending || updateJobMutation.isPending}
+                        data-testid="button-submit-job"
+                      >
+                        {createJobMutation.isPending || updateJobMutation.isPending 
+                          ? (editingJob ? 'Updating...' : 'Publishing...') 
+                          : (editingJob ? 'Update Job' : 'Publish Job')
+                        }
+                      </Button>
+                    </div>
+                  </form>
+                </Form>
+              </DialogContent>
+            </Dialog>
+          </div>
 
           <Tabs defaultValue="active" className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="active" data-testid="tab-active-jobs">
-            Active Jobs ({activeJobs.length})
-          </TabsTrigger>
-          <TabsTrigger value="inactive" data-testid="tab-inactive-jobs">
-            Inactive Jobs ({inactiveJobs.length})
-          </TabsTrigger>
-        </TabsList>
+            <TabsList>
+              <TabsTrigger value="active" data-testid="tab-active-jobs">
+                Active Jobs ({activeJobs.length})
+              </TabsTrigger>
+              <TabsTrigger value="inactive" data-testid="tab-inactive-jobs">
+                Inactive Jobs ({inactiveJobs.length})
+              </TabsTrigger>
+            </TabsList>
 
-        <TabsContent value="active" className="space-y-4">
-          {isLoading ? (
-            <div className="text-center py-8">Loading job postings...</div>
-          ) : activeJobs.length === 0 ? (
-            <Card>
-              <CardContent className="text-center py-12">
-                <Building2 className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold mb-2">No active job postings</h3>
-                <p className="text-muted-foreground mb-4">
-                  Start attracting top talent by posting your first job opening.
-                </p>
-                <Button onClick={() => setShowCreateModal(true)} data-testid="button-create-first-job">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Post Your First Job
-                </Button>
-              </CardContent>
-            </Card>
-          ) : (
-            activeJobs.map((job: JobListing) => (
-              <JobCard 
-                key={job.id} 
-                job={job} 
-                onEdit={handleEditJob}
-                onDelete={handleDeleteJob}
-              />
-            ))
-          )}
-        </TabsContent>
+            <TabsContent value="active" className="space-y-4">
+              {isLoading ? (
+                <div className="text-center py-8">Loading job postings...</div>
+              ) : activeJobs.length === 0 ? (
+                <Card>
+                  <CardContent className="text-center py-12">
+                    <Building2 className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">No active job postings</h3>
+                    <p className="text-muted-foreground mb-4">
+                      Start attracting top talent by posting your first job opening.
+                    </p>
+                    <Button onClick={() => setShowCreateModal(true)} data-testid="button-create-first-job">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Post Your First Job
+                    </Button>
+                  </CardContent>
+                </Card>
+              ) : (
+                activeJobs.map((job: JobListing) => (
+                  <JobCard 
+                    key={job.id} 
+                    job={job} 
+                    onEdit={handleEditJob}
+                    onDelete={handleDeleteJob}
+                  />
+                ))
+              )}
+            </TabsContent>
 
-        <TabsContent value="inactive" className="space-y-4">
-          {inactiveJobs.length === 0 ? (
-            <Card>
-              <CardContent className="text-center py-12">
-                <Calendar className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold mb-2">No inactive job postings</h3>
-                <p className="text-muted-foreground">
-                  Closed or expired job postings will appear here.
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
-            inactiveJobs.map((job: JobListing) => (
-              <JobCard 
-                key={job.id} 
-                job={job} 
-                onEdit={handleEditJob}
-                onDelete={handleDeleteJob}
-                isInactive
-              />
-            ))
-          )}
-        </TabsContent>
+            <TabsContent value="inactive" className="space-y-4">
+              {inactiveJobs.length === 0 ? (
+                <Card>
+                  <CardContent className="text-center py-12">
+                    <Calendar className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">No inactive job postings</h3>
+                    <p className="text-muted-foreground">
+                      Closed or expired job postings will appear here.
+                    </p>
+                  </CardContent>
+                </Card>
+              ) : (
+                inactiveJobs.map((job: JobListing) => (
+                  <JobCard 
+                    key={job.id} 
+                    job={job} 
+                    onEdit={handleEditJob}
+                    onDelete={handleDeleteJob}
+                    isInactive
+                  />
+                ))
+              )}
+            </TabsContent>
           </Tabs>
         </div>
       </div>
-    );
+    </div>
+  );
 }
 
 // Job Card Component
