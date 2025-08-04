@@ -1390,6 +1390,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to update application status" });
     }
   });
+
+  // Company Employee Privacy Routes - Read-only access with proper authorization
+  app.get("/api/company/employee/:employeeId", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    if (!sessionUser || sessionUser.type !== "company") {
+      return res.status(401).json({ message: "Not authenticated as company" });
+    }
+    
+    try {
+      // Verify the employee is associated with this company
+      const employeeCompany = await storage.getEmployeeCompanyRelation(req.params.employeeId, sessionUser.id);
+      if (!employeeCompany) {
+        return res.status(403).json({ message: "Employee not associated with your company" });
+      }
+      
+      const employee = await storage.getEmployee(req.params.employeeId);
+      if (!employee) {
+        return res.status(404).json({ message: "Employee not found" });
+      }
+      
+      // Return only safe, professional information
+      const safeEmployeeData = {
+        id: employee.id,
+        employeeId: employee.employeeId,
+        firstName: employee.firstName,
+        lastName: employee.lastName,
+        email: employee.email,
+        headline: employee.headline,
+        summary: employee.summary,
+        currentPosition: employee.currentPosition,
+        currentCompany: employee.currentCompany,
+        industry: employee.industry,
+        skills: employee.skills,
+        languages: employee.languages,
+        achievements: employee.achievements,
+        website: employee.website,
+        portfolio: employee.portfolio,
+        github: employee.github,
+        linkedin: employee.linkedin,
+        // Exclude sensitive personal data like address, phone, DOB, etc.
+      };
+      
+      res.json(safeEmployeeData);
+    } catch (error) {
+      console.error("Get employee error:", error);
+      res.status(500).json({ message: "Failed to get employee" });
+    }
+  });
+
+  app.get("/api/company/employee-work-entries/:employeeId", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    if (!sessionUser || sessionUser.type !== "company") {
+      return res.status(401).json({ message: "Not authenticated as company" });
+    }
+    
+    try {
+      // Verify the employee is associated with this company
+      const employeeCompany = await storage.getEmployeeCompanyRelation(req.params.employeeId, sessionUser.id);
+      if (!employeeCompany) {
+        return res.status(403).json({ message: "Employee not associated with your company" });
+      }
+      
+      // Get work entries for this employee for this company only
+      const workEntries = await storage.getWorkEntriesForEmployeeAndCompany(req.params.employeeId, sessionUser.id);
+      res.json(workEntries);
+    } catch (error) {
+      console.error("Get employee work entries error:", error);
+      res.status(500).json({ message: "Failed to get employee work entries" });
+    }
+  });
   
   // Get employee profile for recruiter view (with application data)
   app.get("/api/company/applications/:applicationId/employee", async (req, res) => {

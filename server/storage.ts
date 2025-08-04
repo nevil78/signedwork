@@ -170,6 +170,10 @@ export interface IStorage {
   // Profile views operations
   recordProfileView(viewerCompanyId: string, viewedEmployeeId: string, context: string): Promise<ProfileView>;
   getProfileViews(employeeId: string): Promise<ProfileView[]>;
+  
+  // Company employee access with privacy controls
+  getEmployeeCompanyRelation(employeeId: string, companyId: string): Promise<CompanyEmployee | null>;
+  getWorkEntriesForEmployeeAndCompany(employeeId: string, companyId: string): Promise<WorkEntry[]>;
 }
 
 export interface JobSearchFilters {
@@ -960,6 +964,61 @@ export class DatabaseStorage implements IStorage {
 
   async getProfileViews(employeeId: string): Promise<ProfileView[]> {
     return await db.select().from(profileViews).where(eq(profileViews.employeeId, employeeId));
+  }
+
+  // Company employee access with privacy controls
+  async getEmployeeCompanyRelation(employeeId: string, companyId: string): Promise<CompanyEmployee | null> {
+    const [relation] = await db
+      .select()
+      .from(companyEmployees)
+      .where(
+        and(
+          eq(companyEmployees.employeeId, employeeId),
+          eq(companyEmployees.companyId, companyId),
+          eq(companyEmployees.status, 'employed')
+        )
+      );
+    
+    return relation || null;
+  }
+
+  async getWorkEntriesForEmployeeAndCompany(employeeId: string, companyId: string): Promise<WorkEntry[]> {
+    const entries = await db
+      .select({
+        id: workEntries.id,
+        title: workEntries.title,
+        description: workEntries.description,
+        status: workEntries.status,
+        priority: workEntries.priority,
+        estimatedHours: workEntries.estimatedHours,
+        actualHours: workEntries.actualHours,
+        tags: workEntries.tags,
+        startDate: workEntries.startDate,
+        endDate: workEntries.endDate,
+        employeeId: workEntries.employeeId,
+        companyId: workEntries.companyId,
+        createdAt: workEntries.createdAt,
+        updatedAt: workEntries.updatedAt,
+        company: {
+          id: companies.id,
+          name: companies.name,
+          industry: companies.industry
+        }
+      })
+      .from(workEntries)
+      .leftJoin(companies, eq(workEntries.companyId, companies.id))
+      .where(
+        and(
+          eq(workEntries.employeeId, employeeId),
+          eq(workEntries.companyId, companyId)
+        )
+      )
+      .orderBy(desc(workEntries.createdAt));
+
+    return entries.map(entry => ({
+      ...entry,
+      company: entry.company!
+    }));
   }
 }
 
