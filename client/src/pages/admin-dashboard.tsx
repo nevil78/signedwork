@@ -1,0 +1,374 @@
+import { useEffect, useState } from "react";
+import { useLocation } from "wouter";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
+import { useToast } from "@/hooks/use-toast";
+import { 
+  Users, Building, Briefcase, TrendingUp, LogOut, 
+  ShieldCheck, UserCheck, UserX, Calendar, Mail
+} from "lucide-react";
+import { format } from "date-fns";
+import type { Employee, Company, Admin } from "@shared/schema";
+
+interface AdminStats {
+  employees: number;
+  companies: number;
+  totalJobs: number;
+  activeJobs: number;
+}
+
+interface UserData {
+  user: Employee | Company | Admin;
+  userType: "employee" | "company" | "admin";
+}
+
+export default function AdminDashboard() {
+  const [, navigate] = useLocation();
+  const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState("overview");
+
+  // Fetch current admin user
+  const { data: userData, isLoading: userLoading } = useQuery<UserData>({
+    queryKey: ["/api/auth/user"],
+  });
+
+  // Redirect if not admin
+  useEffect(() => {
+    if (!userLoading && (!userData || userData.userType !== "admin")) {
+      navigate("/admin/login");
+    }
+  }, [userData, userLoading, navigate]);
+
+  // Fetch admin stats
+  const { data: stats } = useQuery<AdminStats>({
+    queryKey: ["/api/admin/stats"],
+    enabled: userData?.userType === "admin",
+  });
+
+  // Fetch employees
+  const { data: employees } = useQuery<Employee[]>({
+    queryKey: ["/api/admin/employees"],
+    enabled: userData?.userType === "admin" && activeTab === "employees",
+  });
+
+  // Fetch companies
+  const { data: companies } = useQuery<Company[]>({
+    queryKey: ["/api/admin/companies"],
+    enabled: userData?.userType === "admin" && activeTab === "companies",
+  });
+
+  // Toggle employee status
+  const toggleEmployeeMutation = useMutation({
+    mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) =>
+      apiRequest("PATCH", `/api/admin/employees/${id}/toggle-status`, { isActive }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/employees"] });
+      toast({
+        title: "Status updated",
+        description: "Employee status has been updated successfully",
+      });
+    },
+  });
+
+  // Toggle company status
+  const toggleCompanyMutation = useMutation({
+    mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) =>
+      apiRequest("PATCH", `/api/admin/companies/${id}/toggle-status`, { isActive }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/companies"] });
+      toast({
+        title: "Status updated",
+        description: "Company status has been updated successfully",
+      });
+    },
+  });
+
+  // Logout
+  const logoutMutation = useMutation({
+    mutationFn: () => apiRequest("POST", "/api/auth/logout"),
+    onSuccess: () => {
+      navigate("/admin/login");
+    },
+  });
+
+  if (userLoading) {
+    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+  }
+
+  const admin = userData?.user as Admin;
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <header className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center">
+              <ShieldCheck className="h-8 w-8 text-red-600 mr-3" />
+              <div>
+                <h1 className="text-xl font-semibold">Admin Dashboard</h1>
+                <p className="text-sm text-gray-500">Welcome, {admin?.username}</p>
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              onClick={() => logoutMutation.mutate()}
+              disabled={logoutMutation.isPending}
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Logout
+            </Button>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="mb-8">
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="employees">Employees</TabsTrigger>
+            <TabsTrigger value="companies">Companies</TabsTrigger>
+          </TabsList>
+
+          {/* Overview Tab */}
+          <TabsContent value="overview">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Total Employees</CardTitle>
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stats?.employees || 0}</div>
+                  <p className="text-xs text-muted-foreground">Registered employees</p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Total Companies</CardTitle>
+                  <Building className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stats?.companies || 0}</div>
+                  <p className="text-xs text-muted-foreground">Registered companies</p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Total Job Listings</CardTitle>
+                  <Briefcase className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stats?.totalJobs || 0}</div>
+                  <p className="text-xs text-muted-foreground">All job listings</p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Active Jobs</CardTitle>
+                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stats?.activeJobs || 0}</div>
+                  <p className="text-xs text-muted-foreground">Currently active</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Admin Information</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-sm font-medium">Admin ID:</span>
+                    <span className="text-sm text-muted-foreground">{admin?.adminId}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm font-medium">Username:</span>
+                    <span className="text-sm text-muted-foreground">{admin?.username}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm font-medium">Email:</span>
+                    <span className="text-sm text-muted-foreground">{admin?.email}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm font-medium">Role:</span>
+                    <Badge variant="outline">{admin?.role}</Badge>
+                  </div>
+                  {admin?.lastLogin && (
+                    <div className="flex justify-between">
+                      <span className="text-sm font-medium">Last Login:</span>
+                      <span className="text-sm text-muted-foreground">
+                        {format(new Date(admin.lastLogin), "PPp")}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Employees Tab */}
+          <TabsContent value="employees">
+            <Card>
+              <CardHeader>
+                <CardTitle>Manage Employees</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {employees && employees.length > 0 ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Employee ID</TableHead>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead>Phone</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Created</TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {employees.map((employee) => (
+                        <TableRow key={employee.id}>
+                          <TableCell className="font-medium">{employee.employeeId}</TableCell>
+                          <TableCell>{`${employee.firstName} ${employee.lastName}`}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center">
+                              <Mail className="h-3 w-3 mr-1 text-muted-foreground" />
+                              {employee.email}
+                            </div>
+                          </TableCell>
+                          <TableCell>{employee.phone}</TableCell>
+                          <TableCell>
+                            <Badge variant={employee.isActive ? "default" : "secondary"}>
+                              {employee.isActive ? "Active" : "Inactive"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center text-sm text-muted-foreground">
+                              <Calendar className="h-3 w-3 mr-1" />
+                              {employee.createdAt ? format(new Date(employee.createdAt), "PP") : "N/A"}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center space-x-2">
+                              <Switch
+                                checked={employee.isActive ?? true}
+                                onCheckedChange={(checked) =>
+                                  toggleEmployeeMutation.mutate({
+                                    id: employee.id,
+                                    isActive: checked,
+                                  })
+                                }
+                                disabled={toggleEmployeeMutation.isPending}
+                              />
+                              <span className="text-sm text-muted-foreground">
+                                {employee.isActive ? "Deactivate" : "Activate"}
+                              </span>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                ) : (
+                  <Alert>
+                    <AlertDescription>No employees found</AlertDescription>
+                  </Alert>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Companies Tab */}
+          <TabsContent value="companies">
+            <Card>
+              <CardHeader>
+                <CardTitle>Manage Companies</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {companies && companies.length > 0 ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Company ID</TableHead>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead>Industry</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Created</TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {companies.map((company) => (
+                        <TableRow key={company.id}>
+                          <TableCell className="font-medium">{company.companyId}</TableCell>
+                          <TableCell>{company.name}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center">
+                              <Mail className="h-3 w-3 mr-1 text-muted-foreground" />
+                              {company.email}
+                            </div>
+                          </TableCell>
+                          <TableCell>{company.industry}</TableCell>
+                          <TableCell>
+                            <Badge variant={company.isActive ? "default" : "secondary"}>
+                              {company.isActive ? "Active" : "Inactive"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center text-sm text-muted-foreground">
+                              <Calendar className="h-3 w-3 mr-1" />
+                              {company.createdAt ? format(new Date(company.createdAt), "PP") : "N/A"}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center space-x-2">
+                              <Switch
+                                checked={company.isActive ?? true}
+                                onCheckedChange={(checked) =>
+                                  toggleCompanyMutation.mutate({
+                                    id: company.id,
+                                    isActive: checked,
+                                  })
+                                }
+                                disabled={toggleCompanyMutation.isPending}
+                              />
+                              <span className="text-sm text-muted-foreground">
+                                {company.isActive ? "Deactivate" : "Activate"}
+                              </span>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                ) : (
+                  <Alert>
+                    <AlertDescription>No companies found</AlertDescription>
+                  </Alert>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </main>
+    </div>
+  );
+}

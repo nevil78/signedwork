@@ -15,6 +15,9 @@ import CompanyEmployeeProfile from "@/pages/company-employee-profile";
 import CompanyJobsPage from "@/pages/company-jobs";
 import CompanyRecruiterPage from "@/pages/company-recruiter";
 import CompanyEmployeeWorkDiary from "@/pages/company-employee-work-diary";
+import AdminLogin from "@/pages/admin-login";
+import AdminDashboard from "@/pages/admin-dashboard";
+import AdminSetup from "@/pages/admin-setup";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -33,6 +36,9 @@ function Router() {
       <Route path="/company-employee/:employeeId" component={CompanyEmployeeProfile} />
       <Route path="/employee-work-diary/:employeeId" component={CompanyEmployeeWorkDiary} />
       <Route path="/employee-profile" component={() => { window.location.href = "/profile"; return null; }} />
+      <Route path="/admin/login" component={AdminLogin} />
+      <Route path="/admin/dashboard" component={AdminDashboard} />
+      <Route path="/admin/setup" component={AdminSetup} />
       <Route component={NotFound} />
     </Switch>
   );

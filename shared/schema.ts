@@ -37,6 +37,7 @@ export const employees = pgTable("employees", {
   githubUrl: text("github_url"),
   linkedinUrl: text("linkedin_url"),
   twitterUrl: text("twitter_url"),
+  isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -154,6 +155,7 @@ export const companies = pgTable("companies", {
   size: text("size").notNull(),
   establishmentYear: integer("establishment_year").notNull(),
   password: text("password").notNull(),
+  isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -256,6 +258,21 @@ export const profileViews = pgTable("profile_views", {
   companyId: varchar("company_id").notNull().references(() => companies.id, { onDelete: "cascade" }),
   jobId: varchar("job_id").references(() => jobListings.id, { onDelete: "set null" }),
   viewedAt: timestamp("viewed_at").defaultNow(),
+});
+
+// Admin table for platform management
+export const admins = pgTable("admins", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  adminId: varchar("admin_id").notNull().unique(), // ADM-ABC123 format
+  username: text("username").notNull().unique(),
+  email: text("email").notNull().unique(),
+  password: text("password").notNull(),
+  role: text("role").notNull().default("admin"), // admin, super_admin
+  permissions: text("permissions").array().default(sql`'{}'::text[]`), // specific permissions
+  isActive: boolean("is_active").default(true),
+  lastLogin: timestamp("last_login"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 // Relations
@@ -500,12 +517,32 @@ export const insertJobAlertSchema = createInsertSchema(jobAlerts).omit({
   createdAt: true,
 });
 
+export const insertAdminSchema = createInsertSchema(admins).omit({
+  id: true,
+  adminId: true,
+  lastLogin: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  email: z.string().email("Invalid email format"),
+  password: z.string()
+    .min(8, "Password must be at least 8 characters")
+    .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+    .regex(/\d/, "Password must contain at least one number"),
+  username: z.string().min(3, "Username must be at least 3 characters"),
+});
+
 export const loginSchema = z.object({
   email: z.string().email("Invalid email format"),
   password: z.string().min(1, "Password is required"),
   accountType: z.enum(["employee", "company"], {
     required_error: "Please select an account type",
   }),
+});
+
+export const adminLoginSchema = z.object({
+  username: z.string().min(1, "Username is required"),
+  password: z.string().min(1, "Password is required"),
 });
 
 
@@ -569,3 +606,7 @@ export type InsertJobListing = z.infer<typeof insertJobListingSchema>;
 export type InsertJobApplication = z.infer<typeof insertJobApplicationSchema>;
 export type InsertSavedJob = z.infer<typeof insertSavedJobSchema>;
 export type InsertJobAlert = z.infer<typeof insertJobAlertSchema>;
+
+// Admin types
+export type Admin = typeof admins.$inferSelect;
+export type InsertAdmin = z.infer<typeof insertAdminSchema>;

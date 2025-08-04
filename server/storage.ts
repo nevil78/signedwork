@@ -1,13 +1,14 @@
 import { 
   employees, companies, experiences, educations, certifications, projects, endorsements, workEntries, employeeCompanies,
-  companyInvitationCodes, companyEmployees, jobListings, jobApplications, savedJobs, jobAlerts, profileViews,
+  companyInvitationCodes, companyEmployees, jobListings, jobApplications, savedJobs, jobAlerts, profileViews, admins,
   type Employee, type Company, type InsertEmployee, type InsertCompany,
   type Experience, type Education, type Certification, type Project, type Endorsement, type WorkEntry, type EmployeeCompany,
   type InsertExperience, type InsertEducation, type InsertCertification, 
   type InsertProject, type InsertEndorsement, type InsertWorkEntry, type InsertEmployeeCompany,
   type CompanyInvitationCode, type CompanyEmployee, type InsertCompanyInvitationCode, type InsertCompanyEmployee,
   type JobListing, type JobApplication, type SavedJob, type JobAlert, type ProfileView,
-  type InsertJobListing, type InsertJobApplication, type InsertSavedJob, type InsertJobAlert
+  type InsertJobListing, type InsertJobApplication, type InsertSavedJob, type InsertJobAlert,
+  type Admin, type InsertAdmin
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, sql, desc, inArray } from "drizzle-orm";
@@ -66,6 +67,27 @@ function generateInvitationCode(): string {
   }
   
   return code;
+}
+
+// Generate a short, memorable admin ID
+function generateAdminId(): string {
+  const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const numbers = '0123456789';
+  
+  // Format: ADM-ABC123 (3 letters + 3 numbers)
+  let result = 'ADM-';
+  
+  // Add 3 random letters
+  for (let i = 0; i < 3; i++) {
+    result += letters.charAt(Math.floor(Math.random() * letters.length));
+  }
+  
+  // Add 3 random numbers
+  for (let i = 0; i < 3; i++) {
+    result += numbers.charAt(Math.floor(Math.random() * numbers.length));
+  }
+  
+  return result;
 }
 
 export interface IStorage {
@@ -174,6 +196,29 @@ export interface IStorage {
   // Company employee access with privacy controls
   getEmployeeCompanyRelation(employeeId: string, companyId: string): Promise<CompanyEmployee | null>;
   getWorkEntriesForEmployeeAndCompany(employeeId: string, companyId: string): Promise<WorkEntry[]>;
+  
+  // Admin operations
+  getAdmin(id: string): Promise<Admin | undefined>;
+  getAdminByEmail(email: string): Promise<Admin | undefined>;
+  getAdminByUsername(username: string): Promise<Admin | undefined>;
+  createAdmin(admin: InsertAdmin): Promise<Admin>;
+  checkAdminExists(): Promise<boolean>;
+  updateAdmin(id: string, data: Partial<Admin>): Promise<Admin>;
+  authenticateAdmin(username: string, password: string): Promise<Admin | null>;
+  updateAdminLastLogin(id: string): Promise<void>;
+  
+  // Admin management operations
+  getAllEmployees(): Promise<Employee[]>;
+  getAllCompanies(): Promise<Company[]>;
+  getEmployeeCount(): Promise<number>;
+  getCompanyCount(): Promise<number>;
+  getJobListingCount(): Promise<number>;
+  getActiveJobCount(): Promise<number>;
+  getAdminCount(): Promise<number>;
+  deactivateEmployee(employeeId: string): Promise<void>;
+  activateEmployee(employeeId: string): Promise<void>;
+  deactivateCompany(companyId: string): Promise<void>;
+  activateCompany(companyId: string): Promise<void>;
 }
 
 export interface JobSearchFilters {
@@ -188,6 +233,9 @@ export interface JobSearchFilters {
 }
 
 export class DatabaseStorage implements IStorage {
+  async checkAdminExists(): Promise<boolean> {
+    return await postgresStorage.checkAdminExists();
+  }
   async getEmployee(id: string): Promise<Employee | undefined> {
     const [employee] = await db.select().from(employees).where(eq(employees.id, id));
     return employee || undefined;
@@ -1029,6 +1077,158 @@ export class DatabaseStorage implements IStorage {
       ...entry,
       company: { name: entry.companyName }
     })) as WorkEntry[];
+  }
+
+  // Admin operations
+  async getAdmin(id: string): Promise<Admin | undefined> {
+    const [admin] = await db.select().from(admins).where(eq(admins.id, id));
+    return admin || undefined;
+  }
+
+  async getAdminByEmail(email: string): Promise<Admin | undefined> {
+    const [admin] = await db.select().from(admins).where(eq(admins.email, email));
+    return admin || undefined;
+  }
+
+  async getAdminByUsername(username: string): Promise<Admin | undefined> {
+    const [admin] = await db.select().from(admins).where(eq(admins.username, username));
+    return admin || undefined;
+  }
+
+  async createAdmin(adminData: InsertAdmin): Promise<Admin> {
+    const hashedPassword = await bcrypt.hash(adminData.password, 10);
+    
+    // Generate a unique admin ID
+    let adminId = generateAdminId();
+    let attempts = 0;
+    const maxAttempts = 10;
+    
+    // Ensure the admin ID is unique
+    while (attempts < maxAttempts) {
+      const existing = await db.select().from(admins).where(eq(admins.adminId, adminId));
+      if (existing.length === 0) {
+        break;
+      }
+      adminId = generateAdminId();
+      attempts++;
+    }
+    
+    if (attempts >= maxAttempts) {
+      throw new Error("Failed to generate unique admin ID");
+    }
+    
+    const [admin] = await db
+      .insert(admins)
+      .values({ ...adminData, adminId, password: hashedPassword })
+      .returning();
+    return admin;
+  }
+
+  async updateAdmin(id: string, data: Partial<Admin>): Promise<Admin> {
+    const [updated] = await db
+      .update(admins)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(admins.id, id))
+      .returning();
+    return updated;
+  }
+
+  async authenticateAdmin(username: string, password: string): Promise<Admin | null> {
+    const admin = await this.getAdminByUsername(username);
+    if (!admin || !admin.isActive) return null;
+    
+    const isValid = await bcrypt.compare(password, admin.password);
+    if (!isValid) return null;
+    
+    // Update last login
+    await this.updateAdminLastLogin(admin.id);
+    
+    return admin;
+  }
+
+  async updateAdminLastLogin(id: string): Promise<void> {
+    await db
+      .update(admins)
+      .set({ lastLogin: new Date() })
+      .where(eq(admins.id, id));
+  }
+
+  // Admin management operations
+  async getAllEmployees(): Promise<Employee[]> {
+    return await db.select().from(employees).orderBy(desc(employees.createdAt));
+  }
+
+  async getAllCompanies(): Promise<Company[]> {
+    return await db.select().from(companies).orderBy(desc(companies.createdAt));
+  }
+
+  async getEmployeeCount(): Promise<number> {
+    const [result] = await db
+      .select({ count: sql<number>`COUNT(*)` })
+      .from(employees);
+    return result?.count || 0;
+  }
+
+  async getCompanyCount(): Promise<number> {
+    const [result] = await db
+      .select({ count: sql<number>`COUNT(*)` })
+      .from(companies);
+    return result?.count || 0;
+  }
+
+  async getJobListingCount(): Promise<number> {
+    const [result] = await db
+      .select({ count: sql<number>`COUNT(*)` })
+      .from(jobListings);
+    return result?.count || 0;
+  }
+
+  async getActiveJobCount(): Promise<number> {
+    const [result] = await db
+      .select({ count: sql<number>`COUNT(*)` })
+      .from(jobListings)
+      .where(eq(jobListings.status, 'active'));
+    return result?.count || 0;
+  }
+
+  async getAdminCount(): Promise<number> {
+    const [result] = await db
+      .select({ count: sql<number>`COUNT(*)` })
+      .from(admins);
+    return result?.count || 0;
+  }
+
+  async checkAdminExists(): Promise<boolean> {
+    const count = await this.getAdminCount();
+    return count > 0;
+  }
+
+  async deactivateEmployee(employeeId: string): Promise<void> {
+    await db
+      .update(employees)
+      .set({ isActive: false, updatedAt: new Date() })
+      .where(eq(employees.id, employeeId));
+  }
+
+  async activateEmployee(employeeId: string): Promise<void> {
+    await db
+      .update(employees)
+      .set({ isActive: true, updatedAt: new Date() })
+      .where(eq(employees.id, employeeId));
+  }
+
+  async deactivateCompany(companyId: string): Promise<void> {
+    await db
+      .update(companies)
+      .set({ isActive: false, updatedAt: new Date() })
+      .where(eq(companies.id, companyId));
+  }
+
+  async activateCompany(companyId: string): Promise<void> {
+    await db
+      .update(companies)
+      .set({ isActive: true, updatedAt: new Date() })
+      .where(eq(companies.id, companyId));
   }
 }
 

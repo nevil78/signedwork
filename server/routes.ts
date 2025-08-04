@@ -4,11 +4,11 @@ import session from "express-session";
 import { storage } from "./storage";
 import { ObjectStorageService } from "./objectStorage";
 import { 
-  insertEmployeeSchema, insertCompanySchema, loginSchema,
+  insertEmployeeSchema, insertCompanySchema, loginSchema, adminLoginSchema,
   insertExperienceSchema, insertEducationSchema, insertCertificationSchema,
   insertProjectSchema, insertEndorsementSchema, insertWorkEntrySchema,
   insertEmployeeCompanySchema, insertJobListingSchema, insertJobApplicationSchema,
-  insertSavedJobSchema, insertJobAlertSchema
+  insertSavedJobSchema, insertJobAlertSchema, insertAdminSchema
 } from "@shared/schema";
 import { fromZodError } from "zod-validation-error";
 
@@ -175,8 +175,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (sessionUser.type === "employee") {
         user = await storage.getEmployee(sessionUser.id);
-      } else {
+      } else if (sessionUser.type === "company") {
         user = await storage.getCompany(sessionUser.id);
+      } else if (sessionUser.type === "admin") {
+        user = await storage.getAdmin(sessionUser.id);
       }
       
       if (!user) {
@@ -193,6 +195,263 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Get user error:", error);
       res.status(500).json({ message: "Failed to get user data" });
+    }
+  });
+
+  // Admin authentication routes
+  
+  // Create first admin
+  app.post("/api/admin/auth/create-first", async (req, res) => {
+    try {
+      const adminExists = await storage.checkAdminExists();
+      if (adminExists) {
+        return res.status(409).json({ message: "Admin already exists" });
+      }
+
+      const { username, email, password } = req.body;
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      const admin = await storage.createAdmin({
+        username,
+        email,
+        password: hashedPassword,
+        role: "super_admin"
+      });
+
+      res.json({ message: "Admin created successfully", admin });
+    } catch (error) {
+      console.error("Create admin error:", error);
+      res.status(500).json({ message: "Failed to create admin" });
+    }
+  });
+
+  // Admin login
+  app.post("/api/admin/auth/login", async (req, res) => {
+    try {
+      const validatedData = adminLoginSchema.parse(req.body);
+      
+      const admin = await storage.authenticateAdmin(
+        validatedData.username, 
+        validatedData.password
+      );
+      
+      if (!admin) {
+        return res.status(401).json({ 
+          message: "Invalid username or password" 
+        });
+      }
+      
+      // Store admin session
+      (req.session as any).user = {
+        id: admin.id,
+        username: admin.username,
+        type: "admin",
+        role: admin.role,
+        permissions: admin.permissions
+      };
+      
+      // Remove password from response
+      const { password, ...adminResponse } = admin;
+      
+      res.json({ 
+        message: "Admin login successful",
+        user: adminResponse
+      });
+    } catch (error: any) {
+      if (error.name === "ZodError") {
+        const validationError = fromZodError(error);
+        return res.status(400).json({ 
+          message: validationError.message,
+          errors: error.errors
+        });
+      }
+      
+      console.error("Admin login error:", error);
+      res.status(500).json({ message: "Admin login failed" });
+    }
+  });
+
+  // Create first admin (only works if no admins exist)
+  app.post("/api/admin/auth/create-first", async (req, res) => {
+    try {
+      // Check if any admin exists
+      const adminCount = await storage.getAdminCount();
+      if (adminCount > 0) {
+        return res.status(403).json({ 
+          message: "Admin already exists. Contact existing admin to create new accounts." 
+        });
+      }
+      
+      const validatedData = insertAdminSchema.parse(req.body);
+      
+      // Check if email or username already exists
+      const existingEmail = await storage.getAdminByEmail(validatedData.email);
+      const existingUsername = await storage.getAdminByUsername(validatedData.username);
+      
+      if (existingEmail) {
+        return res.status(400).json({ 
+          message: "An admin with this email already exists",
+          field: "email"
+        });
+      }
+      
+      if (existingUsername) {
+        return res.status(400).json({ 
+          message: "An admin with this username already exists",
+          field: "username"
+        });
+      }
+      
+      // Create the first admin with super_admin role
+      const admin = await storage.createAdmin({
+        ...validatedData,
+        role: "super_admin",
+        permissions: ["all"]
+      });
+      
+      // Remove password from response
+      const { password, ...adminResponse } = admin;
+      
+      res.status(201).json({ 
+        message: "Super admin account created successfully",
+        admin: adminResponse 
+      });
+    } catch (error: any) {
+      if (error.name === "ZodError") {
+        const validationError = fromZodError(error);
+        return res.status(400).json({ 
+          message: validationError.message,
+          errors: error.errors
+        });
+      }
+      
+      console.error("Create first admin error:", error);
+      res.status(500).json({ message: "Failed to create admin account" });
+    }
+  });
+
+  // Admin dashboard stats
+  app.get("/api/admin/stats", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    if (!sessionUser || sessionUser.type !== "admin") {
+      return res.status(401).json({ message: "Not authenticated as admin" });
+    }
+    
+    try {
+      const [
+        employeeCount,
+        companyCount,
+        jobListingCount,
+        activeJobCount
+      ] = await Promise.all([
+        storage.getEmployeeCount(),
+        storage.getCompanyCount(),
+        storage.getJobListingCount(),
+        storage.getActiveJobCount()
+      ]);
+      
+      res.json({
+        employees: employeeCount,
+        companies: companyCount,
+        totalJobs: jobListingCount,
+        activeJobs: activeJobCount
+      });
+    } catch (error) {
+      console.error("Get admin stats error:", error);
+      res.status(500).json({ message: "Failed to get statistics" });
+    }
+  });
+
+  // Get all employees (admin only)
+  app.get("/api/admin/employees", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    if (!sessionUser || sessionUser.type !== "admin") {
+      return res.status(401).json({ message: "Not authenticated as admin" });
+    }
+    
+    try {
+      const employees = await storage.getAllEmployees();
+      // Remove passwords from response
+      const employeesResponse = employees.map(({ password, ...emp }) => emp);
+      res.json(employeesResponse);
+    } catch (error) {
+      console.error("Get employees error:", error);
+      res.status(500).json({ message: "Failed to get employees" });
+    }
+  });
+
+  // Get all companies (admin only)
+  app.get("/api/admin/companies", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    if (!sessionUser || sessionUser.type !== "admin") {
+      return res.status(401).json({ message: "Not authenticated as admin" });
+    }
+    
+    try {
+      const companies = await storage.getAllCompanies();
+      // Remove passwords from response
+      const companiesResponse = companies.map(({ password, ...comp }) => comp);
+      res.json(companiesResponse);
+    } catch (error) {
+      console.error("Get companies error:", error);
+      res.status(500).json({ message: "Failed to get companies" });
+    }
+  });
+
+  // Toggle employee status (admin only)
+  app.patch("/api/admin/employees/:id/toggle-status", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    if (!sessionUser || sessionUser.type !== "admin") {
+      return res.status(401).json({ message: "Not authenticated as admin" });
+    }
+    
+    try {
+      const { id } = req.params;
+      const { isActive } = req.body;
+      
+      if (isActive) {
+        await storage.activateEmployee(id);
+      } else {
+        await storage.deactivateEmployee(id);
+      }
+      
+      res.json({ 
+        message: `Employee ${isActive ? 'activated' : 'deactivated'} successfully` 
+      });
+    } catch (error) {
+      console.error("Toggle employee status error:", error);
+      res.status(500).json({ message: "Failed to update employee status" });
+    }
+  });
+
+  // Toggle company status (admin only)
+  app.patch("/api/admin/companies/:id/toggle-status", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    if (!sessionUser || sessionUser.type !== "admin") {
+      return res.status(401).json({ message: "Not authenticated as admin" });
+    }
+    
+    try {
+      const { id } = req.params;
+      const { isActive } = req.body;
+      
+      if (isActive) {
+        await storage.activateCompany(id);
+      } else {
+        await storage.deactivateCompany(id);
+      }
+      
+      res.json({ 
+        message: `Company ${isActive ? 'activated' : 'deactivated'} successfully` 
+      });
+    } catch (error) {
+      console.error("Toggle company status error:", error);
+      res.status(500).json({ message: "Failed to update company status" });
     }
   });
 
@@ -1502,9 +1761,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         languages: employee.languages,
         achievements: employee.achievements,
         website: employee.website,
-        portfolio: employee.portfolio,
-        github: employee.github,
-        linkedin: employee.linkedin,
+        portfolioUrl: employee.portfolioUrl,
+        githubUrl: employee.githubUrl,
+        linkedinUrl: employee.linkedinUrl,
         // Exclude sensitive personal data like address, phone, DOB, etc.
       };
       
