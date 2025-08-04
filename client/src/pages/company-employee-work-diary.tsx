@@ -163,67 +163,90 @@ export default function CompanyEmployeeWorkDiary() {
               </CardContent>
             </Card>
           ) : (
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {workEntries.map((entry) => (
-                <Card key={entry.id} className="hover:shadow-md transition-shadow">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-start justify-between">
-                      <CardTitle className="text-lg line-clamp-2">{entry.title}</CardTitle>
-                      <div className="flex items-center gap-1 ml-2">
-                        {getStatusIcon(entry.status)}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Badge className={getStatusColor(entry.status)}>
-                        {entry.status.replace('_', ' ')}
-                      </Badge>
-                      <Badge className={getPriorityColor(entry.priority)}>
-                        {entry.priority}
-                      </Badge>
-                    </div>
-                  </CardHeader>
+            <div className="space-y-8">
+              {(() => {
+                // Group work entries by company
+                const groupedEntries = workEntries.reduce((groups: Record<string, WorkEntryWithCompany[]>, entry) => {
+                  const companyName = (entry as any).companyName || employee?.currentCompany || 'Unknown Company';
+                  if (!groups[companyName]) {
+                    groups[companyName] = [];
+                  }
+                  groups[companyName].push(entry);
+                  return groups;
+                }, {});
 
-                  <CardContent className="space-y-4">
-                    {entry.description && (
-                      <p className="text-sm text-muted-foreground line-clamp-3">
-                        {entry.description}
-                      </p>
-                    )}
-
-                    <div className="space-y-2 text-sm">
-                      <div className="flex items-center gap-2">
-                        <Building2 className="h-4 w-4 text-muted-foreground" />
-                        <span>{(entry as any).companyName || employee?.currentCompany || 'Company'}</span>
-                      </div>
-                      
-                      <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4 text-muted-foreground" />
-                        <span>
-                          {entry.startDate} {entry.endDate ? `to ${entry.endDate}` : '(ongoing)'}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <Clock className="h-4 w-4 text-muted-foreground" />
-                        <span>
-                          {entry.hours ? `${entry.hours}h logged` : 'N/A'}
-                        </span>
+                return Object.entries(groupedEntries).map(([companyName, entries]) => (
+                  <div key={companyName} className="space-y-4">
+                    {/* Company Header */}
+                    <div className="flex items-center gap-3 p-4 bg-muted/30 rounded-lg border">
+                      <Building2 className="h-6 w-6 text-primary" />
+                      <div>
+                        <h3 className="text-xl font-semibold">{companyName}</h3>
+                        <p className="text-sm text-muted-foreground">
+                          {entries.length} work {entries.length === 1 ? 'entry' : 'entries'}
+                        </p>
                       </div>
                     </div>
 
-                    {/* Tags removed as they're not part of the schema */}
+                    {/* Work Entries Grid for this Company */}
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 pl-4">
+                      {entries.map((entry) => (
+                        <Card key={entry.id} className="hover:shadow-md transition-shadow">
+                          <CardHeader className="pb-3">
+                            <div className="flex items-start justify-between">
+                              <CardTitle className="text-lg line-clamp-2">{entry.title}</CardTitle>
+                              <div className="flex items-center gap-1 ml-2">
+                                {getStatusIcon(entry.status)}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Badge className={getStatusColor(entry.status)}>
+                                {entry.status.replace('_', ' ')}
+                              </Badge>
+                              <Badge className={getPriorityColor(entry.priority)}>
+                                {entry.priority}
+                              </Badge>
+                            </div>
+                          </CardHeader>
 
-                    <Separator />
+                          <CardContent className="space-y-4">
+                            {entry.description && (
+                              <p className="text-sm text-muted-foreground line-clamp-3">
+                                {entry.description}
+                              </p>
+                            )}
 
-                    <div className="flex items-center justify-between text-xs text-muted-foreground">
-                      <span>Created {entry.createdAt ? format(new Date(entry.createdAt), 'MMM dd') : 'Unknown'}</span>
-                      {entry.updatedAt && entry.updatedAt !== entry.createdAt && (
-                        <span>Updated {format(new Date(entry.updatedAt), 'MMM dd')}</span>
-                      )}
+                            <div className="space-y-2 text-sm">
+                              <div className="flex items-center gap-2">
+                                <Calendar className="h-4 w-4 text-muted-foreground" />
+                                <span>
+                                  {entry.startDate} {entry.endDate ? `to ${entry.endDate}` : '(ongoing)'}
+                                </span>
+                              </div>
+
+                              <div className="flex items-center gap-2">
+                                <Clock className="h-4 w-4 text-muted-foreground" />
+                                <span>
+                                  {entry.hours ? `${entry.hours}h logged` : 'N/A'}
+                                </span>
+                              </div>
+                            </div>
+
+                            <Separator />
+
+                            <div className="flex items-center justify-between text-xs text-muted-foreground">
+                              <span>Created {entry.createdAt ? format(new Date(entry.createdAt), 'MMM dd') : 'Unknown'}</span>
+                              {entry.updatedAt && entry.updatedAt !== entry.createdAt && (
+                                <span>Updated {format(new Date(entry.updatedAt), 'MMM dd')}</span>
+                              )}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
+                  </div>
+                ));
+              })()}
             </div>
           )}
         </div>
