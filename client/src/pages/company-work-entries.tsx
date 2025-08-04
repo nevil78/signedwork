@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { CheckCircle, AlertCircle, Clock, Calendar, User, Building, ArrowLeft, Building2 } from 'lucide-react';
+import { CheckCircle, AlertCircle, Clock, Calendar, User, Building, ArrowLeft, Building2, Lock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 type WorkEntryStatus = "pending" | "approved" | "needs_changes";
@@ -277,6 +277,14 @@ export default function CompanyWorkEntries() {
                 <AlertCircle className="w-4 h-4 mr-1" />
                 Request Changes
               </Button>
+            </div>
+          )}
+          
+          {/* Show immutable message for approved entries */}
+          {entry.status === 'approved' && (
+            <div className="flex items-center gap-2 pt-2 text-green-600 text-sm">
+              <Lock className="w-4 h-4" />
+              <span className="font-medium">Entry Verified & Locked - No further changes allowed</span>
             </div>
           )}
         </div>

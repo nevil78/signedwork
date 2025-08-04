@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, ArrowLeft, Calendar, Clock, Edit, Trash2, Search, CheckCircle, AlertCircle, MessageSquare } from 'lucide-react';
+import { Plus, ArrowLeft, Calendar, Clock, Edit, Trash2, Search, CheckCircle, AlertCircle, MessageSquare, Lock } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -160,10 +160,14 @@ export default function WorkDiaryCompany() {
       setEditingEntry(null);
       form.reset();
     },
-    onError: () => {
+    onError: (error: any) => {
+      const errorMessage = error.message.includes("403") && error.message.includes("immutable") 
+        ? "Cannot edit approved work entry. Approved entries are locked and immutable."
+        : "Failed to update work entry";
+      
       toast({
         title: "Error",
-        description: "Failed to update work entry",
+        description: errorMessage,
         variant: "destructive",
       });
     },
@@ -185,10 +189,14 @@ export default function WorkDiaryCompany() {
         description: "Work entry deleted successfully",
       });
     },
-    onError: () => {
+    onError: (error: any) => {
+      const errorMessage = error.message.includes("403") && error.message.includes("immutable") 
+        ? "Cannot delete approved work entry. Approved entries are locked and immutable."
+        : "Failed to delete work entry";
+      
       toast({
         title: "Error",
-        description: "Failed to delete work entry",
+        description: errorMessage,
         variant: "destructive",
       });
     },
@@ -347,20 +355,34 @@ export default function WorkDiaryCompany() {
                       <span className={`px-2 py-1 text-xs font-medium rounded-full ${getPriorityBadgeClass(entry.priority as WorkEntryPriority)}`}>
                         {entry.priority}
                       </span>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleEdit(entry)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDelete(entry.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      {/* Only show edit/delete buttons if entry is not approved */}
+                      {(entry as any).status !== 'approved' && (
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleEdit(entry)}
+                            data-testid={`edit-button-${entry.id}`}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDelete(entry.id)}
+                            data-testid={`delete-button-${entry.id}`}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </>
+                      )}
+                      {/* Show immutable indicator for approved entries */}
+                      {(entry as any).status === 'approved' && (
+                        <div className="flex items-center gap-1 text-green-600 text-xs">
+                          <Lock className="h-3 w-3" />
+                          <span>Verified & Locked</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </CardHeader>

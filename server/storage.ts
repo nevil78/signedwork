@@ -123,6 +123,7 @@ export interface IStorage {
   
   // Work entry operations
   getWorkEntries(employeeId: string, companyId?: string): Promise<WorkEntry[]>;
+  getWorkEntry(id: string): Promise<WorkEntry | undefined>;
   createWorkEntry(workEntry: InsertWorkEntry): Promise<WorkEntry>;
   updateWorkEntry(id: string, data: Partial<WorkEntry>): Promise<WorkEntry>;
   deleteWorkEntry(id: string): Promise<void>;
@@ -412,6 +413,14 @@ export class DatabaseStorage implements IStorage {
         ));
     }
     return await db.select().from(workEntries).where(eq(workEntries.employeeId, employeeId));
+  }
+
+  async getWorkEntry(id: string): Promise<WorkEntry | undefined> {
+    const [workEntry] = await db
+      .select()
+      .from(workEntries)
+      .where(eq(workEntries.id, id));
+    return workEntry;
   }
 
   async createWorkEntry(workEntry: InsertWorkEntry): Promise<WorkEntry> {

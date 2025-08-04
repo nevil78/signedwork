@@ -753,6 +753,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     try {
+      // First check if the work entry is approved (immutable)
+      const existingEntry = await storage.getWorkEntry(req.params.id);
+      if (!existingEntry) {
+        return res.status(404).json({ message: "Work entry not found" });
+      }
+      
+      if (existingEntry.verificationStatus === 'approved') {
+        return res.status(403).json({ 
+          message: "Cannot edit approved work entry. Approved entries are immutable." 
+        });
+      }
+      
       const workEntry = await storage.updateWorkEntry(req.params.id, req.body);
       res.json(workEntry);
     } catch (error) {
@@ -769,6 +781,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     try {
+      // First check if the work entry is approved (immutable)
+      const existingEntry = await storage.getWorkEntry(req.params.id);
+      if (!existingEntry) {
+        return res.status(404).json({ message: "Work entry not found" });
+      }
+      
+      if (existingEntry.verificationStatus === 'approved') {
+        return res.status(403).json({ 
+          message: "Cannot delete approved work entry. Approved entries are immutable." 
+        });
+      }
+      
       await storage.deleteWorkEntry(req.params.id);
       res.json({ message: "Work entry deleted successfully" });
     } catch (error) {
