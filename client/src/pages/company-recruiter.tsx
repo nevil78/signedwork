@@ -44,7 +44,7 @@ import {
 import {
   Building2, Users, Eye, Star, MessageSquare, Calendar,
   User, LogOut, Briefcase, ChevronRight, FileText, Clock,
-  CheckCircle, XCircle, AlertCircle, Heart, ThumbsUp
+  CheckCircle, XCircle, AlertCircle, Heart, ThumbsUp, Download
 } from 'lucide-react';
 import type { JobApplication, JobListing, Employee } from '@shared/schema';
 
@@ -560,6 +560,41 @@ function ApplicationDetailsModal({
               <h3 className="font-semibold mb-3">Cover Letter</h3>
               <div className="bg-white p-4 border rounded-lg">
                 <p className="text-sm whitespace-pre-wrap">{application.coverLetter}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Attachments */}
+          {application.attachmentUrl && application.attachmentName && (
+            <div>
+              <h3 className="font-semibold mb-3">Additional Documents</h3>
+              <div className="bg-white p-4 border rounded-lg">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <FileText className="h-5 w-5 text-blue-600" />
+                    <div>
+                      <p className="text-sm font-medium">{application.attachmentName}</p>
+                      <p className="text-xs text-gray-500">Click to download</p>
+                    </div>
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => {
+                      const link = document.createElement('a');
+                      link.href = application.attachmentUrl;
+                      link.download = application.attachmentName;
+                      link.target = '_blank';
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
+                    }}
+                    data-testid="button-download-attachment"
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Download
+                  </Button>
+                </div>
               </div>
             </div>
           )}

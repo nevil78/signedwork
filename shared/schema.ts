@@ -212,6 +212,8 @@ export const jobApplications = pgTable("job_applications", {
   status: text("status").notNull().default("applied"), // applied, viewed, shortlisted, interviewed, offered, rejected, withdrawn
   coverLetter: text("cover_letter"),
   resumeUrl: text("resume_url"),
+  attachmentUrl: text("attachment_url"), // For additional documents, portfolio files, etc.
+  attachmentName: text("attachment_name"), // Original filename for the attachment
   includeProfile: boolean("include_profile").default(true), // Share profile page as CV
   includeWorkDiary: boolean("include_work_diary").default(true), // Share work diary as experience
   appliedAt: timestamp("applied_at").defaultNow(),

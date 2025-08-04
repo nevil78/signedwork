@@ -18,7 +18,8 @@ import {
   Search, Filter, MapPin, Clock, DollarSign, Building2, 
   Bookmark, BookmarkCheck, Bell, BellRing, Eye, Send,
   Briefcase, TrendingUp, Star, Users, ChevronRight,
-  Heart, HeartHandshake, Zap, Target, Brain, Globe, User, BookOpen, LogOut
+  Heart, HeartHandshake, Zap, Target, Brain, Globe, User, BookOpen, LogOut,
+  Paperclip, FileText, X
 } from 'lucide-react';
 import type { JobListing, JobApplication, SavedJob, JobAlert } from '@shared/schema';
 
@@ -108,17 +109,56 @@ export default function JobDiscoveryPage() {
   });
 
   const applyJobMutation = useMutation({
-    mutationFn: ({ jobId, coverLetter, includeProfile, includeWorkDiary }: { 
+    mutationFn: async ({ jobId, coverLetter, includeProfile, includeWorkDiary, attachment }: { 
       jobId: string; 
       coverLetter: string; 
       includeProfile: boolean; 
       includeWorkDiary: boolean; 
-    }) => 
-      apiRequest('POST', `/api/jobs/${jobId}/apply`, { 
+      attachment?: File;
+    }) => {
+      // If there's an attachment, upload it first
+      let attachmentUrl = '';
+      let attachmentName = '';
+      
+      if (attachment) {
+        // Get upload URL
+        const uploadResponse = await fetch('/api/objects/upload', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        
+        if (!uploadResponse.ok) {
+          throw new Error('Failed to get upload URL');
+        }
+        
+        const { uploadURL } = await uploadResponse.json();
+        
+        // Upload file
+        const uploadFileResponse = await fetch(uploadURL, {
+          method: 'PUT',
+          body: attachment,
+          headers: {
+            'Content-Type': attachment.type
+          }
+        });
+        
+        if (!uploadFileResponse.ok) {
+          throw new Error('Failed to upload attachment');
+        }
+        
+        attachmentUrl = uploadURL.split('?')[0]; // Remove query parameters
+        attachmentName = attachment.name;
+      }
+      
+      // Submit application with attachment URL
+      return apiRequest('POST', `/api/jobs/${jobId}/apply`, { 
         coverLetter, 
         includeProfile, 
-        includeWorkDiary 
-      }),
+        includeWorkDiary,
+        attachmentUrl,
+        attachmentName
+      });
+    },
     onSuccess: () => {
       toast({ title: "Application submitted successfully!" });
       queryClient.invalidateQueries({ queryKey: ['/api/jobs/my-applications'] });
@@ -720,19 +760,33 @@ function JobCard({
   hasApplied: boolean;
   onSave: () => void;
   onUnsave: () => void;
-  onApply: (data: { coverLetter: string; includeProfile: boolean; includeWorkDiary: boolean }) => void;
+  onApply: (data: { coverLetter: string; includeProfile: boolean; includeWorkDiary: boolean; attachment?: File }) => void;
 }) {
   const [showApplyModal, setShowApplyModal] = useState(false);
   const [coverLetter, setCoverLetter] = useState('');
   const [includeProfile, setIncludeProfile] = useState(true);
   const [includeWorkDiary, setIncludeWorkDiary] = useState(true);
+  const [attachment, setAttachment] = useState<File | null>(null);
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Check file size (10MB limit)
+      if (file.size > 10 * 1024 * 1024) {
+        alert('File size must be less than 10MB');
+        return;
+      }
+      setAttachment(file);
+    }
+  };
 
   const handleApply = () => {
-    onApply({ coverLetter, includeProfile, includeWorkDiary });
+    onApply({ coverLetter, includeProfile, includeWorkDiary, attachment: attachment || undefined });
     setShowApplyModal(false);
     setCoverLetter('');
     setIncludeProfile(true);
     setIncludeWorkDiary(true);
+    setAttachment(null);
   };
 
   return (
@@ -873,6 +927,69 @@ function JobCard({
                       />
                       <p className="text-xs text-muted-foreground mt-1">
                         Make it personal and show your passion for the role
+                      </p>
+                    </div>
+
+                    {/* Attachment Upload */}
+                    <div className="space-y-3 p-4 bg-gray-50 rounded-lg border">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-sm font-medium">Additional Documents (Optional)</Label>
+                        {attachment && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setAttachment(null)}
+                            data-testid="button-remove-attachment"
+                          >
+                            <X className="h-4 w-4 mr-1" />
+                            Remove
+                          </Button>
+                        )}
+                      </div>
+                      
+                      {!attachment ? (
+                        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                          <input
+                            type="file"
+                            id="attachment-upload"
+                            className="hidden"
+                            accept=".pdf,.doc,.docx,.txt,.jpg,.png,.jpeg"
+                            onChange={handleFileUpload}
+                            data-testid="input-file-attachment"
+                          />
+                          <label
+                            htmlFor="attachment-upload"
+                            className="cursor-pointer flex flex-col items-center space-y-2"
+                          >
+                            <Paperclip className="h-8 w-8 text-gray-400" />
+                            <div className="text-sm">
+                              <span className="font-medium text-blue-600">Click to upload</span>
+                              <span className="text-gray-500"> or drag and drop</span>
+                            </div>
+                            <p className="text-xs text-gray-500">
+                              PDF, DOC, TXT, or images up to 10MB
+                            </p>
+                          </label>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-between p-3 bg-white rounded border">
+                          <div className="flex items-center space-x-3">
+                            <FileText className="h-5 w-5 text-blue-600" />
+                            <div>
+                              <p className="text-sm font-medium">{attachment.name}</p>
+                              <p className="text-xs text-gray-500">
+                                {(attachment.size / 1024 / 1024).toFixed(1)} MB
+                              </p>
+                            </div>
+                          </div>
+                          <Badge variant="outline" className="text-green-600">
+                            Ready to upload
+                          </Badge>
+                        </div>
+                      )}
+                      
+                      <p className="text-xs text-muted-foreground">
+                        Include portfolio samples, certificates, or other relevant documents
                       </p>
                     </div>
 
