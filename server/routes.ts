@@ -271,36 +271,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-
-      
-      // Create the first admin with super_admin role
-      const admin = await storage.createAdmin({
-        ...validatedData,
-        role: "super_admin",
-        permissions: ["all"]
-      });
-      
-      // Remove password from response
-      const { password, ...adminResponse } = admin;
-      
-      res.status(201).json({ 
-        message: "Super admin account created successfully",
-        admin: adminResponse 
-      });
-    } catch (error: any) {
-      if (error.name === "ZodError") {
-        const validationError = fromZodError(error);
-        return res.status(400).json({ 
-          message: validationError.message,
-          errors: error.errors
-        });
-      }
-      
-      console.error("Create first admin error:", error);
-      res.status(500).json({ message: "Failed to create admin account" });
-    }
-  });
-
   // Admin dashboard stats
   app.get("/api/admin/stats", async (req, res) => {
     const sessionUser = (req.session as any).user;
