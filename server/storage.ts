@@ -150,7 +150,11 @@ export interface IStorage {
   getJobApplications(employeeId: string): Promise<JobApplication[]>;
   getJobApplicationsForJob(jobId: string): Promise<JobApplication[]>;
   createJobApplication(application: InsertJobApplication): Promise<JobApplication>;
-  updateJobApplicationStatus(id: string, status: string, notes?: string): Promise<JobApplication>;
+  updateJobApplicationStatus(id: string, updates: { status?: string; companyNotes?: string; interviewNotes?: string }): Promise<JobApplication>;
+  
+  // Company recruiter operations
+  getCompanyJobApplications(companyId: string): Promise<JobApplication[]>;
+  getJobApplicationWithEmployee(applicationId: string): Promise<JobApplication | null>;
   
   // Saved jobs operations
   getSavedJobs(employeeId: string): Promise<SavedJob[]>;
@@ -835,15 +839,62 @@ export class DatabaseStorage implements IStorage {
     return newApplication;
   }
 
-  async updateJobApplicationStatus(id: string, status: string, notes?: string): Promise<JobApplication> {
-    const updateData: any = { status, statusUpdatedAt: new Date() };
-    if (notes) updateData.notes = notes;
+  // Company recruiter methods
+  async getCompanyJobApplications(companyId: string): Promise<JobApplication[]> {
+    const applications = await db
+      .select({
+        application: jobApplications,
+        job: jobListings,
+        employee: employees
+      })
+      .from(jobApplications)
+      .innerJoin(jobListings, eq(jobApplications.jobId, jobListings.id))
+      .innerJoin(employees, eq(jobApplications.employeeId, employees.id))
+      .where(eq(jobListings.companyId, companyId))
+      .orderBy(desc(jobApplications.appliedAt));
     
+    return applications.map(({ application, job, employee }) => ({
+      ...application,
+      job,
+      employee
+    }));
+  }
+
+  async getJobApplicationWithEmployee(applicationId: string): Promise<JobApplication | null> {
+    const [result] = await db
+      .select({
+        application: jobApplications,
+        job: jobListings,
+        employee: employees
+      })
+      .from(jobApplications)
+      .innerJoin(jobListings, eq(jobApplications.jobId, jobListings.id))
+      .innerJoin(employees, eq(jobApplications.employeeId, employees.id))
+      .where(eq(jobApplications.id, applicationId));
+    
+    if (!result) return null;
+    
+    return {
+      ...result.application,
+      job: result.job,
+      employee: result.employee
+    };
+  }
+
+  async updateJobApplicationStatus(id: string, updates: { 
+    status?: string; 
+    companyNotes?: string; 
+    interviewNotes?: string; 
+  }): Promise<JobApplication> {
     const [application] = await db
       .update(jobApplications)
-      .set(updateData)
+      .set({
+        ...updates,
+        statusUpdatedAt: new Date()
+      })
       .where(eq(jobApplications.id, id))
       .returning();
+    
     return application;
   }
 

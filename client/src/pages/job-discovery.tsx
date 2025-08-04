@@ -108,8 +108,17 @@ export default function JobDiscoveryPage() {
   });
 
   const applyJobMutation = useMutation({
-    mutationFn: ({ jobId, coverLetter }: { jobId: string; coverLetter: string }) => 
-      apiRequest('POST', `/api/jobs/${jobId}/apply`, { coverLetter }),
+    mutationFn: ({ jobId, coverLetter, includeProfile, includeWorkDiary }: { 
+      jobId: string; 
+      coverLetter: string; 
+      includeProfile: boolean; 
+      includeWorkDiary: boolean; 
+    }) => 
+      apiRequest('POST', `/api/jobs/${jobId}/apply`, { 
+        coverLetter, 
+        includeProfile, 
+        includeWorkDiary 
+      }),
     onSuccess: () => {
       toast({ title: "Application submitted successfully!" });
       queryClient.invalidateQueries({ queryKey: ['/api/jobs/my-applications'] });
@@ -539,8 +548,8 @@ export default function JobDiscoveryPage() {
                     hasApplied={hasApplied(job.id)}
                     onSave={() => saveJobMutation.mutate(job.id)}
                     onUnsave={() => unsaveJobMutation.mutate(job.id)}
-                    onApply={(coverLetter: string) => 
-                      applyJobMutation.mutate({ jobId: job.id, coverLetter })
+                    onApply={(data) => 
+                      applyJobMutation.mutate({ jobId: job.id, ...data })
                     }
                   />
                 ))
@@ -711,15 +720,19 @@ function JobCard({
   hasApplied: boolean;
   onSave: () => void;
   onUnsave: () => void;
-  onApply: (coverLetter: string) => void;
+  onApply: (data: { coverLetter: string; includeProfile: boolean; includeWorkDiary: boolean }) => void;
 }) {
   const [showApplyModal, setShowApplyModal] = useState(false);
   const [coverLetter, setCoverLetter] = useState('');
+  const [includeProfile, setIncludeProfile] = useState(true);
+  const [includeWorkDiary, setIncludeWorkDiary] = useState(true);
 
   const handleApply = () => {
-    onApply(coverLetter);
+    onApply({ coverLetter, includeProfile, includeWorkDiary });
     setShowApplyModal(false);
     setCoverLetter('');
+    setIncludeProfile(true);
+    setIncludeWorkDiary(true);
   };
 
   return (
@@ -803,20 +816,66 @@ function JobCard({
                 <DialogContent className="max-w-2xl">
                   <DialogHeader>
                     <DialogTitle>Apply for {job.title}</DialogTitle>
+                    <p className="text-sm text-muted-foreground">
+                      Share your profile and work experience to stand out from other applicants
+                    </p>
                   </DialogHeader>
-                  <div className="space-y-4">
+                  <div className="space-y-6">
+                    {/* CV Sharing Options */}
+                    <div className="space-y-4 p-4 bg-blue-50 rounded-lg border">
+                      <h4 className="font-semibold text-sm">Share as CV</h4>
+                      <div className="space-y-3">
+                        <div className="flex items-center space-x-3">
+                          <input
+                            type="checkbox"
+                            id="include-profile"
+                            checked={includeProfile}
+                            onChange={(e) => setIncludeProfile(e.target.checked)}
+                            className="h-4 w-4 rounded"
+                            data-testid="checkbox-include-profile"
+                          />
+                          <Label htmlFor="include-profile" className="text-sm cursor-pointer">
+                            <strong>Include Profile Page</strong> - Share your personal information, skills, experience, education, and certifications
+                          </Label>
+                        </div>
+                        <div className="flex items-center space-x-3">
+                          <input
+                            type="checkbox"
+                            id="include-work-diary"
+                            checked={includeWorkDiary}
+                            onChange={(e) => setIncludeWorkDiary(e.target.checked)}
+                            className="h-4 w-4 rounded"
+                            data-testid="checkbox-include-work-diary"
+                          />
+                          <Label htmlFor="include-work-diary" className="text-sm cursor-pointer">
+                            <strong>Include Work Diary</strong> - Share your recent work activities, tasks, and project accomplishments
+                          </Label>
+                        </div>
+                      </div>
+                      {(!includeProfile && !includeWorkDiary) && (
+                        <p className="text-xs text-amber-600 bg-amber-50 p-2 rounded">
+                          ⚠️ We recommend sharing at least your profile or work diary to improve your application
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Cover Letter */}
                     <div>
                       <Label htmlFor="cover-letter">Cover Letter</Label>
                       <Textarea
                         id="cover-letter"
-                        placeholder="Write a compelling cover letter..."
+                        placeholder="Write a compelling cover letter highlighting why you're the perfect fit for this role..."
                         value={coverLetter}
                         onChange={(e) => setCoverLetter(e.target.value)}
-                        rows={10}
+                        rows={8}
                         className="mt-1"
                         data-testid="textarea-cover-letter"
                       />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Make it personal and show your passion for the role
+                      </p>
                     </div>
+
                     <div className="flex justify-end gap-2">
                       <Button variant="outline" onClick={() => setShowApplyModal(false)}>
                         Cancel

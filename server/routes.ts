@@ -1294,7 +1294,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Company updates application status
+  // Legacy route - keep for compatibility
   app.put("/api/company/applications/:applicationId", async (req, res) => {
     const sessionUser = (req.session as any).user;
     if (!sessionUser || sessionUser.type !== "company") {
@@ -1302,8 +1302,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     try {
-      const { status, notes } = req.body;
-      const application = await storage.updateJobApplicationStatus(req.params.applicationId, status, notes);
+      const { status, notes, companyNotes, interviewNotes } = req.body;
+      const application = await storage.updateJobApplicationStatus(req.params.applicationId, {
+        status, 
+        companyNotes: companyNotes || notes, 
+        interviewNotes
+      });
       res.json({
         message: "Application status updated successfully",
         application
@@ -1325,6 +1329,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error downloading object:", error);
       return res.sendStatus(404);
+    }
+  });
+
+  // === COMPANY RECRUITER ROUTES ===
+  
+  // Get all job applications for a company
+  app.get("/api/company/applications", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    if (!sessionUser || sessionUser.type !== "company") {
+      return res.status(401).json({ message: "Not authenticated as company" });
+    }
+    
+    try {
+      const applications = await storage.getCompanyJobApplications(sessionUser.id);
+      res.json(applications);
+    } catch (error) {
+      console.error("Get company applications error:", error);
+      res.status(500).json({ message: "Failed to get job applications" });
+    }
+  });
+  
+  // Update application status
+  app.put("/api/company/applications/:applicationId", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    if (!sessionUser || sessionUser.type !== "company") {
+      return res.status(401).json({ message: "Not authenticated as company" });
+    }
+    
+    try {
+      const { status, companyNotes, interviewNotes } = req.body;
+      const application = await storage.updateJobApplicationStatus(
+        req.params.applicationId,
+        { status, companyNotes, interviewNotes }
+      );
+      
+      res.json({
+        message: "Application status updated successfully",
+        application
+      });
+    } catch (error) {
+      console.error("Update application status error:", error);
+      res.status(500).json({ message: "Failed to update application status" });
+    }
+  });
+  
+  // Get employee profile for recruiter view (with application data)
+  app.get("/api/company/applications/:applicationId/employee", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    if (!sessionUser || sessionUser.type !== "company") {
+      return res.status(401).json({ message: "Not authenticated as company" });
+    }
+    
+    try {
+      const application = await storage.getJobApplicationWithEmployee(req.params.applicationId);
+      if (!application) {
+        return res.status(404).json({ message: "Application not found" });
+      }
+      
+      // Get employee profile data if shared
+      const profileData = application.includeProfile 
+        ? await storage.getEmployeeProfile(application.employeeId)
+        : null;
+        
+      // Get work diary data if shared  
+      const workDiaryData = application.includeWorkDiary
+        ? await storage.getWorkEntries(application.employeeId)
+        : null;
+      
+      res.json({
+        application,
+        profile: profileData,
+        workDiary: workDiaryData
+      });
+    } catch (error) {
+      console.error("Get employee application data error:", error);
+      res.status(500).json({ message: "Failed to get employee data" });
     }
   });
 

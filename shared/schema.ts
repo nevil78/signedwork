@@ -212,9 +212,13 @@ export const jobApplications = pgTable("job_applications", {
   status: text("status").notNull().default("applied"), // applied, viewed, shortlisted, interviewed, offered, rejected, withdrawn
   coverLetter: text("cover_letter"),
   resumeUrl: text("resume_url"),
+  includeProfile: boolean("include_profile").default(true), // Share profile page as CV
+  includeWorkDiary: boolean("include_work_diary").default(true), // Share work diary as experience
   appliedAt: timestamp("applied_at").defaultNow(),
   statusUpdatedAt: timestamp("status_updated_at").defaultNow(),
   companyNotes: text("company_notes"),
+  interviewNotes: text("interview_notes"),
+  salaryExpectation: text("salary_expectation"),
 });
 
 // Job saved/bookmarked by employees
