@@ -986,27 +986,20 @@ export class DatabaseStorage implements IStorage {
     const entries = await db
       .select({
         id: workEntries.id,
-        title: workEntries.title,
-        description: workEntries.description,
-        status: workEntries.status,
-        priority: workEntries.priority,
-        estimatedHours: workEntries.estimatedHours,
-        actualHours: workEntries.actualHours,
-        tags: workEntries.tags,
-        startDate: workEntries.startDate,
-        endDate: workEntries.endDate,
         employeeId: workEntries.employeeId,
         companyId: workEntries.companyId,
+        title: workEntries.title,
+        description: workEntries.description,
+        startDate: workEntries.startDate,
+        endDate: workEntries.endDate,
+        priority: workEntries.priority,
+        hours: workEntries.hours,
+        status: workEntries.status,
+        companyFeedback: workEntries.companyFeedback,
         createdAt: workEntries.createdAt,
-        updatedAt: workEntries.updatedAt,
-        company: {
-          id: companies.id,
-          name: companies.name,
-          industry: companies.industry
-        }
+        updatedAt: workEntries.updatedAt
       })
       .from(workEntries)
-      .leftJoin(companies, eq(workEntries.companyId, companies.id))
       .where(
         and(
           eq(workEntries.employeeId, employeeId),
@@ -1015,10 +1008,7 @@ export class DatabaseStorage implements IStorage {
       )
       .orderBy(desc(workEntries.createdAt));
 
-    return entries.map(entry => ({
-      ...entry,
-      company: entry.company!
-    }));
+    return entries;
   }
 }
 

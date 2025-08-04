@@ -19,10 +19,7 @@ import { format } from 'date-fns';
 import type { WorkEntry, Employee, Company } from '@shared/schema';
 
 interface WorkEntryWithCompany extends WorkEntry {
-  company: Company;
-  estimatedHours?: number;
-  actualHours?: number;
-  tags?: string[];
+  company?: Company;
 }
 
 export default function CompanyEmployeeWorkDiary() {
@@ -207,22 +204,12 @@ export default function CompanyEmployeeWorkDiary() {
                       <div className="flex items-center gap-2">
                         <Clock className="h-4 w-4 text-muted-foreground" />
                         <span>
-                          {entry.estimatedHours || 0}h estimated
-                          {entry.actualHours && ` • ${entry.actualHours}h actual`}
+                          {entry.hours || 0}h logged
                         </span>
                       </div>
                     </div>
 
-                    {entry.tags && entry.tags.length > 0 && (
-                      <div className="flex flex-wrap gap-1">
-                        {entry.tags.map((tag: string, index: number) => (
-                          <Badge key={index} variant="outline" className="text-xs">
-                            <Tag className="h-3 w-3 mr-1" />
-                            {tag}
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
+                    {/* Tags removed as they're not part of the schema */}
 
                     <Separator />
 

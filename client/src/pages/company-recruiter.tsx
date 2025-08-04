@@ -527,7 +527,7 @@ function ApplicationDetailsModal({
                 </span>
                 {application.includeProfile && (
                   <Button variant="outline" size="sm" asChild>
-                    <Link to={`/employee-profile/${application.employee.id}`}>
+                    <Link to={`/company-employee/${application.employee.id}`}>
                       View Profile
                     </Link>
                   </Button>
