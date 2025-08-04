@@ -176,37 +176,43 @@ export default function CompanyDashboard() {
         {/* Navigation Section */}
         <div className="mb-8">
           <div className="grid gap-4 md:grid-cols-3">
-            <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/company-work-entries')}>
-              <CardHeader className="text-center">
-                <div className="w-12 h-12 mx-auto mb-2 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
-                  <FileText className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+            <Card className="cursor-pointer hover:shadow-md hover:border-blue-200 transition-all duration-200" onClick={() => navigate('/company-work-entries')}>
+              <CardHeader className="pb-4">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
+                    <FileText className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <CardTitle className="text-base font-semibold">Work Entry Reviews</CardTitle>
                 </div>
-                <CardTitle className="text-lg">Work Entry Reviews</CardTitle>
-                <CardDescription>
+                <CardDescription className="text-sm">
                   Review and verify employee work entries
                 </CardDescription>
               </CardHeader>
             </Card>
             
-            <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/company-jobs')}>
-              <CardHeader className="text-center">
-                <div className="w-12 h-12 mx-auto mb-2 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
-                  <Briefcase className="w-6 h-6 text-green-600 dark:text-green-400" />
+            <Card className="cursor-pointer hover:shadow-md hover:border-green-200 transition-all duration-200" onClick={() => navigate('/company-jobs')}>
+              <CardHeader className="pb-4">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-8 h-8 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
+                    <Briefcase className="w-4 h-4 text-green-600 dark:text-green-400" />
+                  </div>
+                  <CardTitle className="text-base font-semibold">Job Postings</CardTitle>
                 </div>
-                <CardTitle className="text-lg">Job Postings</CardTitle>
-                <CardDescription>
+                <CardDescription className="text-sm">
                   Create and manage job listings
                 </CardDescription>
               </CardHeader>
             </Card>
             
-            <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/company-recruiter')}>
-              <CardHeader className="text-center">
-                <div className="w-12 h-12 mx-auto mb-2 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center">
-                  <Users className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+            <Card className="cursor-pointer hover:shadow-md hover:border-purple-200 transition-all duration-200" onClick={() => navigate('/company-recruiter')}>
+              <CardHeader className="pb-4">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-8 h-8 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center">
+                    <Users className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                  </div>
+                  <CardTitle className="text-base font-semibold">Company Recruiter</CardTitle>
                 </div>
-                <CardTitle className="text-lg">Company Recruiter</CardTitle>
-                <CardDescription>
+                <CardDescription className="text-sm">
                   View and manage job applications
                 </CardDescription>
               </CardHeader>

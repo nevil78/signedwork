@@ -191,33 +191,74 @@ export default function CompanyJobsPage() {
   const inactiveJobs = jobs.filter((job: JobListing) => job.status !== 'active');
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <div className="flex items-center gap-4 mb-4">
-            <Link href="/company-dashboard">
-              <Button variant="outline" size="sm" data-testid="button-back-to-dashboard">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Dashboard
-              </Button>
-            </Link>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      {/* Header */}
+      <header className="bg-white dark:bg-gray-800 shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center space-x-8">
+              <div className="flex items-center">
+                <Building2 className="text-primary text-xl mr-3" />
+                <span className="text-lg font-bold text-slate-800 dark:text-slate-200">Company Dashboard</span>
+              </div>
+              {/* Page Navigation */}
+              <div className="flex space-x-1 bg-slate-100 dark:bg-slate-700 rounded-lg p-1">
+                <Link to="/company-dashboard">
+                  <Button variant="ghost" size="sm">
+                    <Building2 className="w-4 h-4 mr-2" />
+                    Dashboard
+                  </Button>
+                </Link>
+                <Link to="/company-jobs">
+                  <Button variant="ghost" size="sm" className="bg-white dark:bg-slate-600 shadow-sm text-green-700 dark:text-green-400">
+                    <Briefcase className="w-4 h-4 mr-2" />
+                    Jobs
+                  </Button>
+                </Link>
+                <Link to="/company-recruiter">
+                  <Button variant="ghost" size="sm">
+                    <Users className="w-4 h-4 mr-2" />
+                    Recruiter
+                  </Button>
+                </Link>
+              </div>
+            </div>
+            <div></div>
           </div>
-          <h1 className="text-3xl font-bold">Job Postings</h1>
-          <p className="text-muted-foreground mt-2">Manage your company's job listings</p>
         </div>
-        <Dialog open={showCreateModal || !!editingJob} onOpenChange={(open) => {
-          if (!open) {
-            setShowCreateModal(false);
-            setEditingJob(null);
-            form.reset();
-          }
-        }}>
-          <DialogTrigger asChild>
-            <Button onClick={() => setShowCreateModal(true)} data-testid="button-create-job">
-              <Plus className="h-4 w-4 mr-2" />
-              Post New Job
-            </Button>
-          </DialogTrigger>
+      </header>
+
+      <div className="max-w-7xl mx-auto p-6 space-y-6">
+        {/* Header Section */}
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Job Postings</h1>
+              <p className="text-slate-600 dark:text-slate-400 mt-2">
+                Manage your company's job listings
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border">
+          <div className="flex justify-between items-center mb-6">
+            <div>
+              <h2 className="text-lg font-semibold">Your Job Listings</h2>
+            </div>
+            <Dialog open={showCreateModal || !!editingJob} onOpenChange={(open) => {
+              if (!open) {
+                setShowCreateModal(false);
+                setEditingJob(null);
+                form.reset();
+              }
+            }}>
+              <DialogTrigger asChild>
+                <Button onClick={() => setShowCreateModal(true)} data-testid="button-create-job">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Post New Job
+                </Button>
+              </DialogTrigger>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
@@ -437,9 +478,8 @@ export default function CompanyJobsPage() {
             </Form>
           </DialogContent>
         </Dialog>
-      </div>
 
-      <Tabs defaultValue="active" className="space-y-6">
+          <Tabs defaultValue="active" className="space-y-6">
         <TabsList>
           <TabsTrigger value="active" data-testid="tab-active-jobs">
             Active Jobs ({activeJobs.length})
@@ -501,23 +541,26 @@ export default function CompanyJobsPage() {
             ))
           )}
         </TabsContent>
-      </Tabs>
-    </div>
-  );
+          </Tabs>
+        </div>
+      </div>
+    );
 }
 
 // Job Card Component
+interface JobCardProps {
+  job: JobListing;
+  onEdit: (job: JobListing) => void;
+  onDelete: (jobId: string) => void;
+  isInactive?: boolean;
+}
+
 function JobCard({ 
   job, 
   onEdit, 
   onDelete,
   isInactive = false 
-}: {
-  job: JobListing;
-  onEdit: (job: JobListing) => void;
-  onDelete: (jobId: string) => void;
-  isInactive?: boolean;
-}) {
+}: JobCardProps) {
   return (
     <Card className={`${isInactive ? 'opacity-75' : ''}`}>
       <CardContent className="p-6">
