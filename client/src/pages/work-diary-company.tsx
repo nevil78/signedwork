@@ -166,10 +166,14 @@ export default function WorkDiaryCompany() {
   });
 
   const onSubmit = (data: InsertWorkEntry) => {
+    console.log('Form data before processing:', data);
+    
     const payload = {
       ...data,
       tags: Array.isArray(data.tags) ? data.tags : (data.tags as string | null | undefined)?.split(',').map(tag => tag.trim()).filter(Boolean) || [],
     };
+    
+    console.log('Payload after processing:', payload);
     
     if (editingEntry) {
       updateEntryMutation.mutate({ id: editingEntry.id, data: payload });
