@@ -1176,8 +1176,8 @@ export class DatabaseStorage implements IStorage {
       .select({
         count: sql<number>`count(*)`,
         totalHours: sql<number>`coalesce(sum(${workEntries.hours}), 0)`,
-        estimatedHours: sql<number>`coalesce(sum(${workEntries.hours}), 0)`,
-        billableHours: sql<number>`coalesce(sum(case when ${workEntries.billable} = true then ${workEntries.hours} else 0 end), 0)`,
+        estimatedHours: sql<number>`coalesce(sum(${workEntries.estimatedHours}), 0)`,
+        billableHours: sql<number>`coalesce(sum(case when ${workEntries.billable} = true then ${workEntries.actualHours} else 0 end), 0)`,
         completedCount: sql<number>`sum(case when ${workEntries.status} = 'completed' then 1 else 0 end)`
       })
       .from(workEntries)

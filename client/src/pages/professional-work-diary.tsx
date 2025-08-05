@@ -17,7 +17,7 @@ import {
   Plus, Building2, Calendar as CalendarIcon, Clock, Edit, LogOut, User, BookOpen,
   Filter, Search, TrendingUp, DollarSign, Timer, Target, BarChart3,
   FileText, Tag, Briefcase, AlertCircle, CheckCircle, XCircle, Pause,
-  PlayCircle, Star, Award, Activity, PieChart
+  PlayCircle, Star, Award, Activity, PieChart, Clipboard
 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -235,7 +235,7 @@ export default function ProfessionalWorkDiary() {
 
               {/* Navigation Links */}
               <nav className="hidden md:flex space-x-6">
-                <Link href="/employee-profile" className="text-gray-600 hover:text-gray-900 transition-colors">
+                <Link href="/profile" className="text-gray-600 hover:text-gray-900 transition-colors">
                   <div className="flex items-center space-x-1">
                     <User className="h-4 w-4" />
                     <span>Profile</span>
@@ -243,8 +243,14 @@ export default function ProfessionalWorkDiary() {
                 </Link>
                 <Link href="/work-diary" className="text-primary font-medium">
                   <div className="flex items-center space-x-1">
-                    <BookOpen className="h-4 w-4" />
+                    <Clipboard className="h-4 w-4" />
                     <span>Work Diary</span>
+                  </div>
+                </Link>
+                <Link href="/job-discovery" className="text-gray-600 hover:text-gray-900 transition-colors">
+                  <div className="flex items-center space-x-1">
+                    <Search className="h-4 w-4" />
+                    <span>Job Discovery</span>
                   </div>
                 </Link>
               </nav>
