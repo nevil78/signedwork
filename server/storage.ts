@@ -484,7 +484,7 @@ export class DatabaseStorage implements IStorage {
     await db.delete(endorsements).where(eq(endorsements.id, id));
   }
 
-  // Employee Company operations
+  // Employee Company operations (legacy table)
   async getEmployeeCompanies(employeeId: string): Promise<EmployeeCompany[]> {
     return await db.select().from(employeeCompanies).where(eq(employeeCompanies.employeeId, employeeId));
   }
@@ -940,9 +940,9 @@ export class DatabaseStorage implements IStorage {
     
     return {
       ...result.application,
-      job: result.job,
+      jobListing: result.job,
       employee: result.employee
-    };
+    } as JobApplication;
   }
 
   async updateJobApplicationStatus(id: string, updates: { 
@@ -1014,16 +1014,16 @@ export class DatabaseStorage implements IStorage {
     const [view] = await db
       .insert(profileViews)
       .values({
-        viewerCompanyId: companyId,
-        viewedEmployeeId: employeeId,
-        viewContext: jobId || null
+        companyId: companyId,
+        employeeId: employeeId,
+        jobId: jobId || null
       })
       .returning();
     return view;
   }
 
   async getProfileViews(employeeId: string): Promise<ProfileView[]> {
-    return await db.select().from(profileViews).where(eq(profileViews.viewedEmployeeId, employeeId));
+    return await db.select().from(profileViews).where(eq(profileViews.employeeId, employeeId));
   }
 
   // Company employee access with privacy controls
@@ -1058,6 +1058,20 @@ export class DatabaseStorage implements IStorage {
         companyFeedback: workEntries.companyFeedback,
         createdAt: workEntries.createdAt,
         updatedAt: workEntries.updatedAt,
+        estimatedHours: workEntries.estimatedHours,
+        actualHours: workEntries.actualHours,
+        workType: workEntries.workType,
+        category: workEntries.category,
+        project: workEntries.project,
+        client: workEntries.client,
+        billable: workEntries.billable,
+        billableRate: workEntries.billableRate,
+        tags: workEntries.tags,
+        achievements: workEntries.achievements,
+        challenges: workEntries.challenges,
+        learnings: workEntries.learnings,
+        companyRating: workEntries.companyRating,
+        attachments: workEntries.attachments,
         companyName: companies.name
       })
       .from(workEntries)
@@ -1127,7 +1141,7 @@ export class DatabaseStorage implements IStorage {
     const profileViewsCount = await db
       .select({ count: sql<number>`count(*)` })
       .from(profileViews)
-      .where(eq(profileViews.viewedEmployeeId, employeeId));
+      .where(eq(profileViews.employeeId, employeeId));
 
     // Get job applications count
     const applicationsCount = await db
@@ -1198,7 +1212,7 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
-  async getEmployeeCompanies(employeeId: string): Promise<any[]> {
+  async getEmployeeCompaniesForAnalytics(employeeId: string): Promise<any[]> {
     const result = await db
       .select({
         id: companyEmployees.companyId,
