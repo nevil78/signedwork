@@ -233,9 +233,6 @@ export interface JobSearchFilters {
 }
 
 export class DatabaseStorage implements IStorage {
-  async checkAdminExists(): Promise<boolean> {
-    return await postgresStorage.checkAdminExists();
-  }
   async getEmployee(id: string): Promise<Employee | undefined> {
     const [employee] = await db.select().from(employees).where(eq(employees.id, id));
     return employee || undefined;
@@ -1017,16 +1014,16 @@ export class DatabaseStorage implements IStorage {
     const [view] = await db
       .insert(profileViews)
       .values({
-        companyId,
-        employeeId,
-        jobId
+        viewerCompanyId: companyId,
+        viewedEmployeeId: employeeId,
+        viewContext: jobId || null
       })
       .returning();
     return view;
   }
 
   async getProfileViews(employeeId: string): Promise<ProfileView[]> {
-    return await db.select().from(profileViews).where(eq(profileViews.employeeId, employeeId));
+    return await db.select().from(profileViews).where(eq(profileViews.viewedEmployeeId, employeeId));
   }
 
   // Company employee access with privacy controls
@@ -1126,11 +1123,11 @@ export class DatabaseStorage implements IStorage {
 
   // Professional Analytics Methods
   async getEmployeeAnalytics(employeeId: string): Promise<any> {
-    // Get profile views count
+    // Get profile views count using correct column name
     const profileViewsCount = await db
       .select({ count: sql<number>`count(*)` })
       .from(profileViews)
-      .where(eq(profileViews.employeeId, employeeId));
+      .where(eq(profileViews.viewedEmployeeId, employeeId));
 
     // Get job applications count
     const applicationsCount = await db
@@ -1174,16 +1171,28 @@ export class DatabaseStorage implements IStorage {
     let query = db
       .select({
         count: sql<number>`count(*)`,
-        totalHours: sql<number>`sum(${workEntries.actualHours})`,
-        estimatedHours: sql<number>`sum(${workEntries.estimatedHours})`,
-        billableHours: sql<number>`sum(case when ${workEntries.billable} = true then ${workEntries.actualHours} else 0 end)`,
+        totalHours: sql<number>`sum(${workEntries.hours})`,
+        estimatedHours: sql<number>`sum(${workEntries.hours})`,
+        billableHours: sql<number>`sum(case when ${workEntries.billable} = true then ${workEntries.hours} else 0 end)`,
         completedCount: sql<number>`sum(case when ${workEntries.status} = 'completed' then 1 else 0 end)`
       })
       .from(workEntries)
       .where(eq(workEntries.employeeId, employeeId));
 
     if (companyId) {
-      query = query.where(eq(workEntries.companyId, companyId));
+      query = db
+        .select({
+          count: sql<number>`count(*)`,
+          totalHours: sql<number>`sum(${workEntries.actualHours})`,
+          estimatedHours: sql<number>`sum(${workEntries.estimatedHours})`,
+          billableHours: sql<number>`sum(case when ${workEntries.billable} = true then ${workEntries.actualHours} else 0 end)`,
+          completedCount: sql<number>`sum(case when ${workEntries.status} = 'completed' then 1 else 0 end)`
+        })
+        .from(workEntries)
+        .where(and(
+          eq(workEntries.employeeId, employeeId),
+          eq(workEntries.companyId, companyId)
+        ));
     }
 
     const [analytics] = await query;

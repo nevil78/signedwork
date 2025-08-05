@@ -322,7 +322,7 @@ export default function ProfessionalProfile() {
                           </div>
                           <div className="flex items-center text-sm">
                             <Clock className="h-4 w-4 mr-2 text-gray-400" />
-                            <span>Notice: {user.noticePeriod?.replace("_", " ") || "Not specified"}</span>
+                            <span>Notice: {user.noticePeriod ? `${user.noticePeriod} days` : "Not specified"}</span>
                           </div>
                           <div className="flex items-center text-sm">
                             <DollarSign className="h-4 w-4 mr-2 text-gray-400" />
