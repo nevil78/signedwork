@@ -162,12 +162,12 @@ export default function ProfessionalProfile() {
 
   const [location] = useLocation();
 
-  const handleLogout = () => {
-    logout.mutate();
-  };
-
   const isActive = (path: string) => {
     return location === path;
+  };
+
+  const handleLogout = () => {
+    logout.mutate();
   };
 
   return (
