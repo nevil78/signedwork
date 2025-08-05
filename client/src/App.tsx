@@ -8,6 +8,8 @@ import Dashboard from "@/pages/dashboard";
 import Profile from "@/pages/profile";
 import WorkDiary from "@/pages/work-diary";
 import WorkDiaryCompany from "@/pages/work-diary-company";
+import ProfessionalProfile from "@/pages/professional-profile";
+import ProfessionalWorkDiary from "@/pages/professional-work-diary";
 import JobDiscoveryPage from "@/pages/job-discovery";
 import CompanyDashboard from "@/pages/company-dashboard";
 import CompanyWorkEntries from "@/pages/company-work-entries";
@@ -25,9 +27,11 @@ function Router() {
     <Switch>
       <Route path="/" component={AuthPage} />
       <Route path="/dashboard" component={Dashboard} />
-      <Route path="/profile" component={Profile} />
-      <Route path="/work-diary" component={WorkDiary} />
+      <Route path="/profile" component={ProfessionalProfile} />
+      <Route path="/work-diary" component={ProfessionalWorkDiary} />
       <Route path="/work-diary/:companyId" component={WorkDiaryCompany} />
+      <Route path="/legacy-profile" component={Profile} />
+      <Route path="/legacy-work-diary" component={WorkDiary} />
       <Route path="/job-discovery" component={JobDiscoveryPage} />
       <Route path="/company-dashboard" component={CompanyDashboard} />
       <Route path="/company-work-entries" component={CompanyWorkEntries} />

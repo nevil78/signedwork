@@ -20,8 +20,14 @@ export const employees = pgTable("employees", {
   currentPosition: text("current_position"),
   currentCompany: text("current_company"),
   industry: text("industry"),
+  experienceLevel: text("experience_level"), // entry, mid, senior, lead, director, executive
+  salaryExpectation: text("salary_expectation"),
+  availabilityStatus: text("availability_status").default("open"), // open, not_looking, passive
+  noticePeriod: text("notice_period"), // immediate, 1_month, 2_months, 3_months
+  preferredWorkType: text("preferred_work_type"), // remote, office, hybrid
   skills: text("skills").array(),
   languages: text("languages").array(),
+  specializations: text("specializations").array(), // specific areas of expertise
   address: text("address"),
   city: text("city"),
   state: text("state"),
@@ -131,10 +137,24 @@ export const workEntries = pgTable("work_entries", {
   description: text("description"),
   startDate: text("start_date").notNull(),
   endDate: text("end_date"),
-  priority: text("priority").notNull().default("medium"), // low, medium, high
+  priority: text("priority").notNull().default("medium"), // low, medium, high, urgent
   hours: integer("hours"), // optional hours field
-  status: text("status").notNull().default("pending"), // pending, approved, needs_changes
+  estimatedHours: integer("estimated_hours"), // estimated time to complete
+  actualHours: integer("actual_hours"), // actual time spent
+  status: text("status").notNull().default("pending"), // pending, approved, needs_changes, in_progress, completed
+  workType: text("work_type").notNull().default("task"), // task, meeting, project, research, documentation, training
+  category: text("category"), // development, design, management, client_work, etc.
+  project: text("project"), // project name or identifier
+  client: text("client"), // if work is client-specific
+  billable: boolean("billable").default(false), // whether this work is billable
+  billableRate: integer("billable_rate"), // hourly rate if billable
+  tags: text("tags").array().default(sql`'{}'::text[]`), // tags for categorization
+  achievements: text("achievements").array().default(sql`'{}'::text[]`), // key accomplishments
+  challenges: text("challenges"), // challenges faced during work
+  learnings: text("learnings"), // what was learned from this work
   companyFeedback: text("company_feedback"), // feedback from company when requesting changes
+  companyRating: integer("company_rating"), // 1-5 rating from company
+  attachments: text("attachments").array().default(sql`'{}'::text[]`), // file URLs or paths
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

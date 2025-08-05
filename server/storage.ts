@@ -1124,6 +1124,105 @@ export class DatabaseStorage implements IStorage {
     return admin;
   }
 
+  // Professional Analytics Methods
+  async getEmployeeAnalytics(employeeId: string): Promise<any> {
+    // Get profile views count
+    const profileViewsCount = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(profileViews)
+      .where(eq(profileViews.employeeId, employeeId));
+
+    // Get job applications count
+    const applicationsCount = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(jobApplications)
+      .where(eq(jobApplications.employeeId, employeeId));
+
+    // Calculate profile completion score
+    const employee = await this.getEmployee(employeeId);
+    const profile = await this.getEmployeeProfile(employeeId);
+    
+    let profileScore = 0;
+    if (employee) {
+      // Basic info (20%)
+      profileScore += 20;
+      
+      // Profile photo (10%)
+      if (employee.profilePhoto) profileScore += 10;
+      
+      // Professional summary (20%)
+      if (employee.summary) profileScore += 20;
+      
+      // Skills (15%)
+      if (employee.skills && employee.skills.length > 0) profileScore += 15;
+      
+      // Experience (20%)
+      if (profile.experiences && profile.experiences.length > 0) profileScore += 20;
+      
+      // Education (15%)
+      if (profile.educations && profile.educations.length > 0) profileScore += 15;
+    }
+
+    return {
+      profileViews: profileViewsCount[0]?.count || 0,
+      applications: applicationsCount[0]?.count || 0,
+      profileScore: Math.min(profileScore, 100)
+    };
+  }
+
+  async getWorkEntryAnalytics(employeeId: string, companyId?: string): Promise<any> {
+    let query = db
+      .select({
+        count: sql<number>`count(*)`,
+        totalHours: sql<number>`sum(${workEntries.actualHours})`,
+        estimatedHours: sql<number>`sum(${workEntries.estimatedHours})`,
+        billableHours: sql<number>`sum(case when ${workEntries.billable} = true then ${workEntries.actualHours} else 0 end)`,
+        completedCount: sql<number>`sum(case when ${workEntries.status} = 'completed' then 1 else 0 end)`
+      })
+      .from(workEntries)
+      .where(eq(workEntries.employeeId, employeeId));
+
+    if (companyId) {
+      query = query.where(eq(workEntries.companyId, companyId));
+    }
+
+    const [analytics] = await query;
+    
+    const completionRate = analytics.count > 0 
+      ? Math.round((analytics.completedCount / analytics.count) * 100)
+      : 0;
+
+    return {
+      totalEntries: analytics.count || 0,
+      totalHours: analytics.totalHours || 0,
+      estimatedHours: analytics.estimatedHours || 0,
+      billableHours: analytics.billableHours || 0,
+      completionRate
+    };
+  }
+
+  async getEmployeeCompanies(employeeId: string): Promise<any[]> {
+    const companies = await db
+      .select({
+        id: companyEmployees.companyId,
+        companyName: companies.name,
+        position: companyEmployees.position,
+        department: companyEmployees.department,
+        joinedAt: companyEmployees.joinedAt,
+        status: companyEmployees.status
+      })
+      .from(companyEmployees)
+      .leftJoin(companies, eq(companyEmployees.companyId, companies.id))
+      .where(
+        and(
+          eq(companyEmployees.employeeId, employeeId),
+          eq(companyEmployees.status, 'employed')
+        )
+      );
+
+    return companies;
+  }
+
   async updateAdmin(id: string, data: Partial<Admin>): Promise<Admin> {
     const [updated] = await db
       .update(admins)

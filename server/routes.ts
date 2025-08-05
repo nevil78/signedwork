@@ -976,7 +976,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Work Diary Routes
+  // Work Diary Routes - Enhanced Professional Version
+  app.get("/api/work-entries", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    if (!sessionUser || sessionUser.type !== "employee") {
+      return res.status(401).json({ message: "Not authenticated as employee" });
+    }
+    
+    try {
+      const { companyId } = req.query;
+      const workEntries = await storage.getWorkEntries(sessionUser.id, companyId as string);
+      res.json(workEntries);
+    } catch (error) {
+      console.error("Get work entries error:", error);
+      res.status(500).json({ message: "Failed to get work entries" });
+    }
+  });
+
+  // Legacy work diary route for compatibility
   app.get("/api/work-diary", async (req, res) => {
     const sessionUser = (req.session as any).user;
     
@@ -994,6 +1012,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Enhanced work entry creation
+  app.post("/api/work-entries", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    if (!sessionUser || sessionUser.type !== "employee") {
+      return res.status(401).json({ message: "Not authenticated as employee" });
+    }
+    
+    try {
+      const validatedData = insertWorkEntrySchema.parse({
+        ...req.body,
+        employeeId: sessionUser.id
+      });
+      
+      const workEntry = await storage.createWorkEntry(validatedData);
+      res.status(201).json(workEntry);
+    } catch (error: any) {
+      if (error.name === "ZodError") {
+        const validationError = fromZodError(error);
+        return res.status(400).json({ 
+          message: validationError.message,
+          errors: error.errors
+        });
+      }
+      
+      console.error("Create work entry error:", error);
+      res.status(500).json({ message: "Failed to create work entry" });
+    }
+  });
+
+  // Legacy work diary creation for compatibility
   app.post("/api/work-diary", async (req, res) => {
     const sessionUser = (req.session as any).user;
     
@@ -1023,6 +1072,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Enhanced work entry update
+  app.put("/api/work-entries/:id", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    if (!sessionUser || sessionUser.type !== "employee") {
+      return res.status(401).json({ message: "Not authenticated as employee" });
+    }
+    
+    try {
+      const workEntry = await storage.updateWorkEntry(req.params.id, req.body);
+      res.json(workEntry);
+    } catch (error) {
+      console.error("Update work entry error:", error);
+      res.status(500).json({ message: "Failed to update work entry" });
+    }
+  });
+
+  // Legacy work diary update for compatibility
   app.patch("/api/work-diary/:id", async (req, res) => {
     const sessionUser = (req.session as any).user;
     
@@ -1084,6 +1151,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Delete work entry error:", error);
       res.status(500).json({ message: "Failed to delete work entry" });
+    }
+  });
+
+  // Employee Analytics Routes
+  app.get("/api/employee/analytics/:employeeId?", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    if (!sessionUser || sessionUser.type !== "employee") {
+      return res.status(401).json({ message: "Not authenticated as employee" });
+    }
+    
+    const employeeId = req.params.employeeId || sessionUser.id;
+    
+    try {
+      const analytics = await storage.getEmployeeAnalytics(employeeId);
+      res.json(analytics);
+    } catch (error) {
+      console.error("Get employee analytics error:", error);
+      res.status(500).json({ message: "Failed to get analytics" });
+    }
+  });
+
+  // Work Entry Analytics Routes
+  app.get("/api/work-entries/analytics/:companyId?", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    if (!sessionUser || sessionUser.type !== "employee") {
+      return res.status(401).json({ message: "Not authenticated as employee" });
+    }
+    
+    try {
+      const companyId = req.params.companyId;
+      const analytics = await storage.getWorkEntryAnalytics(sessionUser.id, companyId);
+      res.json(analytics);
+    } catch (error) {
+      console.error("Get work entry analytics error:", error);
+      res.status(500).json({ message: "Failed to get work analytics" });
+    }
+  });
+
+  // Employee Companies Route
+  app.get("/api/employee/companies", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    if (!sessionUser || sessionUser.type !== "employee") {
+      return res.status(401).json({ message: "Not authenticated as employee" });
+    }
+    
+    try {
+      const companies = await storage.getEmployeeCompanies(sessionUser.id);
+      res.json(companies);
+    } catch (error) {
+      console.error("Get employee companies error:", error);
+      res.status(500).json({ message: "Failed to get companies" });
     }
   });
 
