@@ -80,7 +80,12 @@ interface WorkEntry {
 
 interface Company {
   id: string;
-  companyName: string;
+  name?: string;
+  companyName?: string;
+  position?: string;
+  department?: string;
+  joinedAt?: string;
+  status?: string;
 }
 
 export default function ProfessionalWorkDiary() {
@@ -314,7 +319,7 @@ export default function ProfessionalWorkDiary() {
                       >
                         <CardContent className="p-6 text-center">
                           <Building2 className="h-12 w-12 text-primary mx-auto mb-4" />
-                          <h3 className="text-lg font-semibold text-gray-900 mb-2">{company.companyName}</h3>
+                          <h3 className="text-lg font-semibold text-gray-900 mb-2">{company.companyName || company.name}</h3>
                           <p className="text-sm text-gray-600">Click to view work diary</p>
                         </CardContent>
                       </Card>

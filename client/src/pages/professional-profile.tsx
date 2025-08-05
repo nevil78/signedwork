@@ -56,18 +56,29 @@ export default function ProfessionalProfile() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: userResponse, isLoading } = useQuery({
+  const { data: userResponse, isLoading } = useQuery<{
+    user: Employee;
+    userType: string;
+  }>({
     queryKey: ["/api/auth/user"],
     retry: false,
   });
 
-  const { data: profileData } = useQuery({
+  const { data: profileData } = useQuery<{
+    experiences: any[];
+    educations: any[];
+    certifications: any[];
+  }>({
     queryKey: ["/api/employee/profile", userResponse?.user?.id],
     enabled: !!userResponse?.user?.id && userResponse?.userType === "employee",
   });
 
   // Analytics query for profile insights
-  const { data: analytics } = useQuery({
+  const { data: analytics } = useQuery<{
+    profileViews: number;
+    applications: number;
+    profileScore: number;
+  }>({
     queryKey: ["/api/employee/analytics", userResponse?.user?.id],
     enabled: !!userResponse?.user?.id && userResponse?.userType === "employee",
   });
@@ -617,8 +628,8 @@ export default function ProfessionalProfile() {
                           </div>
                           <div className="flex justify-between">
                             <span>Skills</span>
-                            <span className={user.skills?.length > 0 ? "text-green-600" : "text-red-600"}>
-                              {user.skills?.length > 0 ? "Complete" : "Missing"}
+                            <span className={user.skills && user.skills.length > 0 ? "text-green-600" : "text-red-600"}>
+                              {user.skills && user.skills.length > 0 ? "Complete" : "Missing"}
                             </span>
                           </div>
                           <div className="flex justify-between">
