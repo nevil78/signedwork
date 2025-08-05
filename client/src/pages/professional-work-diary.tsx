@@ -26,6 +26,7 @@ import { apiRequest } from '@/lib/queryClient';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { z } from 'zod';
+import EmployeeNavHeader from '@/components/employee-nav-header';
 
 // Enhanced work entry schema with professional fields
 const workEntrySchema = z.object({
@@ -267,71 +268,7 @@ export default function ProfessionalWorkDiary() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-6">
-              <div className="flex items-center space-x-2">
-                <BookOpen className="h-8 w-8 text-primary" />
-                <span className="text-xl font-bold text-gray-900">Professional Work Diary</span>
-              </div>
-
-              {/* Navigation Links */}
-              <nav className="hidden md:flex space-x-6">
-                <Link href="/profile">
-                  <a className={`transition-colors ${
-                    isActive('/profile') 
-                      ? 'text-primary font-medium' 
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}>
-                    <div className="flex items-center space-x-1">
-                      <User className="h-4 w-4" />
-                      <span>Profile</span>
-                    </div>
-                  </a>
-                </Link>
-                <Link href="/work-diary">
-                  <a className={`transition-colors ${
-                    isActive('/work-diary') 
-                      ? 'text-primary font-medium' 
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}>
-                    <div className="flex items-center space-x-1">
-                      <Clipboard className="h-4 w-4" />
-                      <span>Work Diary</span>
-                    </div>
-                  </a>
-                </Link>
-                <Link href="/job-discovery">
-                  <a className={`transition-colors ${
-                    isActive('/job-discovery') 
-                      ? 'text-primary font-medium' 
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}>
-                    <div className="flex items-center space-x-1">
-                      <Search className="h-4 w-4" />
-                      <span>Job Discovery</span>
-                    </div>
-                  </a>
-                </Link>
-              </nav>
-            </div>
-
-            <div className="flex items-center space-x-4">
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => window.location.href = '/'}
-                data-testid="button-logout"
-              >
-                <LogOut className="h-4 w-4 mr-2" />
-                Logout
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
+      <EmployeeNavHeader />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Company Selection */}

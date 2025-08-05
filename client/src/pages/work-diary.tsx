@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Plus, Building2, Calendar, Clock, ChevronRight, Edit, LogOut, User, BookOpen } from 'lucide-react';
+import EmployeeNavHeader from '@/components/employee-nav-header';
 import {
   Dialog,
   DialogContent,
@@ -240,50 +241,7 @@ export default function WorkDiary() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-8">
-              <div className="flex items-center">
-                <User className="text-primary text-2xl mr-3" />
-                <span className="text-xl font-bold text-slate-800">Employee Dashboard</span>
-              </div>
-              {/* Page Navigation */}
-              <div className="flex space-x-1 bg-slate-100 rounded-lg p-1">
-                <Link to="/profile">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                  >
-                    <User className="w-4 h-4 mr-2" />
-                    Profile
-                  </Button>
-                </Link>
-                <Link to="/work-diary">
-                  <Button variant="ghost" size="sm" className="bg-white shadow-sm text-blue-700">
-                    <BookOpen className="w-4 h-4 mr-2" />
-                    Work Diary
-                  </Button>
-                </Link>
-                <Link to="/job-discovery">
-                  <Button variant="ghost" size="sm">
-                    <Building2 className="w-4 h-4 mr-2" />
-                    Job Discovery
-                  </Button>
-                </Link>
-              </div>
-            </div>
-            <Button
-              variant="outline"
-              onClick={() => logout.mutate()}
-              disabled={logout.isPending}
-            >
-              {logout.isPending ? "Logging out..." : "Logout"}
-            </Button>
-          </div>
-        </div>
-      </header>
+      <EmployeeNavHeader />
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <h1 className="text-3xl font-bold mb-2">Work Diary</h1>

@@ -7,6 +7,7 @@ import {
   Calendar, ExternalLink, Github, TrendingUp, Clock, DollarSign,
   Building, Mail, Phone, Star, Trophy, Target, Clipboard, Search
 } from "lucide-react";
+import EmployeeNavHeader from "@/components/employee-nav-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -182,57 +183,7 @@ export default function ProfessionalProfile() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
-      {/* Main Navigation Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex space-x-8">
-              <Link href="/profile">
-                <a className={`flex items-center px-3 py-2 text-sm font-medium border-b-2 ${
-                  isActive('/profile') 
-                    ? 'text-blue-600 border-blue-600' 
-                    : 'text-gray-500 hover:text-gray-700 hover:border-gray-300 border-transparent'
-                }`}>
-                  <User className="h-4 w-4 mr-2" />
-                  Profile
-                </a>
-              </Link>
-              <Link href="/work-diary">
-                <a className={`flex items-center px-3 py-2 text-sm font-medium border-b-2 ${
-                  isActive('/work-diary') 
-                    ? 'text-blue-600 border-blue-600' 
-                    : 'text-gray-500 hover:text-gray-700 hover:border-gray-300 border-transparent'
-                }`}>
-                  <Clipboard className="h-4 w-4 mr-2" />
-                  Work Diary
-                </a>
-              </Link>
-              <Link href="/job-discovery">
-                <a className={`flex items-center px-3 py-2 text-sm font-medium border-b-2 ${
-                  isActive('/job-discovery') 
-                    ? 'text-blue-600 border-blue-600' 
-                    : 'text-gray-500 hover:text-gray-700 hover:border-gray-300 border-transparent'
-                }`}>
-                  <Search className="h-4 w-4 mr-2" />
-                  Job Discovery
-                </a>
-              </Link>
-            </div>
-            <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-600">EMP-{user?.employeeId}</span>
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={handleLogout}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                <LogOut className="h-4 w-4 mr-2" />
-                Logout
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <EmployeeNavHeader employeeId={user?.employeeId} employeeName={`${user?.firstName} ${user?.lastName}`} />
 
 
 
