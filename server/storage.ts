@@ -878,6 +878,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteJobListing(id: string): Promise<void> {
+    // First delete all applications for this job listing
+    await db.delete(jobApplications).where(eq(jobApplications.jobId, id));
+    
+    // Then delete the job listing itself
     await db.delete(jobListings).where(eq(jobListings.id, id));
   }
 
