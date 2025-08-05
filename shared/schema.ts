@@ -274,10 +274,10 @@ export const jobAlerts = pgTable("job_alerts", {
 // Employee profile views by companies (analytics)
 export const profileViews = pgTable("profile_views", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  employeeId: varchar("employee_id").notNull().references(() => employees.id, { onDelete: "cascade" }),
-  companyId: varchar("company_id").notNull().references(() => companies.id, { onDelete: "cascade" }),
-  jobId: varchar("job_id").references(() => jobListings.id, { onDelete: "set null" }),
+  viewerCompanyId: varchar("viewer_company_id").notNull().references(() => companies.id, { onDelete: "cascade" }),
+  viewedEmployeeId: varchar("viewed_employee_id").notNull().references(() => employees.id, { onDelete: "cascade" }),
   viewedAt: timestamp("viewed_at").defaultNow(),
+  viewContext: varchar("view_context"),
 });
 
 // Admin table for platform management
@@ -411,17 +411,13 @@ export const jobAlertsRelations = relations(jobAlerts, ({ one }) => ({
 }));
 
 export const profileViewsRelations = relations(profileViews, ({ one }) => ({
-  employee: one(employees, {
-    fields: [profileViews.employeeId],
+  viewedEmployee: one(employees, {
+    fields: [profileViews.viewedEmployeeId],
     references: [employees.id],
   }),
-  company: one(companies, {
-    fields: [profileViews.companyId],
+  viewerCompany: one(companies, {
+    fields: [profileViews.viewerCompanyId],
     references: [companies.id],
-  }),
-  job: one(jobListings, {
-    fields: [profileViews.jobId],
-    references: [jobListings.id],
   }),
 }));
 
