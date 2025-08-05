@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -88,10 +88,18 @@ interface Company {
   status?: string;
 }
 
+// Define the invitation code form schema
+const invitationCodeSchema = z.object({
+  code: z.string().min(8, "Invitation code must be 8 characters").max(8, "Invitation code must be 8 characters"),
+});
+
+type InvitationCodeFormData = z.infer<typeof invitationCodeSchema>;
+
 export default function ProfessionalWorkDiary() {
   const [location, setLocation] = useLocation();
   const [selectedCompany, setSelectedCompany] = useState<string>("");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isJoinDialogOpen, setIsJoinDialogOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState<WorkEntry | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -120,6 +128,13 @@ export default function ProfessionalWorkDiary() {
     enabled: !!selectedCompany,
   });
 
+  const invitationForm = useForm<InvitationCodeFormData>({
+    resolver: zodResolver(invitationCodeSchema),
+    defaultValues: {
+      code: '',
+    },
+  });
+
   const workEntryForm = useForm<WorkEntryFormData>({
     resolver: zodResolver(workEntrySchema),
     defaultValues: {
@@ -142,6 +157,26 @@ export default function ProfessionalWorkDiary() {
       challenges: "",
       learnings: "",
       companyId: selectedCompany,
+    },
+  });
+
+  // Join company mutation
+  const joinCompanyMutation = useMutation({
+    mutationFn: async (data: InvitationCodeFormData) => {
+      return await apiRequest('POST', '/api/employee/join-company', data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/employee/companies'] });
+      toast({ title: "Success", description: "Successfully joined the company" });
+      setIsJoinDialogOpen(false);
+      invitationForm.reset();
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to join company",
+        variant: "destructive",
+      });
     },
   });
 
@@ -330,7 +365,7 @@ export default function ProfessionalWorkDiary() {
                     <Building2 className="h-16 w-16 text-gray-400 mx-auto mb-4" />
                     <h3 className="text-lg font-medium text-gray-900 mb-2">No Companies Found</h3>
                     <p className="text-gray-600 mb-4">You need to join a company to use the work diary</p>
-                    <Button onClick={() => setLocation('/work-diary')}>
+                    <Button onClick={() => setIsJoinDialogOpen(true)}>
                       <Plus className="h-4 w-4 mr-2" />
                       Join Company
                     </Button>
@@ -948,6 +983,56 @@ export default function ProfessionalWorkDiary() {
                       ? "Update Entry" 
                       : "Create Entry"
                   }
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Join Company Dialog */}
+      <Dialog open={isJoinDialogOpen} onOpenChange={setIsJoinDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Join Company</DialogTitle>
+            <DialogDescription>
+              Enter the 8-character invitation code provided by your company
+            </DialogDescription>
+          </DialogHeader>
+          <Form {...invitationForm}>
+            <form onSubmit={invitationForm.handleSubmit((data) => joinCompanyMutation.mutate(data))} className="space-y-4">
+              <FormField
+                control={invitationForm.control}
+                name="code"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Invitation Code</FormLabel>
+                    <FormControl>
+                      <Input 
+                        {...field} 
+                        placeholder="Enter 8-character code"
+                        maxLength={8}
+                        className="uppercase"
+                        onChange={(e) => field.onChange(e.target.value.toUpperCase())}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <div className="flex justify-end space-x-2">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => {
+                    setIsJoinDialogOpen(false);
+                    invitationForm.reset();
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={joinCompanyMutation.isPending}>
+                  {joinCompanyMutation.isPending ? "Joining..." : "Join Company"}
                 </Button>
               </div>
             </form>
