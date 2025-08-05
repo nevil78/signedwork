@@ -84,7 +84,7 @@ interface Company {
 }
 
 export default function ProfessionalWorkDiary() {
-  const [, navigate] = useLocation();
+  const [location] = useLocation();
   const [selectedCompany, setSelectedCompany] = useState<string>("");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState<WorkEntry | null>(null);
@@ -93,6 +93,10 @@ export default function ProfessionalWorkDiary() {
   const [workTypeFilter, setWorkTypeFilter] = useState("all");
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const queryClient = useQueryClient();
+
+  const isActive = (path: string) => {
+    return location === path;
+  };
 
   // Fetch user companies
   const { data: companies } = useQuery<Company[]>({
@@ -235,23 +239,41 @@ export default function ProfessionalWorkDiary() {
 
               {/* Navigation Links */}
               <nav className="hidden md:flex space-x-6">
-                <Link href="/profile" className="text-gray-600 hover:text-gray-900 transition-colors">
-                  <div className="flex items-center space-x-1">
-                    <User className="h-4 w-4" />
-                    <span>Profile</span>
-                  </div>
+                <Link href="/profile">
+                  <a className={`transition-colors ${
+                    isActive('/profile') 
+                      ? 'text-primary font-medium' 
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}>
+                    <div className="flex items-center space-x-1">
+                      <User className="h-4 w-4" />
+                      <span>Profile</span>
+                    </div>
+                  </a>
                 </Link>
-                <Link href="/work-diary" className="text-primary font-medium">
-                  <div className="flex items-center space-x-1">
-                    <Clipboard className="h-4 w-4" />
-                    <span>Work Diary</span>
-                  </div>
+                <Link href="/work-diary">
+                  <a className={`transition-colors ${
+                    isActive('/work-diary') 
+                      ? 'text-primary font-medium' 
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}>
+                    <div className="flex items-center space-x-1">
+                      <Clipboard className="h-4 w-4" />
+                      <span>Work Diary</span>
+                    </div>
+                  </a>
                 </Link>
-                <Link href="/job-discovery" className="text-gray-600 hover:text-gray-900 transition-colors">
-                  <div className="flex items-center space-x-1">
-                    <Search className="h-4 w-4" />
-                    <span>Job Discovery</span>
-                  </div>
+                <Link href="/job-discovery">
+                  <a className={`transition-colors ${
+                    isActive('/job-discovery') 
+                      ? 'text-primary font-medium' 
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}>
+                    <div className="flex items-center space-x-1">
+                      <Search className="h-4 w-4" />
+                      <span>Job Discovery</span>
+                    </div>
+                  </a>
                 </Link>
               </nav>
             </div>

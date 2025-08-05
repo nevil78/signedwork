@@ -1199,10 +1199,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getEmployeeCompanies(employeeId: string): Promise<any[]> {
-    const companies = await db
+    const result = await db
       .select({
         id: companyEmployees.companyId,
-        companyName: companies.name,
+        name: companies.name,
         position: companyEmployees.position,
         department: companyEmployees.department,
         joinedAt: companyEmployees.joinedAt,
@@ -1217,7 +1217,7 @@ export class DatabaseStorage implements IStorage {
         )
       );
 
-    return companies;
+    return result;
   }
 
   async updateAdmin(id: string, data: Partial<Admin>): Promise<Admin> {
