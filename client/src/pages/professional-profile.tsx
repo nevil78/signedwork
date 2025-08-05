@@ -55,6 +55,7 @@ export default function ProfessionalProfile() {
   const [editingProfile, setEditingProfile] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [location] = useLocation();
 
   const { data: userResponse, isLoading } = useQuery<{
     user: Employee;
@@ -170,8 +171,6 @@ export default function ProfessionalProfile() {
       default: return "bg-gray-100 text-gray-800";
     }
   };
-
-  const [location] = useLocation();
 
   const isActive = (path: string) => {
     return location === path;
