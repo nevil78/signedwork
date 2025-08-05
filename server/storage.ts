@@ -1168,32 +1168,20 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getWorkEntryAnalytics(employeeId: string, companyId?: string): Promise<any> {
-    let query = db
+    const whereConditions = companyId 
+      ? and(eq(workEntries.employeeId, employeeId), eq(workEntries.companyId, companyId))
+      : eq(workEntries.employeeId, employeeId);
+
+    const query = db
       .select({
         count: sql<number>`count(*)`,
-        totalHours: sql<number>`sum(${workEntries.hours})`,
-        estimatedHours: sql<number>`sum(${workEntries.hours})`,
-        billableHours: sql<number>`sum(case when ${workEntries.billable} = true then ${workEntries.hours} else 0 end)`,
+        totalHours: sql<number>`coalesce(sum(${workEntries.hours}), 0)`,
+        estimatedHours: sql<number>`coalesce(sum(${workEntries.hours}), 0)`,
+        billableHours: sql<number>`coalesce(sum(case when ${workEntries.billable} = true then ${workEntries.hours} else 0 end), 0)`,
         completedCount: sql<number>`sum(case when ${workEntries.status} = 'completed' then 1 else 0 end)`
       })
       .from(workEntries)
-      .where(eq(workEntries.employeeId, employeeId));
-
-    if (companyId) {
-      query = db
-        .select({
-          count: sql<number>`count(*)`,
-          totalHours: sql<number>`sum(${workEntries.actualHours})`,
-          estimatedHours: sql<number>`sum(${workEntries.estimatedHours})`,
-          billableHours: sql<number>`sum(case when ${workEntries.billable} = true then ${workEntries.actualHours} else 0 end)`,
-          completedCount: sql<number>`sum(case when ${workEntries.status} = 'completed' then 1 else 0 end)`
-        })
-        .from(workEntries)
-        .where(and(
-          eq(workEntries.employeeId, employeeId),
-          eq(workEntries.companyId, companyId)
-        ));
-    }
+      .where(whereConditions);
 
     const [analytics] = await query;
     
