@@ -81,13 +81,14 @@ export default function WorkDiaryCompany() {
   const [searchQuery, setSearchQuery] = useState('');
   const queryClient = useQueryClient();
 
-  // Fetch company details
+  // Fetch company details - use the correct endpoint
   const { data: companies } = useQuery<EmployeeCompany[]>({
-    queryKey: ['/api/employee-companies'],
+    queryKey: ['/api/employee/companies'],
   });
 
   const company = companies?.find(c => c.id === companyId);
   // For the new company employee system, we need to get the actual company ID
+  // Use the companyId directly if companies haven't loaded yet
   const actualCompanyId = (company as any)?.companyId || companyId;
 
   // Fetch work entries for this company
