@@ -25,6 +25,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { ObjectUploader } from "@/components/ObjectUploader";
+import type { UploadResult } from "@uppy/core";
 import { 
   type Employee, type Experience, type Education, type Certification, 
   insertExperienceSchema, insertEducationSchema, insertCertificationSchema
@@ -164,6 +166,20 @@ export default function ProfessionalProfile() {
     },
   });
 
+  const updateProfilePicture = useMutation({
+    mutationFn: async (profilePictureURL: string) => {
+      return await apiRequest("PUT", "/api/employee/profile-picture", { profilePictureURL });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/employee/profile", userResponse?.user?.id] });
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      toast({ title: "Profile Picture Updated", description: "Your profile picture has been updated successfully." });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to update profile picture", variant: "destructive" });
+    },
+  });
+
   const createExperience = useMutation({
     mutationFn: async (data: any) => {
       return await apiRequest("POST", "/api/employee/experience", data);
@@ -269,13 +285,35 @@ export default function ProfessionalProfile() {
               <CardContent className="p-6">
                 {/* Profile Photo */}
                 <div className="text-center mb-6">
-                  <div className="relative inline-block">
+                  <div className="relative inline-block group">
                     <Avatar className="h-24 w-24 mx-auto">
                       <AvatarImage src={user.profilePhoto || ""} alt={`${user.firstName} ${user.lastName}`} />
                       <AvatarFallback className="text-xl">
                         {user.firstName?.[0]}{user.lastName?.[0]}
                       </AvatarFallback>
                     </Avatar>
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-black bg-opacity-50 rounded-full">
+                      <ObjectUploader
+                        maxNumberOfFiles={1}
+                        maxFileSize={5 * 1024 * 1024} // 5MB
+                        onGetUploadParameters={async () => {
+                          const response = await apiRequest("POST", "/api/objects/upload");
+                          return {
+                            method: "PUT" as const,
+                            url: response.uploadURL,
+                          };
+                        }}
+                        onComplete={(result: UploadResult<Record<string, unknown>, Record<string, unknown>>) => {
+                          const uploadedFile = result.successful?.[0];
+                          if (uploadedFile?.uploadURL) {
+                            updateProfilePicture.mutate(uploadedFile.uploadURL as string);
+                          }
+                        }}
+                        buttonClassName="bg-transparent hover:bg-transparent border-none p-2 h-auto"
+                      >
+                        <Camera className="h-6 w-6 text-white" />
+                      </ObjectUploader>
+                    </div>
                   </div>
                   <h2 className="mt-4 text-xl font-semibold text-gray-900">
                     {user.firstName} {user.lastName}

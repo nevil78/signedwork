@@ -344,6 +344,10 @@ export class DatabaseStorage implements IStorage {
     return employee;
   }
 
+  async updateEmployeeProfilePicture(id: string, profilePicturePath: string): Promise<Employee> {
+    return this.updateEmployee(id, { profilePhoto: profilePicturePath });
+  }
+
   // Employee Profile Data
   async getEmployeeProfile(employeeId: string): Promise<{
     experiences: Experience[];

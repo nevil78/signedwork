@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import session from "express-session";
 import bcrypt from "bcrypt";
 import { storage } from "./storage";
-import { ObjectStorageService } from "./objectStorage";
+import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { 
   insertEmployeeSchema, insertCompanySchema, loginSchema, adminLoginSchema,
   insertExperienceSchema, insertEducationSchema, insertCertificationSchema,
@@ -1979,6 +1979,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Get employee application data error:", error);
       res.status(500).json({ message: "Failed to get employee data" });
+    }
+  });
+
+  // Object storage routes for profile pictures
+  app.post("/api/objects/upload", async (req, res) => {
+    if (!req.session.user) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    try {
+      const objectStorageService = new ObjectStorageService();
+      const uploadURL = await objectStorageService.getObjectEntityUploadURL();
+      res.json({ uploadURL });
+    } catch (error) {
+      console.error("Get upload URL error:", error);
+      res.status(500).json({ message: "Failed to get upload URL" });
+    }
+  });
+
+  app.put("/api/employee/profile-picture", async (req, res) => {
+    if (!req.session.user || req.session.userType !== "employee") {
+      return res.status(401).json({ message: "Not authenticated as employee" });
+    }
+
+    if (!req.body.profilePictureURL) {
+      return res.status(400).json({ message: "profilePictureURL is required" });
+    }
+
+    try {
+      const objectStorageService = new ObjectStorageService();
+      const objectPath = await objectStorageService.trySetObjectEntityAclPolicy(
+        req.body.profilePictureURL,
+        {
+          owner: req.session.user.id,
+          visibility: "public",
+        }
+      );
+
+      await storage.updateEmployeeProfilePicture(req.session.user.id, objectPath);
+
+      res.status(200).json({
+        objectPath: objectPath,
+      });
+    } catch (error) {
+      console.error("Set profile picture error:", error);
+      res.status(500).json({ message: "Failed to set profile picture" });
+    }
+  });
+
+  app.get("/objects/:objectPath(*)", async (req, res) => {
+    const objectStorageService = new ObjectStorageService();
+    try {
+      const objectFile = await objectStorageService.getObjectEntityFile(req.path);
+      objectStorageService.downloadObject(objectFile, res);
+    } catch (error) {
+      console.error("Error accessing object:", error);
+      if (error instanceof ObjectNotFoundError) {
+        return res.sendStatus(404);
+      }
+      return res.sendStatus(500);
     }
   });
 
