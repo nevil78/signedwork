@@ -2009,6 +2009,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       const objectStorageService = new ObjectStorageService();
+      
+      // Get current employee data to check for existing profile picture
+      const currentEmployee = await storage.getEmployeeById(req.session.user.id);
+      const oldProfilePicturePath = currentEmployee?.profilePhoto;
+
       const objectPath = await objectStorageService.trySetObjectEntityAclPolicy(
         req.body.profilePictureURL,
         {
@@ -2017,7 +2022,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       );
 
+      // Update database with new profile picture
       await storage.updateEmployeeProfilePicture(req.session.user.id, objectPath);
+
+      // Delete old profile picture if it exists and is different from the new one
+      if (oldProfilePicturePath && oldProfilePicturePath !== objectPath && oldProfilePicturePath.startsWith("/objects/")) {
+        try {
+          await objectStorageService.deleteObject(oldProfilePicturePath);
+          console.log(`Deleted old profile picture: ${oldProfilePicturePath}`);
+        } catch (deleteError) {
+          console.warn(`Failed to delete old profile picture: ${oldProfilePicturePath}`, deleteError);
+          // Don't fail the request if cleanup fails
+        }
+      }
 
       res.status(200).json({
         objectPath: objectPath,
