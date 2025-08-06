@@ -20,6 +20,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useToast } from "@/hooks/use-toast";
@@ -880,6 +881,7 @@ export default function ProfessionalProfile() {
                               const year = field.value ? field.value.split('-')[0] : "2025";
                               field.onChange(`${year}-${month}`);
                             }}
+                            disabled={experienceForm.watch("current")}
                           >
                             <SelectTrigger>
                               <SelectValue placeholder="Month" />
@@ -905,6 +907,7 @@ export default function ProfessionalProfile() {
                               const month = field.value ? field.value.split('-')[1] : "01";
                               field.onChange(`${year}-${month}`);
                             }}
+                            disabled={experienceForm.watch("current")}
                           >
                             <SelectTrigger>
                               <SelectValue placeholder="Year" />
@@ -922,6 +925,29 @@ export default function ProfessionalProfile() {
                   )}
                 />
               </div>
+
+              <FormField
+                control={experienceForm.control}
+                name="current"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={(checked) => {
+                          field.onChange(checked);
+                          if (checked) {
+                            experienceForm.setValue("endDate", "");
+                          }
+                        }}
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel>I currently work here</FormLabel>
+                    </div>
+                  </FormItem>
+                )}
+              />
 
               <FormField
                 control={experienceForm.control}
