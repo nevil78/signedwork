@@ -862,6 +862,9 @@ function EducationSection({ educations, employeeId }: { educations: Education[],
                 {education.fieldOfStudy && (
                   <p className="text-sm text-slate-500">{education.fieldOfStudy}</p>
                 )}
+                {education.category && (
+                  <p className="text-sm text-slate-500 capitalize">{education.category}</p>
+                )}
                 <p className="text-sm text-slate-500 mt-1">
                   {education.startYear} - {education.endYear || "Present"}
                 </p>
@@ -946,6 +949,36 @@ function EducationSection({ educations, employeeId }: { educations: Education[],
                     <FormLabel>Field of Study</FormLabel>
                     <FormControl>
                       <Input placeholder="e.g., Computer Science" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={educationForm.control}
+                name="category"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Category</FormLabel>
+                    <FormControl>
+                      <Select value={field.value || ""} onValueChange={field.onChange}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select education category" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="undergraduate">Undergraduate</SelectItem>
+                          <SelectItem value="graduate">Graduate</SelectItem>
+                          <SelectItem value="postgraduate">Postgraduate</SelectItem>
+                          <SelectItem value="doctorate">Doctorate</SelectItem>
+                          <SelectItem value="certificate">Certificate</SelectItem>
+                          <SelectItem value="diploma">Diploma</SelectItem>
+                          <SelectItem value="professional">Professional</SelectItem>
+                          <SelectItem value="vocational">Vocational</SelectItem>
+                          <SelectItem value="online">Online Course</SelectItem>
+                          <SelectItem value="other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </FormControl>
                     <FormMessage />
                   </FormItem>

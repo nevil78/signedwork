@@ -68,6 +68,7 @@ export const educations = pgTable("educations", {
   institution: text("institution").notNull(),
   degree: text("degree").notNull(),
   fieldOfStudy: text("field_of_study"),
+  category: text("category"),
   startYear: integer("start_year").notNull(),
   endYear: integer("end_year"),
   grade: text("grade"),
