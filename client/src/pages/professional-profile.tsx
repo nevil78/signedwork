@@ -817,12 +817,49 @@ export default function ProfessionalProfile() {
                     <FormItem>
                       <FormLabel>Start Date *</FormLabel>
                       <FormControl>
-                        <Input 
-                          {...field} 
-                          type="month" 
-                          min="1990-01" 
-                          max="2030-12"
-                        />
+                        <div className="grid grid-cols-2 gap-2">
+                          <Select 
+                            value={field.value ? field.value.split('-')[1] : ""} 
+                            onValueChange={(month) => {
+                              const year = field.value ? field.value.split('-')[0] : "2025";
+                              field.onChange(`${year}-${month}`);
+                            }}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Month" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="01">January</SelectItem>
+                              <SelectItem value="02">February</SelectItem>
+                              <SelectItem value="03">March</SelectItem>
+                              <SelectItem value="04">April</SelectItem>
+                              <SelectItem value="05">May</SelectItem>
+                              <SelectItem value="06">June</SelectItem>
+                              <SelectItem value="07">July</SelectItem>
+                              <SelectItem value="08">August</SelectItem>
+                              <SelectItem value="09">September</SelectItem>
+                              <SelectItem value="10">October</SelectItem>
+                              <SelectItem value="11">November</SelectItem>
+                              <SelectItem value="12">December</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <Select 
+                            value={field.value ? field.value.split('-')[0] : ""} 
+                            onValueChange={(year) => {
+                              const month = field.value ? field.value.split('-')[1] : "01";
+                              field.onChange(`${year}-${month}`);
+                            }}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Year" />
+                            </SelectTrigger>
+                            <SelectContent className="max-h-60">
+                              {Array.from({ length: 41 }, (_, i) => 2030 - i).map((year) => (
+                                <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -836,13 +873,49 @@ export default function ProfessionalProfile() {
                     <FormItem>
                       <FormLabel>End Date</FormLabel>
                       <FormControl>
-                        <Input 
-                          {...field} 
-                          type="month" 
-                          min="1990-01" 
-                          max="2030-12"
-                          placeholder="Leave empty if current" 
-                        />
+                        <div className="grid grid-cols-2 gap-2">
+                          <Select 
+                            value={field.value ? field.value.split('-')[1] : ""} 
+                            onValueChange={(month) => {
+                              const year = field.value ? field.value.split('-')[0] : "2025";
+                              field.onChange(`${year}-${month}`);
+                            }}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Month" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="01">January</SelectItem>
+                              <SelectItem value="02">February</SelectItem>
+                              <SelectItem value="03">March</SelectItem>
+                              <SelectItem value="04">April</SelectItem>
+                              <SelectItem value="05">May</SelectItem>
+                              <SelectItem value="06">June</SelectItem>
+                              <SelectItem value="07">July</SelectItem>
+                              <SelectItem value="08">August</SelectItem>
+                              <SelectItem value="09">September</SelectItem>
+                              <SelectItem value="10">October</SelectItem>
+                              <SelectItem value="11">November</SelectItem>
+                              <SelectItem value="12">December</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <Select 
+                            value={field.value ? field.value.split('-')[0] : ""} 
+                            onValueChange={(year) => {
+                              const month = field.value ? field.value.split('-')[1] : "01";
+                              field.onChange(`${year}-${month}`);
+                            }}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Year" />
+                            </SelectTrigger>
+                            <SelectContent className="max-h-60">
+                              {Array.from({ length: 41 }, (_, i) => 2030 - i).map((year) => (
+                                <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
