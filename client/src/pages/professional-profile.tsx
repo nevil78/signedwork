@@ -817,7 +817,12 @@ export default function ProfessionalProfile() {
                     <FormItem>
                       <FormLabel>Start Date *</FormLabel>
                       <FormControl>
-                        <Input {...field} type="month" />
+                        <Input 
+                          {...field} 
+                          type="month" 
+                          min="1990-01" 
+                          max="2030-12"
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -831,7 +836,13 @@ export default function ProfessionalProfile() {
                     <FormItem>
                       <FormLabel>End Date</FormLabel>
                       <FormControl>
-                        <Input {...field} type="month" placeholder="Leave empty if current" />
+                        <Input 
+                          {...field} 
+                          type="month" 
+                          min="1990-01" 
+                          max="2030-12"
+                          placeholder="Leave empty if current" 
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
