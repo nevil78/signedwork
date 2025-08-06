@@ -217,6 +217,7 @@ export default function WorkDiaryCompany() {
   });
 
   const onSubmit = (data: WorkEntryFormData) => {
+    console.log('onSubmit called with data:', data);
     if (editingEntry) {
       updateEntryMutation.mutate({ id: editingEntry.id, data });
     } else {
@@ -442,7 +443,13 @@ export default function WorkDiaryCompany() {
               </DialogDescription>
             </DialogHeader>
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <form onSubmit={(e) => {
+                e.preventDefault();
+                console.log('Form submitted');
+                console.log('Form errors:', form.formState.errors);
+                console.log('Form values:', form.getValues());
+                form.handleSubmit(onSubmit)(e);
+              }} className="space-y-4">
                 <FormField
                   control={form.control}
                   name="title"
@@ -601,8 +608,13 @@ export default function WorkDiaryCompany() {
                   <Button 
                     type="submit" 
                     disabled={createEntryMutation.isPending || updateEntryMutation.isPending}
+                    onClick={(e) => {
+                      console.log('Button clicked!');
+                      console.log('Form is valid:', form.formState.isValid);
+                      console.log('Form values on button click:', form.getValues());
+                    }}
                   >
-                    {editingEntry ? "Update Entry" : "Add Entry"}
+                    {editingEntry ? "Update Entry" : "Create Entry"}
                   </Button>
                 </div>
               </form>
