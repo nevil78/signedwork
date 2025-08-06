@@ -371,8 +371,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const searchTerm = search.toLowerCase().trim();
         filteredCompanies = companies.filter(comp => 
           comp.email.toLowerCase().includes(searchTerm) ||
-          comp.phone?.toLowerCase().includes(searchTerm) ||
-          comp.companyName.toLowerCase().includes(searchTerm) ||
+          comp.name.toLowerCase().includes(searchTerm) ||
           comp.companyId.toLowerCase().includes(searchTerm) ||
           comp.industry?.toLowerCase().includes(searchTerm)
         );

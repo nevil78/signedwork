@@ -1020,8 +1020,8 @@ export class DatabaseStorage implements IStorage {
     const [view] = await db
       .insert(profileViews)
       .values({
-        companyId: companyId,
-        employeeId: employeeId,
+        viewerCompanyId: companyId,
+        viewedEmployeeId: employeeId,
         jobId: jobId || null
       })
       .returning();
@@ -1029,7 +1029,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getProfileViews(employeeId: string): Promise<ProfileView[]> {
-    return await db.select().from(profileViews).where(eq(profileViews.employeeId, employeeId));
+    return await db.select().from(profileViews).where(eq(profileViews.viewedEmployeeId, employeeId));
   }
 
   // Company employee access with privacy controls
