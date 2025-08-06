@@ -196,6 +196,10 @@ export default function WorkDiaryCompany() {
 
   const onSubmit = (data: WorkEntryFormData) => {
     console.log('onSubmit called with data:', data);
+    console.log('Form state:', form.formState);
+    console.log('Form errors:', form.formState.errors);
+    console.log('actualCompanyId:', actualCompanyId);
+    
     if (editingEntry) {
       updateEntryMutation.mutate({ id: editingEntry.id, data });
     } else {
@@ -578,16 +582,8 @@ export default function WorkDiaryCompany() {
                     Cancel
                   </Button>
                   <Button 
-                    type="button" 
+                    type="submit" 
                     disabled={createEntryMutation.isPending || updateEntryMutation.isPending}
-                    onClick={() => {
-                      console.log('Button clicked!');
-                      console.log('Form values:', form.getValues());
-                      console.log('Form errors:', form.formState.errors);
-                      
-                      // Manually trigger form submission
-                      form.handleSubmit(onSubmit)();
-                    }}
                   >
                     {createEntryMutation.isPending || updateEntryMutation.isPending ? "Saving..." : (editingEntry ? "Update Entry" : "Create Entry")}
                   </Button>
