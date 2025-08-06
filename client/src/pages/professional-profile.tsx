@@ -5,7 +5,8 @@ import {
   Shield, LogOut, User, Edit, Plus, MapPin, Globe, Briefcase, 
   GraduationCap, Award, Code, MessageSquare, Camera, Trash2,
   Calendar, ExternalLink, Github, TrendingUp, Clock, DollarSign,
-  Building, Mail, Phone, Star, Trophy, Target, Clipboard, Search
+  Building, Mail, Phone, Star, Trophy, Target, Clipboard, Search,
+  Check, AlertTriangle
 } from "lucide-react";
 import EmployeeNavHeader from "@/components/employee-nav-header";
 import { Button } from "@/components/ui/button";
@@ -60,6 +61,7 @@ export default function ProfessionalProfile() {
   const [editingProfile, setEditingProfile] = useState(false);
   const [addingExperience, setAddingExperience] = useState(false);
   const [editingExperience, setEditingExperience] = useState<Experience | null>(null);
+  const [editingPhone, setEditingPhone] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [location] = useLocation();
@@ -126,6 +128,11 @@ export default function ProfessionalProfile() {
     },
   });
 
+  const phoneForm = useForm({
+    resolver: zodResolver(z.object({ phone: z.string().min(1, "Phone number is required") })),
+    defaultValues: { phone: "" },
+  });
+
   // Update form when user data changes or when editing starts
   useEffect(() => {
     if (userResponse?.user && editingProfile) {
@@ -149,6 +156,13 @@ export default function ProfessionalProfile() {
       });
     }
   }, [userResponse?.user, editingProfile, profileForm]);
+
+  // Update phone form when editing phone starts
+  useEffect(() => {
+    if (userResponse?.user && editingPhone) {
+      phoneForm.reset({ phone: userResponse.user.phone || "" });
+    }
+  }, [userResponse?.user, editingPhone, phoneForm]);
 
 
 
@@ -178,6 +192,21 @@ export default function ProfessionalProfile() {
     },
     onError: () => {
       toast({ title: "Error", description: "Failed to update profile picture", variant: "destructive" });
+    },
+  });
+
+  const updatePhone = useMutation({
+    mutationFn: async (phone: string) => {
+      return await apiRequest("PATCH", "/api/employee/profile", { phone });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/employee/profile", userResponse?.user?.id] });
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      setEditingPhone(false);
+      toast({ title: "Phone number updated successfully" });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to update phone number", variant: "destructive" });
     },
   });
 
@@ -485,13 +514,30 @@ export default function ProfessionalProfile() {
                       <h4 className="font-medium text-gray-900 mb-3">Contact</h4>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
-                          <div className="flex items-center text-sm">
-                            <Mail className="h-4 w-4 mr-2 text-gray-400" />
-                            <span>{user.email}</span>
+                          <div className="flex items-center justify-between text-sm">
+                            <div className="flex items-center">
+                              <Mail className="h-4 w-4 mr-2 text-gray-400" />
+                              <span>{user.email}</span>
+                              {user.emailVerified ? (
+                                <Check className="h-4 w-4 ml-2 text-green-500" title="Email verified" />
+                              ) : (
+                                <AlertTriangle className="h-4 w-4 ml-2 text-orange-500" title="Email verification pending" />
+                              )}
+                            </div>
                           </div>
-                          <div className="flex items-center text-sm">
-                            <Phone className="h-4 w-4 mr-2 text-gray-400" />
-                            <span>{user.phone}</span>
+                          <div className="flex items-center justify-between text-sm">
+                            <div className="flex items-center">
+                              <Phone className="h-4 w-4 mr-2 text-gray-400" />
+                              <span>{user.phone || "Not provided"}</span>
+                            </div>
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => setEditingPhone(true)}
+                              data-testid="button-edit-phone"
+                            >
+                              <Edit className="h-3 w-3" />
+                            </Button>
                           </div>
                         </div>
                         <div className="space-y-2">
@@ -1618,6 +1664,56 @@ function CertificationSection({ certifications, employeeId }: { certifications: 
                 </Button>
                 <Button type="submit" disabled={addCertification.isPending} data-testid="button-submit-certification">
                   {addCertification.isPending ? "Adding..." : "Add Certification"}
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Phone Dialog */}
+      <Dialog open={editingPhone} onOpenChange={setEditingPhone}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Phone Number</DialogTitle>
+          </DialogHeader>
+          <Form {...phoneForm}>
+            <form onSubmit={phoneForm.handleSubmit((data) => {
+              updatePhone.mutate(data.phone);
+            })} className="space-y-4">
+              <FormField
+                control={phoneForm.control}
+                name="phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Phone Number</FormLabel>
+                    <FormControl>
+                      <Input 
+                        {...field} 
+                        placeholder="e.g., +1 (555) 123-4567"
+                        data-testid="input-phone"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="flex justify-end space-x-2">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => setEditingPhone(false)}
+                  data-testid="button-cancel-phone"
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  type="submit" 
+                  disabled={updatePhone.isPending}
+                  data-testid="button-save-phone"
+                >
+                  {updatePhone.isPending ? "Saving..." : "Save"}
                 </Button>
               </div>
             </form>
