@@ -108,16 +108,21 @@ export default function WorkDiaryCompany() {
       workType: 'task',
       estimatedHours: undefined,
       actualHours: undefined,
-      companyId: actualCompanyId || '',
+      companyId: actualCompanyId || companyId || '',
       billable: false,
     },
   });
 
   const createEntryMutation = useMutation({
     mutationFn: async (data: WorkEntryFormData) => {
-      const payload = { ...data, companyId: actualCompanyId };
+      const finalCompanyId = actualCompanyId || companyId;
+      const payload = { ...data, companyId: finalCompanyId };
       console.log('Creating work entry with payload:', payload);
-      console.log('actualCompanyId:', actualCompanyId);
+      console.log('finalCompanyId:', finalCompanyId);
+      
+      if (!finalCompanyId) {
+        throw new Error('Company ID is required to create work entry');
+      }
       
       // Use apiRequest helper which handles authentication properly
       const result = await apiRequest('POST', '/api/work-entries', payload);
@@ -195,16 +200,33 @@ export default function WorkDiaryCompany() {
   });
 
   const onSubmit = (data: WorkEntryFormData) => {
+    console.log('=== FORM SUBMISSION ===');
     console.log('onSubmit called with data:', data);
     console.log('Form state:', form.formState);
     console.log('Form errors:', form.formState.errors);
     console.log('actualCompanyId:', actualCompanyId);
+    console.log('companyId (fallback):', companyId);
+    
+    const finalCompanyId = actualCompanyId || companyId;
+    if (!finalCompanyId) {
+      toast({
+        title: "Error",
+        description: "Company ID is missing. Please try refreshing the page.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Ensure companyId is set in the data
+    const dataWithCompanyId = { ...data, companyId: finalCompanyId };
+    console.log('Final data to submit:', dataWithCompanyId);
     
     if (editingEntry) {
-      updateEntryMutation.mutate({ id: editingEntry.id, data });
+      updateEntryMutation.mutate({ id: editingEntry.id, data: dataWithCompanyId });
     } else {
-      createEntryMutation.mutate(data);
+      createEntryMutation.mutate(dataWithCompanyId);
     }
+    console.log('=== END FORM SUBMISSION ===');
   };
 
   const handleEdit = (entry: WorkEntry) => {
@@ -688,12 +710,7 @@ export default function WorkDiaryCompany() {
                   <Button 
                     type="submit" 
                     disabled={createEntryMutation.isPending || updateEntryMutation.isPending}
-                    onClick={(e) => {
-                      console.log('Submit button clicked');
-                      console.log('Form values before submit:', form.getValues());
-                      console.log('Form errors before submit:', form.formState.errors);
-                      console.log('Form is valid:', form.formState.isValid);
-                    }}
+                    data-testid="button-submit-work-entry"
                   >
                     {createEntryMutation.isPending || updateEntryMutation.isPending ? "Saving..." : (editingEntry ? "Update Entry" : "Create Entry")}
                   </Button>
