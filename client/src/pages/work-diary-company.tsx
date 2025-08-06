@@ -45,16 +45,8 @@ import { z } from 'zod';
 
 type WorkEntryPriority = "low" | "medium" | "high";
 
-// Form schema without backend-only fields
-const workEntryFormSchema = z.object({
-  title: z.string().min(1, "Title is required"),
-  description: z.string().optional(),
-  startDate: z.string().min(1, "Start date is required"),
-  endDate: z.string().optional(),
-  priority: z.enum(["low", "medium", "high"]).default("medium"),
-  estimatedHours: z.number().optional(),
-  actualHours: z.number().optional(),
-});
+// Use the proper backend schema
+const workEntryFormSchema = insertWorkEntrySchema.omit({ employeeId: true });
 
 type WorkEntryFormData = z.infer<typeof workEntryFormSchema>;
 
@@ -112,8 +104,12 @@ export default function WorkDiaryCompany() {
       startDate: new Date().toISOString().split('T')[0],
       endDate: '',
       priority: 'medium',
+      status: 'pending',
+      workType: 'task',
       estimatedHours: undefined,
       actualHours: undefined,
+      companyId: actualCompanyId || '',
+      billable: false,
     },
   });
 
@@ -214,9 +210,13 @@ export default function WorkDiaryCompany() {
       description: entry.description || '',
       startDate: entry.startDate,
       endDate: entry.endDate || '',
-      priority: entry.priority as "low" | "medium" | "high",
+      priority: entry.priority,
+      status: entry.status,
+      workType: entry.workType || 'task',
       estimatedHours: entry.estimatedHours || undefined,
       actualHours: entry.actualHours || undefined,
+      companyId: actualCompanyId || '',
+      billable: entry.billable || false,
     });
     setIsDialogOpen(true);
   };
@@ -425,7 +425,9 @@ export default function WorkDiaryCompany() {
               </DialogDescription>
             </DialogHeader>
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <form onSubmit={form.handleSubmit(onSubmit, (errors) => {
+                console.log('Form submission failed with errors:', errors);
+              })} className="space-y-4">
                 <FormField
                   control={form.control}
                   name="title"
@@ -584,6 +586,12 @@ export default function WorkDiaryCompany() {
                   <Button 
                     type="submit" 
                     disabled={createEntryMutation.isPending || updateEntryMutation.isPending}
+                    onClick={(e) => {
+                      console.log('Submit button clicked');
+                      console.log('Form values before submit:', form.getValues());
+                      console.log('Form errors before submit:', form.formState.errors);
+                      console.log('Form is valid:', form.formState.isValid);
+                    }}
                   >
                     {createEntryMutation.isPending || updateEntryMutation.isPending ? "Saving..." : (editingEntry ? "Update Entry" : "Create Entry")}
                   </Button>
