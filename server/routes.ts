@@ -1200,8 +1200,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     try {
-      const companies = await storage.getEmployeeCompanies(sessionUser.id);
-      res.json(companies);
+      // Get companies from both old and new tables
+      const oldCompanies = await storage.getEmployeeCompanies(sessionUser.id);
+      const newCompanyRelations = await storage.getEmployeeCompanyRelations(sessionUser.id);
+      
+      // Merge and return all companies
+      const allCompanies = [...oldCompanies, ...newCompanyRelations];
+      res.json(allCompanies);
     } catch (error) {
       console.error("Get employee companies error:", error);
       res.status(500).json({ message: "Failed to get companies" });
