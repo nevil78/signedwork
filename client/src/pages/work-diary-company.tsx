@@ -91,9 +91,9 @@ export default function WorkDiaryCompany() {
 
   // Fetch work entries for this company
   const { data: workEntries = [], isLoading } = useQuery<WorkEntry[]>({
-    queryKey: ['/api/work-diary', actualCompanyId],
+    queryKey: ['/api/work-entries', actualCompanyId],
     queryFn: async () => {
-      const response = await fetch(`/api/work-diary?companyId=${actualCompanyId}`, {
+      const response = await fetch(`/api/work-entries?companyId=${actualCompanyId}`, {
         credentials: 'include'
       });
       if (!response.ok) throw new Error('Failed to fetch work entries');
@@ -116,7 +116,7 @@ export default function WorkDiaryCompany() {
 
   const createEntryMutation = useMutation({
     mutationFn: async (data: WorkEntryFormData) => {
-      const response = await fetch('/api/work-diary', {
+      const response = await fetch('/api/work-entries', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -126,7 +126,7 @@ export default function WorkDiaryCompany() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/work-diary', actualCompanyId] });
+      queryClient.invalidateQueries({ queryKey: ['/api/work-entries', actualCompanyId] });
       toast({
         title: "Success",
         description: "Work entry created successfully",
@@ -145,7 +145,7 @@ export default function WorkDiaryCompany() {
 
   const updateEntryMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<WorkEntryFormData> }) => {
-      const response = await fetch(`/api/work-diary/${id}`, {
+      const response = await fetch(`/api/work-entries/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -155,7 +155,7 @@ export default function WorkDiaryCompany() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/work-diary', actualCompanyId] });
+      queryClient.invalidateQueries({ queryKey: ['/api/work-entries', actualCompanyId] });
       toast({
         title: "Success",
         description: "Work entry updated successfully",
@@ -179,7 +179,7 @@ export default function WorkDiaryCompany() {
 
   const deleteEntryMutation = useMutation({
     mutationFn: async (id: string) => {
-      const response = await fetch(`/api/work-diary/${id}`, {
+      const response = await fetch(`/api/work-entries/${id}`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -188,7 +188,7 @@ export default function WorkDiaryCompany() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/work-diary', actualCompanyId] });
+      queryClient.invalidateQueries({ queryKey: ['/api/work-entries', actualCompanyId] });
       toast({
         title: "Success",
         description: "Work entry deleted successfully",
