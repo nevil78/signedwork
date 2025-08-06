@@ -93,7 +93,9 @@ export default function WorkDiaryCompany() {
   const { data: workEntries = [], isLoading } = useQuery<WorkEntry[]>({
     queryKey: ['/api/work-diary', actualCompanyId],
     queryFn: async () => {
-      const response = await fetch(`/api/work-diary?companyId=${actualCompanyId}`);
+      const response = await fetch(`/api/work-diary?companyId=${actualCompanyId}`, {
+        credentials: 'include'
+      });
       if (!response.ok) throw new Error('Failed to fetch work entries');
       return response.json();
     },
@@ -117,6 +119,7 @@ export default function WorkDiaryCompany() {
       const response = await fetch('/api/work-diary', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ ...data, companyId: actualCompanyId }),
       });
       if (!response.ok) throw new Error('Failed to create work entry');
@@ -145,6 +148,7 @@ export default function WorkDiaryCompany() {
       const response = await fetch(`/api/work-diary/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify(data),
       });
       if (!response.ok) throw new Error('Failed to update work entry');
@@ -178,6 +182,7 @@ export default function WorkDiaryCompany() {
       const response = await fetch(`/api/work-diary/${id}`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
       });
       if (!response.ok) throw new Error('Failed to delete work entry');
       return response.json();
