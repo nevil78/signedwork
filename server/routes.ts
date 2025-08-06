@@ -2198,14 +2198,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Account is deactivated. Please contact support." });
       }
 
-      // Allow password reset for all active users, regardless of email verification status
+      // Check if email is verified - only allow password reset for verified emails
+      if (!user.emailVerified) {
+        return res.status(403).json({ 
+          message: "Email address must be verified before requesting password reset. Please verify your email from your profile page first." 
+        });
+      }
 
       // Generate OTP
       const otpCode = generateOTPCode();
       const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
-
-      // DEVELOPMENT: Log OTP code to console for troubleshooting email delivery issues
-      console.log(`🔐 DEBUG - Password Reset OTP for ${email}: ${otpCode} (expires in 15 minutes)`);
 
       // Save OTP to database
       await storage.createEmailVerification({

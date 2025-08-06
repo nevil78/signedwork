@@ -89,6 +89,11 @@ This is a comprehensive LinkedIn-like professional networking platform built wit
   * Added real-time verification status display in profile contact section
   * Created phone update mutation with proper form validation
   * Enhanced contact section UI with edit buttons and status indicators
+- ✅ Secured Password Reset Flow (August 6, 2025):
+  * Modified password reset to require verified email addresses only
+  * Added proper email verification status check before allowing OTP requests
+  * Fixed forgot password routing issues (corrected /auth to / redirects)
+  * Enhanced error messaging for unverified email password reset attempts
 
 ## Current System State (August 6, 2025)
 **Database Schema**: All tables properly synced with `npm run db:push` ✓
