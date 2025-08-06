@@ -127,9 +127,9 @@ export default function WorkDiaryCompany() {
       });
       
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Create work entry failed:', response.status, errorText);
-        throw new Error(`Failed to create work entry: ${response.status} ${errorText}`);
+        const errorData = await response.json().catch(() => null);
+        console.error('Create work entry failed:', response.status, errorData);
+        throw new Error(errorData?.message || `Failed to create work entry: ${response.status}`);
       }
       return response.json();
     },
@@ -142,10 +142,11 @@ export default function WorkDiaryCompany() {
       setIsDialogOpen(false);
       form.reset();
     },
-    onError: () => {
+    onError: (error: any) => {
+      console.error('Work entry creation error:', error);
       toast({
         title: "Error",
-        description: "Failed to create work entry",
+        description: error.message || "Failed to create work entry",
         variant: "destructive",
       });
     },
@@ -356,10 +357,10 @@ export default function WorkDiaryCompany() {
                           <Calendar className="h-3 w-3" />
                           {entry.startDate}{entry.endDate && ` - ${entry.endDate}`}
                         </span>
-                        {entry.hours && (
+                        {(entry.estimatedHours || entry.actualHours) && (
                           <span className="flex items-center gap-1">
                             <Clock className="h-3 w-3" />
-                            {entry.hours} hours
+                            {entry.actualHours ? `${entry.actualHours}h` : `${entry.estimatedHours}h (est)`}
                           </span>
                         )}
                       </CardDescription>
