@@ -52,12 +52,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const employee = await storage.createEmployee(validatedData);
       
+      // Generate OTP for email verification
+      const otpCode = generateOTPCode();
+      const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+
+      // Save OTP to database
+      await storage.createEmailVerification({
+        email: validatedData.email,
+        otpCode,
+        purpose: "email_verification",
+        userType: "employee",
+        userId: employee.id,
+        expiresAt,
+      });
+
+      // Send OTP email
+      const emailSent = await sendOTPEmail({
+        to: validatedData.email,
+        firstName: validatedData.firstName,
+        otpCode,
+        purpose: "email_verification",
+      });
+
+      if (!emailSent) {
+        return res.status(500).json({ message: "Account created but failed to send verification email" });
+      }
+
       // Remove password from response
       const { password, ...employeeResponse } = employee;
       
       res.status(201).json({ 
-        message: "Employee account created successfully",
-        employee: employeeResponse 
+        message: "Account created successfully! Please check your email for verification code.",
+        employee: employeeResponse,
+        requiresEmailVerification: true
       });
     } catch (error: any) {
       if (error.name === "ZodError") {
@@ -96,12 +123,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const company = await storage.createCompany(validatedData);
       
+      // Generate OTP for email verification
+      const otpCode = generateOTPCode();
+      const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+
+      // Save OTP to database
+      await storage.createEmailVerification({
+        email: validatedData.email,
+        otpCode,
+        purpose: "email_verification",
+        userType: "company",
+        userId: company.id,
+        expiresAt,
+      });
+
+      // Send OTP email
+      const emailSent = await sendOTPEmail({
+        to: validatedData.email,
+        firstName: validatedData.name,
+        otpCode,
+        purpose: "email_verification",
+      });
+
+      if (!emailSent) {
+        return res.status(500).json({ message: "Account created but failed to send verification email" });
+      }
+
       // Remove password from response
       const { password, ...companyResponse } = company;
       
       res.status(201).json({ 
-        message: "Company account created successfully",
-        company: companyResponse 
+        message: "Account created successfully! Please check your email for verification code.",
+        company: companyResponse,
+        requiresEmailVerification: true
       });
     } catch (error: any) {
       if (error.name === "ZodError") {
@@ -137,6 +191,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!user) {
         return res.status(401).json({ 
           message: "Invalid email or password" 
+        });
+      }
+      
+      // Check if email is verified
+      if (!user.emailVerified) {
+        return res.status(403).json({ 
+          message: "Please verify your email address before logging in",
+          emailVerificationRequired: true,
+          userType,
+          email: user.email
         });
       }
       
@@ -2072,6 +2136,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Account is deactivated. Please contact support." });
       }
 
+      if (!user.emailVerified) {
+        return res.status(403).json({ message: "Please verify your email address before using password reset." });
+      }
+
       // Generate OTP
       const otpCode = generateOTPCode();
       const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
@@ -2131,6 +2199,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (purpose === "password_reset") {
         res.status(200).json({
           message: "Verification code is valid",
+          verified: true,
+        });
+      } else if (purpose === "email_verification") {
+        // Mark user as email verified
+        if (verification.userType === 'employee') {
+          await storage.markEmployeeEmailVerified(verification.userId);
+        } else {
+          await storage.markCompanyEmailVerified(verification.userId);
+        }
+        
+        // Mark OTP as used
+        await storage.markEmailVerificationUsed(verification.id);
+        
+        res.status(200).json({
+          message: "Email verified successfully! You can now log in to your account.",
           verified: true,
         });
       } else {

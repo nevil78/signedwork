@@ -1419,6 +1419,14 @@ export class DatabaseStorage implements IStorage {
   async updateEmployeeProfilePicture(id: string, profilePictureURL: string): Promise<void> {
     await db.update(employees).set({ profilePhoto: profilePictureURL }).where(eq(employees.id, id));
   }
+
+  async markEmployeeEmailVerified(id: string): Promise<void> {
+    await db.update(employees).set({ emailVerified: true, updatedAt: new Date() }).where(eq(employees.id, id));
+  }
+
+  async markCompanyEmailVerified(id: string): Promise<void> {
+    await db.update(companies).set({ emailVerified: true, updatedAt: new Date() }).where(eq(companies.id, id));
+  }
 }
 
 export const storage = new DatabaseStorage();

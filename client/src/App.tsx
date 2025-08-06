@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import AuthPage from "@/pages/auth";
 import ForgotPasswordPage from "@/pages/forgot-password";
+import EmailVerificationPage from "@/pages/email-verification";
 import Dashboard from "@/pages/dashboard";
 import Profile from "@/pages/profile";
 import WorkDiary from "@/pages/work-diary";
@@ -28,6 +29,7 @@ function Router() {
     <Switch>
       <Route path="/" component={AuthPage} />
       <Route path="/forgot-password" component={ForgotPasswordPage} />
+      <Route path="/verify-email" component={EmailVerificationPage} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/profile" component={ProfessionalProfile} />
       <Route path="/work-diary" component={ProfessionalWorkDiary} />
