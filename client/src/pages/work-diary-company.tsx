@@ -52,7 +52,8 @@ const workEntryFormSchema = z.object({
   startDate: z.string().min(1, "Start date is required"),
   endDate: z.string().optional(),
   priority: z.enum(["low", "medium", "high"]).default("medium"),
-  hours: z.number().optional(),
+  estimatedHours: z.number().optional(),
+  actualHours: z.number().optional(),
 });
 
 type WorkEntryFormData = z.infer<typeof workEntryFormSchema>;
@@ -110,19 +111,26 @@ export default function WorkDiaryCompany() {
       startDate: new Date().toISOString().split('T')[0],
       endDate: '',
       priority: 'medium',
-      hours: undefined,
+      estimatedHours: undefined,
+      actualHours: undefined,
     },
   });
 
   const createEntryMutation = useMutation({
     mutationFn: async (data: WorkEntryFormData) => {
+      console.log('Creating work entry with data:', { ...data, companyId: actualCompanyId });
       const response = await fetch('/api/work-entries', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({ ...data, companyId: actualCompanyId }),
       });
-      if (!response.ok) throw new Error('Failed to create work entry');
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Create work entry failed:', response.status, errorText);
+        throw new Error(`Failed to create work entry: ${response.status} ${errorText}`);
+      }
       return response.json();
     },
     onSuccess: () => {
@@ -223,7 +231,8 @@ export default function WorkDiaryCompany() {
       startDate: entry.startDate,
       endDate: entry.endDate || '',
       priority: entry.priority as "low" | "medium" | "high",
-      hours: entry.hours || undefined,
+      estimatedHours: entry.estimatedHours || undefined,
+      actualHours: entry.actualHours || undefined,
     });
     setIsDialogOpen(true);
   };
@@ -522,10 +531,10 @@ export default function WorkDiaryCompany() {
 
                   <FormField
                     control={form.control}
-                    name="hours"
+                    name="estimatedHours"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Hours</FormLabel>
+                        <FormLabel>Estimated Hours</FormLabel>
                         <FormControl>
                           <Input 
                             type="number" 
@@ -541,6 +550,41 @@ export default function WorkDiaryCompany() {
                       </FormItem>
                     )}
                   />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="actualHours"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Actual Hours</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="number" 
+                            min="0" 
+                            step="0.5"
+                            placeholder="0"
+                            {...field}
+                            value={field.value || ''}
+                            onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="billable"
+                      className="rounded border-gray-300"
+                    />
+                    <label htmlFor="billable" className="text-sm font-medium">
+                      Billable Work
+                    </label>
+                  </div>
                 </div>
 
 
