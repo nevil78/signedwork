@@ -115,10 +115,14 @@ export default function WorkDiaryCompany() {
 
   const createEntryMutation = useMutation({
     mutationFn: async (data: WorkEntryFormData) => {
-      console.log('Creating work entry with data:', { ...data, companyId: actualCompanyId });
+      const payload = { ...data, companyId: actualCompanyId };
+      console.log('Creating work entry with payload:', payload);
+      console.log('actualCompanyId:', actualCompanyId);
       
       // Use apiRequest helper which handles authentication properly
-      return apiRequest('POST', '/api/work-entries', { ...data, companyId: actualCompanyId });
+      const result = await apiRequest('POST', '/api/work-entries', payload);
+      console.log('API response:', result);
+      return result;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/work-entries', actualCompanyId] });
