@@ -108,7 +108,7 @@ export default function ProfessionalProfile() {
 
   const updateProfile = useMutation({
     mutationFn: async (data: any) => {
-      return await apiRequest("PUT", `/api/employee/profile/${userResponse?.user?.id}`, data);
+      return await apiRequest("PATCH", "/api/employee/profile", data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/employee/profile"] });
