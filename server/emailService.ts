@@ -85,9 +85,12 @@ If you didn't request this verification code, please ignore this email. Your acc
 This is an automated message from Professional Network. Please do not reply to this email.
     `;
 
+    // Use environment variable for verified sender or fallback
+    const fromEmail = process.env.SENDGRID_VERIFIED_SENDER || 'noreply@professional-network.com';
+    
     await mailService.send({
       to,
-      from: 'noreply@professional-network.com', // You can change this to your verified sender
+      from: fromEmail,
       subject,
       text: textContent,
       html: htmlContent,
