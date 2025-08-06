@@ -184,14 +184,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validatedData = loginSchema.parse(req.body);
       const { email, password, accountType } = validatedData;
       
+      // Normalize email to lowercase for case-insensitive matching
+      const normalizedEmail = email.toLowerCase();
+      
       let user = null;
       let userType = "";
       
       if (accountType === "employee") {
-        user = await storage.authenticateEmployee(email, password);
+        user = await storage.authenticateEmployee(normalizedEmail, password);
         userType = "employee";
       } else {
-        user = await storage.authenticateCompany(email, password);
+        user = await storage.authenticateCompany(normalizedEmail, password);
         userType = "company";
       }
       
@@ -2178,15 +2181,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = requestPasswordResetSchema.parse(req.body);
       const { email, userType } = validatedData;
+      
+      // Normalize email to lowercase for case-insensitive matching
+      const normalizedEmail = email.toLowerCase();
 
       // Check if user exists
       let user = null;
       let firstName = "";
       if (userType === 'employee') {
-        user = await storage.getEmployeeByEmail(email);
+        user = await storage.getEmployeeByEmail(normalizedEmail);
         firstName = user?.firstName || "User";
       } else {
-        user = await storage.getCompanyByEmail(email);
+        user = await storage.getCompanyByEmail(normalizedEmail);
         firstName = user?.name || "User";
       }
 
@@ -2211,7 +2217,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Save OTP to database
       await storage.createEmailVerification({
-        email,
+        email: normalizedEmail,
         otpCode,
         purpose: "password_reset",
         userType,
@@ -2221,7 +2227,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Send OTP email
       const emailSent = await sendOTPEmail({
-        to: email,
+        to: normalizedEmail,
         firstName,
         otpCode,
         purpose: "password_reset",
@@ -2233,7 +2239,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.status(200).json({
         message: "Password reset code sent to your email",
-        email: email.replace(/(.{2}).*(@.*)/, "$1***$2"), // Mask email for security
+        email: normalizedEmail.replace(/(.{2}).*(@.*)/, "$1***$2"), // Mask email for security
       });
     } catch (error) {
       console.error("Request password reset error:", error);

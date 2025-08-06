@@ -252,12 +252,15 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getEmployeeByEmail(email: string): Promise<Employee | undefined> {
-    const [employee] = await db.select().from(employees).where(eq(employees.email, email));
+    const [employee] = await db.select().from(employees).where(sql`LOWER(${employees.email}) = LOWER(${email})`);
     return employee || undefined;
   }
 
   async createEmployee(employeeData: InsertEmployee): Promise<Employee> {
     const hashedPassword = await bcrypt.hash(employeeData.password, 10);
+    
+    // Normalize email to lowercase for consistency
+    const normalizedEmail = employeeData.email.toLowerCase();
     
     // Generate a unique employee ID
     let employeeId = generateEmployeeId();
@@ -283,6 +286,7 @@ export class DatabaseStorage implements IStorage {
       .values({
         ...employeeData,
         employeeId,
+        email: normalizedEmail,
         password: hashedPassword,
       })
       .returning();
@@ -295,12 +299,15 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getCompanyByEmail(email: string): Promise<Company | undefined> {
-    const [company] = await db.select().from(companies).where(eq(companies.email, email));
+    const [company] = await db.select().from(companies).where(sql`LOWER(${companies.email}) = LOWER(${email})`);
     return company || undefined;
   }
 
   async createCompany(companyData: InsertCompany): Promise<Company> {
     const hashedPassword = await bcrypt.hash(companyData.password, 10);
+    
+    // Normalize email to lowercase for consistency
+    const normalizedEmail = companyData.email.toLowerCase();
     
     // Generate a unique company ID
     let companyId = generateCompanyId();
@@ -326,6 +333,7 @@ export class DatabaseStorage implements IStorage {
       .values({
         ...companyData,
         companyId,
+        email: normalizedEmail,
         password: hashedPassword,
       })
       .returning();
