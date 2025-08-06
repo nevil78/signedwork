@@ -120,18 +120,12 @@ export default function AuthPage() {
     mutationFn: async (data: InsertEmployee) => {
       return await apiRequest("POST", "/api/auth/register/employee", data);
     },
-    onSuccess: (response: any) => {
-      // Store verification data in localStorage
-      localStorage.setItem('verificationEmail', response.employee.email);
-      localStorage.setItem('verificationType', 'employee');
-      
+    onSuccess: () => {
+      setCurrentView("success");
       toast({
         title: "Registration Successful!",
-        description: "Please check your email for verification code.",
+        description: "Your employee account has been created successfully.",
       });
-      
-      // Redirect to email verification page
-      window.location.href = "/verify-email?email=" + encodeURIComponent(response.employee.email) + "&userType=employee";
     },
     onError: (error: any) => {
       toast({
@@ -146,18 +140,12 @@ export default function AuthPage() {
     mutationFn: async (data: InsertCompany) => {
       return await apiRequest("POST", "/api/auth/register/company", data);
     },
-    onSuccess: (response: any) => {
-      // Store verification data in localStorage
-      localStorage.setItem('verificationEmail', response.company.email);
-      localStorage.setItem('verificationType', 'company');
-      
+    onSuccess: () => {
+      setCurrentView("success");
       toast({
         title: "Registration Successful!",
-        description: "Please check your email for verification code.",
+        description: "Your company account has been created successfully.",
       });
-      
-      // Redirect to email verification page
-      window.location.href = "/verify-email?email=" + encodeURIComponent(response.company.email) + "&userType=company";
     },
     onError: (error: any) => {
       toast({
@@ -184,22 +172,6 @@ export default function AuthPage() {
       }
     },
     onError: (error: any) => {
-      // Handle email verification required
-      if (error.emailVerificationRequired) {
-        localStorage.setItem('verificationEmail', error.email);
-        localStorage.setItem('verificationType', error.userType);
-        
-        toast({
-          title: "Email Verification Required",
-          description: "Please verify your email address to continue",
-          variant: "destructive",
-        });
-        
-        // Redirect to email verification page
-        window.location.href = "/verify-email?email=" + encodeURIComponent(error.email) + "&userType=" + error.userType;
-        return;
-      }
-
       toast({
         title: "Login Failed",
         description: error.message || "Invalid email or password",

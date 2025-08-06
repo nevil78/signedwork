@@ -26,6 +26,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { ObjectUploader } from "@/components/ObjectUploader";
+import EmailVerificationCard from "@/components/EmailVerificationCard";
 import type { UploadResult } from "@uppy/core";
 import { 
   type Employee, type Experience, type Education, type Certification, 
@@ -386,6 +387,9 @@ export default function ProfessionalProfile() {
             <Tabs value={activeSection} onValueChange={(value) => setActiveSection(value as ProfileSection)}>
               {/* Overview Section */}
               <TabsContent value="overview" className="space-y-6">
+                {/* Email Verification Card */}
+                <EmailVerificationCard user={user} userType="employee" />
+                
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between">
                     <CardTitle>Professional Summary</CardTitle>
