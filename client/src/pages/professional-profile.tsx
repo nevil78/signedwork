@@ -106,28 +106,7 @@ export default function ProfessionalProfile() {
     },
   });
 
-  // Update form when user data changes or when editing starts
-  useEffect(() => {
-    if (user && editingProfile) {
-      profileForm.reset({
-        headline: user.headline || "",
-        summary: user.summary || "",
-        currentPosition: user.currentPosition || "",
-        currentCompany: user.currentCompany || "",
-        industry: user.industry || "",
-        experienceLevel: user.experienceLevel || "mid",
-        salaryExpectation: user.salaryExpectation || "",
-        availabilityStatus: user.availabilityStatus || "open",
-        noticePeriod: user.noticePeriod || "1_month",
-        preferredWorkType: user.preferredWorkType || "hybrid",
-        location: user.location || "",
-        website: user.website || "",
-        skills: user.skills || [],
-        specializations: user.specializations || [],
-        languages: user.languages || [],
-      });
-    }
-  }, [user, editingProfile, profileForm]);
+
 
   const updateProfile = useMutation({
     mutationFn: async (data: any) => {
@@ -175,6 +154,29 @@ export default function ProfessionalProfile() {
     educations: [],
     certifications: [],
   };
+
+  // Update form when user data changes or when editing starts
+  useEffect(() => {
+    if (user && editingProfile) {
+      profileForm.reset({
+        headline: user.headline || "",
+        summary: user.summary || "",
+        currentPosition: user.currentPosition || "",
+        currentCompany: user.currentCompany || "",
+        industry: user.industry || "",
+        experienceLevel: user.experienceLevel || "mid",
+        salaryExpectation: user.salaryExpectation || "",
+        availabilityStatus: user.availabilityStatus || "open",
+        noticePeriod: user.noticePeriod || "1_month",
+        preferredWorkType: user.preferredWorkType || "hybrid",
+        location: user.location || "",
+        website: user.website || "",
+        skills: user.skills || [],
+        specializations: user.specializations || [],
+        languages: user.languages || [],
+      });
+    }
+  }, [user, editingProfile, profileForm]);
 
   const getAvailabilityColor = (status: string) => {
     switch (status) {
