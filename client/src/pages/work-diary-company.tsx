@@ -298,14 +298,44 @@ export default function WorkDiaryCompany() {
               />
             </div>
           </div>
-          <Button onClick={() => {
-            setEditingEntry(null);
-            form.reset();
-            setIsDialogOpen(true);
-          }}>
-            <Plus className="mr-2 h-4 w-4" />
-            Add Entry
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              onClick={async () => {
+                try {
+                  console.log('Testing direct API call...');
+                  const testData = {
+                    title: "Test Entry",
+                    description: "Testing direct API",
+                    startDate: "2025-08-06",
+                    priority: "medium",
+                    status: "pending",
+                    workType: "task",
+                    billable: false,
+                    companyId: actualCompanyId
+                  };
+                  console.log('Test data:', testData);
+                  const result = await apiRequest('POST', '/api/work-entries', testData);
+                  console.log('Test result:', result);
+                  toast({ title: "Test successful!", description: "Direct API call worked" });
+                  queryClient.invalidateQueries({ queryKey: ['/api/work-entries', actualCompanyId] });
+                } catch (error) {
+                  console.error('Test error:', error);
+                  toast({ title: "Test failed", description: String(error) });
+                }
+              }}
+              variant="outline"
+            >
+              Test API
+            </Button>
+            <Button onClick={() => {
+              setEditingEntry(null);
+              form.reset();
+              setIsDialogOpen(true);
+            }}>
+              <Plus className="mr-2 h-4 w-4" />
+              Add Entry
+            </Button>
+          </div>
         </div>
 
         {isLoading ? (
@@ -430,7 +460,16 @@ export default function WorkDiaryCompany() {
             </DialogHeader>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit, (errors) => {
-                console.log('Form submission failed with errors:', errors);
+                console.log('=== FORM VALIDATION FAILED ===');
+                console.log('Validation errors:', errors);
+                console.log('Current form values:', form.getValues());
+                console.log('Form state:', {
+                  isDirty: form.formState.isDirty,
+                  isValid: form.formState.isValid,
+                  isSubmitting: form.formState.isSubmitting,
+                  isLoading: form.formState.isLoading
+                });
+                console.log('=== END FORM ERROR DEBUG ===');
               })} className="space-y-4">
                 <FormField
                   control={form.control}
