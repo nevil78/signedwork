@@ -56,6 +56,7 @@ export default function ProfessionalProfile() {
   const [activeSection, setActiveSection] = useState<ProfileSection>("overview");
   const [editingProfile, setEditingProfile] = useState(false);
   const [addingExperience, setAddingExperience] = useState(false);
+  const [editingExperience, setEditingExperience] = useState<Experience | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [location] = useLocation();
@@ -175,6 +176,21 @@ export default function ProfessionalProfile() {
     },
     onError: () => {
       toast({ title: "Error", description: "Failed to add experience", variant: "destructive" });
+    },
+  });
+
+  const updateExperience = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: any }) => {
+      return await apiRequest("PATCH", `/api/employee/experience/${id}`, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/employee/profile", userResponse?.user?.id] });
+      setEditingExperience(null);
+      experienceForm.reset();
+      toast({ title: "Experience updated successfully" });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to update experience", variant: "destructive" });
     },
   });
 
@@ -502,7 +518,24 @@ export default function ProfessionalProfile() {
                                   </div>
                                 )}
                               </div>
-                              <Button variant="ghost" size="sm">
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                onClick={() => {
+                                  setEditingExperience(exp);
+                                  experienceForm.reset({
+                                    title: exp.title,
+                                    company: exp.company,
+                                    location: exp.location || "",
+                                    startDate: exp.startDate,
+                                    endDate: exp.endDate || "",
+                                    current: exp.isCurrent || false,
+                                    description: exp.description || "",
+                                    achievements: exp.achievements || [],
+                                  });
+                                }}
+                                data-testid={`button-edit-experience-${exp.id}`}
+                              >
                                 <Edit className="h-4 w-4" />
                               </Button>
                             </div>
@@ -760,14 +793,26 @@ export default function ProfessionalProfile() {
         </DialogContent>
       </Dialog>
 
-      {/* Add Experience Dialog */}
-      <Dialog open={addingExperience} onOpenChange={setAddingExperience}>
+      {/* Add/Edit Experience Dialog */}
+      <Dialog open={addingExperience || !!editingExperience} onOpenChange={(open) => {
+        if (!open) {
+          setAddingExperience(false);
+          setEditingExperience(null);
+          experienceForm.reset();
+        }
+      }}>
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Add Work Experience</DialogTitle>
+            <DialogTitle>{editingExperience ? "Edit Work Experience" : "Add Work Experience"}</DialogTitle>
           </DialogHeader>
           <Form {...experienceForm}>
-            <form onSubmit={experienceForm.handleSubmit((data) => createExperience.mutate(data))} className="space-y-6">
+            <form onSubmit={experienceForm.handleSubmit((data) => {
+              if (editingExperience) {
+                updateExperience.mutate({ id: editingExperience.id, data });
+              } else {
+                createExperience.mutate(data);
+              }
+            })} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={experienceForm.control}
@@ -968,11 +1013,17 @@ export default function ProfessionalProfile() {
               />
 
               <div className="flex justify-end space-x-2">
-                <Button type="button" variant="outline" onClick={() => setAddingExperience(false)}>
+                <Button type="button" variant="outline" onClick={() => {
+                  setAddingExperience(false);
+                  setEditingExperience(null);
+                }}>
                   Cancel
                 </Button>
-                <Button type="submit" disabled={createExperience.isPending}>
-                  {createExperience.isPending ? "Adding..." : "Add Experience"}
+                <Button type="submit" disabled={createExperience.isPending || updateExperience.isPending}>
+                  {createExperience.isPending || updateExperience.isPending
+                    ? (editingExperience ? "Updating..." : "Adding...")
+                    : (editingExperience ? "Update Experience" : "Add Experience")
+                  }
                 </Button>
               </div>
             </form>
