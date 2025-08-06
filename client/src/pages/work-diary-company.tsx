@@ -248,9 +248,9 @@ export default function WorkDiaryCompany() {
       description: entry.description || '',
       startDate: entry.startDate,
       endDate: entry.endDate || '',
-      priority: entry.priority,
-      status: entry.status,
-      workType: entry.workType || 'task',
+      priority: entry.priority as "low" | "medium" | "high",
+      status: entry.status as "pending" | "approved" | "needs_changes" | "in_progress" | "completed",
+      workType: (entry.workType || 'task') as "task" | "meeting" | "project" | "research" | "documentation" | "training",
       estimatedHours: entry.estimatedHours || undefined,
       actualHours: entry.actualHours || undefined,
       companyId: actualCompanyId || '',
@@ -730,21 +730,43 @@ export default function WorkDiaryCompany() {
                   <Button
                     type="button"
                     variant="secondary"
-                    onClick={() => {
-                      console.log('=== FORM DEBUG ===');
-                      console.log('Form values:', form.getValues());
-                      console.log('Form errors:', form.formState.errors);
-                      console.log('Form valid:', form.formState.isValid);
-                      console.log('Company ID from params:', companyId);
-                      console.log('Actual Company ID:', actualCompanyId);
-                      const values = form.getValues();
-                      toast({
-                        title: "Form Debug",
-                        description: `Title: ${values.title}, CompanyId: ${values.companyId}`,
-                      });
+                    onClick={async () => {
+                      console.log('=== TESTING DIRECT API ===');
+                      try {
+                        const testData = {
+                          title: "Direct API Test Entry",
+                          description: "Testing API without form validation",
+                          startDate: "2025-08-06",
+                          priority: "medium",
+                          status: "pending",
+                          workType: "task",
+                          estimatedHours: 2,
+                          companyId: companyId,
+                          billable: false
+                        };
+                        console.log('Test data:', testData);
+                        
+                        const response = await apiRequest('/api/work-entries', {
+                          method: 'POST',
+                          body: JSON.stringify(testData)
+                        });
+                        
+                        console.log('API Response:', response);
+                        toast({
+                          title: "API Test Success",
+                          description: "Work entry created via direct API call",
+                        });
+                      } catch (error) {
+                        console.error('API Test failed:', error);
+                        toast({
+                          title: "API Test Failed", 
+                          description: error.message,
+                          variant: "destructive"
+                        });
+                      }
                     }}
                   >
-                    Debug Form
+                    Test Direct API
                   </Button>
                   <Button 
                     type="submit" 
