@@ -631,7 +631,12 @@ function ExperienceSection({ experiences, employeeId }: { experiences: Experienc
                     <FormItem>
                       <FormLabel>Start Date</FormLabel>
                       <FormControl>
-                        <Input type="month" {...field} />
+                        <Input 
+                          type="month" 
+                          min="1990-01" 
+                          max="2030-12"
+                          {...field} 
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -647,6 +652,8 @@ function ExperienceSection({ experiences, employeeId }: { experiences: Experienc
                       <FormControl>
                         <Input 
                           type="month" 
+                          min="1990-01" 
+                          max="2030-12"
                           disabled={experienceForm.watch("isCurrent")}
                           {...field} 
                         />
