@@ -562,6 +562,11 @@ export default function ProfessionalProfile() {
                 <EducationSection educations={profile.educations || []} employeeId={user.id} />
               </TabsContent>
 
+              {/* Certifications Section */}
+              <TabsContent value="certifications" className="space-y-6">
+                <CertificationSection certifications={profile.certifications || []} employeeId={user.id} />
+              </TabsContent>
+
               {/* Analytics Section */}
               <TabsContent value="analytics" className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -1330,6 +1335,247 @@ function EducationSection({ educations, employeeId }: { educations: Education[],
                 </Button>
                 <Button type="submit" disabled={addEducation.isPending} data-testid="button-submit">
                   {addEducation.isPending ? "Adding..." : "Add Education"}
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+    </Card>
+  );
+}
+
+// Certification Section Component
+function CertificationSection({ certifications, employeeId }: { certifications: Certification[], employeeId: string }) {
+  const [addingCertification, setAddingCertification] = useState(false);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const certificationForm = useForm({
+    resolver: zodResolver(insertCertificationSchema),
+    defaultValues: {
+      employeeId,
+      name: "",
+      issuingOrganization: "",
+      issueDate: "",
+      expirationDate: "",
+      credentialId: "",
+      credentialUrl: "",
+      description: "",
+    },
+  });
+
+  const addCertification = useMutation({
+    mutationFn: async (data: any) => {
+      return await apiRequest("POST", "/api/employee/certification", data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/employee/profile", employeeId] });
+      setAddingCertification(false);
+      certificationForm.reset();
+      toast({ title: "Certification Added", description: "Your certification has been added successfully." });
+    },
+  });
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div>
+          <CardTitle className="flex items-center gap-2">
+            <Award className="h-5 w-5 text-blue-600" />
+            Certifications
+          </CardTitle>
+        </div>
+        <Button 
+          onClick={() => setAddingCertification(true)}
+          size="sm"
+          data-testid="button-add-certification"
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          Add Certification
+        </Button>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {certifications.length > 0 ? (
+          <div className="space-y-4">
+            {certifications.map((certification) => (
+              <div key={certification.id} className="border-l-2 border-green-200 pl-4 py-3">
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-gray-900">{certification.name}</h3>
+                    <p className="text-gray-700 font-medium">{certification.issuingOrganization}</p>
+                    <p className="text-sm text-gray-500 mt-1">
+                      Issued: {certification.issueDate}
+                      {certification.expirationDate && ` • Expires: ${certification.expirationDate}`}
+                    </p>
+                    {certification.credentialId && (
+                      <p className="text-sm text-gray-600 mt-1">Credential ID: {certification.credentialId}</p>
+                    )}
+                    {certification.credentialUrl && (
+                      <a 
+                        href={certification.credentialUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:text-blue-800 text-sm mt-1 inline-flex items-center"
+                      >
+                        View Credential <ExternalLink className="h-3 w-3 ml-1" />
+                      </a>
+                    )}
+                    {certification.description && (
+                      <p className="text-gray-600 mt-2 text-sm">{certification.description}</p>
+                    )}
+                  </div>
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    data-testid={`button-edit-certification-${certification.id}`}
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8">
+            <Award className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No certifications added yet</h3>
+            <p className="text-gray-600 mb-4">Add your professional certifications to showcase your expertise</p>
+            <Button onClick={() => setAddingCertification(true)} data-testid="button-add-first-certification">
+              <Plus className="h-4 w-4 mr-2" />
+              Add Your First Certification
+            </Button>
+          </div>
+        )}
+      </CardContent>
+
+      {/* Add Certification Dialog */}
+      <Dialog open={addingCertification} onOpenChange={setAddingCertification}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Add Certification</DialogTitle>
+          </DialogHeader>
+          <Form {...certificationForm}>
+            <form onSubmit={certificationForm.handleSubmit(
+              (data) => {
+                console.log("Certification form data:", data);
+                addCertification.mutate(data);
+              },
+              (errors) => {
+                console.log("Certification form errors:", errors);
+              }
+            )} className="space-y-4">
+              <FormField
+                control={certificationForm.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Certification Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g., AWS Certified Solutions Architect" {...field} data-testid="input-certification-name" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={certificationForm.control}
+                name="issuingOrganization"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Issuing Organization</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g., Amazon Web Services" {...field} data-testid="input-issuing-organization" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={certificationForm.control}
+                  name="issueDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Issue Date</FormLabel>
+                      <FormControl>
+                        <Input type="date" {...field} data-testid="input-issue-date" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={certificationForm.control}
+                  name="expirationDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Expiration Date (Optional)</FormLabel>
+                      <FormControl>
+                        <Input type="date" {...field} data-testid="input-expiration-date" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={certificationForm.control}
+                name="credentialId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Credential ID (Optional)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g., AWS-ASA-1234567" {...field} data-testid="input-credential-id" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={certificationForm.control}
+                name="credentialUrl"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Credential URL (Optional)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="https://..." {...field} data-testid="input-credential-url" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={certificationForm.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description (Optional)</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="Additional details about this certification..."
+                        rows={3}
+                        {...field} 
+                        data-testid="textarea-certification-description"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="flex justify-end space-x-2">
+                <Button type="button" variant="outline" onClick={() => setAddingCertification(false)} data-testid="button-cancel-certification">
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={addCertification.isPending} data-testid="button-submit-certification">
+                  {addCertification.isPending ? "Adding..." : "Add Certification"}
                 </Button>
               </div>
             </form>
