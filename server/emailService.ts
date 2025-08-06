@@ -86,7 +86,7 @@ This is an automated message from Professional Network. Please do not reply to t
     `;
 
     // Use environment variable for verified sender or fallback
-    const fromEmail = process.env.SENDGRID_VERIFIED_SENDER || 'noreply@professional-network.com';
+    const fromEmail = process.env.SENDGRID_VERIFIED_SENDER || 'noreply@signedwork.com';
     
     await mailService.send({
       to,
