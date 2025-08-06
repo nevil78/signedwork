@@ -67,10 +67,20 @@ export default function EmailVerificationPage() {
 
   const resendOTP = useMutation({
     mutationFn: async () => {
-      return await apiRequest("POST", "/api/auth/request-password-reset", {
-        email,
-        userType,
-      });
+      // For email verification resend, we need to call the registration endpoint again
+      // This will generate a new OTP for email verification
+      if (userType === 'employee') {
+        // We can't re-register, so we'll create a specific resend endpoint
+        return await apiRequest("POST", "/api/auth/resend-verification", {
+          email,
+          userType,
+        });
+      } else {
+        return await apiRequest("POST", "/api/auth/resend-verification", {
+          email,
+          userType,
+        });
+      }
     },
     onSuccess: () => {
       toast({

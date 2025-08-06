@@ -171,6 +171,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Resend verification code
+  app.post("/api/auth/resend-verification", async (req, res) => {
+    try {
+      const { email, userType } = req.body;
+      
+      if (!email || !userType) {
+        return res.status(400).json({ message: "Email and user type are required" });
+      }
+
+      // Check if user exists
+      let user = null;
+      if (userType === 'employee') {
+        user = await storage.getEmployeeByEmail(email);
+      } else {
+        user = await storage.getCompanyByEmail(email);
+      }
+
+      if (!user) {
+        return res.status(404).json({ message: "Account not found" });
+      }
+
+      if (user.emailVerified) {
+        return res.status(400).json({ message: "Email is already verified" });
+      }
+
+      // Generate new OTP
+      const otpCode = generateOTPCode();
+      const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+
+      // Save new OTP to database
+      await storage.createEmailVerification({
+        email,
+        otpCode,
+        purpose: "email_verification",
+        userType,
+        userId: user.id,
+        expiresAt,
+      });
+
+      // Send OTP email
+      const firstName = userType === 'employee' ? user.firstName : user.name;
+      const emailSent = await sendOTPEmail({
+        to: email,
+        firstName,
+        otpCode,
+        purpose: "email_verification",
+      });
+
+      if (!emailSent) {
+        return res.status(500).json({ message: "Failed to send verification email" });
+      }
+
+      res.json({ 
+        message: "New verification code sent to your email" 
+      });
+    } catch (error: any) {
+      console.error("Resend verification error:", error);
+      res.status(500).json({ message: "Failed to resend verification code" });
+    }
+  });
+
   // Login
   app.post("/api/auth/login", async (req, res) => {
     try {
