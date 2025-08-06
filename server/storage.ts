@@ -486,7 +486,9 @@ export class DatabaseStorage implements IStorage {
 
   // Employee Company operations (legacy table)
   async getEmployeeCompanies(employeeId: string): Promise<EmployeeCompany[]> {
-    return await db.select().from(employeeCompanies).where(eq(employeeCompanies.employeeId, employeeId));
+    // This method now returns empty array since we use the new companyEmployees table
+    // All data is fetched via getEmployeeCompanyRelations method
+    return [];
   }
 
   async createEmployeeCompany(company: InsertEmployeeCompany): Promise<EmployeeCompany> {
