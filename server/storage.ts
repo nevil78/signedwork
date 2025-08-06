@@ -1016,13 +1016,13 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Profile views operations
-  async recordProfileView(companyId: string, employeeId: string, jobId?: string): Promise<ProfileView> {
+  async recordProfileView(viewerCompanyId: string, viewedEmployeeId: string, context: string): Promise<ProfileView> {
     const [view] = await db
       .insert(profileViews)
       .values({
-        viewerCompanyId: companyId,
-        viewedEmployeeId: employeeId,
-        jobId: jobId || null
+        viewerCompanyId,
+        viewedEmployeeId,
+        viewContext: context
       })
       .returning();
     return view;
