@@ -9,8 +9,10 @@ import {
   insertExperienceSchema, insertEducationSchema, insertCertificationSchema,
   insertProjectSchema, insertEndorsementSchema, insertWorkEntrySchema,
   insertEmployeeCompanySchema, insertJobListingSchema, insertJobApplicationSchema,
-  insertSavedJobSchema, insertJobAlertSchema, insertAdminSchema
+  insertSavedJobSchema, insertJobAlertSchema, insertAdminSchema,
+  requestPasswordResetSchema, verifyOTPSchema, resetPasswordSchema
 } from "@shared/schema";
+import { sendOTPEmail, generateOTPCode, isOTPExpired } from "./emailService";
 import { fromZodError } from "zod-validation-error";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -2042,6 +2044,156 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Set profile picture error:", error);
       res.status(500).json({ message: "Failed to set profile picture" });
+    }
+  });
+
+  // Password reset request endpoint
+  app.post("/api/auth/request-password-reset", async (req, res) => {
+    try {
+      const validatedData = requestPasswordResetSchema.parse(req.body);
+      const { email, userType } = validatedData;
+
+      // Check if user exists
+      let user = null;
+      let firstName = "";
+      if (userType === 'employee') {
+        user = await storage.getEmployeeByEmail(email);
+        firstName = user?.firstName || "User";
+      } else {
+        user = await storage.getCompanyByEmail(email);
+        firstName = user?.name || "User";
+      }
+
+      if (!user) {
+        return res.status(404).json({ message: "No account found with this email address" });
+      }
+
+      if (!user.isActive) {
+        return res.status(403).json({ message: "Account is deactivated. Please contact support." });
+      }
+
+      // Generate OTP
+      const otpCode = generateOTPCode();
+      const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+
+      // Save OTP to database
+      await storage.createEmailVerification({
+        email,
+        otpCode,
+        purpose: "password_reset",
+        userType,
+        userId: user.id,
+        expiresAt,
+      });
+
+      // Send OTP email
+      const emailSent = await sendOTPEmail({
+        to: email,
+        firstName,
+        otpCode,
+        purpose: "password_reset",
+      });
+
+      if (!emailSent) {
+        return res.status(500).json({ message: "Failed to send verification email" });
+      }
+
+      res.status(200).json({
+        message: "Password reset code sent to your email",
+        email: email.replace(/(.{2}).*(@.*)/, "$1***$2"), // Mask email for security
+      });
+    } catch (error) {
+      console.error("Request password reset error:", error);
+      res.status(500).json({ message: "Failed to process password reset request" });
+    }
+  });
+
+  // Verify OTP endpoint
+  app.post("/api/auth/verify-otp", async (req, res) => {
+    try {
+      const validatedData = verifyOTPSchema.parse(req.body);
+      const { email, otpCode, purpose, userType } = validatedData;
+
+      // Get OTP verification record
+      const verification = await storage.getEmailVerification(email, otpCode, purpose);
+
+      if (!verification) {
+        return res.status(400).json({ message: "Invalid or expired verification code" });
+      }
+
+      // Check if OTP is expired
+      if (isOTPExpired(verification.createdAt)) {
+        return res.status(400).json({ message: "Verification code has expired" });
+      }
+
+      // For password reset, return success without marking as used yet
+      // (it will be marked as used when the password is actually reset)
+      if (purpose === "password_reset") {
+        res.status(200).json({
+          message: "Verification code is valid",
+          verified: true,
+        });
+      } else {
+        // For other purposes, mark as used
+        await storage.markEmailVerificationUsed(verification.id);
+        res.status(200).json({
+          message: "Email verified successfully",
+          verified: true,
+        });
+      }
+    } catch (error) {
+      console.error("Verify OTP error:", error);
+      res.status(500).json({ message: "Failed to verify code" });
+    }
+  });
+
+  // Reset password endpoint
+  app.post("/api/auth/reset-password", async (req, res) => {
+    try {
+      const validatedData = resetPasswordSchema.parse(req.body);
+      const { email, otpCode, newPassword } = validatedData;
+
+      // Get and verify OTP for password reset
+      const verification = await storage.getEmailVerification(email, otpCode, "password_reset");
+
+      if (!verification) {
+        return res.status(400).json({ message: "Invalid or expired verification code" });
+      }
+
+      // Check if OTP is expired
+      if (isOTPExpired(verification.createdAt)) {
+        return res.status(400).json({ message: "Verification code has expired" });
+      }
+
+      // Find the user and update password
+      let user = null;
+      if (verification.userType === 'employee') {
+        user = await storage.getEmployeeByEmail(email);
+      } else {
+        user = await storage.getCompanyByEmail(email);
+      }
+
+      if (!user || !user.isActive) {
+        return res.status(404).json({ message: "Account not found or deactivated" });
+      }
+
+      // Hash new password and update
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+      await storage.updateUserPassword(user.id, verification.userType, hashedPassword);
+
+      // Mark OTP as used
+      await storage.markEmailVerificationUsed(verification.id);
+
+      // Clean up expired verifications
+      await storage.cleanupExpiredVerifications();
+
+      res.status(200).json({
+        message: "Password reset successfully",
+        success: true,
+      });
+    } catch (error) {
+      console.error("Reset password error:", error);
+      res.status(500).json({ message: "Failed to reset password" });
     }
   });
 

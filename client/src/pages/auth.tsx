@@ -14,6 +14,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { insertEmployeeSchema, insertCompanySchema, loginSchema, type InsertEmployee, type InsertCompany, type LoginData } from "@shared/schema";
+import { Link } from "wouter";
 
 type AuthView = "selection" | "employee" | "company" | "login" | "success";
 
@@ -939,9 +940,9 @@ export default function AuthPage() {
                         <Checkbox id="remember" />
                         <label htmlFor="remember" className="text-sm text-slate-600">Remember me</label>
                       </div>
-                      <a href="#" className="text-sm text-primary hover:text-primary-dark">
+                      <Link to="/forgot-password" className="text-sm text-primary hover:text-primary-dark">
                         Forgot password?
-                      </a>
+                      </Link>
                     </div>
                     
                     <Button 

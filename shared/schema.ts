@@ -272,6 +272,19 @@ export const jobAlerts = pgTable("job_alerts", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Email verification and OTP table
+export const emailVerifications = pgTable("email_verifications", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  email: text("email").notNull(),
+  otpCode: varchar("otp_code", { length: 6 }).notNull(),
+  purpose: varchar("purpose", { length: 20 }).notNull(), // 'password_reset' or 'email_verification'
+  userType: varchar("user_type", { length: 10 }).notNull(), // 'employee' or 'company'
+  userId: varchar("user_id"), // Can be null for new registrations
+  isUsed: boolean("is_used").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  expiresAt: timestamp("expires_at").notNull(),
+});
+
 // Employee profile views by companies (analytics)
 export const profileViews = pgTable("profile_views", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -560,6 +573,37 @@ export const loginSchema = z.object({
 export const adminLoginSchema = z.object({
   username: z.string().min(1, "Username is required"),
   password: z.string().min(1, "Password is required"),
+});
+
+export const insertEmailVerificationSchema = createInsertSchema(emailVerifications).omit({
+  id: true,
+  createdAt: true,
+}).extend({
+  email: z.string().email("Invalid email format"),
+  otpCode: z.string().length(6, "OTP code must be 6 digits"),
+  purpose: z.enum(["password_reset", "email_verification"]),
+  userType: z.enum(["employee", "company"]),
+});
+
+export const verifyOTPSchema = z.object({
+  email: z.string().email("Invalid email format"),
+  otpCode: z.string().length(6, "OTP code must be 6 digits"),
+  purpose: z.enum(["password_reset", "email_verification"]),
+  userType: z.enum(["employee", "company"]),
+});
+
+export const resetPasswordSchema = z.object({
+  email: z.string().email("Invalid email format"),
+  otpCode: z.string().length(6, "OTP code must be 6 digits"),
+  newPassword: z.string()
+    .min(8, "Password must be at least 8 characters")
+    .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+    .regex(/\d/, "Password must contain at least one number"),
+});
+
+export const requestPasswordResetSchema = z.object({
+  email: z.string().email("Invalid email format"),
+  userType: z.enum(["employee", "company"]),
 });
 
 

@@ -1,6 +1,6 @@
 import { 
   employees, companies, experiences, educations, certifications, projects, endorsements, workEntries, employeeCompanies,
-  companyInvitationCodes, companyEmployees, jobListings, jobApplications, savedJobs, jobAlerts, profileViews, admins,
+  companyInvitationCodes, companyEmployees, jobListings, jobApplications, savedJobs, jobAlerts, profileViews, admins, emailVerifications,
   type Employee, type Company, type InsertEmployee, type InsertCompany,
   type Experience, type Education, type Certification, type Project, type Endorsement, type WorkEntry, type EmployeeCompany,
   type InsertExperience, type InsertEducation, type InsertCertification, 
@@ -10,6 +10,9 @@ import {
   type InsertJobListing, type InsertJobApplication, type InsertSavedJob, type InsertJobAlert,
   type Admin, type InsertAdmin
 } from "@shared/schema";
+
+type EmailVerification = typeof emailVerifications.$inferSelect;
+type InsertEmailVerification = typeof emailVerifications.$inferInsert;
 import { db } from "./db";
 import { eq, and, sql, desc, inArray } from "drizzle-orm";
 import bcrypt from "bcrypt";
@@ -219,6 +222,16 @@ export interface IStorage {
   activateEmployee(employeeId: string): Promise<void>;
   deactivateCompany(companyId: string): Promise<void>;
   activateCompany(companyId: string): Promise<void>;
+  
+  // Email verification operations
+  createEmailVerification(data: InsertEmailVerification): Promise<EmailVerification>;
+  getEmailVerification(email: string, otpCode: string, purpose: string): Promise<EmailVerification | undefined>;
+  markEmailVerificationUsed(id: string): Promise<void>;
+  cleanupExpiredVerifications(): Promise<void>;
+  updateUserPassword(userId: string, userType: 'employee' | 'company', hashedPassword: string): Promise<void>;
+  getEmployeeById(id: string): Promise<Employee | undefined>;
+  getCompanyById(id: string): Promise<Company | undefined>;
+  updateEmployeeProfilePicture(id: string, profilePictureURL: string): Promise<void>;
 }
 
 export interface JobSearchFilters {
@@ -1359,6 +1372,52 @@ export class DatabaseStorage implements IStorage {
       .update(companies)
       .set({ isActive: true, updatedAt: new Date() })
       .where(eq(companies.id, companyId));
+  }
+
+  // Email verification operations
+  async createEmailVerification(data: InsertEmailVerification): Promise<EmailVerification> {
+    const [verification] = await db.insert(emailVerifications).values(data).returning();
+    return verification;
+  }
+
+  async getEmailVerification(email: string, otpCode: string, purpose: string): Promise<EmailVerification | undefined> {
+    const [verification] = await db.select().from(emailVerifications).where(
+      and(
+        eq(emailVerifications.email, email),
+        eq(emailVerifications.otpCode, otpCode),
+        eq(emailVerifications.purpose, purpose),
+        eq(emailVerifications.isUsed, false)
+      )
+    );
+    return verification || undefined;
+  }
+
+  async markEmailVerificationUsed(id: string): Promise<void> {
+    await db.update(emailVerifications).set({ isUsed: true }).where(eq(emailVerifications.id, id));
+  }
+
+  async cleanupExpiredVerifications(): Promise<void> {
+    await db.delete(emailVerifications).where(sql`expires_at < NOW()`);
+  }
+
+  async updateUserPassword(userId: string, userType: 'employee' | 'company', hashedPassword: string): Promise<void> {
+    if (userType === 'employee') {
+      await db.update(employees).set({ password: hashedPassword }).where(eq(employees.id, userId));
+    } else {
+      await db.update(companies).set({ password: hashedPassword }).where(eq(companies.id, userId));
+    }
+  }
+
+  async getEmployeeById(id: string): Promise<Employee | undefined> {
+    return this.getEmployee(id);
+  }
+
+  async getCompanyById(id: string): Promise<Company | undefined> {
+    return this.getCompany(id);
+  }
+
+  async updateEmployeeProfilePicture(id: string, profilePictureURL: string): Promise<void> {
+    await db.update(employees).set({ profilePhoto: profilePictureURL }).where(eq(employees.id, id));
   }
 }
 
