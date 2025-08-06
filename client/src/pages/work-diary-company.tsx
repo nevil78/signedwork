@@ -94,7 +94,7 @@ export default function WorkDiaryCompany() {
   const { data: workEntries = [], isLoading } = useQuery<WorkEntry[]>({
     queryKey: ['/api/work-entries', actualCompanyId],
     queryFn: async () => {
-      const response = await fetch(`/api/work-entries?companyId=${actualCompanyId}`, {
+      const response = await fetch(`/api/work-entries/${actualCompanyId}`, {
         credentials: 'include'
       });
       if (!response.ok) throw new Error('Failed to fetch work entries');
@@ -119,19 +119,9 @@ export default function WorkDiaryCompany() {
   const createEntryMutation = useMutation({
     mutationFn: async (data: WorkEntryFormData) => {
       console.log('Creating work entry with data:', { ...data, companyId: actualCompanyId });
-      const response = await fetch('/api/work-entries', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ ...data, companyId: actualCompanyId }),
-      });
       
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
-        console.error('Create work entry failed:', response.status, errorData);
-        throw new Error(errorData?.message || `Failed to create work entry: ${response.status}`);
-      }
-      return response.json();
+      // Use apiRequest helper which handles authentication properly
+      return apiRequest('POST', '/api/work-entries', { ...data, companyId: actualCompanyId });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/work-entries', actualCompanyId] });
@@ -154,14 +144,7 @@ export default function WorkDiaryCompany() {
 
   const updateEntryMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<WorkEntryFormData> }) => {
-      const response = await fetch(`/api/work-entries/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify(data),
-      });
-      if (!response.ok) throw new Error('Failed to update work entry');
-      return response.json();
+      return apiRequest('PATCH', `/api/work-entries/${id}`, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/work-entries', actualCompanyId] });
@@ -188,13 +171,7 @@ export default function WorkDiaryCompany() {
 
   const deleteEntryMutation = useMutation({
     mutationFn: async (id: string) => {
-      const response = await fetch(`/api/work-entries/${id}`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-      });
-      if (!response.ok) throw new Error('Failed to delete work entry');
-      return response.json();
+      return apiRequest('DELETE', `/api/work-entries/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/work-entries', actualCompanyId] });
@@ -443,13 +420,7 @@ export default function WorkDiaryCompany() {
               </DialogDescription>
             </DialogHeader>
             <Form {...form}>
-              <form onSubmit={(e) => {
-                e.preventDefault();
-                console.log('Form submitted');
-                console.log('Form errors:', form.formState.errors);
-                console.log('Form values:', form.getValues());
-                form.handleSubmit(onSubmit)(e);
-              }} className="space-y-4">
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <FormField
                   control={form.control}
                   name="title"
@@ -606,15 +577,18 @@ export default function WorkDiaryCompany() {
                     Cancel
                   </Button>
                   <Button 
-                    type="submit" 
+                    type="button" 
                     disabled={createEntryMutation.isPending || updateEntryMutation.isPending}
-                    onClick={(e) => {
+                    onClick={() => {
                       console.log('Button clicked!');
-                      console.log('Form is valid:', form.formState.isValid);
-                      console.log('Form values on button click:', form.getValues());
+                      console.log('Form values:', form.getValues());
+                      console.log('Form errors:', form.formState.errors);
+                      
+                      // Manually trigger form submission
+                      form.handleSubmit(onSubmit)();
                     }}
                   >
-                    {editingEntry ? "Update Entry" : "Create Entry"}
+                    {createEntryMutation.isPending || updateEntryMutation.isPending ? "Saving..." : (editingEntry ? "Update Entry" : "Create Entry")}
                   </Button>
                 </div>
               </form>
