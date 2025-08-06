@@ -54,6 +54,7 @@ type ProfileSection = "overview" | "experience" | "education" | "certifications"
 export default function ProfessionalProfile() {
   const [activeSection, setActiveSection] = useState<ProfileSection>("overview");
   const [editingProfile, setEditingProfile] = useState(false);
+  const [addingExperience, setAddingExperience] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [location] = useLocation();
@@ -106,6 +107,20 @@ export default function ProfessionalProfile() {
     },
   });
 
+  const experienceForm = useForm({
+    resolver: zodResolver(insertExperienceSchema.omit({ employeeId: true })),
+    defaultValues: {
+      title: "",
+      company: "",
+      location: "",
+      startDate: "",
+      endDate: "",
+      current: false,
+      description: "",
+      achievements: [],
+    },
+  });
+
   // Update form when user data changes or when editing starts
   useEffect(() => {
     if (userResponse?.user && editingProfile) {
@@ -144,6 +159,21 @@ export default function ProfessionalProfile() {
     },
     onError: () => {
       toast({ title: "Error", description: "Failed to update profile", variant: "destructive" });
+    },
+  });
+
+  const createExperience = useMutation({
+    mutationFn: async (data: any) => {
+      return await apiRequest("POST", "/api/employee/experience", data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/employee/profile", userResponse?.user?.id] });
+      setAddingExperience(false);
+      experienceForm.reset();
+      toast({ title: "Experience added successfully" });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to add experience", variant: "destructive" });
     },
   });
 
@@ -436,7 +466,7 @@ export default function ProfessionalProfile() {
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between">
                     <CardTitle>Work Experience</CardTitle>
-                    <Button size="sm" data-testid="button-add-experience">
+                    <Button size="sm" onClick={() => setAddingExperience(true)} data-testid="button-add-experience">
                       <Plus className="h-4 w-4 mr-2" />
                       Add Experience
                     </Button>
@@ -483,7 +513,7 @@ export default function ProfessionalProfile() {
                         <Briefcase className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                         <h3 className="text-lg font-medium text-gray-900 mb-2">No experience added yet</h3>
                         <p className="text-gray-600 mb-4">Showcase your professional journey</p>
-                        <Button data-testid="button-add-first-experience">
+                        <Button onClick={() => setAddingExperience(true)} data-testid="button-add-first-experience">
                           <Plus className="h-4 w-4 mr-2" />
                           Add Your First Experience
                         </Button>
@@ -722,6 +752,117 @@ export default function ProfessionalProfile() {
                 </Button>
                 <Button type="submit" disabled={updateProfile.isPending}>
                   {updateProfile.isPending ? "Saving..." : "Save Changes"}
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Experience Dialog */}
+      <Dialog open={addingExperience} onOpenChange={setAddingExperience}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Add Work Experience</DialogTitle>
+          </DialogHeader>
+          <Form {...experienceForm}>
+            <form onSubmit={experienceForm.handleSubmit((data) => createExperience.mutate(data))} className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={experienceForm.control}
+                  name="title"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Job Title *</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="e.g., Senior Software Engineer" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={experienceForm.control}
+                  name="company"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Company *</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="e.g., Google" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={experienceForm.control}
+                  name="location"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Location</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="e.g., San Francisco, CA" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={experienceForm.control}
+                  name="startDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Start Date *</FormLabel>
+                      <FormControl>
+                        <Input {...field} type="month" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={experienceForm.control}
+                  name="endDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>End Date</FormLabel>
+                      <FormControl>
+                        <Input {...field} type="month" placeholder="Leave empty if current" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={experienceForm.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        {...field} 
+                        rows={4}
+                        placeholder="Describe your role, responsibilities, and key achievements..."
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="flex justify-end space-x-2">
+                <Button type="button" variant="outline" onClick={() => setAddingExperience(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={createExperience.isPending}>
+                  {createExperience.isPending ? "Adding..." : "Add Experience"}
                 </Button>
               </div>
             </form>
