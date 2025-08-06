@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
 import { 
@@ -106,12 +106,36 @@ export default function ProfessionalProfile() {
     },
   });
 
+  // Update form when user data changes or when editing starts
+  useEffect(() => {
+    if (user && editingProfile) {
+      profileForm.reset({
+        headline: user.headline || "",
+        summary: user.summary || "",
+        currentPosition: user.currentPosition || "",
+        currentCompany: user.currentCompany || "",
+        industry: user.industry || "",
+        experienceLevel: user.experienceLevel || "mid",
+        salaryExpectation: user.salaryExpectation || "",
+        availabilityStatus: user.availabilityStatus || "open",
+        noticePeriod: user.noticePeriod || "1_month",
+        preferredWorkType: user.preferredWorkType || "hybrid",
+        location: user.location || "",
+        website: user.website || "",
+        skills: user.skills || [],
+        specializations: user.specializations || [],
+        languages: user.languages || [],
+      });
+    }
+  }, [user, editingProfile, profileForm]);
+
   const updateProfile = useMutation({
     mutationFn: async (data: any) => {
       return await apiRequest("PATCH", "/api/employee/profile", data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/employee/profile"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/employee/profile", userResponse?.user?.id] });
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
       setEditingProfile(false);
       toast({ title: "Profile updated successfully" });
     },
