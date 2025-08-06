@@ -557,6 +557,11 @@ export default function ProfessionalProfile() {
                 </Card>
               </TabsContent>
 
+              {/* Education Section */}
+              <TabsContent value="education" className="space-y-6">
+                <EducationSection educations={profile.educations || []} employeeId={user.id} />
+              </TabsContent>
+
               {/* Analytics Section */}
               <TabsContent value="analytics" className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -1031,5 +1036,298 @@ export default function ProfessionalProfile() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+// Education Section Component
+function EducationSection({ educations, employeeId }: { educations: Education[], employeeId: string }) {
+  const [addingEducation, setAddingEducation] = useState(false);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const educationForm = useForm({
+    resolver: zodResolver(insertEducationSchema),
+    defaultValues: {
+      employeeId,
+      institution: "",
+      degree: "",
+      fieldOfStudy: "",
+      category: "",
+      startYear: new Date().getFullYear(),
+      endYear: new Date().getFullYear(),
+      grade: "",
+      activities: "",
+      description: "",
+    },
+  });
+
+  const addEducation = useMutation({
+    mutationFn: async (data: any) => {
+      return await apiRequest("POST", "/api/employee/education", data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/employee/profile", employeeId] });
+      setAddingEducation(false);
+      educationForm.reset();
+      toast({ title: "Education Added", description: "Your education has been added successfully." });
+    },
+  });
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div>
+          <CardTitle className="flex items-center gap-2">
+            <GraduationCap className="h-5 w-5 text-blue-600" />
+            Education
+          </CardTitle>
+        </div>
+        <Button 
+          onClick={() => setAddingEducation(true)}
+          size="sm"
+          data-testid="button-add-education"
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          Add Education
+        </Button>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {educations.length > 0 ? (
+          <div className="space-y-4">
+            {educations.map((education) => (
+              <div key={education.id} className="border-l-2 border-blue-200 pl-4 py-3">
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-gray-900">{education.degree}</h3>
+                    <p className="text-gray-700 font-medium">{education.institution}</p>
+                    {education.fieldOfStudy && (
+                      <p className="text-sm text-gray-600">{education.fieldOfStudy}</p>
+                    )}
+                    {education.category && (
+                      <Badge variant="secondary" className="text-xs mt-1 capitalize">
+                        {education.category}
+                      </Badge>
+                    )}
+                    <p className="text-sm text-gray-500 mt-1">
+                      {education.startYear} - {education.endYear || "Present"}
+                    </p>
+                    {education.grade && (
+                      <p className="text-sm text-gray-600 mt-1">Grade: {education.grade}</p>
+                    )}
+                    {education.activities && (
+                      <p className="text-gray-700 mt-2">Activities: {education.activities}</p>
+                    )}
+                    {education.description && (
+                      <p className="text-gray-600 mt-2 text-sm">{education.description}</p>
+                    )}
+                  </div>
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    data-testid={`button-edit-education-${education.id}`}
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8">
+            <GraduationCap className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No education added yet</h3>
+            <p className="text-gray-600 mb-4">Add your educational background to showcase your qualifications</p>
+            <Button onClick={() => setAddingEducation(true)} data-testid="button-add-first-education">
+              <Plus className="h-4 w-4 mr-2" />
+              Add Your First Education
+            </Button>
+          </div>
+        )}
+      </CardContent>
+
+      {/* Add Education Dialog */}
+      <Dialog open={addingEducation} onOpenChange={setAddingEducation}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Add Education</DialogTitle>
+          </DialogHeader>
+          <Form {...educationForm}>
+            <form onSubmit={educationForm.handleSubmit((data) => addEducation.mutate(data))} className="space-y-4">
+              <FormField
+                control={educationForm.control}
+                name="institution"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Institution</FormLabel>
+                    <FormControl>
+                      <Input placeholder="University/School Name" {...field} data-testid="input-institution" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={educationForm.control}
+                name="degree"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Degree</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g., Bachelor of Science" {...field} data-testid="input-degree" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={educationForm.control}
+                name="fieldOfStudy"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Field of Study</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g., Computer Science" {...field} data-testid="input-field-of-study" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={educationForm.control}
+                name="category"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Category</FormLabel>
+                    <FormControl>
+                      <Select value={field.value || ""} onValueChange={field.onChange}>
+                        <SelectTrigger data-testid="select-category">
+                          <SelectValue placeholder="Select education category" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="undergraduate">Undergraduate</SelectItem>
+                          <SelectItem value="graduate">Graduate</SelectItem>
+                          <SelectItem value="postgraduate">Postgraduate</SelectItem>
+                          <SelectItem value="doctorate">Doctorate</SelectItem>
+                          <SelectItem value="certificate">Certificate</SelectItem>
+                          <SelectItem value="diploma">Diploma</SelectItem>
+                          <SelectItem value="professional">Professional</SelectItem>
+                          <SelectItem value="vocational">Vocational</SelectItem>
+                          <SelectItem value="online">Online Course</SelectItem>
+                          <SelectItem value="other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={educationForm.control}
+                  name="startYear"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Start Year</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="number" 
+                          min="1900" 
+                          max={new Date().getFullYear()}
+                          {...field}
+                          onChange={(e) => field.onChange(parseInt(e.target.value))}
+                          data-testid="input-start-year"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={educationForm.control}
+                  name="endYear"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>End Year</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="number" 
+                          min="1900" 
+                          max={new Date().getFullYear() + 10}
+                          {...field}
+                          onChange={(e) => field.onChange(parseInt(e.target.value))}
+                          data-testid="input-end-year"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={educationForm.control}
+                name="grade"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Grade/GPA</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g., 3.8/4.0, First Class" {...field} data-testid="input-grade" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={educationForm.control}
+                name="activities"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Activities and Societies</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g., Student Council, Debate Club" {...field} data-testid="input-activities" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={educationForm.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="Additional details about your education..."
+                        rows={3}
+                        {...field} 
+                        data-testid="textarea-description"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="flex justify-end space-x-2">
+                <Button type="button" variant="outline" onClick={() => setAddingEducation(false)} data-testid="button-cancel">
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={addEducation.isPending} data-testid="button-submit">
+                  {addEducation.isPending ? "Adding..." : "Add Education"}
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+    </Card>
   );
 }
