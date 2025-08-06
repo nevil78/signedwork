@@ -88,18 +88,35 @@ This is an automated message from Professional Network. Please do not reply to t
     // Use environment variable for verified sender or fallback
     const fromEmail = process.env.SENDGRID_VERIFIED_SENDER || 'noreply@signedwork.com';
     
-    await mailService.send({
+    const emailPayload = {
       to,
       from: fromEmail,
       subject,
       text: textContent,
       html: htmlContent,
+    };
+
+    console.log(`Attempting to send OTP email to ${to} from ${fromEmail} for ${purpose}`);
+    
+    const response = await mailService.send(emailPayload);
+    
+    console.log(`SendGrid response:`, {
+      statusCode: response[0]?.statusCode,
+      headers: response[0]?.headers?.['x-message-id'] ? 'Message ID present' : 'No Message ID',
+      to,
+      subject
     });
 
     console.log(`OTP email sent successfully to ${to} for ${purpose}`);
     return true;
-  } catch (error) {
-    console.error('SendGrid email error:', error);
+  } catch (error: any) {
+    console.error('SendGrid email error:', {
+      message: error.message,
+      code: error.code,
+      response: error.response?.body || 'No response body',
+      to: to,
+      from: process.env.SENDGRID_VERIFIED_SENDER || 'noreply@signedwork.com'
+    });
     return false;
   }
 }

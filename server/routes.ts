@@ -2204,6 +2204,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const otpCode = generateOTPCode();
       const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
 
+      // DEVELOPMENT: Log OTP code to console for troubleshooting email delivery issues
+      console.log(`🔐 DEBUG - Password Reset OTP for ${email}: ${otpCode} (expires in 15 minutes)`);
+
       // Save OTP to database
       await storage.createEmailVerification({
         email,
