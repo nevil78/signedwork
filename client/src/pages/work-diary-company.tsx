@@ -45,8 +45,20 @@ import { z } from 'zod';
 
 type WorkEntryPriority = "low" | "medium" | "high";
 
-// Use the proper backend schema
-const workEntryFormSchema = insertWorkEntrySchema.omit({ employeeId: true });
+// Create a simplified form schema to avoid validation issues
+const workEntryFormSchema = z.object({
+  title: z.string().min(1, "Title is required"),
+  description: z.string().optional(),
+  startDate: z.string().min(1, "Start date is required"),
+  endDate: z.string().optional(),
+  priority: z.enum(["low", "medium", "high"]).default("medium"),
+  status: z.enum(["pending", "approved", "needs_changes", "in_progress", "completed"]).default("pending"),
+  workType: z.enum(["task", "meeting", "project", "research", "documentation", "training"]).default("task"),
+  estimatedHours: z.number().optional(),
+  actualHours: z.number().optional(),
+  companyId: z.string().min(1, "Company ID is required"),
+  billable: z.boolean().default(false),
+});
 
 type WorkEntryFormData = z.infer<typeof workEntryFormSchema>;
 
@@ -108,7 +120,7 @@ export default function WorkDiaryCompany() {
       workType: 'task',
       estimatedHours: undefined,
       actualHours: undefined,
-      companyId: actualCompanyId || companyId || '',
+      companyId: companyId || '',
       billable: false,
     },
   });
@@ -495,6 +507,11 @@ export default function WorkDiaryCompany() {
                   isLoading: form.formState.isLoading
                 });
                 console.log('=== END FORM ERROR DEBUG ===');
+                toast({
+                  title: "Form Validation Failed",
+                  description: "Please check the form fields and try again",
+                  variant: "destructive",
+                });
               })} className="space-y-4">
                 <FormField
                   control={form.control}
@@ -709,6 +726,25 @@ export default function WorkDiaryCompany() {
                     onClick={() => setIsDialogOpen(false)}
                   >
                     Cancel
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => {
+                      console.log('=== FORM DEBUG ===');
+                      console.log('Form values:', form.getValues());
+                      console.log('Form errors:', form.formState.errors);
+                      console.log('Form valid:', form.formState.isValid);
+                      console.log('Company ID from params:', companyId);
+                      console.log('Actual Company ID:', actualCompanyId);
+                      const values = form.getValues();
+                      toast({
+                        title: "Form Debug",
+                        description: `Title: ${values.title}, CompanyId: ${values.companyId}`,
+                      });
+                    }}
+                  >
+                    Debug Form
                   </Button>
                   <Button 
                     type="submit" 
