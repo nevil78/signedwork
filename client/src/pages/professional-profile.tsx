@@ -1152,7 +1152,15 @@ function EducationSection({ educations, employeeId }: { educations: Education[],
             <DialogTitle>Add Education</DialogTitle>
           </DialogHeader>
           <Form {...educationForm}>
-            <form onSubmit={educationForm.handleSubmit((data) => addEducation.mutate(data))} className="space-y-4">
+            <form onSubmit={educationForm.handleSubmit(
+              (data) => {
+                console.log("Form data:", data);
+                addEducation.mutate(data);
+              },
+              (errors) => {
+                console.log("Form errors:", errors);
+              }
+            )} className="space-y-4">
               <FormField
                 control={educationForm.control}
                 name="institution"
