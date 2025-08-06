@@ -324,30 +324,33 @@ export default function WorkDiaryCompany() {
             <Button 
               onClick={async () => {
                 try {
-                  console.log('Testing direct API call...');
+                  console.log('=== DIRECT API TEST ===');
+                  const finalCompanyId = actualCompanyId || companyId;
                   const testData = {
-                    title: "Test Entry",
-                    description: "Testing direct API",
+                    title: "Direct API Test Entry",
+                    description: "Testing direct API call bypassing form",
                     startDate: "2025-08-06",
                     priority: "medium",
                     status: "pending",
                     workType: "task",
                     billable: false,
-                    companyId: actualCompanyId
+                    companyId: finalCompanyId
                   };
-                  console.log('Test data:', testData);
+                  console.log('Direct test data:', testData);
+                  console.log('Company ID being used:', finalCompanyId);
                   const result = await apiRequest('POST', '/api/work-entries', testData);
-                  console.log('Test result:', result);
-                  toast({ title: "Test successful!", description: "Direct API call worked" });
-                  queryClient.invalidateQueries({ queryKey: ['/api/work-entries', actualCompanyId] });
+                  console.log('Direct test result:', result);
+                  toast({ title: "Direct API Test Successful!", description: "Work entry created via direct API call" });
+                  queryClient.invalidateQueries({ queryKey: ['/api/work-entries', finalCompanyId] });
                 } catch (error) {
-                  console.error('Test error:', error);
-                  toast({ title: "Test failed", description: String(error) });
+                  console.error('Direct test error:', error);
+                  toast({ title: "Direct API Test Failed", description: String(error), variant: "destructive" });
                 }
               }}
               variant="outline"
+              data-testid="button-test-direct-api"
             >
-              Test API
+              Test Direct API
             </Button>
             <Button onClick={() => {
               setEditingEntry(null);
