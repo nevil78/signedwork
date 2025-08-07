@@ -14,7 +14,7 @@ import {
 type EmailVerification = typeof emailVerifications.$inferSelect;
 type InsertEmailVerification = typeof emailVerifications.$inferInsert;
 import { db } from "./db";
-import { eq, and, sql, desc, inArray } from "drizzle-orm";
+import { eq, and, sql, desc, asc, inArray, count, like, or } from "drizzle-orm";
 import bcrypt from "bcrypt";
 
 // Generate a short, memorable employee ID
@@ -806,6 +806,121 @@ export class DatabaseStorage implements IStorage {
       );
       
     return result;
+  }
+
+  async getCompanyEmployeesPaginated(companyId: string, options: {
+    page: number;
+    limit: number;
+    search: string;
+    sortBy: string;
+    sortOrder: 'asc' | 'desc';
+    status: string;
+    department: string;
+  }): Promise<{
+    employees: any[];
+    totalCount: number;
+    totalPages: number;
+    currentPage: number;
+  }> {
+    const { page, limit, search, sortBy, sortOrder, status, department } = options;
+    const offset = (page - 1) * limit;
+
+    // Build where conditions
+    const conditions = [eq(companyEmployees.companyId, companyId)];
+
+    // Status filter
+    if (status !== 'all') {
+      if (status === 'employed') {
+        conditions.push(eq(companyEmployees.isActive, true));
+      } else if (status === 'ex-employee') {
+        conditions.push(eq(companyEmployees.isActive, false));
+      }
+    }
+
+    // Department filter
+    if (department !== 'all') {
+      conditions.push(eq(companyEmployees.department, department));
+    }
+
+    // Search conditions
+    if (search) {
+      const searchConditions = [
+        like(sql`LOWER(CONCAT(${employees.firstName}, ' ', ${employees.lastName}))`, `%${search.toLowerCase()}%`),
+        like(sql`LOWER(${employees.email})`, `%${search.toLowerCase()}%`),
+        like(sql`LOWER(${employees.id})`, `%${search.toLowerCase()}%`),
+        like(sql`LOWER(${companyEmployees.position})`, `%${search.toLowerCase()}%`),
+        like(sql`LOWER(${companyEmployees.department})`, `%${search.toLowerCase()}%`),
+      ];
+      conditions.push(or(...searchConditions));
+    }
+
+    // Build sort column
+    let sortColumn;
+    switch (sortBy) {
+      case 'name':
+        sortColumn = sql`CONCAT(${employees.firstName}, ' ', ${employees.lastName})`;
+        break;
+      case 'position':
+        sortColumn = companyEmployees.position;
+        break;
+      case 'department':
+        sortColumn = companyEmployees.department;
+        break;
+      case 'joinedAt':
+      default:
+        sortColumn = companyEmployees.joinedAt;
+        break;
+    }
+
+    // Get total count
+    const [totalResult] = await db
+      .select({ count: count() })
+      .from(companyEmployees)
+      .innerJoin(employees, eq(companyEmployees.employeeId, employees.id))
+      .where(and(...conditions));
+
+    const totalCount = totalResult.count;
+    const totalPages = Math.ceil(totalCount / limit);
+
+    // Get paginated results
+    const employeesQuery = db
+      .select({
+        id: companyEmployees.id,
+        employeeId: companyEmployees.employeeId,
+        employeeName: sql<string>`CONCAT(${employees.firstName}, ' ', ${employees.lastName})`,
+        employeeEmail: employees.email,
+        employeePhone: employees.phone,
+        employeeIdNumber: employees.id,
+        position: companyEmployees.position,
+        department: companyEmployees.department,
+        status: companyEmployees.status,
+        joinedAt: companyEmployees.joinedAt,
+        leftAt: companyEmployees.leftAt,
+        isActive: companyEmployees.isActive,
+        emailVerified: employees.emailVerified,
+        profilePhoto: employees.profilePhoto,
+      })
+      .from(companyEmployees)
+      .innerJoin(employees, eq(companyEmployees.employeeId, employees.id))
+      .where(and(...conditions))
+      .limit(limit)
+      .offset(offset);
+
+    // Apply sorting
+    if (sortOrder === 'desc') {
+      employeesQuery.orderBy(desc(sortColumn));
+    } else {
+      employeesQuery.orderBy(asc(sortColumn));
+    }
+
+    const employeesResult = await employeesQuery;
+
+    return {
+      employees: employeesResult,
+      totalCount,
+      totalPages,
+      currentPage: page,
+    };
   }
 
   async getCompanyEmployeesPaginated(companyId: string, options: {

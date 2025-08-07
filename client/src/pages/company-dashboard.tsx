@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Building2, Copy, Users, Clock, CheckCircle, AlertCircle, FileText, BarChart3, Settings, Briefcase, Mail } from 'lucide-react';
+import { Building2, Copy, Users, Clock, CheckCircle, AlertCircle, FileText, BarChart3, Settings, Briefcase, Mail, UserSearch } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import {
@@ -174,9 +174,24 @@ export default function CompanyDashboard() {
           )}
         </div>
 
-        {/* Navigation Section */}
+        {/* Management Tools Section */}
         <div className="mb-8">
-          <div className="grid gap-4 md:grid-cols-3">
+          <h3 className="text-lg font-semibold mb-4">Management Tools</h3>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <Card className="cursor-pointer hover:shadow-md hover:border-orange-200 transition-all duration-200" onClick={() => navigate('/company-employees')}>
+              <CardHeader className="pb-4">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-8 h-8 bg-orange-100 dark:bg-orange-900 rounded-lg flex items-center justify-center">
+                    <Users className="w-4 h-4 text-orange-600 dark:text-orange-400" />
+                  </div>
+                  <CardTitle className="text-base font-semibold">Manage Employees</CardTitle>
+                </div>
+                <CardDescription className="text-sm">
+                  Advanced employee management with search, filtering, and pagination
+                </CardDescription>
+              </CardHeader>
+            </Card>
+
             <Card className="cursor-pointer hover:shadow-md hover:border-blue-200 transition-all duration-200" onClick={() => navigate('/company-work-entries')}>
               <CardHeader className="pb-4">
                 <div className="flex items-center gap-3 mb-2">
@@ -209,32 +224,12 @@ export default function CompanyDashboard() {
               <CardHeader className="pb-4">
                 <div className="flex items-center gap-3 mb-2">
                   <div className="w-8 h-8 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center">
-                    <Users className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                    <UserSearch className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                   </div>
-                  <CardTitle className="text-base font-semibold">Company Recruiter</CardTitle>
+                  <CardTitle className="text-base font-semibold">Recruiter Panel</CardTitle>
                 </div>
                 <CardDescription className="text-sm">
                   View and manage job applications
-                </CardDescription>
-              </CardHeader>
-            </Card>
-          </div>
-        </div>
-
-        {/* Additional Management Section */}
-        <div className="mb-8">
-          <h3 className="text-lg font-semibold mb-4">Employee Management</h3>
-          <div className="grid gap-4 md:grid-cols-2">
-            <Card className="cursor-pointer hover:shadow-md hover:border-orange-200 transition-all duration-200" onClick={() => navigate('/company-employees')}>
-              <CardHeader className="pb-4">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-8 h-8 bg-orange-100 dark:bg-orange-900 rounded-lg flex items-center justify-center">
-                    <Users className="w-4 h-4 text-orange-600 dark:text-orange-400" />
-                  </div>
-                  <CardTitle className="text-base font-semibold">Manage Employees</CardTitle>
-                </div>
-                <CardDescription className="text-sm">
-                  Advanced employee management with search, filtering, and pagination
                 </CardDescription>
               </CardHeader>
             </Card>
