@@ -259,11 +259,21 @@ export default function ProfessionalWorkDiary() {
     },
     onError: (error: any) => {
       console.error('Work entry submission error:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to save work entry. Please try again.",
-        variant: "destructive",
-      });
+      
+      // Check if it's an immutable entry error (status 403)
+      if (error.message?.includes("Cannot edit approved work entry") || error.message?.includes("immutable")) {
+        toast({
+          title: "Cannot Edit Approved Entry",
+          description: "This work entry has been approved by the company and cannot be modified. Approved entries are immutable to maintain data integrity.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: error.message || "Failed to save work entry. Please try again.",
+          variant: "destructive",
+        });
+      }
     },
   });
 
@@ -567,10 +577,15 @@ export default function ProfessionalWorkDiary() {
                               )}
                               {/* Company Verification Badge - NEW FEATURE */}
                               {entry.status === 'approved' && (
-                                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                                  <Shield className="h-3 w-3 mr-1" />
-                                  Company Verified
-                                </Badge>
+                                <>
+                                  <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                                    <Shield className="h-3 w-3 mr-1" />
+                                    Company Verified
+                                  </Badge>
+                                  <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 ml-2">
+                                    🔒 Immutable
+                                  </Badge>
+                                </>
                               )}
                               {/* Company Rating Badge - Shows when company rates the work */}
                               {(entry as any).companyRating && (entry as any).companyRating > 0 && (
@@ -666,39 +681,53 @@ export default function ProfessionalWorkDiary() {
                           </div>
 
                           <div className="flex flex-col space-y-2 ml-4">
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => {
-                                setEditingEntry(entry);
-                                // Fix 4: Proper form reset with company ID when editing
-                                workEntryForm.reset({
-                                  title: entry.title,
-                                  description: entry.description || "",
-                                  workType: entry.workType as "task" | "meeting" | "project" | "research" | "documentation" | "training",
-                                  category: entry.category || "",
-                                  project: entry.project || "",
-                                  client: entry.client || "",
-                                  priority: entry.priority as "low" | "medium" | "high" | "urgent",
-                                  status: entry.status as "pending" | "in_progress" | "completed" | "on_hold" | "cancelled",
-                                  startDate: entry.startDate,
-                                  endDate: entry.endDate || "",
-                                  estimatedHours: entry.estimatedHours || 0,
-                                  actualHours: entry.actualHours || 0,
-                                  billable: entry.billable,
-                                  billableRate: entry.billableRate || 0,
-                                  tags: entry.tags || [],
-                                  achievements: entry.achievements || [],
-                                  challenges: entry.challenges || "",
-                                  learnings: entry.learnings || "",
-                                  companyId: selectedCompany
-                                });
-                                setIsAddDialogOpen(true);
-                              }}
-                              data-testid={`button-edit-${entry.id}`}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
+                            {/* Edit Button - Disabled for approved entries */}
+                            {entry.status === 'approved' ? (
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                disabled
+                                className="opacity-50 cursor-not-allowed"
+                                data-testid={`button-edit-${entry.id}-disabled`}
+                                title="Cannot edit company-approved work entries"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                            ) : (
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => {
+                                  setEditingEntry(entry);
+                                  // Fix 4: Proper form reset with company ID when editing
+                                  workEntryForm.reset({
+                                    title: entry.title,
+                                    description: entry.description || "",
+                                    workType: entry.workType as "task" | "meeting" | "project" | "research" | "documentation" | "training",
+                                    category: entry.category || "",
+                                    project: entry.project || "",
+                                    client: entry.client || "",
+                                    priority: entry.priority as "low" | "medium" | "high" | "urgent",
+                                    status: entry.status as "pending" | "in_progress" | "completed" | "on_hold" | "cancelled",
+                                    startDate: entry.startDate,
+                                    endDate: entry.endDate || "",
+                                    estimatedHours: entry.estimatedHours || 0,
+                                    actualHours: entry.actualHours || 0,
+                                    billable: entry.billable,
+                                    billableRate: entry.billableRate || 0,
+                                    tags: entry.tags || [],
+                                    achievements: entry.achievements || [],
+                                    challenges: entry.challenges || "",
+                                    learnings: entry.learnings || "",
+                                    companyId: selectedCompany
+                                  });
+                                  setIsAddDialogOpen(true);
+                                }}
+                                data-testid={`button-edit-${entry.id}`}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                            )}
                           </div>
                         </div>
                       </CardContent>

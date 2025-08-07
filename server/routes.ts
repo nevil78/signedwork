@@ -1208,7 +1208,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Enhanced work entry update
+  // Enhanced work entry update with immutable protection
   app.put("/api/work-entries/:id", async (req, res) => {
     const sessionUser = (req.session as any).user;
     
@@ -1217,7 +1217,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     try {
-      const workEntry = await storage.updateWorkEntry(req.params.id, req.body);
+      // First check if the work entry is approved (immutable)
+      const existingEntry = await storage.getWorkEntry(req.params.id);
+      if (!existingEntry) {
+        return res.status(404).json({ message: "Work entry not found" });
+      }
+      
+      if (existingEntry.status === 'approved') {
+        return res.status(403).json({ 
+          message: "Cannot edit approved work entry. Approved entries are immutable." 
+        });
+      }
+      
+      // When updating a work entry, reset status to pending for re-review
+      const updateData = {
+        ...req.body,
+        status: 'pending', // Always reset to pending when employee updates
+        companyFeedback: null, // Clear any previous company feedback
+        companyRating: null, // Clear any previous company rating
+        updatedAt: new Date()
+      };
+      
+      const workEntry = await storage.updateWorkEntry(req.params.id, updateData);
       res.json(workEntry);
     } catch (error) {
       console.error("Update work entry error:", error);
