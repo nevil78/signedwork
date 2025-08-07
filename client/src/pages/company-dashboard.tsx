@@ -241,7 +241,7 @@ export default function CompanyDashboard() {
           </div>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-3">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {/* Email Verification Section */}
           <CompanyEmailVerification />
 
@@ -313,7 +313,7 @@ export default function CompanyDashboard() {
           {/* Employees Section */}
           <Card>
             <CardHeader>
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
                   <CardTitle className="flex items-center gap-2">
                     <Users className="h-5 w-5" />
@@ -327,7 +327,7 @@ export default function CompanyDashboard() {
                   variant="outline"
                   size="sm"
                   onClick={() => navigate('/company-employees')}
-                  className="flex items-center gap-1"
+                  className="flex items-center gap-1 self-start sm:self-auto"
                   data-testid="button-manage-all-employees"
                 >
                   <Settings className="w-4 h-4" />
@@ -355,12 +355,12 @@ export default function CompanyDashboard() {
                       data-testid={`employee-card-${employee.employeeId}`}
                       title="Click to view employee profile"
                     >
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <p className="font-medium text-primary hover:underline" data-testid={`employee-name-${employee.employeeId}`}>
+                      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-primary hover:underline truncate" data-testid={`employee-name-${employee.employeeId}`}>
                             {employee.employeeName}
                           </p>
-                          <p className="text-sm text-muted-foreground" data-testid={`employee-email-${employee.employeeId}`}>
+                          <p className="text-sm text-muted-foreground truncate" data-testid={`employee-email-${employee.employeeId}`}>
                             {employee.employeeEmail}
                           </p>
                           {employee.position && (
@@ -369,7 +369,7 @@ export default function CompanyDashboard() {
                             </Badge>
                           )}
                         </div>
-                        <span className="text-xs text-muted-foreground">
+                        <span className="text-xs text-muted-foreground shrink-0">
                           Joined {format(new Date(employee.joinedAt), 'MMM d, yyyy')}
                         </span>
                       </div>
