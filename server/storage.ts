@@ -257,7 +257,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createEmployee(employeeData: InsertEmployee): Promise<Employee> {
-    const hashedPassword = await bcrypt.hash(employeeData.password, 10);
+    // Handle OAuth users who don't have passwords
+    const hashedPassword = employeeData.password ? await bcrypt.hash(employeeData.password, 10) : '';
     
     // Normalize email to lowercase for consistency
     const normalizedEmail = employeeData.email.toLowerCase();
@@ -1432,13 +1433,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getEmployeeById(id: string): Promise<Employee | undefined> {
-    return this.getEmployee(id);
-  }
 
-  async getCompanyById(id: string): Promise<Company | undefined> {
-    return this.getCompany(id);
-  }
 
   async updateEmployeeProfilePicture(id: string, profilePictureURL: string): Promise<void> {
     await db.update(employees).set({ profilePhoto: profilePictureURL }).where(eq(employees.id, id));

@@ -25,7 +25,7 @@ export function setupGoogleAuth() {
       const profilePhoto = profile.photos?.[0]?.value;
 
       if (!email) {
-        return done(new Error("No email found in Google profile"), null);
+        return done(new Error("No email found in Google profile"), false);
       }
 
       // Check if employee already exists
@@ -46,14 +46,14 @@ export function setupGoogleAuth() {
         
         return done(null, { employee, isNew: false });
       } else {
-        // Create new employee account - need a placeholder password for OAuth users
+        // Create new employee account - OAuth users don't need password
         const newEmployee = await storage.createEmployee({
           firstName,
           lastName,
           email,
           phone: '', // Will need to be filled later
           countryCode: '+1',
-          password: 'oauth_placeholder_password', // Placeholder for OAuth users
+          password: '', // Empty for OAuth users
           profilePhoto,
           emailVerified: true, // Google email is pre-verified
           isActive: true,
@@ -63,7 +63,7 @@ export function setupGoogleAuth() {
       }
     } catch (error) {
       console.error('Google OAuth error:', error);
-      return done(error, null);
+      return done(error, false);
     }
   }));
 }
