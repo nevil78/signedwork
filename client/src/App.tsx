@@ -28,6 +28,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={AuthPage} />
+      <Route path="/auth" component={AuthPage} />
       <Route path="/forgot-password" component={ForgotPasswordPage} />
       <Route path="/verify-email" component={EmailVerificationPage} />
       <Route path="/dashboard" component={Dashboard} />

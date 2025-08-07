@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
@@ -81,6 +81,42 @@ export default function AuthPage() {
   const [currentView, setCurrentView] = useState<AuthView>("selection");
   const [loginError, setLoginError] = useState<boolean>(false);
   const { toast } = useToast();
+
+  // Handle OAuth error redirects
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const error = urlParams.get('error');
+    
+    if (error) {
+      let errorMessage = "Authentication failed";
+      let errorTitle = "Sign-in Error";
+      
+      switch (error) {
+        case 'google_auth_failed':
+          errorMessage = "Google authentication was cancelled or failed. Please try again.";
+          errorTitle = "Google Sign-in Cancelled";
+          break;
+        case 'no_user_data':
+          errorMessage = "Unable to retrieve user information from Google. Please try again.";
+          break;
+        case 'no_employee_data':
+          errorMessage = "Failed to create employee account. Please try again.";
+          break;
+        case 'auth_failed':
+          errorMessage = "Authentication process failed. Please try again.";
+          break;
+      }
+      
+      toast({
+        title: errorTitle,
+        description: errorMessage,
+        variant: "destructive",
+      });
+      
+      // Clean up URL without refreshing page
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, [toast]);
 
   const employeeForm = useForm<InsertEmployee>({
     resolver: zodResolver(insertEmployeeSchema),
