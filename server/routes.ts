@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import session from "express-session";
 import bcrypt from "bcrypt";
+import passport from "passport";
 import { storage } from "./storage";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { 
@@ -14,6 +15,7 @@ import {
 } from "@shared/schema";
 import { sendOTPEmail, generateOTPCode, isOTPExpired } from "./emailService";
 import { fromZodError } from "zod-validation-error";
+import { setupGoogleAuth } from "./googleAuth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Session configuration
@@ -28,6 +30,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       sameSite: 'lax'
     },
   }));
+
+  // Initialize Passport and Google OAuth
+  app.use(passport.initialize());
+  app.use(passport.session());
+  setupGoogleAuth();
+
+  // Passport session serialization
+  passport.serializeUser((user: any, done) => {
+    done(null, user);
+  });
+
+  passport.deserializeUser((user: any, done) => {
+    done(null, user);
+  });
 
   // Employee registration
   app.post("/api/auth/register/employee", async (req, res) => {
@@ -235,6 +251,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Login failed" });
     }
   });
+
+  // Google OAuth routes for employees only
+  app.get("/api/auth/google", passport.authenticate('google-employee', {
+    scope: ['profile', 'email']
+  }));
+
+  app.get("/api/auth/google/callback", 
+    passport.authenticate('google-employee', { failureRedirect: '/auth?error=google_auth_failed' }),
+    async (req, res) => {
+      try {
+        const authResult = req.user as any;
+        const { employee, isNew } = authResult;
+
+        // Store user session
+        (req.session as any).user = {
+          id: employee.id,
+          email: employee.email,
+          type: "employee",
+        };
+
+        // Redirect to home with success message
+        const redirectQuery = isNew ? '?welcome=true' : '';
+        res.redirect(`/${redirectQuery}`);
+      } catch (error) {
+        console.error("Google OAuth callback error:", error);
+        res.redirect('/auth?error=auth_failed');
+      }
+    }
+  );
 
   // Logout
   app.post("/api/auth/logout", (req, res) => {

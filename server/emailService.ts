@@ -114,7 +114,7 @@ This is an automated message from Professional Network. Please do not reply to t
       message: error.message,
       code: error.code,
       response: error.response?.body || 'No response body',
-      to: to,
+      to: params.to,
       from: process.env.SENDGRID_VERIFIED_SENDER || 'noreply@signedwork.com'
     });
     return false;
