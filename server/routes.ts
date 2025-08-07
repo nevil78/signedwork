@@ -255,7 +255,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Google OAuth routes for employees only
   app.get("/api/auth/google", passport.authenticate('google-employee', {
     scope: ['profile', 'email'],
-    prompt: 'select_account'  // Force Google to show account selection
+    prompt: 'consent select_account'  // Force fresh consent screen and account selection
   }));
 
   app.get("/api/auth/google/callback", 
