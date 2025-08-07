@@ -53,7 +53,7 @@ function PasswordStrengthIndicator({ password }: { password: string }) {
   );
 }
 
-function PasswordInput({ field, placeholder }: { field: any; placeholder: string }) {
+function PasswordInput({ field, placeholder, className = "" }: { field: any; placeholder: string; className?: string }) {
   const [showPassword, setShowPassword] = useState(false);
   
   return (
@@ -62,7 +62,7 @@ function PasswordInput({ field, placeholder }: { field: any; placeholder: string
         {...field}
         type={showPassword ? "text" : "password"}
         placeholder={placeholder}
-        className="pr-12"
+        className={`pr-12 ${className}`}
       />
       <Button
         type="button"
@@ -79,6 +79,7 @@ function PasswordInput({ field, placeholder }: { field: any; placeholder: string
 
 export default function AuthPage() {
   const [currentView, setCurrentView] = useState<AuthView>("selection");
+  const [loginError, setLoginError] = useState<boolean>(false);
   const { toast } = useToast();
 
   const employeeForm = useForm<InsertEmployee>({
@@ -177,6 +178,19 @@ export default function AuthPage() {
                          error.message?.includes("401") ||
                          error.status === 401;
       
+      // Set login error state to trigger visual feedback
+      setLoginError(true);
+      
+      // Set form errors on the email and password fields
+      loginForm.setError("email", { 
+        type: "manual", 
+        message: "" 
+      });
+      loginForm.setError("password", { 
+        type: "manual", 
+        message: "" 
+      });
+      
       toast({
         title: "Login Failed",
         description: isAuthError ? "Invalid ID or password" : "Please check your credentials and try again",
@@ -194,6 +208,9 @@ export default function AuthPage() {
   };
 
   const onLoginSubmit = (data: LoginData) => {
+    // Clear previous login errors when attempting new login
+    setLoginError(false);
+    loginForm.clearErrors();
     login.mutate(data);
   };
 
@@ -915,11 +932,17 @@ export default function AuthPage() {
                     <FormField
                       control={loginForm.control}
                       name="email"
-                      render={({ field }) => (
+                      render={({ field, fieldState }) => (
                         <FormItem>
                           <FormLabel>Email Address</FormLabel>
                           <FormControl>
-                            <Input type="email" placeholder="your@email.com" {...field} />
+                            <Input 
+                              type="email" 
+                              placeholder="your@email.com" 
+                              {...field}
+                              className={`${fieldState.error ? 'border-red-500 border-2 animate-error-blink focus:border-red-600' : ''}`}
+                              data-testid="login-email-input"
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -929,11 +952,16 @@ export default function AuthPage() {
                     <FormField
                       control={loginForm.control}
                       name="password"
-                      render={({ field }) => (
+                      render={({ field, fieldState }) => (
                         <FormItem>
                           <FormLabel>Password</FormLabel>
                           <FormControl>
-                            <PasswordInput field={field} placeholder="••••••••" />
+                            <PasswordInput 
+                              field={field} 
+                              placeholder="••••••••"
+                              className={`${fieldState.error ? 'border-red-500 border-2 animate-error-blink focus:border-red-600' : ''}`}
+                              data-testid="login-password-input"
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
