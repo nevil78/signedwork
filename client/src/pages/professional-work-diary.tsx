@@ -247,7 +247,7 @@ export default function ProfessionalWorkDiary() {
     },
   });
 
-  // Filter work entries
+  // Filter work entries with debugging
   const filteredEntries = workEntries?.filter(entry => {
     const matchesSearch = entry.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          entry.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -259,6 +259,15 @@ export default function ProfessionalWorkDiary() {
     
     return matchesSearch && matchesStatus && matchesWorkType;
   }) || [];
+
+  // Debug logging
+  console.log('=== WORK ENTRIES DEBUG ===');
+  console.log('Work entries from API:', workEntries);
+  console.log('Filtered entries:', filteredEntries);
+  console.log('Search term:', searchTerm);
+  console.log('Status filter:', statusFilter);
+  console.log('Work type filter:', workTypeFilter);
+  console.log('Selected company:', selectedCompany);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -407,7 +416,7 @@ export default function ProfessionalWorkDiary() {
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-sm text-gray-600">Total Entries</p>
-                        <p className="text-2xl font-bold">{analytics?.totalEntries || 0}</p>
+                        <p className="text-2xl font-bold">{(analytics as any)?.totalEntries || workEntries?.length || 0}</p>
                       </div>
                       <FileText className="h-8 w-8 text-blue-500" />
                     </div>
@@ -419,7 +428,7 @@ export default function ProfessionalWorkDiary() {
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-sm text-gray-600">Hours Logged</p>
-                        <p className="text-2xl font-bold">{analytics?.totalHours || 0}h</p>
+                        <p className="text-2xl font-bold">{(analytics as any)?.totalHours || 0}h</p>
                       </div>
                       <Timer className="h-8 w-8 text-green-500" />
                     </div>
@@ -431,7 +440,7 @@ export default function ProfessionalWorkDiary() {
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-sm text-gray-600">Billable Hours</p>
-                        <p className="text-2xl font-bold">{analytics?.billableHours || 0}h</p>
+                        <p className="text-2xl font-bold">{(analytics as any)?.billableHours || 0}h</p>
                       </div>
                       <DollarSign className="h-8 w-8 text-yellow-500" />
                     </div>
@@ -443,7 +452,7 @@ export default function ProfessionalWorkDiary() {
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-sm text-gray-600">Completion Rate</p>
-                        <p className="text-2xl font-bold">{analytics?.completionRate || 0}%</p>
+                        <p className="text-2xl font-bold">{(analytics as any)?.completionRate || 0}%</p>
                       </div>
                       <Target className="h-8 w-8 text-purple-500" />
                     </div>
@@ -616,7 +625,24 @@ export default function ProfessionalWorkDiary() {
                                 setEditingEntry(entry);
                                 // Fix 4: Proper form reset with company ID when editing
                                 workEntryForm.reset({
-                                  ...entry,
+                                  title: entry.title,
+                                  description: entry.description || "",
+                                  workType: entry.workType as "task" | "meeting" | "project" | "research" | "documentation" | "training",
+                                  category: entry.category || "",
+                                  project: entry.project || "",
+                                  client: entry.client || "",
+                                  priority: entry.priority as "low" | "medium" | "high" | "urgent",
+                                  status: entry.status as "pending" | "in_progress" | "completed" | "on_hold" | "cancelled",
+                                  startDate: entry.startDate,
+                                  endDate: entry.endDate || "",
+                                  estimatedHours: entry.estimatedHours || 0,
+                                  actualHours: entry.actualHours || 0,
+                                  billable: entry.billable,
+                                  billableRate: entry.billableRate || 0,
+                                  tags: entry.tags || [],
+                                  achievements: entry.achievements || [],
+                                  challenges: entry.challenges || "",
+                                  learnings: entry.learnings || "",
                                   companyId: selectedCompany
                                 });
                                 setIsAddDialogOpen(true);
