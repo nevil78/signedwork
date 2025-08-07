@@ -2440,6 +2440,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Company email verification endpoint
+  app.post("/api/company/send-verification", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    if (!sessionUser || sessionUser.type !== "company") {
+      return res.status(401).json({ message: "Not authenticated as company" });
+    }
+    
+    try {
+      // Get company data
+      const company = await storage.getCompany(sessionUser.id);
+      if (!company) {
+        return res.status(404).json({ message: "Company not found" });
+      }
+      
+      // Check if already verified
+      if (company.emailVerified) {
+        return res.status(400).json({ message: "Email is already verified" });
+      }
+      
+      // Generate OTP
+      const otpCode = generateOTPCode();
+      const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+      
+      // Save OTP to database
+      await storage.createEmailVerification({
+        email: company.email,
+        otpCode,
+        purpose: "email_verification",
+        userType: "company",
+        userId: company.id,
+        expiresAt,
+      });
+      
+      // Send OTP email
+      const emailSent = await sendOTPEmail({
+        to: company.email,
+        firstName: company.name,
+        otpCode,
+        purpose: "email_verification",
+      });
+      
+      if (!emailSent) {
+        return res.status(500).json({ message: "Failed to send verification email" });
+      }
+      
+      res.status(200).json({
+        message: "Verification code sent to your email",
+        email: company.email.replace(/(.{2}).*(@.*)/, "$1***$2"), // Mask email for security
+      });
+    } catch (error) {
+      console.error("Send company verification error:", error);
+      res.status(500).json({ message: "Failed to send verification email" });
+    }
+  });
+
   app.get("/objects/:objectPath(*)", async (req, res) => {
     const objectStorageService = new ObjectStorageService();
     try {

@@ -232,6 +232,7 @@ export interface IStorage {
   getEmployeeById(id: string): Promise<Employee | undefined>;
   getCompanyById(id: string): Promise<Company | undefined>;
   updateEmployeeProfilePicture(id: string, profilePictureURL: string): Promise<void>;
+  markCompanyEmailVerified(id: string): Promise<void>;
 }
 
 export interface JobSearchFilters {
