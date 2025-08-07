@@ -117,15 +117,35 @@ export default function ProfessionalWorkDiary() {
     queryKey: ["/api/employee/companies"],
   });
 
-  // Fetch work entries for selected company
+  // Fetch work entries for selected company - FIXED: Using query parameter format
   const { data: workEntries, isLoading } = useQuery<WorkEntry[]>({
     queryKey: ["/api/work-entries", selectedCompany],
+    queryFn: async () => {
+      if (!selectedCompany) return [];
+      const response = await fetch(`/api/work-entries?companyId=${selectedCompany}`, {
+        credentials: 'include'
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch work entries');
+      }
+      return response.json();
+    },
     enabled: !!selectedCompany,
   });
 
-  // Analytics for the selected company
+  // Analytics for the selected company - FIXED: Using query parameter format
   const { data: analytics } = useQuery({
     queryKey: ["/api/work-entries/analytics", selectedCompany],
+    queryFn: async () => {
+      if (!selectedCompany) return {};
+      const response = await fetch(`/api/work-entries/analytics?companyId=${selectedCompany}`, {
+        credentials: 'include'
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch analytics');
+      }
+      return response.json();
+    },
     enabled: !!selectedCompany,
   });
 
