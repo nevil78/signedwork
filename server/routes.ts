@@ -985,6 +985,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get company employees (legacy - simple list)
   app.get("/api/company/employees", async (req, res) => {
     const sessionUser = (req.session as any).user;
     
@@ -997,6 +998,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(employees);
     } catch (error) {
       console.error("Get company employees error:", error);
+      res.status(500).json({ message: "Failed to get employees" });
+    }
+  });
+
+  // Get company employees with pagination, filtering, and sorting
+  app.get("/api/company/employees/paginated", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    if (!sessionUser || sessionUser.type !== "company") {
+      return res.status(401).json({ message: "Not authenticated as company" });
+    }
+    
+    try {
+      const {
+        page = 1,
+        limit = 10,
+        search = '',
+        sortBy = 'joinedAt',
+        sortOrder = 'desc',
+        status = 'all',
+        department = 'all'
+      } = req.query;
+
+      const result = await storage.getCompanyEmployeesPaginated(sessionUser.id, {
+        page: parseInt(page as string),
+        limit: parseInt(limit as string),
+        search: search as string,
+        sortBy: sortBy as string,
+        sortOrder: sortOrder as 'asc' | 'desc',
+        status: status as string,
+        department: department as string,
+      });
+
+      res.json(result);
+    } catch (error) {
+      console.error("Get paginated company employees error:", error);
       res.status(500).json({ message: "Failed to get employees" });
     }
   });

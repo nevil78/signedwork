@@ -19,6 +19,7 @@ import CompanyEmployeeProfile from "@/pages/company-employee-profile";
 import CompanyJobsPage from "@/pages/company-jobs";
 import CompanyRecruiterPage from "@/pages/company-recruiter";
 import CompanyEmployeeWorkDiary from "@/pages/company-employee-work-diary";
+import CompanyEmployeeManagement from "@/pages/company-employee-management";
 import AdminLogin from "@/pages/admin-login";
 import AdminDashboard from "@/pages/admin-dashboard";
 import AdminSetup from "@/pages/admin-setup";
@@ -42,6 +43,7 @@ function Router() {
       <Route path="/company-work-entries" component={CompanyWorkEntries} />
       <Route path="/company-jobs" component={CompanyJobsPage} />
       <Route path="/company-recruiter" component={CompanyRecruiterPage} />
+      <Route path="/company-employees" component={CompanyEmployeeManagement} />
       <Route path="/company-employee/:employeeId" component={CompanyEmployeeProfile} />
       <Route path="/employee-work-diary/:employeeId" component={CompanyEmployeeWorkDiary} />
       <Route path="/employee-profile" component={() => { window.location.href = "/profile"; return null; }} />

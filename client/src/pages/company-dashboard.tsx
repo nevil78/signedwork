@@ -221,6 +221,26 @@ export default function CompanyDashboard() {
           </div>
         </div>
 
+        {/* Additional Management Section */}
+        <div className="mb-8">
+          <h3 className="text-lg font-semibold mb-4">Employee Management</h3>
+          <div className="grid gap-4 md:grid-cols-2">
+            <Card className="cursor-pointer hover:shadow-md hover:border-orange-200 transition-all duration-200" onClick={() => navigate('/company-employees')}>
+              <CardHeader className="pb-4">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-8 h-8 bg-orange-100 dark:bg-orange-900 rounded-lg flex items-center justify-center">
+                    <Users className="w-4 h-4 text-orange-600 dark:text-orange-400" />
+                  </div>
+                  <CardTitle className="text-base font-semibold">Manage Employees</CardTitle>
+                </div>
+                <CardDescription className="text-sm">
+                  Advanced employee management with search, filtering, and pagination
+                </CardDescription>
+              </CardHeader>
+            </Card>
+          </div>
+        </div>
+
         <div className="grid gap-6 md:grid-cols-3">
           {/* Email Verification Section */}
           <CompanyEmailVerification />
@@ -293,12 +313,24 @@ export default function CompanyDashboard() {
           {/* Employees Section */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                Employees ({employees.length})
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  Recent Employees ({employees.length})
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate('/company-employees')}
+                  className="flex items-center gap-1"
+                  data-testid="button-manage-all-employees"
+                >
+                  <Settings className="w-4 h-4" />
+                  Manage All
+                </Button>
               </CardTitle>
               <CardDescription>
-                Employees who have joined your company
+                Recently joined employees (showing last 5)
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -312,8 +344,8 @@ export default function CompanyDashboard() {
                   </p>
                 </div>
               ) : (
-                <div className="space-y-3 max-h-96 overflow-y-auto">
-                  {employees.map((employee) => (
+                <div className="space-y-3">
+                  {employees.slice(0, 5).map((employee) => (
                     <div 
                       key={employee.id} 
                       className="p-3 border rounded-lg hover:bg-accent/50 transition-colors cursor-pointer"
@@ -341,6 +373,19 @@ export default function CompanyDashboard() {
                       </div>
                     </div>
                   ))}
+                  {employees.length > 5 && (
+                    <div className="text-center pt-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => navigate('/company-employees')}
+                        className="text-primary"
+                        data-testid="button-view-all-employees"
+                      >
+                        View all {employees.length} employees →
+                      </Button>
+                    </div>
+                  )}
                 </div>
               )}
             </CardContent>
