@@ -310,110 +310,88 @@ export default function CompanyDashboard() {
             </CardContent>
           </Card>
 
-          {/* Employees Section - Improved Design */}
-          <div className="recent-employees-container">
-            {/* Header Section */}
-            <div className="recent-employees-header">
-              <div className="header-left">
-                <div className="section-icon">
-                  <Users size={20} />
+          {/* Employees Section */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Users className="h-5 w-5" />
+                    Recent Employees ({employees.length})
+                  </CardTitle>
+                  <CardDescription>
+                    Recently joined employees (showing last 5)
+                  </CardDescription>
                 </div>
-                <div className="section-title-group">
-                  <h3 className="section-title">Recent Employees</h3>
-                  <span className="employee-count">({employees.length})</span>
-                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate('/company-employees')}
+                  className="flex items-center gap-1"
+                  data-testid="button-manage-all-employees"
+                >
+                  <Settings className="w-4 h-4" />
+                  Manage All
+                </Button>
               </div>
-              <button 
-                onClick={() => navigate('/company-employees')}
-                className="manage-all-button"
-                data-testid="button-manage-all-employees"
-              >
-                <span>Manage All</span>
-                <ArrowRight size={16} />
-              </button>
-            </div>
-
-            {/* Content Section */}
-            <div className="recent-employees-content">
+            </CardHeader>
+            <CardContent>
               {isLoadingEmployees ? (
-                <div className="empty-state">
-                  <div className="loading-spinner">Loading employees...</div>
-                </div>
+                <p className="text-center text-muted-foreground py-4">Loading employees...</p>
               ) : employees.length === 0 ? (
-                <div className="empty-state">
-                  <Users size={48} className="empty-icon" />
-                  <p className="empty-title">No recent employees</p>
-                  <p className="empty-description">
-                    Recently joined employees will appear here
+                <div className="text-center py-8">
+                  <Users className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+                  <p className="text-muted-foreground">
+                    No employees have joined yet. Share an invitation code to get started.
                   </p>
                 </div>
               ) : (
-                <div className="employees-list">
+                <div className="space-y-3">
                   {employees.slice(0, 5).map((employee) => (
                     <div 
                       key={employee.id} 
-                      className="employee-card"
+                      className="p-3 border rounded-lg hover:bg-accent/50 transition-colors cursor-pointer"
                       onClick={() => navigate(`/company-employee/${employee.employeeId}`)}
                       data-testid={`employee-card-${employee.employeeId}`}
+                      title="Click to view employee profile"
                     >
-                      <div className="employee-avatar">
-                        <div className="avatar-placeholder">
-                          {employee.employeeName
-                            .split(' ')
-                            .map(word => word.charAt(0))
-                            .join('')
-                            .toUpperCase()
-                            .slice(0, 2)}
-                        </div>
-                      </div>
-                      
-                      <div className="employee-info">
-                        <div className="employee-main-info">
-                          <h4 className="employee-name" data-testid={`employee-name-${employee.employeeId}`}>
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="font-medium text-primary hover:underline" data-testid={`employee-name-${employee.employeeId}`}>
                             {employee.employeeName}
-                          </h4>
+                          </p>
+                          <p className="text-sm text-muted-foreground" data-testid={`employee-email-${employee.employeeId}`}>
+                            {employee.employeeEmail}
+                          </p>
                           {employee.position && (
-                            <span className="employee-position" data-testid={`employee-position-${employee.employeeId}`}>
+                            <Badge variant="secondary" className="mt-1" data-testid={`employee-position-${employee.employeeId}`}>
                               {employee.position}
-                            </span>
+                            </Badge>
                           )}
                         </div>
-                        
-                        <div className="employee-details">
-                          <div className="detail-item">
-                            <Mail size={14} className="detail-icon" />
-                            <span className="employee-email" data-testid={`employee-email-${employee.employeeId}`}>
-                              {employee.employeeEmail}
-                            </span>
-                          </div>
-                          
-                          <div className="detail-item">
-                            <Calendar size={14} className="detail-icon" />
-                            <span className="join-date">
-                              Joined {format(new Date(employee.joinedAt), 'MMM d, yyyy')}
-                            </span>
-                          </div>
-                        </div>
+                        <span className="text-xs text-muted-foreground">
+                          Joined {format(new Date(employee.joinedAt), 'MMM d, yyyy')}
+                        </span>
                       </div>
                     </div>
                   ))}
+                  {employees.length > 5 && (
+                    <div className="text-center pt-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => navigate('/company-employees')}
+                        className="text-primary"
+                        data-testid="button-view-all-employees"
+                      >
+                        View all {employees.length} employees →
+                      </Button>
+                    </div>
+                  )}
                 </div>
               )}
-
-              {/* Show More Indicator */}
-              {employees.length > 5 && (
-                <div className="show-more-indicator">
-                  <button 
-                    onClick={() => navigate('/company-employees')} 
-                    className="show-more-button"
-                    data-testid="button-view-all-employees"
-                  >
-                    View {employees.length - 5} more employees
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>
