@@ -172,9 +172,14 @@ export default function AuthPage() {
       }
     },
     onError: (error: any) => {
+      // Always show user-friendly message for authentication errors
+      const isAuthError = error.message?.includes("Invalid email or password") || 
+                         error.message?.includes("401") ||
+                         error.status === 401;
+      
       toast({
         title: "Login Failed",
-        description: error.message || "Invalid email or password",
+        description: isAuthError ? "Invalid ID or password" : "Please check your credentials and try again",
         variant: "destructive",
       });
     },
