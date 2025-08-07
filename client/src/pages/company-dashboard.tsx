@@ -177,13 +177,12 @@ export default function CompanyDashboard() {
         {/* Management Tools Section */}
         <div className="mb-8">
           <h3 className="text-lg font-semibold mb-4">Management Tools</h3>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4" style={{ border: '2px solid red', padding: '10px' }}>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             {/* Manage Employees Card */}
             <Card 
               className="cursor-pointer hover:shadow-md hover:border-orange-200 transition-all duration-200" 
               onClick={() => navigate('/company-employees')}
               data-testid="manage-employees-card"
-              style={{ border: '3px solid green', backgroundColor: 'lightblue' }}
             >
               <CardHeader className="pb-4">
                 <div className="flex items-center gap-3 mb-2">
