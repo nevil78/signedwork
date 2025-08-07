@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLocation, Link } from 'wouter';
 import { Button } from '@/components/ui/button';
@@ -161,6 +161,14 @@ export default function ProfessionalWorkDiary() {
     },
   });
 
+  // Fix 1: Update form when selectedCompany changes
+  useEffect(() => {
+    if (selectedCompany) {
+      console.log('Updating companyId in form to:', selectedCompany);
+      workEntryForm.setValue('companyId', selectedCompany);
+    }
+  }, [selectedCompany, workEntryForm]);
+
   // Join company mutation
   const joinCompanyMutation = useMutation({
     mutationFn: async (data: InvitationCodeFormData) => {
@@ -181,9 +189,16 @@ export default function ProfessionalWorkDiary() {
     },
   });
 
-  // Create/Update work entry
+  // Fix 2: Improved Create/Update work entry with better validation and error handling
   const workEntryMutation = useMutation({
     mutationFn: async (data: WorkEntryFormData) => {
+      console.log('Submitting work entry:', data);
+
+      // Validate required fields before submission
+      if (!data.companyId) {
+        throw new Error('Company ID is required');
+      }
+
       if (editingEntry) {
         return await apiRequest("PUT", `/api/work-entries/${editingEntry.id}`, data);
       } else {
@@ -195,16 +210,38 @@ export default function ProfessionalWorkDiary() {
       queryClient.invalidateQueries({ queryKey: ["/api/work-entries/analytics"] });
       setIsAddDialogOpen(false);
       setEditingEntry(null);
-      workEntryForm.reset();
+      // Fix 4: Proper form reset with current company
+      workEntryForm.reset({
+        title: "",
+        description: "",
+        workType: "task",
+        category: "",
+        project: "",
+        client: "",
+        priority: "medium",
+        status: "pending",
+        startDate: format(new Date(), 'yyyy-MM-dd'),
+        endDate: "",
+        estimatedHours: 0,
+        actualHours: 0,
+        billable: false,
+        billableRate: 0,
+        tags: [],
+        achievements: [],
+        challenges: "",
+        learnings: "",
+        companyId: selectedCompany, // Reset with current company
+      });
       toast({
         title: editingEntry ? "Work entry updated" : "Work entry created",
         description: "Your work diary has been updated successfully.",
       });
     },
-    onError: (error) => {
+    onError: (error: any) => {
+      console.error('Work entry submission error:', error);
       toast({
         title: "Error",
-        description: "Failed to save work entry. Please try again.",
+        description: error.message || "Failed to save work entry. Please try again.",
         variant: "destructive",
       });
     },
@@ -330,7 +367,32 @@ export default function ProfessionalWorkDiary() {
                   </h1>
                 </div>
                 <Button 
-                  onClick={() => setIsAddDialogOpen(true)}
+                  onClick={() => {
+                    // Fix 3: Proper handleAddEntry function with form reset
+                    setEditingEntry(null);
+                    workEntryForm.reset({
+                      title: "",
+                      description: "",
+                      workType: "task",
+                      category: "",
+                      project: "",
+                      client: "",
+                      priority: "medium",
+                      status: "pending",
+                      startDate: format(new Date(), 'yyyy-MM-dd'),
+                      endDate: "",
+                      estimatedHours: 0,
+                      actualHours: 0,
+                      billable: false,
+                      billableRate: 0,
+                      tags: [],
+                      achievements: [],
+                      challenges: "",
+                      learnings: "",
+                      companyId: selectedCompany, // Ensure company ID is set
+                    });
+                    setIsAddDialogOpen(true);
+                  }}
                   data-testid="button-add-work-entry"
                 >
                   <Plus className="h-4 w-4 mr-2" />
@@ -552,7 +614,11 @@ export default function ProfessionalWorkDiary() {
                               size="sm"
                               onClick={() => {
                                 setEditingEntry(entry);
-                                workEntryForm.reset(entry);
+                                // Fix 4: Proper form reset with company ID when editing
+                                workEntryForm.reset({
+                                  ...entry,
+                                  companyId: selectedCompany
+                                });
                                 setIsAddDialogOpen(true);
                               }}
                               data-testid={`button-edit-${entry.id}`}
@@ -581,7 +647,32 @@ export default function ProfessionalWorkDiary() {
                         : "Start documenting your professional work journey"
                       }
                     </p>
-                    <Button onClick={() => setIsAddDialogOpen(true)}>
+                    <Button onClick={() => {
+                      // Fix 3: Proper handleAddEntry function with form reset
+                      setEditingEntry(null);
+                      workEntryForm.reset({
+                        title: "",
+                        description: "",
+                        workType: "task",
+                        category: "",
+                        project: "",
+                        client: "",
+                        priority: "medium",
+                        status: "pending",
+                        startDate: format(new Date(), 'yyyy-MM-dd'),
+                        endDate: "",
+                        estimatedHours: 0,
+                        actualHours: 0,
+                        billable: false,
+                        billableRate: 0,
+                        tags: [],
+                        achievements: [],
+                        challenges: "",
+                        learnings: "",
+                        companyId: selectedCompany, // Ensure company ID is set
+                      });
+                      setIsAddDialogOpen(true);
+                    }}>
                       <Plus className="h-4 w-4 mr-2" />
                       Add Your First Entry
                     </Button>
@@ -603,7 +694,22 @@ export default function ProfessionalWorkDiary() {
           </DialogHeader>
           
           <Form {...workEntryForm}>
-            <form onSubmit={workEntryForm.handleSubmit((data) => workEntryMutation.mutate(data))} className="space-y-6">
+            <form onSubmit={workEntryForm.handleSubmit((data) => {
+              console.log('=== FORM SUBMISSION DEBUG ===');
+              console.log('Form data:', data);
+              console.log('Selected company:', selectedCompany);
+              console.log('Form errors:', workEntryForm.formState.errors);
+              console.log('Form is valid:', workEntryForm.formState.isValid);
+
+              // Ensure companyId is set
+              const finalData = {
+                ...data,
+                companyId: data.companyId || selectedCompany
+              };
+
+              console.log('Final submission data:', finalData);
+              workEntryMutation.mutate(finalData);
+            })} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={workEntryForm.control}
