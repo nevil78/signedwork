@@ -560,34 +560,22 @@ export default function ProfessionalWorkDiary() {
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
                             <div className="flex items-center space-x-3 mb-3">
-                              <WorkTypeIcon className="h-5 w-5 text-gray-500" />
                               <h3 className="text-lg font-semibold text-gray-900">{entry.title}</h3>
-                              <Badge className={getStatusColor(entry.status)}>
-                                <StatusIcon className="h-3 w-3 mr-1" />
-                                {entry.status.replace('_', ' ')}
-                              </Badge>
-                              <Badge className={getPriorityColor(entry.priority)}>
-                                {entry.priority}
-                              </Badge>
-                              {entry.billable && (
-                                <Badge variant="outline" className="bg-green-50 text-green-700">
-                                  <DollarSign className="h-3 w-3 mr-1" />
-                                  Billable
-                                </Badge>
-                              )}
-                              {/* Company Verification Badge - NEW FEATURE */}
+                              
+                              {/* Essential badges only: Company Verified, Immutable, and Star Rating */}
                               {entry.status === 'approved' && (
                                 <>
                                   <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
                                     <Shield className="h-3 w-3 mr-1" />
                                     Company Verified
                                   </Badge>
-                                  <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 ml-2">
+                                  <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
                                     🔒 Immutable
                                   </Badge>
                                 </>
                               )}
-                              {/* Company Rating Badge - Shows when company rates the work */}
+                              
+                              {/* Company Rating Badge - Stars only */}
                               {(entry as any).companyRating && (entry as any).companyRating > 0 && (
                                 <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
                                   <Star className="h-3 w-3 mr-1" />
