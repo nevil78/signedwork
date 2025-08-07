@@ -312,12 +312,17 @@ export default function CompanyDashboard() {
 
           {/* Employees Section */}
           <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between mb-2">
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="h-5 w-5" />
-                  Recent Employees ({employees.length})
-                </CardTitle>
+            <CardHeader className="pb-3">
+              <div className="flex items-start justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Users className="h-5 w-5" />
+                    Recent Employees ({employees.length})
+                  </CardTitle>
+                  <CardDescription className="mt-1">
+                    Recently joined employees (showing last 5)
+                  </CardDescription>
+                </div>
                 <Button
                   variant="outline"
                   size="sm"
@@ -329,9 +334,6 @@ export default function CompanyDashboard() {
                   Manage All
                 </Button>
               </div>
-              <CardDescription>
-                Recently joined employees (showing last 5)
-              </CardDescription>
             </CardHeader>
             <CardContent>
               {isLoadingEmployees ? (
