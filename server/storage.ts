@@ -630,10 +630,24 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
 
-  async approveWorkEntry(id: string): Promise<WorkEntry> {
+  async approveWorkEntry(id: string, options?: { rating?: number; feedback?: string }): Promise<WorkEntry> {
+    const updateData: any = { 
+      status: "approved", 
+      updatedAt: new Date() 
+    };
+    
+    // Add rating and feedback if provided
+    if (options?.rating && options.rating >= 1 && options.rating <= 5) {
+      updateData.companyRating = options.rating;
+    }
+    
+    if (options?.feedback && options.feedback.trim()) {
+      updateData.companyFeedback = options.feedback.trim();
+    }
+    
     const [workEntry] = await db
       .update(workEntries)
-      .set({ status: "approved", updatedAt: new Date() })
+      .set(updateData)
       .where(eq(workEntries.id, id))
       .returning();
     return workEntry;

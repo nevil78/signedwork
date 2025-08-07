@@ -981,7 +981,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     try {
       const { id } = req.params;
-      const workEntry = await storage.approveWorkEntry(id);
+      const { rating, feedback } = req.body;
+      
+      // Enhanced approval with rating and feedback
+      const workEntry = await storage.approveWorkEntry(id, {
+        rating: rating && rating > 0 && rating <= 5 ? rating : undefined,
+        feedback: feedback && feedback.trim() ? feedback.trim() : undefined
+      });
       res.json(workEntry);
     } catch (error) {
       console.error("Approve work entry error:", error);

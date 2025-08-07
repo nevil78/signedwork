@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { CheckCircle, AlertCircle, Clock, Calendar, User, Users, Building, ArrowLeft, Building2, Lock } from 'lucide-react';
+import { CheckCircle, AlertCircle, Clock, Calendar, User, Users, Building, ArrowLeft, Building2, Lock, Star } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 type WorkEntryStatus = "pending" | "approved" | "needs_changes";
@@ -46,6 +46,10 @@ export default function CompanyWorkEntries() {
   const [feedback, setFeedback] = useState('');
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'employees' | 'entries'>('employees');
+  // Rating system state variables
+  const [rating, setRating] = useState<number>(0);
+  const [hoveredRating, setHoveredRating] = useState<number>(0);
+  const [approvalFeedback, setApprovalFeedback] = useState('');
 
   // Fetch all work entries for the company
   const { data: allWorkEntries = [], isLoading: loadingAll } = useQuery<WorkEntry[]>({
@@ -128,10 +132,14 @@ export default function CompanyWorkEntries() {
   const selectedEmployeeName = selectedEmployeeId ? getEmployeeName(selectedEmployeeId) : '';
 
   const approveMutation = useMutation({
-    mutationFn: async (entryId: string) => {
+    mutationFn: async ({ entryId, rating, feedback }: { entryId: string; rating: number; feedback: string }) => {
       const response = await fetch(`/api/company/work-entries/${entryId}/approve`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          rating: rating || undefined, 
+          feedback: feedback || undefined 
+        }),
       });
       if (!response.ok) throw new Error('Failed to approve work entry');
       return response.json();
@@ -141,10 +149,12 @@ export default function CompanyWorkEntries() {
       queryClient.invalidateQueries({ queryKey: ['/api/company/work-entries/pending'] });
       toast({
         title: "Success",
-        description: "Work entry approved successfully",
+        description: `Work entry approved successfully${rating > 0 ? ` with ${rating}-star rating` : ''}`,
       });
       setShowApprovalDialog(false);
       setSelectedEntry(null);
+      setRating(0);
+      setApprovalFeedback('');
     },
     onError: () => {
       toast({
@@ -187,6 +197,8 @@ export default function CompanyWorkEntries() {
 
   const handleApprove = (entry: WorkEntry) => {
     setSelectedEntry(entry);
+    setRating(0);
+    setApprovalFeedback('');
     setShowApprovalDialog(true);
   };
 
@@ -197,7 +209,11 @@ export default function CompanyWorkEntries() {
 
   const confirmApproval = () => {
     if (selectedEntry) {
-      approveMutation.mutate(selectedEntry.id);
+      approveMutation.mutate({ 
+        entryId: selectedEntry.id, 
+        rating, 
+        feedback: approvalFeedback 
+      });
     }
   };
 
@@ -552,25 +568,82 @@ export default function CompanyWorkEntries() {
           </Tabs>
         )}
 
-      {/* Approval Confirmation Dialog */}
+      {/* Enhanced Approval Dialog with Rating System */}
       <Dialog open={showApprovalDialog} onOpenChange={setShowApprovalDialog}>
-        <DialogContent data-testid="approval-dialog">
+        <DialogContent className="max-w-md" data-testid="approval-dialog">
           <DialogHeader>
-            <DialogTitle>Approve Work Entry</DialogTitle>
+            <DialogTitle>Review & Approve Work Entry</DialogTitle>
             <DialogDescription>
-              Are you sure you want to approve this work entry? This action confirms that the work was completed as described.
+              Rate the quality of work and provide feedback to help the employee grow.
             </DialogDescription>
           </DialogHeader>
           {selectedEntry && (
-            <div className="py-4">
-              <h4 className="font-semibold">{selectedEntry.title}</h4>
-              <p className="text-sm text-muted-foreground">
-                Submitted by: {getEmployeeName(selectedEntry)}
-              </p>
+            <div className="space-y-6">
+              {/* Work Entry Info */}
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h4 className="font-semibold text-lg">{selectedEntry.title}</h4>
+                <p className="text-sm text-muted-foreground">
+                  Submitted by: {getEmployeeName(selectedEntry)}
+                </p>
+                {selectedEntry.description && (
+                  <p className="text-sm text-gray-700 mt-2">{selectedEntry.description}</p>
+                )}
+              </div>
+
+              {/* 5-Star Rating System */}
+              <div className="space-y-3">
+                <Label className="text-sm font-medium">Rate this work (optional)</Label>
+                <div className="flex items-center space-x-1">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      type="button"
+                      onClick={() => setRating(star)}
+                      onMouseEnter={() => setHoveredRating(star)}
+                      onMouseLeave={() => setHoveredRating(0)}
+                      className="focus:outline-none transition-transform hover:scale-110"
+                      data-testid={`star-${star}`}
+                    >
+                      <Star
+                        className={`h-8 w-8 transition-colors ${
+                          star <= (hoveredRating || rating)
+                            ? 'text-yellow-400 fill-yellow-400'
+                            : 'text-gray-300'
+                        }`}
+                      />
+                    </button>
+                  ))}
+                  {rating > 0 && (
+                    <span className="ml-3 text-sm text-gray-600">
+                      {rating} star{rating > 1 ? 's' : ''}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Feedback Section */}
+              <div className="space-y-3">
+                <Label htmlFor="approval-feedback" className="text-sm font-medium">
+                  Feedback for Employee (optional)
+                </Label>
+                <Textarea
+                  id="approval-feedback"
+                  placeholder="Great work! Here's some feedback to help you improve..."
+                  value={approvalFeedback}
+                  onChange={(e) => setApprovalFeedback(e.target.value)}
+                  rows={4}
+                  className="resize-none"
+                  data-testid="approval-feedback-textarea"
+                />
+              </div>
             </div>
           )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowApprovalDialog(false)} data-testid="cancel-approval">
+          <DialogFooter className="flex gap-3">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowApprovalDialog(false)} 
+              data-testid="cancel-approval"
+            >
               Cancel
             </Button>
             <Button 
@@ -579,7 +652,7 @@ export default function CompanyWorkEntries() {
               disabled={approveMutation.isPending}
               data-testid="confirm-approval"
             >
-              {approveMutation.isPending ? 'Approving...' : 'Approve'}
+              {approveMutation.isPending ? 'Approving...' : 'Approve Work'}
             </Button>
           </DialogFooter>
         </DialogContent>
