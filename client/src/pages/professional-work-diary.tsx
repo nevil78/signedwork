@@ -280,7 +280,7 @@ export default function ProfessionalWorkDiary() {
     return matchesSearch && matchesStatus && matchesWorkType;
   }) || [];
 
-  // Debug logging
+  // Debug logging - Keep for now to ensure entries show
   console.log('=== WORK ENTRIES DEBUG ===');
   console.log('Work entries from API:', workEntries);
   console.log('Filtered entries:', filteredEntries);
