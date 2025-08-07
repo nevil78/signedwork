@@ -313,22 +313,22 @@ export default function CompanyDashboard() {
           {/* Employees Section */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
+              <div className="flex items-center justify-between mb-2">
+                <CardTitle className="flex items-center gap-2">
                   <Users className="h-5 w-5" />
                   Recent Employees ({employees.length})
-                </div>
+                </CardTitle>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => navigate('/company-employees')}
-                  className="flex items-center gap-1"
+                  className="flex items-center gap-1 shrink-0"
                   data-testid="button-manage-all-employees"
                 >
                   <Settings className="w-4 h-4" />
                   Manage All
                 </Button>
-              </CardTitle>
+              </div>
               <CardDescription>
                 Recently joined employees (showing last 5)
               </CardDescription>

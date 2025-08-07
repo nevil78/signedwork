@@ -42,6 +42,8 @@ Preferred communication style: Simple, everyday language.
 - Consistent navigation system across all employee pages.
 - Interactive elements like 5-star rating system and real-time verification status indicators.
 - Visual feedback for actions (e.g., login error animations, immutable badges).
+- Dashboard reorganized with Management Tools section prioritizing employee management functionality.
+- Clean card-based layout with proper spacing and visual hierarchy for company dashboard.
 
 ## Feature Specifications
 - **Employee Profiles**: LinkedIn-like profiles with sections for experience, education, certifications, and comprehensive CV fields (personal info, professional summary, skills, languages, online presence, achievements). Includes profile picture upload.
