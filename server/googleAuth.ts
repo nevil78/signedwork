@@ -19,12 +19,17 @@ export function setupGoogleAuth() {
     scope: ['profile', 'email']
   }, async (accessToken, refreshToken, profile, done) => {
     try {
+      console.log("Google OAuth strategy triggered for profile:", profile.id);
+      
       const email = profile.emails?.[0]?.value;
       const firstName = profile.name?.givenName || '';
       const lastName = profile.name?.familyName || '';
       const profilePhoto = profile.photos?.[0]?.value;
 
+      console.log(`Google OAuth processing email: ${email}`);
+
       if (!email) {
+        console.error("No email found in Google profile");
         return done(new Error("No email found in Google profile"), false);
       }
 

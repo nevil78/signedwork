@@ -261,7 +261,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     passport.authenticate('google-employee', { failureRedirect: '/auth?error=google_auth_failed' }),
     async (req, res) => {
       try {
+        console.log("Google OAuth callback triggered");
+        
+        if (!req.user) {
+          console.error("No user data in Google OAuth callback");
+          return res.redirect('/auth?error=no_user_data');
+        }
+
         const authResult = req.user as any;
+        console.log("Google OAuth result:", { hasEmployee: !!authResult.employee, isNew: authResult.isNew });
+        
+        if (!authResult.employee) {
+          console.error("No employee data in Google OAuth result");
+          return res.redirect('/auth?error=no_employee_data');
+        }
+
         const { employee, isNew } = authResult;
 
         // Store user session
@@ -271,6 +285,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           type: "employee",
         };
 
+        console.log(`Google OAuth successful for ${employee.email}, isNew: ${isNew}`);
+        
         // Redirect to home with success message
         const redirectQuery = isNew ? '?welcome=true' : '';
         res.redirect(`/${redirectQuery}`);
