@@ -812,10 +812,11 @@ export class DatabaseStorage implements IStorage {
   async getEmployeeCompanyRelations(employeeId: string): Promise<any[]> {
     const relations = await db
       .select({
-        id: companyEmployees.id,
+        id: companies.id, // CRITICAL FIX: Use companies.id as the main ID (not companyEmployees.id)
         employeeId: companyEmployees.employeeId,
-        companyId: companies.id,
+        companyId: companies.id, // This is the correct company ID for work entries
         companyName: companies.name,
+        name: companies.name, // Add name field for compatibility
         position: companyEmployees.position,
         createdAt: companyEmployees.joinedAt,
         updatedAt: companyEmployees.joinedAt,
@@ -830,6 +831,7 @@ export class DatabaseStorage implements IStorage {
         )
       );
       
+    console.log('CRITICAL FIX - Employee company relations:', relations);
     return relations;
   }
 
