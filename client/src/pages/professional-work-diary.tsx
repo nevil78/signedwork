@@ -17,7 +17,7 @@ import {
   Plus, Building2, Calendar as CalendarIcon, Clock, Edit, LogOut, User, BookOpen,
   Filter, Search, TrendingUp, DollarSign, Timer, Target, BarChart3,
   FileText, Tag, Briefcase, AlertCircle, CheckCircle, XCircle, Pause,
-  PlayCircle, Star, Award, Activity, PieChart, Clipboard
+  PlayCircle, Star, Award, Activity, PieChart, Clipboard, Shield
 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -565,6 +565,20 @@ export default function ProfessionalWorkDiary() {
                                   Billable
                                 </Badge>
                               )}
+                              {/* Company Verification Badge - NEW FEATURE */}
+                              {entry.status === 'approved' && (
+                                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                                  <Shield className="h-3 w-3 mr-1" />
+                                  Company Verified
+                                </Badge>
+                              )}
+                              {/* Company Rating Badge - Shows when company rates the work */}
+                              {(entry as any).companyRating && (entry as any).companyRating > 0 && (
+                                <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
+                                  <Star className="h-3 w-3 mr-1" />
+                                  {(entry as any).companyRating}/5
+                                </Badge>
+                              )}
                             </div>
 
                             {entry.description && (
@@ -621,18 +635,32 @@ export default function ProfessionalWorkDiary() {
                               </div>
                             )}
 
-                            {entry.companyRating && (
-                              <div className="flex items-center space-x-2 text-sm">
-                                <span className="text-gray-500">Company Rating:</span>
-                                <div className="flex items-center space-x-1">
-                                  {[...Array(5)].map((_, i) => (
-                                    <Star 
-                                      key={i} 
-                                      className={`h-4 w-4 ${i < entry.companyRating! ? 'text-yellow-400 fill-current' : 'text-gray-300'}`} 
-                                    />
-                                  ))}
-                                  <span className="font-medium">({entry.companyRating}/5)</span>
+                            {/* Company Feedback Section - NEW FEATURE */}
+                            {((entry as any).companyFeedback || entry.companyRating) && (
+                              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-3">
+                                <div className="flex items-center space-x-2 mb-2">
+                                  <Shield className="h-4 w-4 text-blue-600" />
+                                  <span className="text-sm font-medium text-blue-800">Company Review</span>
                                 </div>
+                                
+                                {(entry as any).companyFeedback && (
+                                  <p className="text-sm text-blue-700 mb-2">{(entry as any).companyFeedback}</p>
+                                )}
+                                
+                                {entry.companyRating && (
+                                  <div className="flex items-center space-x-2 text-sm">
+                                    <span className="text-blue-600">Rating:</span>
+                                    <div className="flex items-center space-x-1">
+                                      {[...Array(5)].map((_, i) => (
+                                        <Star 
+                                          key={i} 
+                                          className={`h-4 w-4 ${i < entry.companyRating! ? 'text-yellow-400 fill-current' : 'text-gray-300'}`} 
+                                        />
+                                      ))}
+                                      <span className="font-medium text-blue-800">({entry.companyRating}/5)</span>
+                                    </div>
+                                  </div>
+                                )}
                               </div>
                             )}
                           </div>
