@@ -638,32 +638,22 @@ export default function ProfessionalWorkDiary() {
                               </div>
                             )}
 
-                            {/* Company Feedback Section - NEW FEATURE */}
-                            {((entry as any).companyFeedback || entry.companyRating) && (
+                            {/* Company Rating Only - Removed review text */}
+                            {entry.companyRating && (
                               <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-3">
-                                <div className="flex items-center space-x-2 mb-2">
+                                <div className="flex items-center space-x-2">
                                   <Shield className="h-4 w-4 text-blue-600" />
-                                  <span className="text-sm font-medium text-blue-800">Company Review</span>
-                                </div>
-                                
-                                {(entry as any).companyFeedback && (
-                                  <p className="text-sm text-blue-700 mb-2">{(entry as any).companyFeedback}</p>
-                                )}
-                                
-                                {entry.companyRating && (
-                                  <div className="flex items-center space-x-2 text-sm">
-                                    <span className="text-blue-600">Rating:</span>
-                                    <div className="flex items-center space-x-1">
-                                      {[...Array(5)].map((_, i) => (
-                                        <Star 
-                                          key={i} 
-                                          className={`h-4 w-4 ${i < entry.companyRating! ? 'text-yellow-400 fill-current' : 'text-gray-300'}`} 
-                                        />
-                                      ))}
-                                      <span className="font-medium text-blue-800">({entry.companyRating}/5)</span>
-                                    </div>
+                                  <span className="text-blue-600 text-sm">Company Rating:</span>
+                                  <div className="flex items-center space-x-1">
+                                    {[...Array(5)].map((_, i) => (
+                                      <Star 
+                                        key={i} 
+                                        className={`h-4 w-4 ${i < entry.companyRating! ? 'text-yellow-400 fill-current' : 'text-gray-300'}`} 
+                                      />
+                                    ))}
+                                    <span className="font-medium text-blue-800">({entry.companyRating}/5)</span>
                                   </div>
-                                )}
+                                </div>
                               </div>
                             )}
                           </div>
