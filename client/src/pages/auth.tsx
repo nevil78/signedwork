@@ -719,8 +719,10 @@ export default function AuthPage() {
                     {/* Legal Information Section */}
                     <div className="space-y-6">
                       <div className="border-b border-slate-200 pb-4">
-                        <h3 className="text-lg font-semibold text-slate-900">Legal Information</h3>
-                        <p className="text-sm text-slate-600">Registration and compliance details</p>
+                        <h3 className="text-lg font-semibold text-slate-900">Legal Information (Optional)</h3>
+                        <p className="text-sm text-slate-600">
+                          <span className="font-medium text-blue-600">Optional:</span> Add PAN or CIN registration for enhanced credibility. You can skip this and add it later from your dashboard.
+                        </p>
                       </div>
                       
                       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -729,11 +731,11 @@ export default function AuthPage() {
                           name="registrationType"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Registration Type *</FormLabel>
+                              <FormLabel>Registration Type</FormLabel>
                               <Select onValueChange={field.onChange} value={field.value}>
                                 <FormControl>
                                   <SelectTrigger>
-                                    <SelectValue placeholder="Select type" />
+                                    <SelectValue placeholder="Skip or select type" />
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
@@ -751,10 +753,10 @@ export default function AuthPage() {
                           name="registrationNumber"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Registration Number *</FormLabel>
+                              <FormLabel>Registration Number</FormLabel>
                               <FormControl>
                                 <Input 
-                                  placeholder="L12345MH2020PTC123456" 
+                                  placeholder="Optional - can be added later" 
                                   {...field}
                                 />
                               </FormControl>

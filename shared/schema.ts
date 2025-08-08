@@ -170,8 +170,8 @@ export const companies = pgTable("companies", {
   city: text("city").notNull(),
   state: text("state").notNull(),
   pincode: text("pincode").notNull(),
-  registrationType: text("registration_type").notNull(), // CIN or PAN
-  registrationNumber: text("registration_number").notNull(),
+  registrationType: text("registration_type"), // CIN or PAN (optional)
+  registrationNumber: text("registration_number"), // Registration number (optional)
   industry: text("industry").notNull(),
   email: text("email").notNull().unique(),
   size: text("size").notNull(),
@@ -508,9 +508,8 @@ export const insertCompanySchema = createInsertSchema(companies).omit({
     .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
     .regex(/\d/, "Password must contain at least one number"),
   pincode: z.string().min(5, "Pincode must be at least 5 digits"),
-  registrationType: z.enum(["CIN", "PAN"], {
-    required_error: "Please select registration type",
-  }),
+  registrationType: z.enum(["CIN", "PAN"]).optional(),
+  registrationNumber: z.string().optional(),
   industry: z.string().min(1, "Please select an industry"),
   establishmentYear: z.number()
     .min(1800, "Invalid establishment year")
