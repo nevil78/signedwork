@@ -37,7 +37,7 @@ export function CompanyRegistrationVerification() {
   // Request verification mutation
   const requestVerificationMutation = useMutation({
     mutationFn: async (data: { notes?: string }) => {
-      return apiRequest("/api/company/request-verification", "POST", data);
+      return apiRequest("POST", "/api/company/request-verification", data);
     },
     onSuccess: () => {
       toast({
