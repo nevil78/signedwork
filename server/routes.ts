@@ -2533,6 +2533,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Company verification routes
+  app.get("/api/company/verification-status", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    if (!sessionUser || sessionUser.type !== "company") {
+      return res.status(401).json({ message: "Not authenticated as company" });
+    }
+
+    try {
+      const company = await storage.getCompany(sessionUser.id);
+      if (!company) {
+        return res.status(404).json({ message: "Company not found" });
+      }
+
+      res.json({
+        id: company.id,
+        name: company.name,
+        registrationType: company.registrationType,
+        registrationNumber: company.registrationNumber,
+        verificationStatus: company.verificationStatus || "unverified",
+        verificationDate: company.verificationDate,
+        verificationNotes: company.verificationNotes,
+        rejectionReason: company.rejectionReason,
+        verificationDocuments: company.verificationDocuments || []
+      });
+    } catch (error) {
+      console.error("Get company verification status error:", error);
+      res.status(500).json({ message: "Failed to get verification status" });
+    }
+  });
+
+  app.post("/api/company/request-verification", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    if (!sessionUser || sessionUser.type !== "company") {
+      return res.status(401).json({ message: "Not authenticated as company" });
+    }
+
+    try {
+      const { notes } = req.body;
+
+      const company = await storage.getCompany(sessionUser.id);
+      if (!company) {
+        return res.status(404).json({ message: "Company not found" });
+      }
+
+      // Check if already verified or pending
+      if (company.verificationStatus === "verified") {
+        return res.status(400).json({ message: "Company is already verified" });
+      }
+
+      if (company.verificationStatus === "pending") {
+        return res.status(400).json({ message: "Verification request is already pending" });
+      }
+
+      // Update company verification status to pending
+      await storage.updateCompanyVerificationStatus(sessionUser.id, {
+        verificationStatus: "pending",
+        verificationMethod: "manual",
+        verificationNotes: notes || null,
+        rejectionReason: null // Clear any previous rejection reason
+      });
+
+      res.json({ message: "Verification request submitted successfully" });
+    } catch (error) {
+      console.error("Request company verification error:", error);
+      res.status(500).json({ message: "Failed to submit verification request" });
+    }
+  });
+
   app.get("/objects/:objectPath(*)", async (req, res) => {
     const objectStorageService = new ObjectStorageService();
     try {

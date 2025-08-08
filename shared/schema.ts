@@ -178,6 +178,13 @@ export const companies = pgTable("companies", {
   establishmentYear: integer("establishment_year").notNull(),
   password: text("password").notNull(),
   emailVerified: boolean("email_verified").default(false),
+  // PAN/CIN Verification fields
+  verificationStatus: text("verification_status").default("unverified"), // unverified, pending, verified, rejected
+  verificationMethod: text("verification_method"), // manual, api, document_upload
+  verificationDate: timestamp("verification_date"),
+  verificationNotes: text("verification_notes"), // For admin notes
+  verificationDocuments: text("verification_documents").array().default(sql`'{}'::text[]`), // Uploaded document URLs
+  rejectionReason: text("rejection_reason"), // If verification is rejected
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),

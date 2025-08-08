@@ -247,6 +247,14 @@ export interface IStorage {
   getCompanyById(id: string): Promise<Company | undefined>;
   updateEmployeeProfilePicture(id: string, profilePictureURL: string): Promise<void>;
   markCompanyEmailVerified(id: string): Promise<void>;
+  
+  // Company verification operations
+  updateCompanyVerificationStatus(companyId: string, data: {
+    verificationStatus: string;
+    verificationMethod?: string;
+    verificationNotes?: string;
+    rejectionReason?: string;
+  }): Promise<void>;
 }
 
 export interface JobSearchFilters {
@@ -1575,6 +1583,24 @@ export class DatabaseStorage implements IStorage {
 
   async markCompanyEmailVerified(id: string): Promise<void> {
     await db.update(companies).set({ emailVerified: true, updatedAt: new Date() }).where(eq(companies.id, id));
+  }
+
+  async updateCompanyVerificationStatus(companyId: string, data: {
+    verificationStatus: string;
+    verificationMethod?: string;
+    verificationNotes?: string;
+    rejectionReason?: string;
+  }): Promise<void> {
+    await db
+      .update(companies)
+      .set({
+        verificationStatus: data.verificationStatus,
+        verificationMethod: data.verificationMethod,
+        verificationNotes: data.verificationNotes,
+        rejectionReason: data.rejectionReason,
+        verificationDate: data.verificationStatus === 'verified' ? new Date() : null,
+      })
+      .where(eq(companies.id, companyId));
   }
 }
 
