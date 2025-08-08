@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
 import { Shield, User, Building, ArrowLeft, Check, Eye, EyeOff, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -278,31 +278,47 @@ export default function AuthPage() {
             </div>
             
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 mb-8">
-              <Card 
-                className="cursor-pointer border-2 border-transparent hover:border-primary transition-all duration-300 group"
+              <div 
+                className="cursor-pointer border-2 border-slate-200 bg-white rounded-lg shadow-sm hover:border-primary hover:shadow-md transition-all duration-300 group"
                 onClick={() => setCurrentView("employee")}
+                data-testid="button-select-employee"
               >
-                <CardContent className="p-6 text-center">
+                <div className="p-6 text-center">
                   <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-blue-200 transition-colors">
                     <User className="text-primary text-2xl" />
                   </div>
                   <h3 className="text-lg font-semibold text-slate-900 mb-2">Employee</h3>
                   <p className="text-sm text-slate-600">Individual professional account</p>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
               
-              <Card 
-                className="cursor-pointer border-2 border-transparent hover:border-primary transition-all duration-300 group"
+              <div 
+                className="cursor-pointer border-2 border-slate-200 bg-white rounded-lg shadow-sm hover:border-primary hover:shadow-md transition-all duration-300 group"
                 onClick={() => setCurrentView("company")}
+                data-testid="button-select-company"
               >
-                <CardContent className="p-6 text-center">
+                <div className="p-6 text-center">
                   <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-blue-200 transition-colors">
                     <Building className="text-primary text-2xl" />
                   </div>
                   <h3 className="text-lg font-semibold text-slate-900 mb-2">Company</h3>
                   <p className="text-sm text-slate-600">Organization account</p>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
+              
+              <div 
+                className="cursor-pointer border-2 border-slate-200 bg-white rounded-lg shadow-sm hover:border-primary hover:shadow-md transition-all duration-300 group"
+                onClick={() => setCurrentView("company")}
+                data-testid="button-select-company"
+              >
+                <div className="p-6 text-center">
+                  <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-blue-200 transition-colors">
+                    <Building className="text-primary text-2xl" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-slate-900 mb-2">Company</h3>
+                  <p className="text-sm text-slate-600">Organization account</p>
+                </div>
+              </div>
             </div>
             
             <div className="text-center space-y-4">
