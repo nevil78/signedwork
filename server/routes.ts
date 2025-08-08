@@ -665,6 +665,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get pending verifications (admin only)
+  app.get("/api/admin/pending-verifications", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    if (!sessionUser || sessionUser.type !== "admin") {
+      return res.status(401).json({ message: "Not authenticated as admin" });
+    }
+    
+    try {
+      const companies = await storage.getPendingVerifications();
+      res.json(companies);
+    } catch (error) {
+      console.error("Get pending verifications error:", error);
+      res.status(500).json({ message: "Failed to get pending verifications" });
+    }
+  });
+
+  // Update verification status (admin only)
+  app.patch("/api/admin/companies/:id/verification", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    if (!sessionUser || sessionUser.type !== "admin") {
+      return res.status(401).json({ message: "Not authenticated as admin" });
+    }
+    
+    try {
+      const { id } = req.params;
+      const { status, notes, rejectionReason } = req.body;
+      
+      await storage.updateVerificationStatus(id, status, notes, rejectionReason);
+      
+      res.json({ 
+        message: `Company verification ${status} successfully` 
+      });
+    } catch (error) {
+      console.error("Update verification status error:", error);
+      res.status(500).json({ message: "Failed to update verification status" });
+    }
+  });
+
   // Employee Profile Routes
   
   // Get employee profile data

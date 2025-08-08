@@ -14,7 +14,7 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Users, Building, Briefcase, TrendingUp, LogOut, 
-  ShieldCheck, UserCheck, UserX, Calendar, Mail, Search
+  ShieldCheck, UserCheck, UserX, Calendar, Mail, Search, Shield
 } from "lucide-react";
 import { format } from "date-fns";
 import type { Employee, Company, Admin } from "@shared/schema";
@@ -156,6 +156,7 @@ export default function AdminDashboard() {
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="employees">Employees</TabsTrigger>
             <TabsTrigger value="companies">Companies</TabsTrigger>
+            <TabsTrigger value="verifications">Verifications</TabsTrigger>
           </TabsList>
 
           {/* Overview Tab */}
@@ -360,7 +361,7 @@ export default function AdminDashboard() {
                         <TableHead>Company ID</TableHead>
                         <TableHead>Name</TableHead>
                         <TableHead>Email</TableHead>
-                        <TableHead>Phone</TableHead>
+                        <TableHead>Location</TableHead>
                         <TableHead>Industry</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead>Created</TableHead>
@@ -370,15 +371,15 @@ export default function AdminDashboard() {
                     <TableBody>
                       {companies.map((company) => (
                         <TableRow key={company.id}>
-                          <TableCell className="font-medium">{company.companyId}</TableCell>
-                          <TableCell>{company.companyName}</TableCell>
+                          <TableCell className="font-medium">{company.id}</TableCell>
+                          <TableCell>{company.name}</TableCell>
                           <TableCell>
                             <div className="flex items-center">
                               <Mail className="h-3 w-3 mr-1 text-muted-foreground" />
                               {company.email}
                             </div>
                           </TableCell>
-                          <TableCell>{company.phone}</TableCell>
+                          <TableCell>{company.city || 'N/A'}</TableCell>
                           <TableCell>{company.industry}</TableCell>
                           <TableCell>
                             <Badge variant={company.isActive ? "default" : "secondary"}>
@@ -417,6 +418,35 @@ export default function AdminDashboard() {
                     <AlertDescription>No companies found</AlertDescription>
                   </Alert>
                 )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Verifications Tab */}
+          <TabsContent value="verifications">
+            <Card>
+              <CardHeader>
+                <CardTitle>Company Verification Management</CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Review and manage company verification requests
+                </p>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-8">
+                  <ShieldCheck className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">Company Verification System</h3>
+                  <p className="text-muted-foreground mb-6">
+                    Access the dedicated verification interface to review pending company verification requests
+                  </p>
+                  <Button 
+                    onClick={() => navigate("/admin/verifications")}
+                    className="bg-blue-600 hover:bg-blue-700"
+                    data-testid="button-admin-verifications"
+                  >
+                    <Shield className="h-4 w-4 mr-2" />
+                    Open Verification Center
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>

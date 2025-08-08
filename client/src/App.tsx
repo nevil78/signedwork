@@ -23,6 +23,7 @@ import CompanyEmployeeManagement from "@/pages/company-employee-management";
 import AdminLogin from "@/pages/admin-login";
 import AdminDashboard from "@/pages/admin-dashboard";
 import AdminSetup from "@/pages/admin-setup";
+import AdminVerifications from "@/pages/admin-verifications";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -49,6 +50,7 @@ function Router() {
       <Route path="/employee-profile" component={() => { window.location.href = "/profile"; return null; }} />
       <Route path="/admin/login" component={AdminLogin} />
       <Route path="/admin/dashboard" component={AdminDashboard} />
+      <Route path="/admin/verifications" component={AdminVerifications} />
       <Route path="/admin/setup" component={AdminSetup} />
       <Route component={NotFound} />
     </Switch>

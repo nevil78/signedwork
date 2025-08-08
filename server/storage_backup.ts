@@ -255,8 +255,6 @@ export interface IStorage {
     verificationNotes?: string;
     rejectionReason?: string;
   }): Promise<void>;
-  getPendingVerifications(): Promise<Company[]>;
-  updateVerificationStatus(id: string, status: string, notes?: string, rejectionReason?: string): Promise<void>;
 }
 
 export interface JobSearchFilters {
@@ -1603,32 +1601,6 @@ export class DatabaseStorage implements IStorage {
         verificationDate: data.verificationStatus === 'verified' ? new Date() : null,
       })
       .where(eq(companies.id, companyId));
-  }
-
-  async getPendingVerifications(): Promise<Company[]> {
-    return await db
-      .select()
-      .from(companies)
-      .where(eq(companies.verificationStatus, 'pending'))
-      .orderBy(desc(companies.createdAt));
-  }
-
-  async updateVerificationStatus(id: string, status: string, notes?: string, rejectionReason?: string): Promise<void> {
-    const updateData: any = {
-      verificationStatus: status,
-      verificationNotes: notes || null,
-      rejectionReason: rejectionReason || null,
-      updatedAt: new Date()
-    };
-
-    if (status === 'verified') {
-      updateData.verificationDate = new Date();
-    }
-
-    await db
-      .update(companies)
-      .set(updateData)
-      .where(eq(companies.id, id));
   }
 }
 
