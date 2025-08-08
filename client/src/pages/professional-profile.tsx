@@ -250,6 +250,16 @@ function SkillsSection({ skills, employeeId }: { skills: string[]; employeeId: s
                     )}
                   </div>
                 ))}
+                {!isEditing && (
+                  <button
+                    onClick={() => setIsEditing(true)}
+                    className="flex items-center gap-2 bg-gray-50 text-gray-600 px-3 py-1.5 rounded-full text-sm font-medium hover:bg-blue-50 hover:text-blue-600 transition-colors border border-dashed border-gray-300 hover:border-blue-300"
+                    data-testid="button-add-more-skills"
+                  >
+                    <Plus className="h-3 w-3" />
+                    Add More Skills
+                  </button>
+                )}
               </div>
             </div>
 
