@@ -206,8 +206,17 @@ function SkillsSection({ skills, employeeId }: { skills: string[]; employeeId: s
             </>
           ) : (
             <>
-              <Edit className="h-4 w-4 mr-2" />
-              Edit Skills
+              {skills.length === 0 ? (
+                <>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Skill
+                </>
+              ) : (
+                <>
+                  <Edit className="h-4 w-4 mr-2" />
+                  Edit Skills
+                </>
+              )}
             </>
           )}
         </Button>
