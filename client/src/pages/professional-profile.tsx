@@ -326,7 +326,8 @@ function SkillsSection({ skills, employeeId }: { skills: string[]; employeeId: s
                       variant="outline"
                       className="text-xs h-8"
                       onClick={() => {
-                        updateSkills.mutate([suggestion]);
+                        const updatedSkills = [...skills, suggestion];
+                        updateSkills.mutate(updatedSkills);
                       }}
                       data-testid={`button-add-popular-skill-${index}`}
                     >
