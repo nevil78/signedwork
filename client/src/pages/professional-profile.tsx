@@ -100,7 +100,279 @@ const profileUpdateSchema = z.object({
   languages: z.array(z.string()).optional(),
 });
 
-type ProfileSection = "overview" | "experience" | "education" | "certifications" | "analytics";
+type ProfileSection = "overview" | "skills" | "experience" | "education" | "certifications" | "analytics";
+
+// Skills Section Component
+function SkillsSection({ skills, employeeId }: { skills: string[]; employeeId: string }) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [newSkill, setNewSkill] = useState("");
+  const [skillToDelete, setSkillToDelete] = useState<string | null>(null);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  // Update skills mutation
+  const updateSkills = useMutation({
+    mutationFn: async (updatedSkills: string[]) => {
+      return await apiRequest("PUT", "/api/employee/profile", { skills: updatedSkills });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/employee/profile", employeeId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      toast({ 
+        title: "Skills Updated", 
+        description: "Your skills have been updated successfully." 
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Update Failed",
+        description: error.message || "Failed to update skills. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleAddSkill = () => {
+    if (!newSkill.trim()) {
+      toast({
+        title: "Invalid Skill",
+        description: "Please enter a valid skill name.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (skills.includes(newSkill.trim())) {
+      toast({
+        title: "Duplicate Skill",
+        description: "This skill already exists in your profile.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const updatedSkills = [...skills, newSkill.trim()];
+    updateSkills.mutate(updatedSkills);
+    setNewSkill("");
+  };
+
+  const handleDeleteSkill = (skillToRemove: string) => {
+    const updatedSkills = skills.filter(skill => skill !== skillToRemove);
+    updateSkills.mutate(updatedSkills);
+    setSkillToDelete(null);
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      handleAddSkill();
+    }
+  };
+
+  // Predefined skill suggestions (common tech skills)
+  const skillSuggestions = [
+    "JavaScript", "TypeScript", "React", "Node.js", "Python", "Java", "C++", "HTML", "CSS",
+    "Git", "Docker", "AWS", "MongoDB", "PostgreSQL", "MySQL", "Express.js", "Next.js",
+    "Vue.js", "Angular", "PHP", "Laravel", "Django", "Flask", "Spring Boot", "GraphQL",
+    "REST APIs", "Microservices", "Agile", "Scrum", "Project Management", "Leadership",
+    "Team Management", "Problem Solving", "Communication", "Analytics", "Data Analysis"
+  ];
+
+  const availableSuggestions = skillSuggestions.filter(
+    suggestion => !skills.some(skill => skill.toLowerCase() === suggestion.toLowerCase())
+  );
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div>
+          <CardTitle className="flex items-center gap-2">
+            <Target className="h-5 w-5 text-green-600" />
+            Skills & Expertise
+          </CardTitle>
+          <p className="text-sm text-gray-500 mt-1">
+            Showcase your technical and professional skills
+          </p>
+        </div>
+        <Button 
+          onClick={() => setIsEditing(!isEditing)}
+          size="sm"
+          variant={isEditing ? "destructive" : "outline"}
+          data-testid="button-toggle-skills-edit"
+        >
+          {isEditing ? (
+            <>
+              <CheckCircle className="h-4 w-4 mr-2" />
+              Done
+            </>
+          ) : (
+            <>
+              <Edit className="h-4 w-4 mr-2" />
+              Edit Skills
+            </>
+          )}
+        </Button>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {skills.length > 0 ? (
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-sm font-medium text-gray-600 mb-3">Current Skills ({skills.length})</h3>
+              <div className="flex flex-wrap gap-2">
+                {skills.map((skill, index) => (
+                  <div 
+                    key={index} 
+                    className={`flex items-center gap-2 bg-blue-50 text-blue-700 px-3 py-1.5 rounded-full text-sm font-medium ${
+                      isEditing ? 'border border-blue-200' : ''
+                    }`}
+                    data-testid={`skill-${index}`}
+                  >
+                    <Target className="h-3 w-3" />
+                    {skill}
+                    {isEditing && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-5 w-5 p-0 hover:bg-red-100 hover:text-red-600 ml-1"
+                        onClick={() => setSkillToDelete(skill)}
+                        data-testid={`button-remove-skill-${index}`}
+                      >
+                        ×
+                      </Button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {isEditing && (
+              <div className="border-t pt-4">
+                <h4 className="text-sm font-medium text-gray-700 mb-3">Add New Skill</h4>
+                <div className="flex gap-2 mb-4">
+                  <Input
+                    value={newSkill}
+                    onChange={(e) => setNewSkill(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    placeholder="Enter a skill (e.g., React, Project Management)"
+                    className="flex-1"
+                    data-testid="input-new-skill"
+                  />
+                  <Button 
+                    onClick={handleAddSkill}
+                    disabled={updateSkills.isPending || !newSkill.trim()}
+                    data-testid="button-add-skill"
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add
+                  </Button>
+                </div>
+
+                {availableSuggestions.length > 0 && (
+                  <div>
+                    <h5 className="text-sm font-medium text-gray-600 mb-2">Popular Skills</h5>
+                    <div className="flex flex-wrap gap-2">
+                      {availableSuggestions.slice(0, 15).map((suggestion, index) => (
+                        <Button
+                          key={index}
+                          size="sm"
+                          variant="ghost"
+                          className="text-xs h-7 bg-gray-50 hover:bg-blue-50 hover:text-blue-600"
+                          onClick={() => {
+                            const updatedSkills = [...skills, suggestion];
+                            updateSkills.mutate(updatedSkills);
+                          }}
+                          data-testid={`button-add-suggested-skill-${index}`}
+                        >
+                          + {suggestion}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="text-center py-8">
+            <Target className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No skills added yet</h3>
+            <p className="text-gray-600 mb-4">Add your technical and professional skills to showcase your expertise</p>
+            <div className="flex gap-2 justify-center">
+              <Input
+                value={newSkill}
+                onChange={(e) => setNewSkill(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder="Enter your first skill"
+                className="max-w-xs"
+                data-testid="input-first-skill"
+              />
+              <Button 
+                onClick={handleAddSkill}
+                disabled={updateSkills.isPending || !newSkill.trim()}
+                data-testid="button-add-first-skill"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Skill
+              </Button>
+            </div>
+            
+            {skillSuggestions.length > 0 && (
+              <div className="mt-6">
+                <h4 className="text-sm font-medium text-gray-600 mb-3">Popular Skills to Get Started</h4>
+                <div className="flex flex-wrap gap-2 justify-center">
+                  {skillSuggestions.slice(0, 12).map((suggestion, index) => (
+                    <Button
+                      key={index}
+                      size="sm"
+                      variant="outline"
+                      className="text-xs h-8"
+                      onClick={() => {
+                        updateSkills.mutate([suggestion]);
+                      }}
+                      data-testid={`button-add-popular-skill-${index}`}
+                    >
+                      + {suggestion}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Delete confirmation dialog */}
+        <Dialog open={!!skillToDelete} onOpenChange={() => setSkillToDelete(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Remove Skill</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <p className="text-gray-600">
+                Are you sure you want to remove <strong>"{skillToDelete}"</strong> from your skills?
+              </p>
+              <div className="flex justify-end space-x-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setSkillToDelete(null)}
+                  data-testid="button-cancel-skill-delete"
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  variant="destructive" 
+                  onClick={() => skillToDelete && handleDeleteSkill(skillToDelete)}
+                  disabled={updateSkills.isPending}
+                  data-testid="button-confirm-skill-delete"
+                >
+                  {updateSkills.isPending ? "Removing..." : "Remove"}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </CardContent>
+    </Card>
+  );
+}
 
 // Education Section Component
 function EducationSection({ educations, employeeId }: { educations: any[]; employeeId: string }) {
@@ -950,8 +1222,9 @@ export default function ProfessionalProfile() {
           {/* Main Content */}
           <div className="lg:col-span-3">
             <Tabs value={activeSection} onValueChange={(value) => setActiveSection(value as ProfileSection)}>
-              <TabsList className="grid w-full grid-cols-5">
+              <TabsList className="grid w-full grid-cols-6">
                 <TabsTrigger value="overview">Overview</TabsTrigger>
+                <TabsTrigger value="skills">Skills</TabsTrigger>
                 <TabsTrigger value="experience">Experience</TabsTrigger>
                 <TabsTrigger value="education">Education</TabsTrigger>
                 <TabsTrigger value="certifications">Certifications</TabsTrigger>
@@ -1029,6 +1302,11 @@ export default function ProfessionalProfile() {
                     )}
                   </CardContent>
                 </Card>
+              </TabsContent>
+
+              {/* Skills Section */}
+              <TabsContent value="skills" className="space-y-6">
+                <SkillsSection skills={user.skills || []} employeeId={user.id} />
               </TabsContent>
 
               {/* Experience Section */}
