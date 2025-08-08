@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Eye, EyeOff, Lock, CheckCircle, AlertTriangle } from "lucide-react";
+import { Eye, EyeOff, Lock, CheckCircle, AlertTriangle, ArrowLeft } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 
 export function ChangePasswordForm() {
@@ -67,13 +67,33 @@ export function ChangePasswordForm() {
     changePasswordMutation.mutate(data);
   };
 
+  const handleBackToDashboard = () => {
+    if (user?.companyId) {
+      navigate("/company-dashboard");
+    } else {
+      navigate("/profile");
+    }
+  };
+
   return (
     <Card className="w-full max-w-md mx-auto" data-testid="card-change-password">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Lock className="w-5 h-5" />
-          Change Password
-        </CardTitle>
+        <div className="flex items-center gap-3 mb-2">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={handleBackToDashboard}
+            className="text-gray-500 hover:text-gray-700 p-2"
+            data-testid="button-back-to-dashboard"
+          >
+            <ArrowLeft className="w-4 h-4" />
+          </Button>
+          <CardTitle className="flex items-center gap-2">
+            <Lock className="w-5 h-5" />
+            Change Password
+          </CardTitle>
+        </div>
         <CardDescription>
           Update your account password. You'll need to enter your current password to confirm the change.
         </CardDescription>
@@ -193,14 +213,25 @@ export function ChangePasswordForm() {
             </Alert>
           )}
 
-          <Button
-            type="submit"
-            className="w-full"
-            disabled={changePasswordMutation.isPending}
-            data-testid="button-change-password"
-          >
-            {changePasswordMutation.isPending ? "Changing Password..." : "Change Password"}
-          </Button>
+          <div className="flex gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleBackToDashboard}
+              className="flex-1"
+              data-testid="button-cancel-change-password"
+            >
+              Cancel
+            </Button>
+            <Button 
+              type="submit" 
+              className="flex-1" 
+              disabled={changePasswordMutation.isPending}
+              data-testid="button-change-password"
+            >
+              {changePasswordMutation.isPending ? "Changing Password..." : "Change Password"}
+            </Button>
+          </div>
         </form>
       </CardContent>
     </Card>
