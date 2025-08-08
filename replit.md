@@ -6,6 +6,9 @@ This project is a LinkedIn-like professional networking platform built with Expr
 - Fixed company verification request system - corrected API endpoint parameter order for proper functionality
 - Enhanced login page UX by making entire employee/company selection boxes fully clickable with proper radio button implementation
 - Implemented complete admin verification workflow with approve/reject functionality
+- Completed comprehensive password management system with OTP-based forgot password flow and secure change password functionality
+- Added account settings dropdown menus to both employee and company navigation headers with change password access
+- Integrated automatic dashboard redirection after successful password changes based on user type
 - All core authentication and verification systems are now operational
 
 # User Preferences

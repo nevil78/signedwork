@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { changePasswordSchema, type ChangePasswordData } from "@shared/schema";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { useLocation } from "wouter";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,6 +17,13 @@ export function ChangePasswordForm() {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const { toast } = useToast();
+  const [, navigate] = useLocation();
+
+  // Check what type of user is logged in to redirect appropriately
+  const { data: user } = useQuery({
+    queryKey: ["/api/auth/user"],
+  });
 
   const form = useForm<ChangePasswordData>({
     resolver: zodResolver(changePasswordSchema),
@@ -31,6 +40,26 @@ export function ChangePasswordForm() {
     },
     onSuccess: () => {
       form.reset();
+      toast({
+        title: "Success",
+        description: "Password changed successfully! Redirecting to dashboard...",
+      });
+      
+      // Redirect based on user type after a short delay
+      setTimeout(() => {
+        if (user?.companyId) {
+          navigate("/company-dashboard");
+        } else {
+          navigate("/profile");
+        }
+      }, 1500);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to change password",
+        variant: "destructive",
+      });
     },
   });
 
