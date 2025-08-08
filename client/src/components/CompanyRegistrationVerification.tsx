@@ -88,8 +88,8 @@ export function CompanyRegistrationVerification() {
     switch (company.verificationStatus) {
       case "unverified":
         return validation.isValid 
-          ? "Your registration details appear valid. Request verification to get your company verified."
-          : `Registration validation failed: ${validation.error}`;
+          ? "Your registration details look good! Consider requesting verification to boost your company's credibility (optional)."
+          : `Registration format issue: ${validation.error}. You can still use the platform without verification.`;
       case "pending":
         return "Your verification request is being reviewed by our team. This typically takes 2-3 business days.";
       case "verified":
@@ -110,10 +110,10 @@ export function CompanyRegistrationVerification() {
           <div>
             <CardTitle className="flex items-center gap-2">
               <Shield className="h-5 w-5" />
-              Company Verification
+              Company Verification (Optional)
             </CardTitle>
             <CardDescription>
-              Verify your {company.registrationType} registration for enhanced credibility
+              Boost credibility by verifying your {company.registrationType} registration - completely optional but recommended
             </CardDescription>
           </div>
           <CompanyVerificationBadge status={company.verificationStatus} />
@@ -188,6 +188,26 @@ export function CompanyRegistrationVerification() {
           </div>
         </div>
 
+        {/* Benefits of Verification */}
+        {canRequestVerification && (
+          <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200">
+            <div className="flex items-start gap-2">
+              <Shield className="h-5 w-5 text-blue-600 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium text-blue-900 dark:text-blue-100 mb-1">
+                  Benefits of Verification (Optional)
+                </p>
+                <ul className="text-sm text-blue-700 dark:text-blue-200 space-y-1">
+                  <li>• Builds employee trust and confidence</li>
+                  <li>• Displays verified badge on company profile</li>
+                  <li>• Enhances professional credibility</li>
+                  <li>• Shows commitment to transparency</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Request Verification Form */}
         {canRequestVerification && (
           <div className="space-y-4">
@@ -217,7 +237,7 @@ export function CompanyRegistrationVerification() {
               </Button>
               
               <div className="text-xs text-muted-foreground">
-                Manual review process (2-3 business days)
+                Free manual review (2-3 business days)
               </div>
             </div>
           </div>
@@ -230,10 +250,10 @@ export function CompanyRegistrationVerification() {
               <ShieldCheck className="h-5 w-5 text-green-600" />
               <div>
                 <p className="text-sm font-medium text-green-900 dark:text-green-100">
-                  Company Verified Successfully!
+                  Company Successfully Verified!
                 </p>
                 <p className="text-sm text-green-700 dark:text-green-200">
-                  Your verified status gives employees more confidence in joining your company.
+                  Your verification badge helps build trust and credibility with potential employees.
                 </p>
               </div>
             </div>
