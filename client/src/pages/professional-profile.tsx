@@ -113,7 +113,7 @@ function SkillsSection({ skills, employeeId }: { skills: string[]; employeeId: s
   // Update skills mutation
   const updateSkills = useMutation({
     mutationFn: async (updatedSkills: string[]) => {
-      return await apiRequest("PUT", "/api/employee/profile", { skills: updatedSkills });
+      return await apiRequest("PATCH", "/api/employee/profile", { skills: updatedSkills });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/employee/profile", employeeId] });
