@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Building2, Copy, Users, Clock, CheckCircle, AlertCircle, FileText, BarChart3, Settings, Briefcase, Mail, UserSearch, ArrowRight, Calendar } from 'lucide-react';
+import { Building2, Copy, Users, Clock, CheckCircle, AlertCircle, FileText, BarChart3, Settings, Briefcase, Mail, UserSearch, ArrowRight, Calendar, UserPlus } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import {
@@ -251,63 +251,68 @@ export default function CompanyDashboard() {
 
           {/* Invitation Code Section */}
           <Card>
-            <CardHeader>
-              <CardTitle>Invitation Codes</CardTitle>
-              <CardDescription>
-                Generate temporary codes for employees to join your company
-              </CardDescription>
+            <CardHeader className="pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
+                  <UserPlus className="w-4 h-4 text-green-600 dark:text-green-400" />
+                </div>
+                <div>
+                  <CardTitle className="text-base font-semibold">Invitation Codes</CardTitle>
+                  <CardDescription className="text-sm">
+                    Generate temporary codes for employees
+                  </CardDescription>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               {!isGeneratingCode ? (
-                <div className="space-y-4">
-                  <p className="text-sm text-muted-foreground">
-                    Generate a new invitation code that's valid for 15 minutes.
-                    Share this code with employees to allow them to join your company.
+                <div className="text-center py-4">
+                  <UserPlus className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Generate a code valid for 15 minutes to invite employees.
                   </p>
                   <Button 
                     onClick={() => generateCodeMutation.mutate()}
                     disabled={generateCodeMutation.isPending}
-                    className="w-full"
+                    size="sm"
+                    className="w-full sm:w-auto"
                   >
-                    {generateCodeMutation.isPending ? "Generating..." : "Generate New Code"}
+                    {generateCodeMutation.isPending ? "Generating..." : "Generate Code"}
                   </Button>
                 </div>
               ) : currentCode && (
-                <div className="space-y-4">
-                  <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-2xl font-mono font-bold tracking-wider">
+                <div className="space-y-3">
+                  <div className="text-center p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                    <div className="flex items-center justify-center gap-2 mb-2">
+                      <span className="text-xl font-mono font-bold tracking-wider text-green-700 dark:text-green-300">
                         {currentCode.code}
                       </span>
                       <Button
                         variant="ghost"
                         size="icon"
                         onClick={handleCopyCode}
+                        className="h-6 w-6"
                       >
                         {copied ? (
-                          <CheckCircle className="h-5 w-5 text-green-600" />
+                          <CheckCircle className="h-4 w-4 text-green-600" />
                         ) : (
-                          <Copy className="h-5 w-5" />
+                          <Copy className="h-4 w-4" />
                         )}
                       </Button>
                     </div>
-                    <div className="flex items-center text-sm text-muted-foreground">
-                      <Clock className="h-4 w-4 mr-1" />
-                      Expires in: {getRemainingTime()}
+                    <div className="flex items-center justify-center text-xs text-muted-foreground">
+                      <Clock className="h-3 w-3 mr-1" />
+                      {getRemainingTime()}
                     </div>
                   </div>
-                  <div className="flex items-start space-x-2">
-                    <AlertCircle className="h-4 w-4 text-yellow-600 mt-0.5" />
-                    <p className="text-sm text-muted-foreground">
-                      This code will expire in 15 minutes. Generate a new code if needed.
-                    </p>
-                  </div>
+                  
                   <Button 
                     onClick={() => generateCodeMutation.mutate()}
                     variant="outline"
-                    className="w-full"
+                    size="sm"
+                    className="w-full sm:w-auto mx-auto block"
                   >
-                    Generate New Code
+                    Generate New
                   </Button>
                 </div>
               )}
@@ -316,26 +321,29 @@ export default function CompanyDashboard() {
 
           {/* Employees Section */}
           <Card>
-            <CardHeader>
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <div>
-                  <CardTitle className="flex items-center gap-2">
-                    <Users className="h-5 w-5" />
-                    Recent Employees ({employees.length})
-                  </CardTitle>
-                  <CardDescription>
-                    Recently joined employees (showing last 5)
-                  </CardDescription>
+            <CardHeader className="pb-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-orange-100 dark:bg-orange-900 rounded-lg flex items-center justify-center">
+                    <Users className="w-4 h-4 text-orange-600 dark:text-orange-400" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-base font-semibold">Recent Employees</CardTitle>
+                    <CardDescription className="text-sm">
+                      {employees.length} total • Last 5 shown
+                    </CardDescription>
+                  </div>
                 </div>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => navigate('/company-employees')}
-                  className="flex items-center gap-1 self-start sm:self-auto"
+                  className="shrink-0"
                   data-testid="button-manage-all-employees"
                 >
-                  <Settings className="w-4 h-4" />
-                  Manage All
+                  <Settings className="w-4 h-4 mr-1" />
+                  <span className="hidden sm:inline">Manage</span>
+                  <span className="sm:hidden">All</span>
                 </Button>
               </div>
             </CardHeader>
@@ -354,28 +362,30 @@ export default function CompanyDashboard() {
                   {employees.slice(0, 5).map((employee) => (
                     <div 
                       key={employee.id} 
-                      className="p-3 border rounded-lg hover:bg-accent/50 transition-colors cursor-pointer"
+                      className="p-2 border rounded hover:bg-accent/50 transition-colors cursor-pointer"
                       onClick={() => navigate(`/company-employee/${employee.employeeId}`)}
                       data-testid={`employee-card-${employee.employeeId}`}
                       title="Click to view employee profile"
                     >
-                      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
+                      <div className="flex items-center justify-between gap-3">
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium text-primary hover:underline truncate" data-testid={`employee-name-${employee.employeeId}`}>
+                          <p className="font-medium text-sm text-primary truncate" data-testid={`employee-name-${employee.employeeId}`}>
                             {employee.employeeName}
                           </p>
-                          <p className="text-sm text-muted-foreground truncate" data-testid={`employee-email-${employee.employeeId}`}>
+                          <p className="text-xs text-muted-foreground truncate" data-testid={`employee-email-${employee.employeeId}`}>
                             {employee.employeeEmail}
                           </p>
+                        </div>
+                        <div className="text-right shrink-0">
                           {employee.position && (
-                            <Badge variant="secondary" className="mt-1" data-testid={`employee-position-${employee.employeeId}`}>
+                            <Badge variant="secondary" className="text-xs mb-1" data-testid={`employee-position-${employee.employeeId}`}>
                               {employee.position}
                             </Badge>
                           )}
+                          <div className="text-xs text-muted-foreground">
+                            {format(new Date(employee.joinedAt), 'MMM d')}
+                          </div>
                         </div>
-                        <span className="text-xs text-muted-foreground shrink-0">
-                          Joined {format(new Date(employee.joinedAt), 'MMM d, yyyy')}
-                        </span>
                       </div>
                     </div>
                   ))}

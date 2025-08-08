@@ -105,141 +105,96 @@ export function CompanyRegistrationVerification() {
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="flex items-center gap-2">
-              <Shield className="h-5 w-5" />
-              Company Verification (Optional)
-            </CardTitle>
-            <CardDescription>
-              Boost credibility by verifying your {company.registrationType} registration - completely optional but recommended
-            </CardDescription>
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
+              <Shield className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+            </div>
+            <div>
+              <CardTitle className="text-base font-semibold">Registration Verification</CardTitle>
+              <CardDescription className="text-sm">
+                {company.registrationType ? `${company.registrationType} verification` : "Add PAN/CIN for credibility"}
+              </CardDescription>
+            </div>
           </div>
           <CompanyVerificationBadge status={company.verificationStatus} />
         </div>
       </CardHeader>
       
       <CardContent className="space-y-4">
-        {/* Registration Details */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <Label className="text-sm font-medium">Registration Type</Label>
-            <div className="flex items-center gap-2 mt-1">
-              <Badge variant="secondary">{company.registrationType}</Badge>
-            </div>
-          </div>
-          <div>
-            <Label className="text-sm font-medium">Registration Number</Label>
-            <div className="flex items-center gap-2 mt-1">
-              <code className="px-2 py-1 bg-muted rounded text-sm font-mono">
-                {company.registrationNumber}
-              </code>
+        {/* Registration Details - Only show if data exists */}
+        {company.registrationType && company.registrationNumber && (
+          <div className="space-y-3">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary" className="shrink-0">{company.registrationType}</Badge>
+                <span className="text-sm text-muted-foreground">•</span>
+                <code className="text-sm font-mono bg-muted px-2 py-1 rounded truncate">
+                  {company.registrationNumber}
+                </code>
+              </div>
               {validation.isValid ? (
-                <CheckCircle className="h-4 w-4 text-green-600" />
+                <div className="flex items-center gap-1 text-green-600 text-sm">
+                  <CheckCircle className="h-4 w-4" />
+                  <span className="hidden sm:inline">Valid format</span>
+                </div>
               ) : (
-                <XCircle className="h-4 w-4 text-red-600" />
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Validation Status */}
-        <div className="p-4 rounded-lg bg-muted/50">
-          <div className="flex items-start gap-2">
-            {validation.isValid ? (
-              <CheckCircle className="h-5 w-5 text-green-600 mt-0.5" />
-            ) : (
-              <XCircle className="h-5 w-5 text-red-600 mt-0.5" />
-            )}
-            <div className="flex-1">
-              <p className="text-sm font-medium">
-                {validation.isValid ? "Format Validation Passed" : "Format Validation Failed"}
-              </p>
-              <p className="text-sm text-muted-foreground mt-1">
-                {validation.isValid 
-                  ? `Your ${company.registrationType} number follows the correct format.`
-                  : validation.error
-                }
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Status Message */}
-        <div className="p-4 rounded-lg border">
-          <div className="flex items-start gap-2">
-            {company.verificationStatus === "pending" && <Clock className="h-5 w-5 text-yellow-600 mt-0.5" />}
-            {company.verificationStatus === "verified" && <ShieldCheck className="h-5 w-5 text-green-600 mt-0.5" />}
-            {company.verificationStatus === "rejected" && <XCircle className="h-5 w-5 text-red-600 mt-0.5" />}
-            {company.verificationStatus === "unverified" && <Shield className="h-5 w-5 text-gray-500 mt-0.5" />}
-            
-            <div className="flex-1">
-              <p className="text-sm">
-                {getStatusMessage()}
-              </p>
-              
-              {company.verificationNotes && (
-                <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded text-sm">
-                  <strong>Admin Notes:</strong> {company.verificationNotes}
+                <div className="flex items-center gap-1 text-red-600 text-sm">
+                  <XCircle className="h-4 w-4" />
+                  <span className="hidden sm:inline">Invalid format</span>
                 </div>
               )}
             </div>
           </div>
+        )}
+
+        {/* Status Message */}
+        <div className="flex items-start gap-2">
+          {company.verificationStatus === "pending" && <Clock className="h-4 w-4 text-yellow-600 mt-0.5 shrink-0" />}
+          {company.verificationStatus === "verified" && <ShieldCheck className="h-4 w-4 text-green-600 mt-0.5 shrink-0" />}
+          {company.verificationStatus === "rejected" && <XCircle className="h-4 w-4 text-red-600 mt-0.5 shrink-0" />}
+          {company.verificationStatus === "unverified" && <Shield className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />}
+          
+          <div className="flex-1 min-w-0">
+            <p className="text-sm text-muted-foreground">
+              {getStatusMessage()}
+            </p>
+            
+            {company.verificationNotes && (
+              <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded text-xs">
+                <strong>Admin Notes:</strong> {company.verificationNotes}
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Benefits of Verification */}
+        {/* Action Button */}
         {canRequestVerification && (
-          <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200">
-            <div className="flex items-start gap-2">
-              <Shield className="h-5 w-5 text-blue-600 mt-0.5" />
-              <div>
-                <p className="text-sm font-medium text-blue-900 dark:text-blue-100 mb-1">
-                  Benefits of Verification (Optional)
-                </p>
-                <ul className="text-sm text-blue-700 dark:text-blue-200 space-y-1">
-                  <li>• Builds employee trust and confidence</li>
-                  <li>• Displays verified badge on company profile</li>
-                  <li>• Enhances professional credibility</li>
-                  <li>• Shows commitment to transparency</li>
-                </ul>
-              </div>
-            </div>
+          <div className="pt-2">
+            <Button
+              onClick={() => requestVerificationMutation.mutate({ notes: submissionNotes })}
+              disabled={requestVerificationMutation.isPending}
+              size="sm"
+              className="w-full sm:w-auto"
+              data-testid="button-request-verification"
+            >
+              <ShieldCheck className="h-4 w-4 mr-2" />
+              {requestVerificationMutation.isPending ? "Requesting..." : "Request Verification"}
+            </Button>
           </div>
         )}
 
-        {/* Request Verification Form */}
-        {canRequestVerification && (
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="verification-notes" className="text-sm font-medium">
-                Additional Notes (Optional)
-              </Label>
-              <Textarea
-                id="verification-notes"
-                placeholder="Any additional information that might help with verification..."
-                value={submissionNotes}
-                onChange={(e) => setSubmissionNotes(e.target.value)}
-                className="mt-1"
-                rows={3}
-              />
-            </div>
-            
-            <div className="flex items-center gap-2">
-              <Button
-                onClick={() => requestVerificationMutation.mutate({ notes: submissionNotes })}
-                disabled={requestVerificationMutation.isPending}
-                className="flex items-center gap-2"
-                data-testid="button-request-verification"
-              >
-                <ShieldCheck className="h-4 w-4" />
-                {requestVerificationMutation.isPending ? "Submitting..." : "Request Verification"}
-              </Button>
-              
-              <div className="text-xs text-muted-foreground">
-                Free manual review (2-3 business days)
-              </div>
-            </div>
+        {/* No Registration Info Message */}
+        {(!company.registrationType || !company.registrationNumber) && (
+          <div className="text-center py-4">
+            <Shield className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+            <p className="text-sm text-muted-foreground mb-3">
+              Add PAN or CIN registration to enhance your company's credibility with employees.
+            </p>
+            <p className="text-xs text-muted-foreground">
+              You can update your registration details from Settings → Company Profile
+            </p>
           </div>
         )}
 
