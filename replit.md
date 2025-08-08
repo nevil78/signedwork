@@ -2,6 +2,12 @@
 
 This project is a LinkedIn-like professional networking platform built with Express.js and React. Its main purpose is to provide advanced profile management for employees and detailed company registration capabilities. The platform aims to facilitate professional networking, job discovery, and work tracking, fostering a robust ecosystem for professional growth and business collaboration. Key capabilities include comprehensive employee profiles with CV fields, company-based work diary management, an invitation system for company joining, and an administrative panel for user and platform control. The business vision is to create a dynamic and efficient online space for professionals and companies to connect, manage their work, and discover opportunities.
 
+## Recent Updates (August 2025)
+- Fixed company verification request system - corrected API endpoint parameter order for proper functionality
+- Enhanced login page UX by making entire employee/company selection boxes fully clickable with proper radio button implementation
+- Implemented complete admin verification workflow with approve/reject functionality
+- All core authentication and verification systems are now operational
+
 # User Preferences
 
 Preferred communication style: Simple, everyday language.
