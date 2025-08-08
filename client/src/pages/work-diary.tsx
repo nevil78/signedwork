@@ -247,19 +247,20 @@ export default function WorkDiary() {
         <h1 className="text-3xl font-bold mb-2">Work Diary</h1>
         <p className="text-muted-foreground mb-6">Manage work entries across all your companies - past and present</p>
 
-        {!isLoading && (
-          <div className="mb-6 flex justify-end">
-            <Button onClick={() => {
+        <div className="mb-6 flex justify-end">
+          <Button 
+            onClick={() => {
               setEditingCompany(null);
               form.reset();
               invitationForm.reset();
               setIsDialogOpen(true);
-            }}>
-              <Plus className="mr-2 h-4 w-4" />
-              {companies && companies.length === 0 ? 'Join Your First Company' : 'Join Another Company'}
-            </Button>
-          </div>
-        )}
+            }}
+            data-testid="button-join-company"
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            {!isLoading && companies && companies.length === 0 ? 'Join Your First Company' : 'Join Another Company'}
+          </Button>
+        </div>
 
         {isLoading ? (
         <div className="text-center py-8">
