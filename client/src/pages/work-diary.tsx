@@ -245,16 +245,17 @@ export default function WorkDiary() {
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <h1 className="text-3xl font-bold mb-2">Work Diary</h1>
-        <p className="text-muted-foreground mb-6">Organize your work entries by company</p>
+        <p className="text-muted-foreground mb-6">Manage work entries across all your companies - past and present</p>
 
         <div className="mb-6 flex justify-end">
           <Button onClick={() => {
             setEditingCompany(null);
             form.reset();
+            invitationForm.reset();
             setIsDialogOpen(true);
           }}>
             <Plus className="mr-2 h-4 w-4" />
-            Join Company
+            {companies.length === 0 ? 'Join Your First Company' : 'Join Another Company'}
           </Button>
         </div>
 
