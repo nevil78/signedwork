@@ -11,9 +11,10 @@ import {
   insertProjectSchema, insertEndorsementSchema, insertWorkEntrySchema,
   insertEmployeeCompanySchema, insertJobListingSchema, insertJobApplicationSchema,
   insertSavedJobSchema, insertJobAlertSchema, insertAdminSchema,
-  requestPasswordResetSchema, verifyOTPSchema, resetPasswordSchema
+  requestPasswordResetSchema, verifyOTPSchema, resetPasswordSchema, changePasswordSchema
 } from "@shared/schema";
 import { sendOTPEmail, generateOTPCode, isOTPExpired } from "./emailService";
+import { sendPasswordResetOTP } from "./sendgrid";
 import { fromZodError } from "zod-validation-error";
 import { setupGoogleAuth } from "./googleAuth";
 
@@ -2514,6 +2515,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Reset password error:", error);
       res.status(500).json({ message: "Failed to reset password" });
+    }
+  });
+
+  // Change password endpoint
+  app.post("/api/auth/change-password", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    if (!sessionUser) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    try {
+      const validatedData = changePasswordSchema.parse(req.body);
+      const { currentPassword, newPassword } = validatedData;
+
+      let success = false;
+      
+      if (sessionUser.type === "employee") {
+        success = await storage.changeEmployeePassword(sessionUser.id, currentPassword, newPassword);
+      } else if (sessionUser.type === "company") {
+        success = await storage.changeCompanyPassword(sessionUser.id, currentPassword, newPassword);
+      } else {
+        return res.status(400).json({ message: "Invalid account type" });
+      }
+
+      if (!success) {
+        return res.status(400).json({ message: "Current password is incorrect" });
+      }
+
+      res.status(200).json({ message: "Password changed successfully" });
+    } catch (error) {
+      console.error("Change password error:", error);
+      if (error.name === 'ZodError') {
+        const validationError = fromZodError(error);
+        return res.status(400).json({ message: validationError.message });
+      }
+      res.status(500).json({ message: "Failed to change password" });
     }
   });
 

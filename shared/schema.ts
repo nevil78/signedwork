@@ -607,11 +607,28 @@ export const resetPasswordSchema = z.object({
     .min(8, "Password must be at least 8 characters")
     .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
     .regex(/\d/, "Password must contain at least one number"),
+  confirmPassword: z.string().min(1, "Please confirm your password"),
+  userType: z.enum(["employee", "company"]),
+}).refine((data) => data.newPassword === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
 });
 
 export const requestPasswordResetSchema = z.object({
   email: z.string().email("Invalid email format"),
   userType: z.enum(["employee", "company"]),
+});
+
+export const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, "Current password is required"),
+  newPassword: z.string()
+    .min(8, "Password must be at least 8 characters")
+    .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+    .regex(/\d/, "Password must contain at least one number"),
+  confirmPassword: z.string().min(1, "Please confirm your password"),
+}).refine((data) => data.newPassword === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
 });
 
 
@@ -663,6 +680,10 @@ export type InsertCompany = z.infer<typeof insertCompanySchema>;
 export type InsertCompanyInvitationCode = z.infer<typeof insertCompanyInvitationCodeSchema>;
 export type InsertCompanyEmployee = z.infer<typeof insertCompanyEmployeeSchema>;
 export type LoginData = z.infer<typeof loginSchema>;
+export type ChangePasswordData = z.infer<typeof changePasswordSchema>;
+export type RequestPasswordResetData = z.infer<typeof requestPasswordResetSchema>;
+export type ResetPasswordData = z.infer<typeof resetPasswordSchema>;
+export type VerifyOTPData = z.infer<typeof verifyOTPSchema>;
 
 // Job-related types
 export type JobListing = typeof jobListings.$inferSelect;

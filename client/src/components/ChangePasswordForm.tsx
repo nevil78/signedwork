@@ -1,0 +1,179 @@
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation } from "@tanstack/react-query";
+import { changePasswordSchema, type ChangePasswordData } from "@shared/schema";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Eye, EyeOff, Lock, CheckCircle, AlertTriangle } from "lucide-react";
+import { apiRequest } from "@/lib/queryClient";
+
+export function ChangePasswordForm() {
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const form = useForm<ChangePasswordData>({
+    resolver: zodResolver(changePasswordSchema),
+    defaultValues: {
+      currentPassword: "",
+      newPassword: "",
+      confirmPassword: "",
+    },
+  });
+
+  const changePasswordMutation = useMutation({
+    mutationFn: async (data: ChangePasswordData) => {
+      return apiRequest("POST", "/api/auth/change-password", data);
+    },
+    onSuccess: () => {
+      form.reset();
+    },
+  });
+
+  const onSubmit = (data: ChangePasswordData) => {
+    changePasswordMutation.mutate(data);
+  };
+
+  return (
+    <Card className="w-full max-w-md mx-auto" data-testid="card-change-password">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Lock className="w-5 h-5" />
+          Change Password
+        </CardTitle>
+        <CardDescription>
+          Update your account password. You'll need to enter your current password to confirm the change.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          {/* Current Password */}
+          <div className="space-y-2">
+            <Label htmlFor="currentPassword">Current Password</Label>
+            <div className="relative">
+              <Input
+                id="currentPassword"
+                type={showCurrentPassword ? "text" : "password"}
+                placeholder="Enter your current password"
+                {...form.register("currentPassword")}
+                className={form.formState.errors.currentPassword ? "border-red-500" : ""}
+                data-testid="input-current-password"
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
+                onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                data-testid="button-toggle-current-password"
+              >
+                {showCurrentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </Button>
+            </div>
+            {form.formState.errors.currentPassword && (
+              <p className="text-sm text-red-500" data-testid="error-current-password">
+                {form.formState.errors.currentPassword.message}
+              </p>
+            )}
+          </div>
+
+          {/* New Password */}
+          <div className="space-y-2">
+            <Label htmlFor="newPassword">New Password</Label>
+            <div className="relative">
+              <Input
+                id="newPassword"
+                type={showNewPassword ? "text" : "password"}
+                placeholder="Enter your new password"
+                {...form.register("newPassword")}
+                className={form.formState.errors.newPassword ? "border-red-500" : ""}
+                data-testid="input-new-password"
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
+                onClick={() => setShowNewPassword(!showNewPassword)}
+                data-testid="button-toggle-new-password"
+              >
+                {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </Button>
+            </div>
+            {form.formState.errors.newPassword && (
+              <p className="text-sm text-red-500" data-testid="error-new-password">
+                {form.formState.errors.newPassword.message}
+              </p>
+            )}
+            <p className="text-sm text-gray-500">
+              Password must be at least 8 characters with one uppercase letter and one number.
+            </p>
+          </div>
+
+          {/* Confirm Password */}
+          <div className="space-y-2">
+            <Label htmlFor="confirmPassword">Confirm New Password</Label>
+            <div className="relative">
+              <Input
+                id="confirmPassword"
+                type={showConfirmPassword ? "text" : "password"}
+                placeholder="Confirm your new password"
+                {...form.register("confirmPassword")}
+                className={form.formState.errors.confirmPassword ? "border-red-500" : ""}
+                data-testid="input-confirm-password"
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                data-testid="button-toggle-confirm-password"
+              >
+                {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </Button>
+            </div>
+            {form.formState.errors.confirmPassword && (
+              <p className="text-sm text-red-500" data-testid="error-confirm-password">
+                {form.formState.errors.confirmPassword.message}
+              </p>
+            )}
+          </div>
+
+          {/* Success Message */}
+          {changePasswordMutation.isSuccess && (
+            <Alert className="border-green-200 bg-green-50" data-testid="alert-success">
+              <CheckCircle className="w-4 h-4 text-green-600" />
+              <AlertDescription className="text-green-700">
+                Password changed successfully! Your new password is now active.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* Error Message */}
+          {changePasswordMutation.error && (
+            <Alert variant="destructive" data-testid="alert-error">
+              <AlertTriangle className="w-4 h-4" />
+              <AlertDescription>
+                {changePasswordMutation.error.message || "Failed to change password"}
+              </AlertDescription>
+            </Alert>
+          )}
+
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={changePasswordMutation.isPending}
+            data-testid="button-change-password"
+          >
+            {changePasswordMutation.isPending ? "Changing Password..." : "Change Password"}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
+  );
+}

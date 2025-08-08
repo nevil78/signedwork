@@ -109,6 +109,10 @@ export interface IStorage {
   authenticateEmployee(email: string, password: string): Promise<Employee | null>;
   authenticateCompany(email: string, password: string): Promise<Company | null>;
   
+  // Password management
+  changeEmployeePassword(employeeId: string, currentPassword: string, newPassword: string): Promise<boolean>;
+  changeCompanyPassword(companyId: string, currentPassword: string, newPassword: string): Promise<boolean>;
+  
   // Employee Profile Data
   getEmployeeProfile(employeeId: string): Promise<{
     experiences: Experience[];
@@ -380,6 +384,44 @@ export class DatabaseStorage implements IStorage {
     
     const isValid = await bcrypt.compare(password, company.password);
     return isValid ? company : null;
+  }
+
+  async changeEmployeePassword(employeeId: string, currentPassword: string, newPassword: string): Promise<boolean> {
+    const employee = await this.getEmployee(employeeId);
+    if (!employee) return false;
+
+    // Verify current password
+    const isCurrentPasswordValid = await bcrypt.compare(currentPassword, employee.password);
+    if (!isCurrentPasswordValid) return false;
+
+    // Hash new password
+    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update password
+    await db.update(employees)
+      .set({ password: hashedNewPassword, updatedAt: new Date() })
+      .where(eq(employees.id, employeeId));
+
+    return true;
+  }
+
+  async changeCompanyPassword(companyId: string, currentPassword: string, newPassword: string): Promise<boolean> {
+    const company = await this.getCompany(companyId);
+    if (!company) return false;
+
+    // Verify current password
+    const isCurrentPasswordValid = await bcrypt.compare(currentPassword, company.password);
+    if (!isCurrentPasswordValid) return false;
+
+    // Hash new password
+    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update password
+    await db.update(companies)
+      .set({ password: hashedNewPassword, updatedAt: new Date() })
+      .where(eq(companies.id, companyId));
+
+    return true;
   }
 
   async updateEmployee(id: string, data: Partial<Employee>): Promise<Employee> {

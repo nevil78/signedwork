@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Building2, Copy, Users, Clock, CheckCircle, AlertCircle, FileText, BarChart3, Settings, Briefcase, Mail, UserSearch, ArrowRight, Calendar, UserPlus } from 'lucide-react';
+import { Building2, Copy, Users, Clock, CheckCircle, AlertCircle, FileText, BarChart3, Settings, Briefcase, Mail, UserSearch, ArrowRight, Calendar, UserPlus, LogOut, ChevronDown } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import {
@@ -18,6 +18,14 @@ import { format } from 'date-fns';
 import type { Company } from '@shared/schema';
 import CompanyEmailVerification from '@/components/CompanyEmailVerification';
 import { CompanyRegistrationVerification } from '@/components/CompanyRegistrationVerification';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Link } from 'wouter';
 
 interface InvitationCode {
   code: string;
@@ -150,13 +158,38 @@ export default function CompanyDashboard() {
               <Building2 className="text-primary text-2xl mr-3" />
               <span className="text-xl font-bold text-slate-800 dark:text-slate-200">Company Dashboard</span>
             </div>
-            <Button
-              variant="outline"
-              onClick={() => logout.mutate()}
-              disabled={logout.isPending}
-            >
-              {logout.isPending ? "Logging out..." : "Logout"}
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  className="text-gray-500 hover:text-gray-700"
+                  data-testid="button-company-account-menu"
+                >
+                  <Settings className="h-4 w-4 mr-2" />
+                  Account
+                  <ChevronDown className="h-4 w-4 ml-2" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem asChild>
+                  <Link href="/change-password" className="flex items-center cursor-pointer" data-testid="link-company-change-password">
+                    <Settings className="h-4 w-4 mr-2" />
+                    Change Password
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem 
+                  onClick={() => logout.mutate()}
+                  disabled={logout.isPending}
+                  className="text-red-600 focus:text-red-600 cursor-pointer"
+                  data-testid="menu-item-company-logout"
+                >
+                  <LogOut className="h-4 w-4 mr-2" />
+                  {logout.isPending ? "Logging out..." : "Logout"}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </header>
