@@ -971,36 +971,18 @@ export default function AuthPage() {
                             <RadioGroup
                               onValueChange={field.onChange}
                               defaultValue={field.value}
-                              className="grid grid-cols-1 gap-3 sm:grid-cols-2"
+                              className="grid grid-cols-2 gap-2"
                             >
-                              <div className="relative">
+                              <label className="flex items-center justify-center p-3 border border-slate-300 rounded-lg cursor-pointer hover:bg-slate-50 transition-colors has-[:checked]:border-primary has-[:checked]:bg-blue-50" htmlFor="employee">
                                 <RadioGroupItem value="employee" id="employee" className="sr-only" />
-                                <label 
-                                  htmlFor="employee" 
-                                  className="flex flex-col items-center justify-center p-6 border-2 border-slate-200 rounded-lg cursor-pointer hover:border-primary hover:bg-blue-50 transition-all duration-300 has-[:checked]:border-primary has-[:checked]:bg-blue-50 has-[:checked]:shadow-md"
-                                  data-testid="radio-employee"
-                                >
-                                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-3">
-                                    <User className="text-primary text-xl" />
-                                  </div>
-                                  <span className="text-sm font-semibold text-slate-900">Employee</span>
-                                  <span className="text-xs text-slate-500 text-center mt-1">Individual professional account</span>
-                                </label>
-                              </div>
-                              <div className="relative">
+                                <User className="text-primary mr-2" />
+                                <span className="text-sm font-medium">Employee</span>
+                              </label>
+                              <label className="flex items-center justify-center p-3 border border-slate-300 rounded-lg cursor-pointer hover:bg-slate-50 transition-colors has-[:checked]:border-primary has-[:checked]:bg-blue-50" htmlFor="company">
                                 <RadioGroupItem value="company" id="company" className="sr-only" />
-                                <label 
-                                  htmlFor="company" 
-                                  className="flex flex-col items-center justify-center p-6 border-2 border-slate-200 rounded-lg cursor-pointer hover:border-primary hover:bg-blue-50 transition-all duration-300 has-[:checked]:border-primary has-[:checked]:bg-blue-50 has-[:checked]:shadow-md"
-                                  data-testid="radio-company"
-                                >
-                                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-3">
-                                    <Building className="text-primary text-xl" />
-                                  </div>
-                                  <span className="text-sm font-semibold text-slate-900">Company</span>
-                                  <span className="text-xs text-slate-500 text-center mt-1">Organization account</span>
-                                </label>
-                              </div>
+                                <Building className="text-primary mr-2" />
+                                <span className="text-sm font-medium">Company</span>
+                              </label>
                             </RadioGroup>
                           </FormControl>
                           <FormMessage />
