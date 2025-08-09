@@ -868,23 +868,33 @@ export class DatabaseStorage implements IStorage {
     sortOrder: 'asc' | 'desc';
     status: string;
     department: string;
+    tab?: string;
   }): Promise<{
     employees: any[];
-    totalCount: number;
-    totalPages: number;
-    currentPage: number;
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+    };
   }> {
-    const { page, limit, search, sortBy, sortOrder, status, department } = options;
+    const { page, limit, search, sortBy, sortOrder, status, department, tab } = options;
     const offset = (page - 1) * limit;
 
     // Build where conditions
     const conditions = [eq(companyEmployees.companyId, companyId)];
 
-    // Status filter
-    if (status !== 'all') {
-      if (status === 'employed') {
+    // Tab filter (overrides status filter)
+    if (tab && tab !== 'all') {
+      if (tab === 'active') {
         conditions.push(eq(companyEmployees.isActive, true));
-      } else if (status === 'ex-employee') {
+      } else if (tab === 'inactive') {
+        conditions.push(eq(companyEmployees.isActive, false));
+      }
+    } else if (status !== 'all') {
+      if (status === 'active') {
+        conditions.push(eq(companyEmployees.isActive, true));
+      } else if (status === 'inactive') {
         conditions.push(eq(companyEmployees.isActive, false));
       }
     }
@@ -969,9 +979,12 @@ export class DatabaseStorage implements IStorage {
 
     return {
       employees: employeesResult,
-      totalCount,
-      totalPages,
-      currentPage: page,
+      pagination: {
+        page,
+        limit,
+        total: totalCount,
+        totalPages,
+      },
     };
   }
 
@@ -1264,12 +1277,34 @@ export class DatabaseStorage implements IStorage {
       .where(
         and(
           eq(companyEmployees.employeeId, employeeId),
-          eq(companyEmployees.companyId, companyId),
-          eq(companyEmployees.status, 'employed')
+          eq(companyEmployees.companyId, companyId)
         )
       );
     
     return relation || null;
+  }
+
+  async updateEmployeeCompanyStatus(employeeId: string, companyId: string, isCurrent: boolean): Promise<CompanyEmployee> {
+    const [updatedRelation] = await db
+      .update(companyEmployees)
+      .set({ 
+        status: isCurrent ? "employed" : "ex-employee",
+        isActive: isCurrent,
+        ...(isCurrent ? {} : { leftAt: new Date() })
+      })
+      .where(
+        and(
+          eq(companyEmployees.employeeId, employeeId),
+          eq(companyEmployees.companyId, companyId)
+        )
+      )
+      .returning();
+      
+    if (!updatedRelation) {
+      throw new Error("Employee company relationship not found");
+    }
+    
+    return updatedRelation;
   }
 
   async getWorkEntriesForEmployeeAndCompany(employeeId: string, companyId: string): Promise<WorkEntry[]> {

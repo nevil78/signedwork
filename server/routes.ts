@@ -1059,7 +1059,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         sortBy = 'joinedAt',
         sortOrder = 'desc',
         status = 'all',
-        department = 'all'
+        department = 'all',
+        tab = 'all'
       } = req.query;
 
       const result = await storage.getCompanyEmployeesPaginated(sessionUser.id, {
@@ -1070,12 +1071,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
         sortOrder: sortOrder as 'asc' | 'desc',
         status: status as string,
         department: department as string,
+        tab: tab as string,
       });
 
       res.json(result);
     } catch (error) {
       console.error("Get paginated company employees error:", error);
       res.status(500).json({ message: "Failed to get employees" });
+    }
+  });
+
+  // Update employee status (Active/Ex-Employee)
+  app.patch("/api/company/employees/:employeeId/status", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    if (!sessionUser || sessionUser.type !== "company") {
+      return res.status(401).json({ message: "Not authenticated as company" });
+    }
+    
+    try {
+      const { employeeId } = req.params;
+      const { isCurrent } = req.body;
+      
+      // Verify the employee is associated with this company
+      const employeeCompany = await storage.getEmployeeCompanyRelation(employeeId, sessionUser.id);
+      if (!employeeCompany) {
+        return res.status(403).json({ message: "Employee not associated with your company" });
+      }
+      
+      // Update the employee status
+      const updatedRelation = await storage.updateEmployeeCompanyStatus(
+        employeeId, 
+        sessionUser.id, 
+        isCurrent
+      );
+      
+      res.json({
+        message: "Employee status updated successfully",
+        employeeCompany: updatedRelation
+      });
+    } catch (error) {
+      console.error("Update employee status error:", error);
+      res.status(500).json({ message: "Failed to update employee status" });
     }
   });
 
