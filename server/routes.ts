@@ -174,7 +174,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       // Send OTP email
-      const firstName = userType === 'employee' ? user.firstName : user.name;
+      const firstName = userType === 'employee' ? (user as any).firstName : (user as any).name;
       const emailSent = await sendOTPEmail({
         to: email,
         firstName,
@@ -349,7 +349,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       // Send OTP email
-      const firstName = sessionUser.type === 'employee' ? user.firstName : user.name;
+      const firstName = sessionUser.type === 'employee' ? (user as any).firstName : (user as any).name;
       const emailSent = await sendOTPEmail({
         to: user.email,
         firstName,
@@ -2339,7 +2339,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Object storage routes for profile pictures
   app.post("/api/objects/upload", async (req, res) => {
-    if (!req.session.user) {
+    if (!(req.session as any).user) {
       return res.status(401).json({ message: "Not authenticated" });
     }
 
@@ -2354,7 +2354,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.put("/api/employee/profile-picture", async (req, res) => {
-    if (!req.session.user || req.session.userType !== "employee") {
+    const sessionUser = (req.session as any).user;
+    if (!sessionUser || sessionUser.type !== "employee") {
       return res.status(401).json({ message: "Not authenticated as employee" });
     }
 
@@ -2366,19 +2367,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const objectStorageService = new ObjectStorageService();
       
       // Get current employee data to check for existing profile picture
-      const currentEmployee = await storage.getEmployeeById(req.session.user.id);
+      const currentEmployee = await storage.getEmployee(sessionUser.id);
       const oldProfilePicturePath = currentEmployee?.profilePhoto;
 
       const objectPath = await objectStorageService.trySetObjectEntityAclPolicy(
         req.body.profilePictureURL,
         {
-          owner: req.session.user.id,
+          owner: sessionUser.id,
           visibility: "public",
         }
       );
 
       // Update database with new profile picture
-      await storage.updateEmployeeProfilePicture(req.session.user.id, objectPath);
+      await storage.updateEmployeeProfilePicture(sessionUser.id, objectPath);
 
       // Delete old profile picture if it exists and is different from the new one
       if (oldProfilePicturePath && oldProfilePicturePath !== objectPath && oldProfilePicturePath.startsWith("/objects/")) {
