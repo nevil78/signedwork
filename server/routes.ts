@@ -416,6 +416,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Employee-specific user endpoint for compatibility
+  app.get("/api/employee/me", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    if (!sessionUser || sessionUser.type !== "employee") {
+      return res.status(401).json({ message: "Not authenticated as employee" });
+    }
+    
+    try {
+      const employee = await storage.getEmployee(sessionUser.id);
+      if (!employee) {
+        return res.status(404).json({ message: "Employee not found" });
+      }
+      
+      // Allow both active and inactive employees to access their profile
+      console.log(`Employee ${sessionUser.id} accessing profile - Active: ${employee.isActive}`);
+      
+      const { password, ...employeeResponse } = employee;
+      res.json(employeeResponse);
+    } catch (error) {
+      console.error("Get employee profile error:", error);
+      res.status(500).json({ message: "Failed to get employee profile" });
+    }
+  });
+
   // Get current user
   app.get("/api/auth/user", async (req, res) => {
     // Debug session information
@@ -451,12 +476,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Session invalid - user not found" });
       }
       
-      // Check if user is still active (for employees and companies)
-      if ('isActive' in user && user.isActive === false) {
-        console.log(`User account deactivated for ID: ${sessionUser.id}`);
+      // For companies, check if they are still active
+      if (sessionUser.type === "company" && 'isActive' in user && user.isActive === false) {
+        console.log(`Company account deactivated for ID: ${sessionUser.id}`);
         req.session.destroy(() => {});
         return res.status(401).json({ message: "Account deactivated" });
       }
+      
+      // For employees, allow inactive (ex-employee) access but with limited permissions
+      // They can view their data but cannot create/edit entries
       
       // Remove password from response
       const { password, ...userResponse } = user;
@@ -1305,6 +1333,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     try {
+      // Check if employee exists and get their current status
+      const employee = await storage.getEmployee(sessionUser.id);
+      if (!employee) {
+        return res.status(404).json({ message: "Employee not found" });
+      }
+      
+      // Allow both active and inactive employees to view their company relations
+      // This ensures ex-employees can still see their historical data
+      console.log(`Employee ${sessionUser.id} accessing companies - Active: ${employee.isActive}`);
+      
       // Get companies from both old and new tables
       const oldCompanies = await storage.getEmployeeCompanies(sessionUser.id);
       const newCompanyRelations = await storage.getEmployeeCompanyRelations(sessionUser.id);
@@ -1399,6 +1437,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     try {
+      // Check if employee exists (allow both active and inactive employees to view their data)
+      const employee = await storage.getEmployee(sessionUser.id);
+      if (!employee) {
+        return res.status(404).json({ message: "Employee not found" });
+      }
+      
+      console.log(`Employee ${sessionUser.id} accessing work entries - Active: ${employee.isActive}`);
+      
       const { companyId } = req.query;
       const workEntries = await storage.getWorkEntries(sessionUser.id, companyId as string);
       res.json(workEntries);
@@ -1417,6 +1463,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     try {
+      // Check if employee exists (allow both active and inactive employees to view their data)
+      const employee = await storage.getEmployee(sessionUser.id);
+      if (!employee) {
+        return res.status(404).json({ message: "Employee not found" });
+      }
+      
+      console.log(`Employee ${sessionUser.id} accessing legacy work diary - Active: ${employee.isActive}`);
+      
       const { companyId } = req.query;
       const workEntries = await storage.getWorkEntries(sessionUser.id, companyId as string);
       res.json(workEntries);
@@ -1648,6 +1702,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     try {
+      // Check if employee exists (allow both active and inactive employees to view their analytics)
+      const employee = await storage.getEmployee(sessionUser.id);
+      if (!employee) {
+        return res.status(404).json({ message: "Employee not found" });
+      }
+      
+      console.log(`Employee ${sessionUser.id} accessing work analytics - Active: ${employee.isActive}`);
+      
       const companyId = req.params.companyId;
       const analytics = await storage.getWorkEntryAnalytics(sessionUser.id, companyId);
       res.json(analytics);
