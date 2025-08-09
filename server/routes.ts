@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { Server as SocketIOServer } from "socket.io";
 import session from "express-session";
+import connectPg from "connect-pg-simple";
 import bcrypt from "bcrypt";
 import passport from "passport";
 import { storage } from "./storage";
@@ -37,17 +38,44 @@ function emitRealTimeUpdate(eventName: string, data: any, rooms?: string[]) {
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Session configuration
+  // Create database session store
+  const pgStore = connectPg(session);
+  const sessionStore = new pgStore({
+    conString: process.env.DATABASE_URL,
+    createTableIfMissing: true, // Automatically create sessions table
+    ttl: 24 * 60 * 60, // 24 hours in seconds
+    tableName: 'user_sessions', // Custom table name to avoid conflicts
+  });
+
   app.use(session({
     secret: process.env.SESSION_SECRET || "your-secret-key-dev-123",
-    resave: false,
-    saveUninitialized: false,
+    store: sessionStore, // Use PostgreSQL session store
+    resave: false, // Don't save session if unmodified
+    saveUninitialized: false, // Don't create session until something stored
+    rolling: true, // Reset expiration on activity
     cookie: {
       secure: false, // Set to true in production with HTTPS
       httpOnly: true,
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
       sameSite: 'lax'
     },
+    name: 'sessionId', // Custom session name
   }));
+
+  // Session heartbeat endpoint to keep sessions alive
+  app.post("/api/auth/heartbeat", (req, res) => {
+    const sessionUser = (req.session as any).user;
+    if (!sessionUser) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    
+    // Session will be automatically saved due to rolling: true
+    res.json({ 
+      message: "Session renewed",
+      userId: sessionUser.id,
+      userType: sessionUser.type
+    });
+  });
 
   // Initialize Passport and Google OAuth
   app.use(passport.initialize());
@@ -390,9 +418,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Get current user
   app.get("/api/auth/user", async (req, res) => {
+    // Debug session information
+    console.log("Session debug:", {
+      sessionId: req.sessionID,
+      hasSession: !!req.session,
+      sessionUser: (req.session as any)?.user,
+      sessionCookie: req.headers.cookie
+    });
+    
     const sessionUser = (req.session as any).user;
     
     if (!sessionUser) {
+      console.log("No session user found, returning 401");
       return res.status(401).json({ message: "Not authenticated" });
     }
     
@@ -408,12 +445,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       if (!user) {
-        return res.status(404).json({ message: "User not found" });
+        console.log(`User not found in database for ID: ${sessionUser.id}, type: ${sessionUser.type}`);
+        // Clear invalid session
+        req.session.destroy(() => {});
+        return res.status(401).json({ message: "Session invalid - user not found" });
+      }
+      
+      // Check if user is still active (for employees and companies)
+      if ('isActive' in user && user.isActive === false) {
+        console.log(`User account deactivated for ID: ${sessionUser.id}`);
+        req.session.destroy(() => {});
+        return res.status(401).json({ message: "Account deactivated" });
       }
       
       // Remove password from response
       const { password, ...userResponse } = user;
       
+      console.log(`Session valid for user: ${sessionUser.id} (${sessionUser.type})`);
       res.json({ 
         user: userResponse,
         userType: sessionUser.type 
