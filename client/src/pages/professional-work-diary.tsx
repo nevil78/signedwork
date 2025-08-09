@@ -27,6 +27,7 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { z } from 'zod';
 import EmployeeNavHeader from '@/components/employee-nav-header';
+import { useSocket } from '@/hooks/useSocket';
 
 // Enhanced work entry schema with professional fields
 const workEntrySchema = z.object({
@@ -117,6 +118,14 @@ export default function ProfessionalWorkDiary() {
   const { data: companies } = useQuery<Company[]>({
     queryKey: ["/api/employee-companies"],
   });
+
+  // Get current user for WebSocket integration
+  const { data: currentUser } = useQuery({
+    queryKey: ['/api/auth/user'],
+  });
+
+  // Initialize WebSocket for real-time updates
+  const { socket } = useSocket(currentUser?.id);
 
   // Fetch work entries for selected company - FIXED: Using query parameter format
   const { data: workEntries, isLoading } = useQuery<WorkEntry[]>({

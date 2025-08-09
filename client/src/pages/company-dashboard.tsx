@@ -26,6 +26,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Link } from 'wouter';
+import { useSocket } from '@/hooks/useSocket';
 
 interface InvitationCode {
   code: string;
@@ -78,6 +79,16 @@ export default function CompanyDashboard() {
   const { data: user } = useQuery<Company>({
     queryKey: ['/api/auth/user'],
   });
+
+  // Initialize WebSocket for real-time updates
+  const { joinCompanyRoom } = useSocket(user?.id);
+
+  // Join company room when user data loads
+  useEffect(() => {
+    if (user?.id) {
+      joinCompanyRoom(user.id);
+    }
+  }, [user?.id, joinCompanyRoom]);
 
   // Get company employees
   const { data: employees = [], isLoading: isLoadingEmployees } = useQuery<CompanyEmployee[]>({

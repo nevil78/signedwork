@@ -1,5 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import { Server as SocketIOServer } from "socket.io";
 import session from "express-session";
 import bcrypt from "bcrypt";
 import passport from "passport";
@@ -17,6 +18,22 @@ import { sendOTPEmail, generateOTPCode, isOTPExpired } from "./emailService";
 import { sendPasswordResetOTP } from "./sendgrid";
 import { fromZodError } from "zod-validation-error";
 import { setupGoogleAuth } from "./googleAuth";
+
+// Global variable to store the Socket.IO server instance for real-time updates
+let io: SocketIOServer;
+
+// Helper function to emit real-time updates
+function emitRealTimeUpdate(eventName: string, data: any, rooms?: string[]) {
+  if (io) {
+    if (rooms && rooms.length > 0) {
+      rooms.forEach(room => {
+        io.to(room).emit(eventName, data);
+      });
+    } else {
+      io.emit(eventName, data);
+    }
+  }
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Session configuration
@@ -1165,6 +1182,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         rating: rating && rating > 0 && rating <= 5 ? rating : undefined,
         feedback: feedback && feedback.trim() ? feedback.trim() : undefined
       });
+      
+      // Emit real-time update to employee
+      emitRealTimeUpdate('work-entry-approved', {
+        workEntry,
+        companyId: sessionUser.id,
+        employeeId: workEntry.employeeId,
+        rating,
+        feedback
+      }, [
+        `user-${workEntry.employeeId}`,
+        `company-${sessionUser.id}`
+      ]);
+      
       res.json(workEntry);
     } catch (error) {
       console.error("Approve work entry error:", error);
@@ -1188,6 +1218,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const workEntry = await storage.requestWorkEntryChanges(id, feedback);
+      
+      // Emit real-time update to employee
+      emitRealTimeUpdate('work-entry-changes-requested', {
+        workEntry,
+        companyId: sessionUser.id,
+        employeeId: workEntry.employeeId,
+        feedback
+      }, [
+        `user-${workEntry.employeeId}`,
+        `company-${sessionUser.id}`
+      ]);
+      
       res.json(workEntry);
     } catch (error) {
       console.error("Request work entry changes error:", error);
@@ -1350,6 +1392,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const workEntry = await storage.createWorkEntry(validatedData);
+      
+      // Emit real-time update to company dashboard
+      emitRealTimeUpdate('work-entry-created', {
+        workEntry,
+        employeeId: sessionUser.id,
+        companyId: validatedData.companyId
+      }, [
+        `company-${validatedData.companyId}`,
+        `user-${sessionUser.id}`
+      ]);
+      
       res.status(201).json(workEntry);
     } catch (error: any) {
       if (error.name === "ZodError") {
@@ -2752,5 +2805,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   const httpServer = createServer(app);
+  
+  // Set up Socket.IO for real-time updates
+  io = new SocketIOServer(httpServer, {
+    cors: {
+      origin: "*",
+      methods: ["GET", "POST"]
+    }
+  });
+  
+  // Handle WebSocket connections
+  io.on('connection', (socket) => {
+    console.log('User connected:', socket.id);
+    
+    // Join user-specific rooms for targeted updates
+    socket.on('join-user-room', (userId) => {
+      socket.join(`user-${userId}`);
+      console.log(`User ${userId} joined their room`);
+    });
+    
+    // Join company-specific rooms
+    socket.on('join-company-room', (companyId) => {
+      socket.join(`company-${companyId}`);
+      console.log(`User joined company room: ${companyId}`);
+    });
+    
+    socket.on('disconnect', () => {
+      console.log('User disconnected:', socket.id);
+    });
+  });
+  
   return httpServer;
 }
