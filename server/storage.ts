@@ -1028,20 +1028,21 @@ export class DatabaseStorage implements IStorage {
         companyName: companies.name,
         name: companies.name, // Add name field for compatibility
         position: companyEmployees.position,
+        department: companyEmployees.department,
+        joinedAt: companyEmployees.joinedAt,
+        leftAt: companyEmployees.leftAt,
+        status: companyEmployees.status,
+        isActive: companyEmployees.isActive,
         createdAt: companyEmployees.joinedAt,
         updatedAt: companyEmployees.joinedAt,
         isCurrent: sql<boolean>`${companyEmployees.status} = 'employed'`,
       })
       .from(companyEmployees)
       .innerJoin(companies, eq(companyEmployees.companyId, companies.id))
-      .where(
-        and(
-          eq(companyEmployees.employeeId, employeeId),
-          eq(companyEmployees.status, "employed")
-        )
-      );
+      .where(eq(companyEmployees.employeeId, employeeId))
+      .orderBy(desc(companyEmployees.joinedAt));
       
-    console.log('CRITICAL FIX - Employee company relations:', relations);
+    console.log('Employee company relations (all statuses):', relations);
     return relations;
   }
 

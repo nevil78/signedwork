@@ -87,6 +87,7 @@ interface Company {
   department?: string;
   joinedAt?: string;
   status?: string;
+  isActive?: boolean;
 }
 
 // Define the invitation code form schema
@@ -114,7 +115,7 @@ export default function ProfessionalWorkDiary() {
 
   // Fetch user companies
   const { data: companies } = useQuery<Company[]>({
-    queryKey: ["/api/employee/companies"],
+    queryKey: ["/api/employee-companies"],
   });
 
   // Fetch work entries for selected company - FIXED: Using query parameter format
@@ -380,8 +381,20 @@ export default function ProfessionalWorkDiary() {
                         data-testid={`company-card-${company.id}`}
                       >
                         <CardContent className="p-6 text-center">
-                          <Building2 className="h-12 w-12 text-primary mx-auto mb-4" />
+                          <div className="flex justify-center items-center mb-4">
+                            <Building2 className="h-12 w-12 text-primary" />
+                            <div className="ml-2">
+                              {company.isActive === false ? (
+                                <Badge variant="secondary" className="text-xs">Ex-Employee</Badge>
+                              ) : (
+                                <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 text-xs">Active</Badge>
+                              )}
+                            </div>
+                          </div>
                           <h3 className="text-lg font-semibold text-gray-900 mb-2">{company.companyName || company.name}</h3>
+                          {company.position && (
+                            <p className="text-xs text-gray-500 mb-1">{company.position}</p>
+                          )}
                           <p className="text-sm text-gray-600">Click to view work diary</p>
                         </CardContent>
                       </Card>
@@ -415,9 +428,27 @@ export default function ProfessionalWorkDiary() {
                   >
                     ← Back to Companies
                   </Button>
-                  <h1 className="text-2xl font-bold text-gray-900">
-                    {companies?.find(c => c.id === selectedCompany)?.companyName} - Work Diary
-                  </h1>
+                  <div>
+                    <div className="flex items-center gap-3">
+                      <h1 className="text-2xl font-bold text-gray-900">
+                        {companies?.find(c => c.id === selectedCompany)?.companyName} - Work Diary
+                      </h1>
+                      {(() => {
+                        const currentCompany = companies?.find(c => c.id === selectedCompany);
+                        return currentCompany?.isActive === false ? (
+                          <Badge variant="secondary">Ex-Employee</Badge>
+                        ) : (
+                          <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">Active</Badge>
+                        );
+                      })()}
+                    </div>
+                    {(() => {
+                      const currentCompany = companies?.find(c => c.id === selectedCompany);
+                      return currentCompany?.position && (
+                        <p className="text-sm text-gray-600 mt-1">{currentCompany.position}</p>
+                      );
+                    })()}
+                  </div>
                 </div>
                 <Button 
                   onClick={() => {
