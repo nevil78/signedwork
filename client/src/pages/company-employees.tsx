@@ -73,6 +73,23 @@ export default function CompanyEmployees() {
     },
   });
 
+  // Fetch total stats (all employees without tab filtering)
+  const { data: statsData } = useQuery<PaginatedResponse>({
+    queryKey: ['/api/company/employees/stats'],
+    queryFn: async () => {
+      const params = new URLSearchParams({
+        page: '1',
+        limit: '1000', // Get all employees for stats
+        search: '',
+        status: 'all',
+        tab: 'all',
+      });
+      const response = await fetch(`/api/company/employees/paginated?${params}`);
+      if (!response.ok) throw new Error('Failed to fetch employee stats');
+      return response.json();
+    },
+  });
+
   // Update employee status mutation
   const updateStatusMutation = useMutation({
     mutationFn: async ({ employeeId, isCurrent }: { employeeId: string; isCurrent: boolean }) => {
@@ -86,6 +103,7 @@ export default function CompanyEmployees() {
     },
     onSuccess: (_, { isCurrent }) => {
       queryClient.invalidateQueries({ queryKey: ['/api/company/employees/paginated'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/company/employees/stats'] });
       toast({
         title: "Success",
         description: `Employee status updated to ${isCurrent ? 'Active' : 'Ex-Employee'}`,
@@ -102,6 +120,7 @@ export default function CompanyEmployees() {
 
   const employees = employeeData?.employees || [];
   const pagination = employeeData?.pagination;
+  const allEmployees = statsData?.employees || [];
 
   const handleStatusChange = (employee: CompanyEmployee, newStatus: boolean) => {
     const statusText = newStatus ? 'Active' : 'Ex-Employee';
@@ -118,8 +137,10 @@ export default function CompanyEmployees() {
     }
   };
 
-  const activeCount = employees.filter(emp => emp.isActive).length;
-  const inactiveCount = employees.filter(emp => !emp.isActive).length;
+  // Use all employees for stats, not just current filtered employees
+  const totalCount = allEmployees.length;
+  const activeCount = allEmployees.filter(emp => emp.isActive).length;
+  const inactiveCount = allEmployees.filter(emp => !emp.isActive).length;
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
@@ -161,7 +182,7 @@ export default function CompanyEmployees() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Total Employees</p>
-                  <p className="text-2xl font-bold">{pagination?.total || 0}</p>
+                  <p className="text-2xl font-bold">{totalCount}</p>
                 </div>
                 <Users className="h-8 w-8 text-blue-500" />
               </div>
