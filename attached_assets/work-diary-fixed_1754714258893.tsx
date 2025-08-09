@@ -487,20 +487,20 @@ export default function WorkDiary() {
                       <FormControl>
                         <Input 
                           placeholder="Enter 8-character code" 
-                          {...field} 
+                          {...field}
                           maxLength={8}
-                          className="font-mono uppercase"
+                          className="uppercase"
                           onChange={(e) => field.onChange(e.target.value.toUpperCase())}
                         />
                       </FormControl>
                       <FormDescription>
-                        Ask your company administrator for the invitation code
+                        Ask your employer for the invitation code
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                
+
                 <div className="flex justify-end space-x-2 pt-4">
                   <Button
                     type="button"
@@ -521,7 +521,7 @@ export default function WorkDiary() {
           )}
         </DialogContent>
       </Dialog>
-      </div>
     </div>
   );
 }
+
