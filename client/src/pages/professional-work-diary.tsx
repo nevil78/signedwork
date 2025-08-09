@@ -120,12 +120,30 @@ export default function ProfessionalWorkDiary() {
   });
 
   // Get current user for WebSocket integration
-  const { data: currentUser } = useQuery({
+  const { data: currentUser } = useQuery<{id: string}>({
     queryKey: ['/api/auth/user'],
   });
 
   // Initialize WebSocket for real-time updates
   const { socket } = useSocket(currentUser?.id);
+
+  // Listen for status changes and reset selected company if needed
+  useEffect(() => {
+    if (socket && currentUser?.id) {
+      const handleStatusUpdate = (data: any) => {
+        if (data.employeeId === currentUser.id) {
+          // Clear selected company to force refresh
+          setSelectedCompany("");
+        }
+      };
+      
+      socket.on('employee-status-updated', handleStatusUpdate);
+      
+      return () => {
+        socket.off('employee-status-updated', handleStatusUpdate);
+      };
+    }
+  }, [socket, currentUser?.id]);
 
   // Fetch work entries for selected company - FIXED: Using query parameter format
   const { data: workEntries, isLoading } = useQuery<WorkEntry[]>({

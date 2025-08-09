@@ -89,6 +89,28 @@ export function useSocket(userId?: string) {
       }
     });
 
+    socket.on('employee-status-updated', (data) => {
+      console.log('Employee status updated:', data);
+      
+      // Refresh employee companies and related data
+      queryClient.invalidateQueries({ queryKey: ['/api/employee-companies'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/employee/companies'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/work-entries'] });
+      
+      // Force a complete cache refresh for employee data
+      queryClient.refetchQueries({ queryKey: ['/api/employee-companies'] });
+      
+      // Show notification for employee
+      if (data.employeeId === userId) {
+        const statusText = data.status === 'active' ? 'reactivated' : 'marked as ex-employee';
+        toast({
+          title: "Employment Status Updated",
+          description: `You have been ${statusText} by the company.`,
+          variant: data.status === 'active' ? "default" : "destructive",
+        });
+      }
+    });
+
     return () => {
       socket.disconnect();
     };

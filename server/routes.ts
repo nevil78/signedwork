@@ -1123,6 +1123,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isCurrent
       );
       
+      // Emit real-time update to employee
+      emitRealTimeUpdate('employee-status-updated', {
+        employeeId,
+        companyId: sessionUser.id,
+        status: isCurrent ? 'active' : 'ex-employee',
+        updatedRelation
+      }, [
+        `user-${employeeId}`,
+        `company-${sessionUser.id}`
+      ]);
+      
       res.json({
         message: "Employee status updated successfully",
         employeeCompany: updatedRelation
