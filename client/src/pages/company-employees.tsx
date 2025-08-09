@@ -25,17 +25,17 @@ interface CompanyEmployee {
   id: string;
   employeeId: string;
   employeeName: string;
-  email: string;
+  employeeEmail: string;
+  employeePhone?: string;
+  employeeIdNumber: string;
   position?: string;
   department?: string;
+  status: string;
   joinedAt: string;
-  status: 'active' | 'inactive';
-  isCurrent: boolean;
+  leftAt?: string;
+  isActive: boolean;
+  emailVerified?: boolean;
   profilePhoto?: string;
-  phone?: string;
-  location?: string;
-  workEntriesCount?: number;
-  lastActivity?: string;
 }
 
 interface PaginatedResponse {
@@ -111,15 +111,15 @@ export default function CompanyEmployees() {
   };
 
   const getStatusBadge = (employee: CompanyEmployee) => {
-    if (employee.isCurrent) {
+    if (employee.isActive) {
       return <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">Active</Badge>;
     } else {
       return <Badge variant="secondary">Ex-Employee</Badge>;
     }
   };
 
-  const activeCount = employees.filter(emp => emp.isCurrent).length;
-  const inactiveCount = employees.filter(emp => !emp.isCurrent).length;
+  const activeCount = employees.filter(emp => emp.isActive).length;
+  const inactiveCount = employees.filter(emp => !emp.isActive).length;
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
@@ -238,7 +238,7 @@ export default function CompanyEmployees() {
               
               <TabsContent value="active" className="space-y-4">
                 <EmployeeList 
-                  employees={employees.filter(emp => emp.isCurrent)}
+                  employees={employees.filter(emp => emp.isActive)}
                   isLoading={isLoading}
                   onStatusChange={handleStatusChange}
                   getStatusBadge={getStatusBadge}
@@ -247,7 +247,7 @@ export default function CompanyEmployees() {
               
               <TabsContent value="inactive" className="space-y-4">
                 <EmployeeList 
-                  employees={employees.filter(emp => !emp.isCurrent)}
+                  employees={employees.filter(emp => !emp.isActive)}
                   isLoading={isLoading}
                   onStatusChange={handleStatusChange}
                   getStatusBadge={getStatusBadge}
@@ -355,7 +355,7 @@ function EmployeeList({
                     <h3 className="font-semibold text-lg">{employee.employeeName}</h3>
                     {getStatusBadge(employee)}
                   </div>
-                  <p className="text-sm text-muted-foreground mb-1">{employee.email}</p>
+                  <p className="text-sm text-muted-foreground mb-1">{employee.employeeEmail}</p>
                   {employee.position && (
                     <p className="text-sm text-muted-foreground">
                       <Briefcase className="inline w-3 h-3 mr-1" />
@@ -386,7 +386,7 @@ function EmployeeList({
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    {employee.isCurrent ? (
+                    {employee.isActive ? (
                       <DropdownMenuItem
                         onClick={() => onStatusChange(employee, false)}
                         className="text-red-600"
