@@ -450,38 +450,57 @@ export default function ProfessionalWorkDiary() {
                     })()}
                   </div>
                 </div>
-                <Button 
-                  onClick={() => {
-                    // Fix 3: Proper handleAddEntry function with form reset
-                    setEditingEntry(null);
-                    workEntryForm.reset({
-                      title: "",
-                      description: "",
-                      workType: "task",
-                      category: "",
-                      project: "",
-                      client: "",
-                      priority: "medium",
-                      status: "pending",
-                      startDate: format(new Date(), 'yyyy-MM-dd'),
-                      endDate: "",
-                      estimatedHours: 0,
-                      actualHours: 0,
-                      billable: false,
-                      billableRate: 0,
-                      tags: [],
-                      achievements: [],
-                      challenges: "",
-                      learnings: "",
-                      companyId: selectedCompany, // Ensure company ID is set
-                    });
-                    setIsAddDialogOpen(true);
-                  }}
-                  data-testid="button-add-work-entry"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Work Entry
-                </Button>
+                {(() => {
+                  const currentCompany = companies?.find(c => c.id === selectedCompany);
+                  const isActiveEmployee = currentCompany?.isActive !== false;
+                  
+                  if (!isActiveEmployee) {
+                    return (
+                      <div className="flex items-center gap-2">
+                        <Button disabled className="opacity-50">
+                          <Plus className="h-4 w-4 mr-2" />
+                          Add Work Entry
+                        </Button>
+                        <p className="text-sm text-red-600">Ex-employees cannot add work entries</p>
+                      </div>
+                    );
+                  }
+                  
+                  return (
+                    <Button 
+                      onClick={() => {
+                        // Fix 3: Proper handleAddEntry function with form reset
+                        setEditingEntry(null);
+                        workEntryForm.reset({
+                          title: "",
+                          description: "",
+                          workType: "task",
+                          category: "",
+                          project: "",
+                          client: "",
+                          priority: "medium",
+                          status: "pending",
+                          startDate: format(new Date(), 'yyyy-MM-dd'),
+                          endDate: "",
+                          estimatedHours: 0,
+                          actualHours: 0,
+                          billable: false,
+                          billableRate: 0,
+                          tags: [],
+                          achievements: [],
+                          challenges: "",
+                          learnings: "",
+                          companyId: selectedCompany, // Ensure company ID is set
+                        });
+                        setIsAddDialogOpen(true);
+                      }}
+                      data-testid="button-add-work-entry"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Work Entry
+                    </Button>
+                  );
+                })()}
               </div>
 
               {/* Analytics Cards */}
@@ -704,53 +723,77 @@ export default function ProfessionalWorkDiary() {
                           </div>
 
                           <div className="flex flex-col space-y-2 ml-4">
-                            {/* Edit Button - Disabled for approved entries */}
-                            {entry.status === 'approved' ? (
-                              <Button 
-                                variant="outline" 
-                                size="sm"
-                                disabled
-                                className="opacity-50 cursor-not-allowed"
-                                data-testid={`button-edit-${entry.id}-disabled`}
-                                title="Cannot edit company-approved work entries"
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                            ) : (
-                              <Button 
-                                variant="outline" 
-                                size="sm"
-                                onClick={() => {
-                                  setEditingEntry(entry);
-                                  // Fix 4: Proper form reset with company ID when editing
-                                  workEntryForm.reset({
-                                    title: entry.title,
-                                    description: entry.description || "",
-                                    workType: entry.workType as "task" | "meeting" | "project" | "research" | "documentation" | "training",
-                                    category: entry.category || "",
-                                    project: entry.project || "",
-                                    client: entry.client || "",
-                                    priority: entry.priority as "low" | "medium" | "high" | "urgent",
-                                    status: entry.status as "pending" | "in_progress" | "completed" | "on_hold" | "cancelled",
-                                    startDate: entry.startDate,
-                                    endDate: entry.endDate || "",
-                                    estimatedHours: entry.estimatedHours || 0,
-                                    actualHours: entry.actualHours || 0,
-                                    billable: entry.billable,
-                                    billableRate: entry.billableRate || 0,
-                                    tags: entry.tags || [],
-                                    achievements: entry.achievements || [],
-                                    challenges: entry.challenges || "",
-                                    learnings: entry.learnings || "",
-                                    companyId: selectedCompany
-                                  });
-                                  setIsAddDialogOpen(true);
-                                }}
-                                data-testid={`button-edit-${entry.id}`}
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                            )}
+                            {/* Edit Button - Disabled for approved entries or ex-employees */}
+                            {(() => {
+                              const currentCompany = companies?.find(c => c.id === selectedCompany);
+                              const isActiveEmployee = currentCompany?.isActive !== false;
+                              
+                              if (entry.status === 'approved') {
+                                return (
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    disabled
+                                    className="opacity-50 cursor-not-allowed"
+                                    data-testid={`button-edit-${entry.id}-approved`}
+                                    title="Cannot edit company-approved work entries"
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                );
+                              }
+                              
+                              if (!isActiveEmployee) {
+                                return (
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    disabled
+                                    className="opacity-50 cursor-not-allowed"
+                                    data-testid={`button-edit-${entry.id}-ex-employee`}
+                                    title="Ex-employees cannot edit work entries"
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                );
+                              }
+                              
+                              return (
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => {
+                                    setEditingEntry(entry);
+                                    // Fix 4: Proper form reset with company ID when editing
+                                    workEntryForm.reset({
+                                      title: entry.title,
+                                      description: entry.description || "",
+                                      workType: entry.workType as "task" | "meeting" | "project" | "research" | "documentation" | "training",
+                                      category: entry.category || "",
+                                      project: entry.project || "",
+                                      client: entry.client || "",
+                                      priority: entry.priority as "low" | "medium" | "high" | "urgent",
+                                      status: entry.status as "pending" | "in_progress" | "completed" | "on_hold" | "cancelled",
+                                      startDate: entry.startDate,
+                                      endDate: entry.endDate || "",
+                                      estimatedHours: entry.estimatedHours || 0,
+                                      actualHours: entry.actualHours || 0,
+                                      billable: entry.billable,
+                                      billableRate: entry.billableRate || 0,
+                                      tags: entry.tags || [],
+                                      achievements: entry.achievements || [],
+                                      challenges: entry.challenges || "",
+                                      learnings: entry.learnings || "",
+                                      companyId: selectedCompany
+                                    });
+                                    setIsAddDialogOpen(true);
+                                  }}
+                                  data-testid={`button-edit-${entry.id}`}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                              );
+                            })()}
                           </div>
                         </div>
                       </CardContent>

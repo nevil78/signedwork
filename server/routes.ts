@@ -1339,6 +1339,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         employeeId: sessionUser.id
       });
       
+      // Check if employee is still active in the company
+      const employeeCompanies = await storage.getEmployeeCompanyRelations(sessionUser.id);
+      const companyRelation = employeeCompanies.find(c => c.companyId === validatedData.companyId);
+      
+      if (!companyRelation || !companyRelation.isActive) {
+        return res.status(403).json({ 
+          message: "Ex-employees cannot create work entries for this company" 
+        });
+      }
+      
       const workEntry = await storage.createWorkEntry(validatedData);
       res.status(201).json(workEntry);
     } catch (error: any) {
@@ -1403,6 +1413,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (existingEntry.status === 'approved') {
         return res.status(403).json({ 
           message: "Cannot edit approved work entry. Approved entries are immutable." 
+        });
+      }
+      
+      // Check if employee is still active in the company
+      const employeeCompanies = await storage.getEmployeeCompanyRelations(sessionUser.id);
+      const companyRelation = employeeCompanies.find(c => c.companyId === existingEntry.companyId);
+      
+      if (!companyRelation || !companyRelation.isActive) {
+        return res.status(403).json({ 
+          message: "Ex-employees cannot update work entries for this company" 
         });
       }
       
