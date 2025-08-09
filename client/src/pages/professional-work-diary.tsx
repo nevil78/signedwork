@@ -352,8 +352,22 @@ export default function ProfessionalWorkDiary() {
           <div className="max-w-4xl mx-auto">
             <Card>
               <CardHeader className="text-center">
-                <CardTitle className="text-2xl">Select Company</CardTitle>
-                <p className="text-gray-600">Choose a company to manage your work diary</p>
+                <div className="flex justify-between items-start mb-4">
+                  <div className="flex-1">
+                    <CardTitle className="text-2xl">Select Company</CardTitle>
+                    <p className="text-gray-600">Choose a company to manage your work diary</p>
+                  </div>
+                  {companies && companies.length > 0 && (
+                    <Button
+                      onClick={() => setIsJoinDialogOpen(true)}
+                      className="ml-4"
+                      data-testid="button-join-another-company"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Join Another Company
+                    </Button>
+                  )}
+                </div>
               </CardHeader>
               <CardContent>
                 {companies && companies.length > 0 ? (
