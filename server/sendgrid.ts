@@ -44,7 +44,7 @@ export async function sendPasswordResetOTP(email: string, otpCode: string, userT
   
   return sendEmail({
     to: email,
-    from: 'noreply@yourplatform.com', // Replace with your verified sender email
+    from: 'noreply@signedwork.com', // Replace with your verified sender email
     subject: `Password Reset OTP - ${userTypeLabel} Account`,
     text: `Your password reset OTP is: ${otpCode}. This code will expire in 10 minutes.`,
     html: `

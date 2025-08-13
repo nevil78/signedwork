@@ -168,7 +168,7 @@ export default function CompanyDashboard() {
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
               <Building2 className="text-primary text-2xl mr-3" />
-              <span className="text-xl font-bold text-slate-800 dark:text-slate-200">Company Dashboard</span>
+              <span className="text-xl font-bold text-slate-800 dark:text-slate-200">Signedwork</span>
             </div>
             <div className="flex items-center space-x-3">
               <FeedbackButton variant="outline" size="sm" />

@@ -258,7 +258,7 @@ export default function AuthPage() {
             <div className="flex justify-between items-center h-16">
               <div className="flex items-center">
                 <Shield className="text-primary text-2xl mr-3" />
-                <span className="text-xl font-bold text-slate-800">SecureAuth</span>
+                <span className="text-xl font-bold text-slate-800">Signedwork</span>
               </div>
               <nav className="hidden md:flex space-x-8">
                 <a href="#" className="text-slate-600 hover:text-primary transition-colors">About</a>
@@ -334,7 +334,7 @@ export default function AuthPage() {
             <div className="flex justify-between items-center h-16">
               <div className="flex items-center">
                 <Shield className="text-primary text-2xl mr-3" />
-                <span className="text-xl font-bold text-slate-800">SecureAuth</span>
+                <span className="text-xl font-bold text-slate-800">Signedwork</span>
               </div>
             </div>
           </div>
@@ -556,7 +556,7 @@ export default function AuthPage() {
             <div className="flex justify-between items-center h-16">
               <div className="flex items-center">
                 <Shield className="text-primary text-2xl mr-3" />
-                <span className="text-xl font-bold text-slate-800">SecureAuth</span>
+                <span className="text-xl font-bold text-slate-800">Signedwork</span>
               </div>
             </div>
           </div>
@@ -915,7 +915,7 @@ export default function AuthPage() {
             <div className="flex justify-between items-center h-16">
               <div className="flex items-center">
                 <Shield className="text-primary text-2xl mr-3" />
-                <span className="text-xl font-bold text-slate-800">SecureAuth</span>
+                <span className="text-xl font-bold text-slate-800">Signedwork</span>
               </div>
             </div>
           </div>
@@ -1085,7 +1085,7 @@ export default function AuthPage() {
             <div className="flex justify-between items-center h-16">
               <div className="flex items-center">
                 <Shield className="text-primary text-2xl mr-3" />
-                <span className="text-xl font-bold text-slate-800">SecureAuth</span>
+                <span className="text-xl font-bold text-slate-800">Signedwork</span>
               </div>
             </div>
           </div>

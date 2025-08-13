@@ -1,6 +1,6 @@
-# User Authentication System
+# Signedwork - Professional Networking Platform
 
-A full-stack web application with separate registration and login for employees and companies, built with React, Express.js, and PostgreSQL.
+A comprehensive professional networking platform that enables users to manage their career profiles, track employment history, and showcase professional achievements with advanced session management and secure authentication.
 
 ## Features
 
