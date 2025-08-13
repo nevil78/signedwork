@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { CheckCircle, AlertCircle, Clock, Calendar, User, Users, Building, ArrowLeft, Building2, Lock, Star } from 'lucide-react';
+import { CheckCircle, AlertCircle, Clock, Calendar, User, Users, Building, ArrowLeft, Building2, Lock, Star, Briefcase, Target, DollarSign, Tag, Trophy, BookOpen, AlertTriangle, FileText, Paperclip } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 type WorkEntryStatus = "pending" | "approved" | "needs_changes";
@@ -24,8 +24,22 @@ interface WorkEntry {
   endDate: string | null;
   priority: string;
   hours: number | null;
+  estimatedHours: number | null;
+  actualHours: number | null;
   status: WorkEntryStatus;
+  workType: string;
+  category: string | null;
+  project: string | null;
+  client: string | null;
+  billable: boolean;
+  billableRate: number | null;
+  tags: string[];
+  achievements: string[];
+  challenges: string | null;
+  learnings: string | null;
   companyFeedback: string | null;
+  companyRating: number | null;
+  attachments: string[];
   createdAt: Date | null;
   updatedAt: Date | null;
   employeeName?: string;
@@ -254,7 +268,7 @@ export default function CompanyWorkEntries() {
   };
 
   const WorkEntryCard = ({ entry, showActions = false }: { entry: WorkEntry; showActions?: boolean }) => (
-    <Card key={entry.id} className="mb-4" data-testid={`work-entry-card-${entry.id}`}>
+    <Card key={entry.id} className="mb-6" data-testid={`work-entry-card-${entry.id}`}>
       <CardHeader>
         <div className="flex justify-between items-start">
           <div>
@@ -273,49 +287,231 @@ export default function CompanyWorkEntries() {
         </div>
       </CardHeader>
       <CardContent>
-        <div className="space-y-3">
+        <div className="space-y-6">
+          {/* Basic Information Section */}
+          <div>
+            <h4 className="font-semibold text-sm text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+              <FileText className="w-4 h-4" />
+              Work Details
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
+              <div className="space-y-2">
+                <p className="text-muted-foreground">Work Type:</p>
+                <Badge variant="outline" className="flex w-fit items-center gap-1">
+                  <Briefcase className="w-3 h-3" />
+                  {entry.workType || 'task'}
+                </Badge>
+              </div>
+              {entry.category && (
+                <div className="space-y-2">
+                  <p className="text-muted-foreground">Category:</p>
+                  <Badge variant="secondary" className="flex w-fit items-center gap-1">
+                    <Target className="w-3 h-3" />
+                    {entry.category}
+                  </Badge>
+                </div>
+              )}
+              {entry.project && (
+                <div className="space-y-2">
+                  <p className="text-muted-foreground">Project:</p>
+                  <p className="font-medium">{entry.project}</p>
+                </div>
+              )}
+              {entry.client && (
+                <div className="space-y-2">
+                  <p className="text-muted-foreground">Client:</p>
+                  <p className="font-medium">{entry.client}</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Description */}
           {entry.description && (
             <div>
-              <p className="text-sm text-muted-foreground mb-1">Description:</p>
-              <p className="text-sm" data-testid={`work-entry-description-${entry.id}`}>{entry.description}</p>
+              <h4 className="font-semibold text-sm text-gray-700 dark:text-gray-300 mb-2">Description:</h4>
+              <p className="text-sm bg-gray-50 dark:bg-gray-800 p-3 rounded-lg" data-testid={`work-entry-description-${entry.id}`}>
+                {entry.description}
+              </p>
             </div>
           )}
           
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            <div>
-              <p className="text-muted-foreground">Start Date:</p>
-              <p className="flex items-center gap-1" data-testid={`work-entry-start-date-${entry.id}`}>
-                <Calendar className="w-3 h-3" />
-                {entry.startDate}
-              </p>
-            </div>
-            {entry.endDate && (
+          {/* Timeline & Hours Section */}
+          <div>
+            <h4 className="font-semibold text-sm text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+              <Clock className="w-4 h-4" />
+              Timeline & Hours
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
               <div>
-                <p className="text-muted-foreground">End Date:</p>
-                <p className="flex items-center gap-1" data-testid={`work-entry-end-date-${entry.id}`}>
+                <p className="text-muted-foreground">Start Date:</p>
+                <p className="flex items-center gap-1 font-medium" data-testid={`work-entry-start-date-${entry.id}`}>
                   <Calendar className="w-3 h-3" />
-                  {entry.endDate}
+                  {entry.startDate}
                 </p>
               </div>
-            )}
+              {entry.endDate && (
+                <div>
+                  <p className="text-muted-foreground">End Date:</p>
+                  <p className="flex items-center gap-1 font-medium" data-testid={`work-entry-end-date-${entry.id}`}>
+                    <Calendar className="w-3 h-3" />
+                    {entry.endDate}
+                  </p>
+                </div>
+              )}
+              {entry.estimatedHours && (
+                <div>
+                  <p className="text-muted-foreground">Estimated Hours:</p>
+                  <p className="font-medium">{entry.estimatedHours}h</p>
+                </div>
+              )}
+              {entry.actualHours && (
+                <div>
+                  <p className="text-muted-foreground">Actual Hours:</p>
+                  <p className="font-medium">{entry.actualHours}h</p>
+                </div>
+              )}
+              {entry.hours && (
+                <div>
+                  <p className="text-muted-foreground">Total Hours:</p>
+                  <p className="font-medium" data-testid={`work-entry-hours-${entry.id}`}>{entry.hours}h</p>
+                </div>
+              )}
+            </div>
           </div>
 
-          {entry.hours && (
+          {/* Billing Information */}
+          {(entry.billable || entry.billableRate) && (
             <div>
-              <p className="text-muted-foreground text-sm">Hours:</p>
-              <p className="text-sm" data-testid={`work-entry-hours-${entry.id}`}>{entry.hours} hours</p>
+              <h4 className="font-semibold text-sm text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+                <DollarSign className="w-4 h-4" />
+                Billing Information
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="text-muted-foreground">Billable:</p>
+                  <Badge variant={entry.billable ? "default" : "secondary"} className="mt-1">
+                    {entry.billable ? "Yes" : "No"}
+                  </Badge>
+                </div>
+                {entry.billableRate && (
+                  <div>
+                    <p className="text-muted-foreground">Hourly Rate:</p>
+                    <p className="font-medium">${entry.billableRate}/hour</p>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
+          {/* Tags */}
+          {entry.tags && entry.tags.length > 0 && (
+            <div>
+              <h4 className="font-semibold text-sm text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+                <Tag className="w-4 h-4" />
+                Tags
+              </h4>
+              <div className="flex flex-wrap gap-2">
+                {entry.tags.map((tag, index) => (
+                  <Badge key={index} variant="outline" className="text-xs">
+                    {tag}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Achievements */}
+          {entry.achievements && entry.achievements.length > 0 && (
+            <div>
+              <h4 className="font-semibold text-sm text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+                <Trophy className="w-4 h-4" />
+                Key Achievements
+              </h4>
+              <ul className="list-disc list-inside space-y-1 text-sm bg-green-50 dark:bg-green-900/20 p-3 rounded-lg">
+                {entry.achievements.map((achievement, index) => (
+                  <li key={index} className="text-green-800 dark:text-green-200">
+                    {achievement}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Challenges */}
+          {entry.challenges && (
+            <div>
+              <h4 className="font-semibold text-sm text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4" />
+                Challenges Faced
+              </h4>
+              <p className="text-sm bg-orange-50 dark:bg-orange-900/20 p-3 rounded-lg text-orange-800 dark:text-orange-200">
+                {entry.challenges}
+              </p>
+            </div>
+          )}
+
+          {/* Learnings */}
+          {entry.learnings && (
+            <div>
+              <h4 className="font-semibold text-sm text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
+                <BookOpen className="w-4 h-4" />
+                Key Learnings
+              </h4>
+              <p className="text-sm bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg text-blue-800 dark:text-blue-200">
+                {entry.learnings}
+              </p>
+            </div>
+          )}
+
+          {/* Attachments */}
+          {entry.attachments && entry.attachments.length > 0 && (
+            <div>
+              <h4 className="font-semibold text-sm text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+                <Paperclip className="w-4 h-4" />
+                Attachments
+              </h4>
+              <div className="space-y-2">
+                {entry.attachments.map((attachment, index) => (
+                  <div key={index} className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded">
+                    <Paperclip className="w-3 h-3" />
+                    <span className="text-sm">{attachment}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Company Feedback Section */}
           {entry.companyFeedback && (
-            <div className="p-3 bg-yellow-50 rounded-lg border border-yellow-200">
-              <p className="text-sm font-medium text-yellow-800 mb-1">Company Feedback:</p>
-              <p className="text-sm text-yellow-700" data-testid={`work-entry-feedback-${entry.id}`}>{entry.companyFeedback}</p>
+            <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
+              <div className="flex items-center gap-2 mb-2">
+                <Star className="w-4 h-4 text-yellow-600" />
+                <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">Company Feedback</p>
+                {entry.companyRating && (
+                  <div className="flex items-center gap-1">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <Star
+                        key={star}
+                        className={`w-3 h-3 ${
+                          star <= entry.companyRating!
+                            ? 'text-yellow-400 fill-yellow-400'
+                            : 'text-gray-300'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+              <p className="text-sm text-yellow-700 dark:text-yellow-300" data-testid={`work-entry-feedback-${entry.id}`}>
+                {entry.companyFeedback}
+              </p>
             </div>
           )}
 
+          {/* Action Buttons */}
           {showActions && entry.status === 'pending' && (
-            <div className="flex gap-2 pt-2">
+            <div className="flex gap-2 pt-4 border-t">
               <Button 
                 onClick={() => handleApprove(entry)}
                 className="bg-green-600 hover:bg-green-700"
@@ -338,7 +534,7 @@ export default function CompanyWorkEntries() {
           
           {/* Show immutable message for approved entries */}
           {entry.status === 'approved' && (
-            <div className="flex items-center gap-2 pt-2 text-green-600 text-sm">
+            <div className="flex items-center gap-2 pt-4 border-t text-green-600 text-sm">
               <Lock className="w-4 h-4" />
               <span className="font-medium">Entry Verified & Locked - No further changes allowed</span>
             </div>
