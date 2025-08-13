@@ -28,6 +28,8 @@ interface WorkEntry {
   companyFeedback: string | null;
   createdAt: Date | null;
   updatedAt: Date | null;
+  employeeName?: string;
+  employeeEmail?: string;
 }
 
 interface Employee {
@@ -129,7 +131,9 @@ export default function CompanyWorkEntries() {
   const selectedEmployeeEntries = selectedEmployeeId 
     ? allWorkEntries.filter(entry => entry.employeeId === selectedEmployeeId)
     : [];
-  const selectedEmployeeName = selectedEmployeeId ? getEmployeeName(selectedEmployeeId) : '';
+  const selectedEmployeeName = selectedEmployeeId 
+    ? (selectedEmployeeEntries.length > 0 ? getEmployeeName(selectedEmployeeEntries[0]) : 'Unknown Employee')
+    : '';
 
   const approveMutation = useMutation({
     mutationFn: async ({ entryId, rating, feedback }: { entryId: string; rating: number; feedback: string }) => {
