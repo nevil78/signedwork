@@ -1,6 +1,6 @@
 import { 
   employees, companies, experiences, educations, certifications, projects, endorsements, workEntries, employeeCompanies,
-  companyInvitationCodes, companyEmployees, jobListings, jobApplications, savedJobs, jobAlerts, profileViews, admins, emailVerifications,
+  companyInvitationCodes, companyEmployees, jobListings, jobApplications, savedJobs, jobAlerts, profileViews, admins, emailVerifications, userFeedback,
   type Employee, type Company, type InsertEmployee, type InsertCompany,
   type Experience, type Education, type Certification, type Project, type Endorsement, type WorkEntry, type EmployeeCompany,
   type InsertExperience, type InsertEducation, type InsertCertification, 
@@ -10,6 +10,9 @@ import {
   type InsertJobListing, type InsertJobApplication, type InsertSavedJob, type InsertJobAlert,
   type Admin, type InsertAdmin
 } from "@shared/schema";
+
+type UserFeedback = typeof userFeedback.$inferSelect;
+type InsertUserFeedback = typeof userFeedback.$inferInsert;
 
 type EmailVerification = typeof emailVerifications.$inferSelect;
 type InsertEmailVerification = typeof emailVerifications.$inferInsert;
@@ -261,6 +264,21 @@ export interface IStorage {
   }): Promise<void>;
   getPendingVerifications(): Promise<Company[]>;
   updateVerificationStatus(id: string, status: string, notes?: string, rejectionReason?: string): Promise<void>;
+  
+  // User feedback operations
+  createFeedback(feedback: InsertUserFeedback): Promise<UserFeedback>;
+  getAllFeedback(): Promise<UserFeedback[]>;
+  getFeedbackById(id: string): Promise<UserFeedback | undefined>;
+  updateFeedbackStatus(id: string, status: string, adminResponse?: string, respondedBy?: string): Promise<UserFeedback>;
+  getFeedbackByStatus(status: string): Promise<UserFeedback[]>;
+  getFeedbackByType(feedbackType: string): Promise<UserFeedback[]>;
+  getFeedbackStats(): Promise<{
+    total: number;
+    new: number;
+    inReview: number;
+    resolved: number;
+    byType: Record<string, number>;
+  }>;
 }
 
 export interface JobSearchFilters {
@@ -1707,6 +1725,92 @@ export class DatabaseStorage implements IStorage {
       .update(companies)
       .set(updateData)
       .where(eq(companies.id, id));
+  }
+
+  // User feedback operations
+  async createFeedback(feedback: InsertUserFeedback): Promise<UserFeedback> {
+    const [newFeedback] = await db.insert(userFeedback).values(feedback).returning();
+    return newFeedback;
+  }
+
+  async getAllFeedback(): Promise<UserFeedback[]> {
+    return await db.select().from(userFeedback).orderBy(desc(userFeedback.createdAt));
+  }
+
+  async getFeedbackById(id: string): Promise<UserFeedback | undefined> {
+    const [feedback] = await db.select().from(userFeedback).where(eq(userFeedback.id, id));
+    return feedback;
+  }
+
+  async updateFeedbackStatus(id: string, status: string, adminResponse?: string, respondedBy?: string): Promise<UserFeedback> {
+    const updateData: any = {
+      status,
+      updatedAt: new Date()
+    };
+
+    if (adminResponse) {
+      updateData.adminResponse = adminResponse;
+      updateData.respondedAt = new Date();
+      updateData.respondedBy = respondedBy;
+    }
+
+    const [updatedFeedback] = await db
+      .update(userFeedback)
+      .set(updateData)
+      .where(eq(userFeedback.id, id))
+      .returning();
+    
+    return updatedFeedback;
+  }
+
+  async getFeedbackByStatus(status: string): Promise<UserFeedback[]> {
+    return await db
+      .select()
+      .from(userFeedback)
+      .where(eq(userFeedback.status, status))
+      .orderBy(desc(userFeedback.createdAt));
+  }
+
+  async getFeedbackByType(feedbackType: string): Promise<UserFeedback[]> {
+    return await db
+      .select()
+      .from(userFeedback)
+      .where(eq(userFeedback.feedbackType, feedbackType))
+      .orderBy(desc(userFeedback.createdAt));
+  }
+
+  async getFeedbackStats(): Promise<{
+    total: number;
+    new: number;
+    inReview: number;
+    resolved: number;
+    byType: Record<string, number>;
+  }> {
+    const [totalResult] = await db.select({ count: count() }).from(userFeedback);
+    const [newResult] = await db.select({ count: count() }).from(userFeedback).where(eq(userFeedback.status, 'new'));
+    const [reviewResult] = await db.select({ count: count() }).from(userFeedback).where(eq(userFeedback.status, 'in_review'));
+    const [resolvedResult] = await db.select({ count: count() }).from(userFeedback).where(eq(userFeedback.status, 'resolved'));
+    
+    const typeResults = await db
+      .select({
+        feedbackType: userFeedback.feedbackType,
+        count: count()
+      })
+      .from(userFeedback)
+      .groupBy(userFeedback.feedbackType);
+
+    const byType: Record<string, number> = {};
+    typeResults.forEach(result => {
+      byType[result.feedbackType] = result.count;
+    });
+
+    return {
+      total: totalResult.count,
+      new: newResult.count,
+      inReview: reviewResult.count,
+      resolved: resolvedResult.count,
+      byType
+    };
   }
 }
 

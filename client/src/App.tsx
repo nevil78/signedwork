@@ -26,6 +26,8 @@ import AdminLogin from "@/pages/admin-login";
 import AdminDashboard from "@/pages/admin-dashboard";
 import AdminSetup from "@/pages/admin-setup";
 import AdminVerifications from "@/pages/admin-verifications";
+import AdminFeedback from "@/pages/admin-feedback";
+import FeedbackPage from "@/pages/feedback";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -54,7 +56,9 @@ function Router() {
       <Route path="/admin/login" component={AdminLogin} />
       <Route path="/admin/dashboard" component={AdminDashboard} />
       <Route path="/admin/verifications" component={AdminVerifications} />
+      <Route path="/admin/feedback" component={AdminFeedback} />
       <Route path="/admin/setup" component={AdminSetup} />
+      <Route path="/feedback" component={FeedbackPage} />
       <Route component={NotFound} />
     </Switch>
   );

@@ -8,13 +8,13 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Users, Building, Briefcase, TrendingUp, LogOut, 
-  ShieldCheck, UserCheck, UserX, Calendar, Mail, Search, Shield
+  ShieldCheck, UserCheck, UserX, Calendar, Mail, Search, Shield, MessageSquare
 } from "lucide-react";
 import { format } from "date-fns";
 import type { Employee, Company, Admin } from "@shared/schema";
@@ -157,6 +157,7 @@ export default function AdminDashboard() {
             <TabsTrigger value="employees">Employees</TabsTrigger>
             <TabsTrigger value="companies">Companies</TabsTrigger>
             <TabsTrigger value="verifications">Verifications</TabsTrigger>
+            <TabsTrigger value="feedback">Feedback</TabsTrigger>
           </TabsList>
 
           {/* Overview Tab */}
@@ -447,6 +448,37 @@ export default function AdminDashboard() {
                     Open Verification Center
                   </Button>
                 </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Feedback Tab */}
+          <TabsContent value="feedback">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>User Feedback</CardTitle>
+                    <p className="text-sm text-muted-foreground">View and manage user feedback submissions</p>
+                  </div>
+                  <Button
+                    onClick={() => navigate("/admin/feedback")}
+                    data-testid="button-manage-feedback"
+                  >
+                    <MessageSquare className="h-4 w-4 mr-2" />
+                    Manage Feedback
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <Alert>
+                  <MessageSquare className="h-4 w-4" />
+                  <AlertTitle>Feedback Management</AlertTitle>
+                  <AlertDescription>
+                    Click "Manage Feedback" to access the full feedback management interface where you can 
+                    view detailed feedback submissions, respond to users, and track feedback status.
+                  </AlertDescription>
+                </Alert>
               </CardContent>
             </Card>
           </TabsContent>

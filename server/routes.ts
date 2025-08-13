@@ -13,7 +13,8 @@ import {
   insertProjectSchema, insertEndorsementSchema, insertWorkEntrySchema,
   insertEmployeeCompanySchema, insertJobListingSchema, insertJobApplicationSchema,
   insertSavedJobSchema, insertJobAlertSchema, insertAdminSchema,
-  requestPasswordResetSchema, verifyOTPSchema, resetPasswordSchema, changePasswordSchema
+  requestPasswordResetSchema, verifyOTPSchema, resetPasswordSchema, changePasswordSchema,
+  insertFeedbackSchema, feedbackResponseSchema
 } from "@shared/schema";
 import { sendOTPEmail, generateOTPCode, isOTPExpired } from "./emailService";
 import { sendPasswordResetOTP } from "./sendgrid";
@@ -2956,5 +2957,154 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
   
+  // =====================================================
+  // FEEDBACK API ROUTES
+  // =====================================================
+
+  // Submit feedback (authenticated users and anonymous)
+  app.post("/api/feedback", async (req, res) => {
+    try {
+      const sessionUser = (req.session as any).user;
+      const validatedData = insertFeedbackSchema.parse(req.body);
+      
+      // Get browser info from headers
+      const browserInfo = req.headers['user-agent'] || 'Unknown';
+      const pageUrl = req.headers.referer || req.body.pageUrl || 'Unknown';
+      
+      // Prepare feedback data
+      const feedbackData: any = {
+        ...validatedData,
+        browserInfo,
+        pageUrl,
+        userType: 'anonymous',
+        userId: null,
+        userName: null
+      };
+
+      // If user is authenticated, add user info
+      if (sessionUser) {
+        feedbackData.userType = sessionUser.type;
+        feedbackData.userId = sessionUser.id;
+        
+        if (sessionUser.type === 'employee') {
+          const employee = await storage.getEmployee(sessionUser.id);
+          if (employee) {
+            feedbackData.userName = `${employee.firstName} ${employee.lastName}`;
+            feedbackData.userEmail = feedbackData.userEmail || employee.email;
+          }
+        } else if (sessionUser.type === 'company') {
+          const company = await storage.getCompany(sessionUser.id);
+          if (company) {
+            feedbackData.userName = company.name;
+            feedbackData.userEmail = feedbackData.userEmail || company.email;
+          }
+        }
+      }
+
+      const feedback = await storage.createFeedback(feedbackData);
+      
+      res.json({ 
+        message: "Feedback submitted successfully",
+        feedback: {
+          id: feedback.id,
+          title: feedback.title,
+          status: feedback.status
+        }
+      });
+    } catch (error: any) {
+      if (error.name === "ZodError") {
+        const validationError = fromZodError(error);
+        return res.status(400).json({ 
+          message: validationError.message,
+          errors: error.errors
+        });
+      }
+      
+      console.error("Submit feedback error:", error);
+      res.status(500).json({ message: "Failed to submit feedback" });
+    }
+  });
+
+  // Get all feedback (admin only)
+  app.get("/api/admin/feedback", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    if (!sessionUser || sessionUser.type !== "admin") {
+      return res.status(401).json({ message: "Not authenticated as admin" });
+    }
+    
+    try {
+      const { status, type } = req.query;
+      
+      let feedback;
+      if (status && typeof status === 'string') {
+        feedback = await storage.getFeedbackByStatus(status);
+      } else if (type && typeof type === 'string') {
+        feedback = await storage.getFeedbackByType(type);
+      } else {
+        feedback = await storage.getAllFeedback();
+      }
+      
+      res.json(feedback);
+    } catch (error) {
+      console.error("Get feedback error:", error);
+      res.status(500).json({ message: "Failed to get feedback" });
+    }
+  });
+
+  // Get feedback stats (admin only)
+  app.get("/api/admin/feedback/stats", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    if (!sessionUser || sessionUser.type !== "admin") {
+      return res.status(401).json({ message: "Not authenticated as admin" });
+    }
+    
+    try {
+      const stats = await storage.getFeedbackStats();
+      res.json(stats);
+    } catch (error) {
+      console.error("Get feedback stats error:", error);
+      res.status(500).json({ message: "Failed to get feedback stats" });
+    }
+  });
+
+  // Update feedback status/respond (admin only)
+  app.patch("/api/admin/feedback/:id", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    if (!sessionUser || sessionUser.type !== "admin") {
+      return res.status(401).json({ message: "Not authenticated as admin" });
+    }
+    
+    try {
+      const { id } = req.params;
+      const validatedData = feedbackResponseSchema.parse(req.body);
+      
+      const updatedFeedback = await storage.updateFeedbackStatus(
+        id, 
+        validatedData.status, 
+        validatedData.adminResponse,
+        sessionUser.username || sessionUser.id
+      );
+      
+      res.json({ 
+        message: "Feedback updated successfully",
+        feedback: updatedFeedback
+      });
+    } catch (error: any) {
+      if (error.name === "ZodError") {
+        const validationError = fromZodError(error);
+        return res.status(400).json({ 
+          message: validationError.message,
+          errors: error.errors
+        });
+      }
+      
+      console.error("Update feedback error:", error);
+      res.status(500).json({ message: "Failed to update feedback" });
+    }
+  });
+
   return httpServer;
 }

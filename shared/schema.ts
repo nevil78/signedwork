@@ -318,6 +318,32 @@ export const admins = pgTable("admins", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// User feedback table for collecting app feedback
+export const userFeedback = pgTable("user_feedback", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userType: varchar("user_type", { length: 10 }).notNull(), // 'employee', 'company', 'admin', 'anonymous'
+  userId: varchar("user_id"), // References the user ID, null for anonymous feedback
+  userEmail: text("user_email"), // Email address for follow-up
+  userName: text("user_name"), // User's name for context
+  feedbackType: varchar("feedback_type", { length: 20 }).notNull(), // 'bug_report', 'feature_request', 'general', 'complaint', 'compliment'
+  category: varchar("category", { length: 30 }).notNull(), // 'ui_ux', 'performance', 'functionality', 'content', 'security', 'other'
+  title: text("title").notNull(), // Brief title/subject
+  description: text("description").notNull(), // Detailed feedback description
+  priority: varchar("priority", { length: 10 }).default("medium"), // 'low', 'medium', 'high', 'urgent'
+  status: varchar("status", { length: 15 }).default("new"), // 'new', 'in_review', 'in_progress', 'resolved', 'closed', 'rejected'
+  browserInfo: text("browser_info"), // Browser and device information
+  pageUrl: text("page_url"), // Page where feedback was submitted
+  attachments: text("attachments").array().default(sql`'{}'::text[]`), // Screenshots or file attachments
+  adminNotes: text("admin_notes"), // Admin internal notes
+  adminResponse: text("admin_response"), // Response sent to user
+  respondedAt: timestamp("responded_at"), // When admin responded
+  respondedBy: varchar("responded_by"), // Admin who responded
+  rating: integer("rating"), // 1-5 rating if applicable
+  isPublic: boolean("is_public").default(false), // Whether feedback can be shown publicly
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Relations
 export const employeesRelations = relations(employees, ({ many }) => ({
   experiences: many(experiences),
@@ -578,9 +604,30 @@ export const loginSchema = z.object({
   }),
 });
 
+export const insertFeedbackSchema = createInsertSchema(userFeedback).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  respondedAt: true,
+  respondedBy: true,
+}).extend({
+  title: z.string().min(1, "Title is required").max(100, "Title too long"),
+  description: z.string().min(10, "Description must be at least 10 characters").max(2000, "Description too long"),
+  userEmail: z.string().email("Invalid email format").optional(),
+  feedbackType: z.enum(["bug_report", "feature_request", "general", "complaint", "compliment"]),
+  category: z.enum(["ui_ux", "performance", "functionality", "content", "security", "other"]),
+  priority: z.enum(["low", "medium", "high", "urgent"]).optional(),
+  rating: z.number().min(1).max(5).optional(),
+});
+
 export const adminLoginSchema = z.object({
   username: z.string().min(1, "Username is required"),
   password: z.string().min(1, "Password is required"),
+});
+
+export const feedbackResponseSchema = z.object({
+  adminResponse: z.string().min(1, "Response is required"),
+  status: z.enum(["in_review", "in_progress", "resolved", "closed", "rejected"]),
 });
 
 export const insertEmailVerificationSchema = createInsertSchema(emailVerifications).omit({

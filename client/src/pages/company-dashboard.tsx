@@ -27,6 +27,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Link } from 'wouter';
 import { useSocket } from '@/hooks/useSocket';
+import { FeedbackButton } from '@/components/FeedbackButton';
 
 interface InvitationCode {
   code: string;
@@ -169,7 +170,9 @@ export default function CompanyDashboard() {
               <Building2 className="text-primary text-2xl mr-3" />
               <span className="text-xl font-bold text-slate-800 dark:text-slate-200">Company Dashboard</span>
             </div>
-            <DropdownMenu>
+            <div className="flex items-center space-x-3">
+              <FeedbackButton variant="outline" size="sm" />
+              <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button 
                   variant="ghost" 
@@ -200,7 +203,8 @@ export default function CompanyDashboard() {
                   {logout.isPending ? "Logging out..." : "Logout"}
                 </DropdownMenuItem>
               </DropdownMenuContent>
-            </DropdownMenu>
+              </DropdownMenu>
+            </div>
           </div>
         </div>
       </header>

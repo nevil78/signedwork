@@ -7,6 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { ObjectUploader } from "@/components/ObjectUploader";
+import { FeedbackButton } from "@/components/FeedbackButton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -197,13 +198,16 @@ export default function Profile() {
                 </Link>
               </div>
             </div>
-            <Button
-              variant="outline"
-              onClick={() => logout.mutate()}
-              disabled={logout.isPending}
-            >
-              {logout.isPending ? "Logging out..." : "Logout"}
-            </Button>
+            <div className="flex items-center space-x-2">
+              <FeedbackButton variant="outline" size="sm" />
+              <Button
+                variant="outline"
+                onClick={() => logout.mutate()}
+                disabled={logout.isPending}
+              >
+                {logout.isPending ? "Logging out..." : "Logout"}
+              </Button>
+            </div>
           </div>
         </div>
       </header>
