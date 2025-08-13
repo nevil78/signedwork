@@ -10,78 +10,96 @@ export function SignedworkLogo({ className = "", size = 32 }: SignedworkLogoProp
     <svg 
       width={size} 
       height={size} 
-      viewBox="0 0 120 120" 
+      viewBox="0 0 100 100" 
       fill="none" 
       xmlns="http://www.w3.org/2000/svg"
       className={className}
     >
-      {/* Background circle with gradient */}
-      <defs>
-        <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="hsl(221.2, 83.2%, 53.3%)" />
-          <stop offset="100%" stopColor="hsl(221.2, 83.2%, 43.3%)" />
-        </linearGradient>
-      </defs>
-      
-      {/* Main circle background */}
-      <circle 
-        cx="60" 
-        cy="60" 
-        r="56" 
-        fill="url(#logoGradient)" 
-        stroke="hsl(221.2, 83.2%, 33.3%)" 
-        strokeWidth="2"
-      />
-      
-      {/* Document/paper background */}
-      <rect 
-        x="25" 
-        y="35" 
-        width="70" 
-        height="50" 
-        rx="4" 
-        fill="white" 
-        stroke="hsl(210, 40%, 90%)" 
-        strokeWidth="1"
-      />
-      
-      {/* Document lines */}
-      <line x1="35" y1="50" x2="75" y2="50" stroke="hsl(210, 20%, 85%)" strokeWidth="1.5" />
-      <line x1="35" y1="57" x2="85" y2="57" stroke="hsl(210, 20%, 85%)" strokeWidth="1.5" />
-      <line x1="35" y1="64" x2="70" y2="64" stroke="hsl(210, 20%, 85%)" strokeWidth="1.5" />
-      
-      {/* Pen/stylus */}
-      <rect 
-        x="60" 
-        y="25" 
-        width="4" 
-        height="25" 
-        rx="2" 
-        fill="hsl(221.2, 83.2%, 53.3%)" 
-        transform="rotate(45 62 37.5)"
-      />
-      
-      {/* Pen tip */}
-      <polygon 
-        points="65,42 68,48 62,48" 
-        fill="hsl(221.2, 83.2%, 33.3%)" 
-        transform="rotate(45 65 45)"
-      />
-      
-      {/* Signature line with flourish */}
+      {/* Classic shield shape background */}
       <path 
-        d="M35 75 Q50 70 65 75 Q80 80 90 75" 
-        stroke="hsl(221.2, 83.2%, 53.3%)" 
-        strokeWidth="2.5" 
+        d="M50 10 L75 20 L75 45 Q75 65 50 85 Q25 65 25 45 L25 20 Z" 
+        fill="hsl(215, 25%, 20%)" 
+        stroke="hsl(215, 25%, 15%)" 
+        strokeWidth="1.5"
+      />
+      
+      {/* Inner shield detail */}
+      <path 
+        d="M50 15 L70 23 L70 43 Q70 60 50 77 Q30 60 30 43 L30 23 Z" 
+        fill="hsl(215, 30%, 25%)" 
+        stroke="hsl(215, 20%, 30%)" 
+        strokeWidth="0.5"
+      />
+      
+      {/* Professional document icon */}
+      <rect 
+        x="38" 
+        y="32" 
+        width="24" 
+        height="30" 
+        rx="2" 
+        fill="white" 
+        stroke="hsl(215, 15%, 85%)" 
+        strokeWidth="0.8"
+      />
+      
+      {/* Document header line */}
+      <rect 
+        x="41" 
+        y="35" 
+        width="18" 
+        height="2" 
+        fill="hsl(215, 25%, 20%)"
+      />
+      
+      {/* Document content lines */}
+      <rect x="41" y="40" width="15" height="1" fill="hsl(215, 15%, 60%)" />
+      <rect x="41" y="43" width="18" height="1" fill="hsl(215, 15%, 60%)" />
+      <rect x="41" y="46" width="12" height="1" fill="hsl(215, 15%, 60%)" />
+      <rect x="41" y="49" width="16" height="1" fill="hsl(215, 15%, 60%)" />
+      
+      {/* Classic fountain pen */}
+      <rect 
+        x="53" 
+        y="25" 
+        width="2.5" 
+        height="12" 
+        rx="1.25" 
+        fill="hsl(215, 25%, 20%)" 
+        transform="rotate(25 54.25 31)"
+      />
+      
+      {/* Pen nib */}
+      <polygon 
+        points="55,34 57,38 53,38" 
+        fill="hsl(35, 65%, 45%)" 
+        transform="rotate(25 55 36)"
+      />
+      
+      {/* Professional signature */}
+      <path 
+        d="M40 55 Q48 53 56 55" 
+        stroke="hsl(215, 25%, 20%)" 
+        strokeWidth="1.5" 
         fill="none" 
         strokeLinecap="round"
       />
       
-      {/* Small checkmark for "verified work" */}
+      {/* Quality seal/badge */}
+      <circle 
+        cx="58" 
+        cy="42" 
+        r="4" 
+        fill="hsl(145, 55%, 45%)" 
+        stroke="white" 
+        strokeWidth="1"
+      />
+      
+      {/* Check mark in seal */}
       <path 
-        d="M75 40 L80 45 L90 32" 
-        stroke="hsl(142, 76%, 36%)" 
-        strokeWidth="3" 
+        d="M56 42 L57.5 43.5 L60 40.5" 
+        stroke="white" 
+        strokeWidth="1.2" 
         fill="none" 
         strokeLinecap="round" 
         strokeLinejoin="round"
@@ -100,49 +118,68 @@ export function SignedworkIcon({ className = "", size = 24 }: SignedworkLogoProp
       xmlns="http://www.w3.org/2000/svg"
       className={className}
     >
-      {/* Simplified icon version */}
-      
-      {/* Document background */}
-      <rect 
-        x="15" 
-        y="25" 
-        width="70" 
-        height="50" 
-        rx="4" 
+      {/* Simplified classic shield */}
+      <path 
+        d="M50 15 L70 22 L70 42 Q70 58 50 75 Q30 58 30 42 L30 22 Z" 
         fill="currentColor" 
-        opacity="0.1"
+        opacity="0.15"
+        stroke="currentColor" 
+        strokeWidth="1.5"
+        opacity="0.3"
+      />
+      
+      {/* Professional document */}
+      <rect 
+        x="40" 
+        y="35" 
+        width="20" 
+        height="25" 
+        rx="1.5" 
+        fill="currentColor" 
+        opacity="0.8"
       />
       
       {/* Document lines */}
-      <line x1="25" y1="40" x2="65" y2="40" stroke="currentColor" strokeWidth="2" opacity="0.3" />
-      <line x1="25" y1="50" x2="75" y2="50" stroke="currentColor" strokeWidth="2" opacity="0.3" />
-      <line x1="25" y1="60" x2="60" y2="60" stroke="currentColor" strokeWidth="2" opacity="0.3" />
+      <rect x="43" y="40" width="10" height="1" fill="white" opacity="0.9" />
+      <rect x="43" y="43" width="14" height="1" fill="white" opacity="0.7" />
+      <rect x="43" y="46" width="8" height="1" fill="white" opacity="0.7" />
+      <rect x="43" y="49" width="12" height="1" fill="white" opacity="0.7" />
       
-      {/* Pen */}
+      {/* Professional pen */}
       <rect 
-        x="55" 
-        y="15" 
-        width="4" 
-        height="20" 
-        rx="2" 
+        x="52" 
+        y="28" 
+        width="2" 
+        height="10" 
+        rx="1" 
         fill="currentColor" 
-        transform="rotate(45 57 25)"
+        transform="rotate(25 53 33)"
       />
       
-      {/* Signature line */}
+      {/* Signature */}
       <path 
-        d="M25 80 Q45 75 65 80 Q80 85 85 80" 
+        d="M42 54 Q48 52 54 54" 
         stroke="currentColor" 
-        strokeWidth="3" 
+        strokeWidth="1.5" 
         fill="none" 
         strokeLinecap="round"
+        opacity="0.9"
       />
       
-      {/* Checkmark */}
+      {/* Quality badge */}
+      <circle 
+        cx="56" 
+        cy="40" 
+        r="3" 
+        fill="currentColor" 
+        opacity="0.9"
+      />
+      
+      {/* Check mark */}
       <path 
-        d="M70 30 L75 35 L85 22" 
-        stroke="currentColor" 
-        strokeWidth="3" 
+        d="M54.5 40 L55.5 41 L57.5 38.5" 
+        stroke="white" 
+        strokeWidth="1" 
         fill="none" 
         strokeLinecap="round" 
         strokeLinejoin="round"
