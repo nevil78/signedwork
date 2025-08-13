@@ -17,7 +17,7 @@ import { Label } from "@/components/ui/label";
 import { 
   MessageSquare, Bug, Lightbulb, MessageCircle, ThumbsDown, Heart,
   Monitor, Zap, Settings, FileText, Shield, HelpCircle,
-  Star, CheckCircle, Send
+  Star, CheckCircle, Send, ArrowLeft
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -173,6 +173,19 @@ export default function FeedbackPage() {
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4">
       <div className="max-w-4xl mx-auto">
+        {/* Back Button Header */}
+        <div className="mb-6">
+          <Button
+            variant="ghost"
+            onClick={() => window.history.back()}
+            className="flex items-center text-gray-600 hover:text-gray-900"
+            data-testid="button-back-to-previous"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back
+          </Button>
+        </div>
+
         <div className="text-center mb-8">
           <MessageSquare className="h-12 w-12 text-blue-600 mx-auto mb-4" />
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Share Your Feedback</h1>
