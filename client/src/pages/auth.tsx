@@ -3,7 +3,6 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
 import { Shield, User, Building, ArrowLeft, Check, Eye, EyeOff, AlertCircle } from "lucide-react";
-import { SignedworkLogo } from "@/components/SignedworkLogo";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -258,7 +257,7 @@ export default function AuthPage() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center h-16">
               <div className="flex items-center">
-                <SignedworkLogo className="text-primary mr-3" size={32} />
+                <Shield className="text-primary text-2xl mr-3" />
                 <span className="text-xl font-bold text-slate-800">Signedwork</span>
               </div>
               <nav className="hidden md:flex space-x-8">
@@ -334,7 +333,7 @@ export default function AuthPage() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center h-16">
               <div className="flex items-center">
-                <SignedworkLogo className="text-primary mr-3" size={32} />
+                <Shield className="text-primary text-2xl mr-3" />
                 <span className="text-xl font-bold text-slate-800">Signedwork</span>
               </div>
             </div>
@@ -556,7 +555,7 @@ export default function AuthPage() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center h-16">
               <div className="flex items-center">
-                <SignedworkLogo className="text-primary mr-3" size={32} />
+                <Shield className="text-primary text-2xl mr-3" />
                 <span className="text-xl font-bold text-slate-800">Signedwork</span>
               </div>
             </div>
@@ -915,7 +914,7 @@ export default function AuthPage() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center h-16">
               <div className="flex items-center">
-                <SignedworkLogo className="text-primary mr-3" size={32} />
+                <Shield className="text-primary text-2xl mr-3" />
                 <span className="text-xl font-bold text-slate-800">Signedwork</span>
               </div>
             </div>
@@ -1085,7 +1084,7 @@ export default function AuthPage() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center h-16">
               <div className="flex items-center">
-                <SignedworkLogo className="text-primary mr-3" size={32} />
+                <Shield className="text-primary text-2xl mr-3" />
                 <span className="text-xl font-bold text-slate-800">Signedwork</span>
               </div>
             </div>
