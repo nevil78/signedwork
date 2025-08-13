@@ -1,5 +1,6 @@
 import { Link, useLocation } from 'wouter';
 import { User, Briefcase, Search, LogOut, Settings, ChevronDown } from 'lucide-react';
+import { FeedbackButton } from '@/components/FeedbackButton';
 import { Button } from '@/components/ui/button';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
@@ -97,6 +98,8 @@ export default function EmployeeNavHeader({ employeeId, employeeName }: Employee
             {displayEmployeeId && (
               <span className="text-sm text-gray-600">{displayEmployeeId}</span>
             )}
+            
+            <FeedbackButton variant="outline" size="sm" />
             
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
