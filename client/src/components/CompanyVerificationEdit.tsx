@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,6 +20,12 @@ export function CompanyVerificationEdit({ company }: CompanyVerificationEditProp
   const [cin, setCin] = useState(company?.cin || '');
   const queryClient = useQueryClient();
 
+  // Sync local state with company prop when it changes
+  useEffect(() => {
+    setPanNumber(company?.panNumber || '');
+    setCin(company?.cin || '');
+  }, [company?.panNumber, company?.cin]);
+
   const updateVerificationMutation = useMutation({
     mutationFn: async (data: { panNumber?: string; cin?: string }) => {
       const response = await fetch('/api/company/verification-details', {
@@ -36,8 +42,13 @@ export function CompanyVerificationEdit({ company }: CompanyVerificationEditProp
       return response.json();
     },
     onSuccess: () => {
+      // Invalidate both queries to refresh the data
       queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
       queryClient.invalidateQueries({ queryKey: ['/api/company/verification-status'] });
+      
+      // Force a re-fetch to get fresh data immediately
+      queryClient.refetchQueries({ queryKey: ['/api/auth/user'] });
+      
       setIsEditing(false);
       toast({
         title: "Success",
