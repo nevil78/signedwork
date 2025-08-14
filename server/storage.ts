@@ -107,6 +107,7 @@ export interface IStorage {
   getCompany(id: string): Promise<Company | undefined>;
   getCompanyByEmail(email: string): Promise<Company | undefined>;
   createCompany(company: InsertCompany): Promise<Company>;
+  updateCompany(id: string, data: Partial<Company>): Promise<Company>;
   
   // Authentication
   authenticateEmployee(email: string, password: string): Promise<Employee | null>;
@@ -404,6 +405,15 @@ export class DatabaseStorage implements IStorage {
         email: normalizedEmail,
         password: hashedPassword,
       })
+      .returning();
+    return company;
+  }
+
+  async updateCompany(id: string, data: Partial<Company>): Promise<Company> {
+    const [company] = await db
+      .update(companies)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(companies.id, id))
       .returning();
     return company;
   }
