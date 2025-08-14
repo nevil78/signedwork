@@ -193,13 +193,7 @@ export default function CompanyDashboard() {
                     Change Password
                   </Link>
                 </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link href="/admin/setup" className="flex items-center cursor-pointer text-blue-600" data-testid="link-company-admin-panel">
-                    <ShieldCheck className="h-4 w-4 mr-2" />
-                    Admin Panel
-                  </Link>
-                </DropdownMenuItem>
+
                 <DropdownMenuSeparator />
                 <DropdownMenuItem 
                   onClick={() => logout.mutate()}
@@ -235,26 +229,7 @@ export default function CompanyDashboard() {
         <div className="mb-8">
           <h3 className="text-lg font-semibold mb-4">Management Tools</h3>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            {/* Admin Panel Card */}
-            <Card 
-              className="cursor-pointer hover:shadow-md hover:border-blue-200 transition-all duration-200" 
-              onClick={() => navigate('/admin/setup')}
-              data-testid="admin-panel-card"
-            >
-              <CardHeader className="pb-4">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
-                    <ShieldCheck className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                  </div>
-                  <CardTitle className="text-base font-semibold">Admin Panel</CardTitle>
-                </div>
-                <CardDescription className="text-sm">
-                  Administrative controls and platform management
-                </CardDescription>
-              </CardHeader>
-            </Card>
-
-            {/* Manage Employees Card */}
+{/* Manage Employees Card */}
             <Card 
               className="cursor-pointer hover:shadow-md hover:border-orange-200 transition-all duration-200" 
               onClick={() => navigate('/company-employees')}

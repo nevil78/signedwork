@@ -125,13 +125,7 @@ export default function EmployeeNavHeader({ employeeId, employeeName }: Employee
                     Change Password
                   </Link>
                 </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link href="/admin/setup" className="flex items-center cursor-pointer text-blue-600" data-testid="link-admin-panel">
-                    <ShieldCheck className="h-4 w-4 mr-2" />
-                    Admin Panel
-                  </Link>
-                </DropdownMenuItem>
+
                 <DropdownMenuSeparator />
                 <DropdownMenuItem 
                   onClick={() => logout.mutate()}
