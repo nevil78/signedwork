@@ -37,6 +37,7 @@ export function CompanyVerificationEdit({ company }: CompanyVerificationEditProp
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/company/verification-status'] });
       setIsEditing(false);
       toast({
         title: "Success",
