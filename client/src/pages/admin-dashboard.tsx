@@ -16,6 +16,7 @@ import {
   Users, Building, Briefcase, TrendingUp, LogOut, 
   ShieldCheck, UserCheck, UserX, Calendar, Mail, Search, Shield, MessageSquare
 } from "lucide-react";
+import signedworkLogo from "@assets/Signed-work-Logo (1)_1755168042120.png";
 import { format } from "date-fns";
 import type { Employee, Company, Admin } from "@shared/schema";
 
@@ -131,9 +132,9 @@ export default function AdminDashboard() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
-              <ShieldCheck className="h-8 w-8 text-red-600 mr-3" />
+              <img src={signedworkLogo} alt="Signedwork" className="h-8 w-8 mr-3" />
               <div>
-                <h1 className="text-xl font-semibold">Admin Dashboard</h1>
+                <h1 className="text-xl font-semibold">Signedwork Admin</h1>
                 <p className="text-sm text-gray-500">Welcome, {admin?.username}</p>
               </div>
             </div>

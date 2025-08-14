@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Lock, ShieldCheck } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import signedworkLogo from "@assets/Signed-work-Logo (1)_1755168042120.png";
 
 const adminLoginSchema = z.object({
   username: z.string().min(1, "Username is required"),
@@ -54,15 +55,27 @@ export default function AdminLogin() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
-            <ShieldCheck className="h-6 w-6 text-red-600" />
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+      <header className="bg-white shadow-sm border-b border-slate-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center">
+              <img src={signedworkLogo} alt="Signedwork" className="h-8 w-8 mr-3" />
+              <span className="text-xl font-bold text-slate-800">Signedwork Admin</span>
+            </div>
           </div>
-          <CardTitle className="text-2xl font-bold">Admin Login</CardTitle>
-          <CardDescription>Access the platform administration panel</CardDescription>
-        </CardHeader>
+        </div>
+      </header>
+      
+      <div className="flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
+              <ShieldCheck className="h-6 w-6 text-red-600" />
+            </div>
+            <CardTitle className="text-2xl font-bold">Admin Login</CardTitle>
+            <CardDescription>Access the platform administration panel</CardDescription>
+          </CardHeader>
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -130,6 +143,7 @@ export default function AdminLogin() {
           <p>This area is restricted to authorized administrators only</p>
         </CardFooter>
       </Card>
+      </div>
     </div>
   );
 }

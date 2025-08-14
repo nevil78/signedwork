@@ -19,6 +19,7 @@ import {
   Monitor, Zap, Settings, FileText, Shield, HelpCircle,
   Star, CheckCircle, Send, ArrowLeft
 } from "lucide-react";
+import signedworkLogo from "@assets/Signed-work-Logo (1)_1755168042120.png";
 import { useToast } from "@/hooks/use-toast";
 
 const feedbackSchema = z.object({
@@ -171,29 +172,41 @@ export default function FeedbackPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4">
-      <div className="max-w-4xl mx-auto">
-        {/* Back Button Header */}
-        <div className="mb-6">
-          <Button
-            variant="ghost"
-            onClick={() => window.history.back()}
-            className="flex items-center text-gray-600 hover:text-gray-900"
-            data-testid="button-back-to-previous"
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
-          </Button>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+      <header className="bg-white shadow-sm border-b border-slate-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center">
+              <img src={signedworkLogo} alt="Signedwork" className="h-8 w-8 mr-3" />
+              <span className="text-xl font-bold text-slate-800">Signedwork Feedback</span>
+            </div>
+          </div>
         </div>
+      </header>
+      
+      <div className="py-12 px-4">
+        <div className="max-w-4xl mx-auto">
+          {/* Back Button Header */}
+          <div className="mb-6">
+            <Button
+              variant="ghost"
+              onClick={() => window.history.back()}
+              className="flex items-center text-gray-600 hover:text-gray-900"
+              data-testid="button-back-to-previous"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back
+            </Button>
+          </div>
 
-        <div className="text-center mb-8">
-          <MessageSquare className="h-12 w-12 text-blue-600 mx-auto mb-4" />
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Share Your Feedback</h1>
-          <p className="text-gray-600 max-w-2xl mx-auto">
-            Help us improve by sharing your thoughts, reporting issues, or suggesting new features. 
-            Your feedback drives our development priorities.
-          </p>
-        </div>
+          <div className="text-center mb-8">
+            <MessageSquare className="h-12 w-12 text-blue-600 mx-auto mb-4" />
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Share Your Feedback</h1>
+            <p className="text-gray-600 max-w-2xl mx-auto">
+              Help us improve by sharing your thoughts, reporting issues, or suggesting new features. 
+              Your feedback drives our development priorities.
+            </p>
+          </div>
 
         {step === 1 && (
           <Card>
@@ -434,6 +447,7 @@ export default function FeedbackPage() {
             </form>
           </Form>
         )}
+        </div>
       </div>
     </div>
   );
