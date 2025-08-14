@@ -29,6 +29,7 @@ import {
 import { Link } from 'wouter';
 import { useSocket } from '@/hooks/useSocket';
 import { FeedbackButton } from '@/components/FeedbackButton';
+import { CompanyVerificationEdit } from '@/components/CompanyVerificationEdit';
 
 interface InvitationCode {
   code: string;
@@ -224,39 +225,92 @@ export default function CompanyDashboard() {
                 Company ID: {user.companyId}
               </Badge>
             )}
-            {user?.cin && (
-              <div className="flex items-center gap-2">
-                <Badge variant="outline" className="text-xs">
-                  CIN: {user.cin}
-                </Badge>
-                <Badge 
-                  variant={user.cinVerificationStatus === "verified" ? "default" : 
-                          user.cinVerificationStatus === "pending" ? "secondary" : "destructive"}
-                  className="text-xs"
-                >
-                  {user.cinVerificationStatus === "verified" && (
-                    <>
-                      <CheckCircle className="h-3 w-3 mr-1" />
-                      Verified
-                    </>
-                  )}
-                  {user.cinVerificationStatus === "pending" && (
-                    <>
-                      <Clock className="h-3 w-3 mr-1" />
-                      Verification Pending
-                    </>
-                  )}
-                  {user.cinVerificationStatus === "rejected" && (
-                    <>
-                      <AlertCircle className="h-3 w-3 mr-1" />
-                      Verification Rejected
-                    </>
-                  )}
-                </Badge>
+            {(user?.cin || user?.panNumber) && (
+              <div className="flex items-center gap-4">
+                {user?.cin && (
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="text-xs">
+                      CIN: {user.cin}
+                    </Badge>
+                    <Badge 
+                      variant={user.cinVerificationStatus === "verified" ? "default" : 
+                              user.cinVerificationStatus === "pending" ? "secondary" : "destructive"}
+                      className="text-xs"
+                    >
+                      {user.cinVerificationStatus === "verified" && (
+                        <>
+                          <CheckCircle className="h-3 w-3 mr-1" />
+                          Verified
+                        </>
+                      )}
+                      {user.cinVerificationStatus === "pending" && (
+                        <>
+                          <Clock className="h-3 w-3 mr-1" />
+                          Verification Pending
+                        </>
+                      )}
+                      {user.cinVerificationStatus === "rejected" && (
+                        <>
+                          <AlertCircle className="h-3 w-3 mr-1" />
+                          Verification Rejected
+                        </>
+                      )}
+                    </Badge>
+                  </div>
+                )}
+                {user?.panNumber && (
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="text-xs">
+                      PAN: {user.panNumber}
+                    </Badge>
+                    <Badge 
+                      variant={user.panVerificationStatus === "verified" ? "default" : 
+                              user.panVerificationStatus === "pending" ? "secondary" : "destructive"}
+                      className="text-xs"
+                    >
+                      {user.panVerificationStatus === "verified" && (
+                        <>
+                          <CheckCircle className="h-3 w-3 mr-1" />
+                          Verified
+                        </>
+                      )}
+                      {user.panVerificationStatus === "pending" && (
+                        <>
+                          <Clock className="h-3 w-3 mr-1" />
+                          Verification Pending
+                        </>
+                      )}
+                      {user.panVerificationStatus === "rejected" && (
+                        <>
+                          <AlertCircle className="h-3 w-3 mr-1" />
+                          Verification Rejected
+                        </>
+                      )}
+                    </Badge>
+                  </div>
+                )}
               </div>
             )}
           </div>
         </div>
+
+        {/* Verification Details Section */}
+        {!user?.isBasicDetailsLocked && (
+          <Card className="mb-8">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <ShieldCheck className="h-5 w-5" />
+                Verification Details
+              </CardTitle>
+              <CardDescription>
+                Add your PAN and CIN numbers for verification. These details can be edited until approved by admin.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <CompanyVerificationEdit company={user} />
+            </CardContent>
+          </Card>
+        )}
 
         {/* Management Tools Section */}
         <div className="mb-8">

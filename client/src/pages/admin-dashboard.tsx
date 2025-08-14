@@ -39,6 +39,7 @@ export default function AdminDashboard() {
   const [employeeSearch, setEmployeeSearch] = useState("");
   const [companySearch, setCompanySearch] = useState("");
   const [cinVerificationNotes, setCinVerificationNotes] = useState<Record<string, string>>({});
+  const [panVerificationNotes, setPanVerificationNotes] = useState<Record<string, string>>({});
 
   // Fetch current admin user
   const { data: userData, isLoading: userLoading } = useQuery<UserData>({
@@ -118,6 +119,12 @@ export default function AdminDashboard() {
     enabled: userData?.userType === "admin" && activeTab === "cin-verification",
   });
 
+  // Fetch companies pending PAN verification
+  const { data: pendingPanCompanies } = useQuery<Company[]>({
+    queryKey: ["/api/admin/companies/pending-pan-verification"],
+    enabled: userData?.userType === "admin" && activeTab === "pan-verification",
+  });
+
   // CIN verification mutation
   const cinVerificationMutation = useMutation({
     mutationFn: ({ companyId, status, notes }: { companyId: string; status: string; notes?: string }) =>
@@ -128,6 +135,20 @@ export default function AdminDashboard() {
       toast({
         title: "CIN verification updated",
         description: "Company CIN verification status has been updated successfully",
+      });
+    },
+  });
+
+  // PAN verification mutation
+  const panVerificationMutation = useMutation({
+    mutationFn: ({ companyId, status, notes }: { companyId: string; status: string; notes?: string }) =>
+      apiRequest("PATCH", `/api/admin/companies/${companyId}/pan-verification`, { status, notes }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/companies/pending-pan-verification"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/companies"] });
+      toast({
+        title: "PAN verification updated",
+        description: "Company PAN verification status has been updated successfully",
       });
     },
   });
@@ -179,6 +200,7 @@ export default function AdminDashboard() {
             <TabsTrigger value="employees">Employees</TabsTrigger>
             <TabsTrigger value="companies">Companies</TabsTrigger>
             <TabsTrigger value="cin-verification">CIN Verification</TabsTrigger>
+            <TabsTrigger value="pan-verification">PAN Verification</TabsTrigger>
             <TabsTrigger value="verifications">Verifications</TabsTrigger>
             <TabsTrigger value="feedback">Feedback</TabsTrigger>
           </TabsList>
@@ -537,6 +559,103 @@ export default function AdminDashboard() {
                       All company CIN numbers have been processed. New registrations requiring CIN verification will appear here.
                     </AlertDescription>
                   </Alert>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* PAN Verification Tab */}
+          <TabsContent value="pan-verification">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Shield className="h-5 w-5 mr-2" />
+                  PAN Verification Management
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {pendingPanCompanies && pendingPanCompanies.length > 0 ? (
+                  <div className="space-y-6">
+                    {pendingPanCompanies.map((company) => (
+                      <div key={company.id} className="border rounded-lg p-6 bg-white">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div>
+                            <h3 className="text-lg font-semibold mb-4">{company.name}</h3>
+                            <div className="space-y-2 text-sm">
+                              <div><strong>Company ID:</strong> {company.companyId}</div>
+                              <div><strong>Email:</strong> {company.email}</div>
+                              <div><strong>Industry:</strong> {company.industry}</div>
+                              <div><strong>Establishment Year:</strong> {company.establishmentYear}</div>
+                              <div><strong>Location:</strong> {company.city}, {company.state}, {company.country}</div>
+                              <div><strong>PAN Number:</strong> 
+                                <Badge variant="outline" className="ml-2 font-mono">
+                                  {company.panNumber}
+                                </Badge>
+                              </div>
+                              <div><strong>Registration Date:</strong> {format(new Date(company.createdAt), "PPP")}</div>
+                            </div>
+                          </div>
+                          
+                          <div>
+                            <div className="mb-4">
+                              <label className="block text-sm font-medium mb-2">
+                                Verification Notes (Optional)
+                              </label>
+                              <textarea
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                                rows={4}
+                                placeholder="Add verification notes, tax portal findings, or rejection reasons..."
+                                value={panVerificationNotes[company.id] || ""}
+                                onChange={(e) => setPanVerificationNotes(prev => ({
+                                  ...prev,
+                                  [company.id]: e.target.value
+                                }))}
+                              />
+                            </div>
+                            
+                            <div className="flex gap-3">
+                              <Button
+                                onClick={() => panVerificationMutation.mutate({
+                                  companyId: company.id,
+                                  status: "verified",
+                                  notes: panVerificationNotes[company.id]
+                                })}
+                                disabled={panVerificationMutation.isPending}
+                                className="flex-1 bg-green-600 hover:bg-green-700"
+                                data-testid={`button-approve-pan-${company.id}`}
+                              >
+                                <UserCheck className="h-4 w-4 mr-2" />
+                                {panVerificationMutation.isPending ? "Processing..." : "Approve PAN"}
+                              </Button>
+                              
+                              <Button
+                                onClick={() => panVerificationMutation.mutate({
+                                  companyId: company.id,
+                                  status: "rejected",
+                                  notes: panVerificationNotes[company.id]
+                                })}
+                                disabled={panVerificationMutation.isPending}
+                                variant="destructive"
+                                className="flex-1"
+                                data-testid={`button-reject-pan-${company.id}`}
+                              >
+                                <UserX className="h-4 w-4 mr-2" />
+                                {panVerificationMutation.isPending ? "Processing..." : "Reject PAN"}
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <Shield className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">No Pending PAN Verifications</h3>
+                    <p className="text-muted-foreground">
+                      All PAN verification requests have been processed or no companies have submitted PAN numbers for verification.
+                    </p>
+                  </div>
                 )}
               </CardContent>
             </Card>

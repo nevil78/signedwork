@@ -139,6 +139,7 @@ export default function AuthPage() {
       pincode: "",
       registrationNumber: "",
       cin: "",
+      panNumber: "",
       email: "",
       size: "",
       establishmentYear: new Date().getFullYear(),
@@ -752,6 +753,29 @@ export default function AuthPage() {
                           )}
                         />
                       </div>
+                      
+                      <FormField
+                        control={companyForm.control}
+                        name="panNumber"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>PAN Number</FormLabel>
+                            <FormControl>
+                              <Input 
+                                placeholder="ABCDE1234F (Optional)" 
+                                {...field}
+                                className="uppercase"
+                                maxLength={10}
+                                onChange={(e) => field.onChange(e.target.value.toUpperCase())}
+                              />
+                            </FormControl>
+                            <p className="text-xs text-slate-500">
+                              10-character PAN number. Format: ABCDE1234F
+                            </p>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
                       
                       <FormField
                         control={companyForm.control}

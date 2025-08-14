@@ -157,16 +157,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Handle empty CIN string - convert to null for database
+      // Handle empty CIN and PAN strings - convert to undefined for database
       const companyData = {
         ...validatedData,
-        cin: validatedData.cin && validatedData.cin.trim() ? validatedData.cin.trim() : null,
-        cinVerificationStatus: validatedData.cin && validatedData.cin.trim() ? "pending" : "pending", // Set status regardless for consistency
+        cin: validatedData.cin && validatedData.cin.trim() ? validatedData.cin.trim() : undefined,
+        panNumber: validatedData.panNumber && validatedData.panNumber.trim() ? validatedData.panNumber.trim() : undefined,
+        cinVerificationStatus: validatedData.cin && validatedData.cin.trim() ? "pending" as const : "pending" as const,
+        panVerificationStatus: validatedData.panNumber && validatedData.panNumber.trim() ? "pending" as const : "pending" as const,
       };
       
       const company = await storage.createCompany(companyData);
       
-      // Only emit real-time update for admin panel if CIN is provided
+      // Emit real-time updates for admin panel if CIN or PAN is provided
       if (company.cin) {
         emitRealTimeUpdate("cin_verification_pending", {
           companyId: company.id,
@@ -176,13 +178,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
+      if (company.panNumber) {
+        emitRealTimeUpdate("pan_verification_pending", {
+          companyId: company.id,
+          companyName: company.name,
+          panNumber: company.panNumber,
+          timestamp: new Date().toISOString()
+        });
+      }
+      
       // Remove password from response
       const { password, ...companyResponse } = company;
       
+      let message = "Company account created successfully!";
+      if (company.cin && company.panNumber) {
+        message += " CIN and PAN verification are pending.";
+      } else if (company.cin) {
+        message += " CIN verification is pending.";
+      } else if (company.panNumber) {
+        message += " PAN verification is pending.";
+      } else {
+        message += " You can add CIN/PAN later for verification.";
+      }
+      
       res.status(201).json({ 
-        message: company.cin 
-          ? "Company account created successfully! CIN verification is pending."
-          : "Company account created successfully! You can add CIN later for verification.",
+        message,
         company: companyResponse
       });
     } catch (error: any) {
@@ -589,6 +609,97 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.error("Admin login error:", error);
       res.status(500).json({ message: "Admin login failed" });
+    }
+  });
+
+  // Company verification update route (before approval)
+  app.patch("/api/company/verification-details", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    if (!sessionUser || sessionUser.type !== "company") {
+      return res.status(401).json({ message: "Not authenticated as company" });
+    }
+    
+    try {
+      const { cin, panNumber } = req.body;
+      
+      // Get current company details
+      const company = await storage.getCompany(sessionUser.id);
+      if (!company) {
+        return res.status(404).json({ message: "Company not found" });
+      }
+      
+      // Check if fields are locked (already verified)
+      if (company.isBasicDetailsLocked) {
+        return res.status(403).json({ 
+          message: "Verification details are locked. Cannot edit after approval." 
+        });
+      }
+      
+      // Validate and update CIN/PAN
+      const updateData: any = {};
+      
+      if (cin !== undefined) {
+        if (cin && cin.trim()) {
+          // Validate CIN format
+          if (cin.length !== 21 || !/^[A-Z][0-9]{5}[A-Z]{2}[0-9]{4}[A-Z]{3}[0-9]{6}$/.test(cin)) {
+            return res.status(400).json({ 
+              message: "Invalid CIN format. Must be 21 characters: L12345AB2020PLC123456" 
+            });
+          }
+          updateData.cin = cin.trim().toUpperCase();
+          updateData.cinVerificationStatus = "pending";
+        } else {
+          updateData.cin = null;
+          updateData.cinVerificationStatus = "pending";
+        }
+      }
+      
+      if (panNumber !== undefined) {
+        if (panNumber && panNumber.trim()) {
+          // Validate PAN format
+          if (panNumber.length !== 10 || !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(panNumber)) {
+            return res.status(400).json({ 
+              message: "Invalid PAN format. Must be 10 characters: ABCDE1234F" 
+            });
+          }
+          updateData.panNumber = panNumber.trim().toUpperCase();
+          updateData.panVerificationStatus = "pending";
+        } else {
+          updateData.panNumber = null;
+          updateData.panVerificationStatus = "pending";
+        }
+      }
+      
+      // Update company details
+      const updatedCompany = await storage.updateCompany(sessionUser.id, updateData);
+      
+      // Emit real-time updates for admin panel
+      if (updateData.cin) {
+        emitRealTimeUpdate("cin_verification_pending", {
+          companyId: updatedCompany.id,
+          companyName: updatedCompany.name,
+          cin: updateData.cin,
+          timestamp: new Date().toISOString()
+        });
+      }
+      
+      if (updateData.panNumber) {
+        emitRealTimeUpdate("pan_verification_pending", {
+          companyId: updatedCompany.id,
+          companyName: updatedCompany.name,
+          panNumber: updateData.panNumber,
+          timestamp: new Date().toISOString()
+        });
+      }
+      
+      res.json({ 
+        message: "Verification details updated successfully",
+        company: updatedCompany 
+      });
+    } catch (error: any) {
+      console.error("Update verification details error:", error);
+      res.status(500).json({ message: "Failed to update verification details" });
     }
   });
 
@@ -1398,6 +1509,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Request work entry changes error:", error);
       res.status(500).json({ message: "Failed to request changes" });
+    }
+  });
+
+  // PAN verification admin routes
+  app.get("/api/admin/companies/pending-pan-verification", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    if (!sessionUser || sessionUser.type !== "admin") {
+      return res.status(401).json({ message: "Not authenticated as admin" });
+    }
+    
+    try {
+      const pendingCompanies = await storage.getCompaniesByPANVerificationStatus("pending");
+      res.json(pendingCompanies);
+    } catch (error) {
+      console.error("Get pending PAN verifications error:", error);
+      res.status(500).json({ message: "Failed to fetch pending PAN verifications" });
+    }
+  });
+
+  app.patch("/api/admin/companies/:id/pan-verification", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    if (!sessionUser || sessionUser.type !== "admin") {
+      return res.status(401).json({ message: "Not authenticated as admin" });
+    }
+    
+    try {
+      const { id } = req.params;
+      const { status, notes } = req.body;
+      
+      if (!["verified", "rejected"].includes(status)) {
+        return res.status(400).json({ message: "Invalid verification status" });
+      }
+
+      const updatedCompany = await storage.updateCompanyPANVerification(id, {
+        panVerificationStatus: status,
+        panVerifiedAt: new Date(),
+        panVerifiedBy: sessionUser.id,
+        isBasicDetailsLocked: status === "verified",
+        verificationNotes: notes
+      });
+
+      // Emit real-time update
+      emitRealTimeUpdate("pan_verification_updated", {
+        companyId: id,
+        status,
+        timestamp: new Date().toISOString()
+      }, [`company-${id}`]);
+
+      res.json({
+        message: `Company PAN ${status === "verified" ? "verified" : "rejected"} successfully`,
+        company: updatedCompany
+      });
+    } catch (error) {
+      console.error("Update PAN verification error:", error);
+      res.status(500).json({ message: "Failed to update PAN verification" });
     }
   });
 

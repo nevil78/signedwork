@@ -178,6 +178,12 @@ export const companies = pgTable("companies", {
   }).default("pending"),
   cinVerifiedAt: timestamp("cin_verified_at"),
   cinVerifiedBy: varchar("cin_verified_by"), // Admin ID who verified
+  panNumber: text("pan_number"), // PAN Number (10 characters) - Optional
+  panVerificationStatus: text("pan_verification_status", { 
+    enum: ["pending", "verified", "rejected"] 
+  }).default("pending"),
+  panVerifiedAt: timestamp("pan_verified_at"),
+  panVerifiedBy: varchar("pan_verified_by"), // Admin ID who verified
   isBasicDetailsLocked: boolean("is_basic_details_locked").default(false),
   industry: text("industry").notNull(),
   email: text("email").notNull().unique(),
@@ -563,6 +569,10 @@ export const insertCompanySchema = createInsertSchema(companies).omit({
     .optional()
     .refine((val) => !val || val.length === 21, "CIN must be exactly 21 characters")
     .refine((val) => !val || /^[A-Z][0-9]{5}[A-Z]{2}[0-9]{4}[A-Z]{3}[0-9]{6}$/.test(val), "Invalid CIN format. Example: L12345AB2020PLC123456"),
+  panNumber: z.string()
+    .optional()
+    .refine((val) => !val || val.length === 10, "PAN must be exactly 10 characters")
+    .refine((val) => !val || /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(val), "Invalid PAN format. Example: ABCDE1234F"),
 });
 
 export const insertCompanyInvitationCodeSchema = createInsertSchema(companyInvitationCodes).omit({

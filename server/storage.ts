@@ -275,6 +275,16 @@ export interface IStorage {
     verificationNotes?: string;
   }): Promise<Company>;
   
+  // PAN verification methods
+  getCompaniesByPANVerificationStatus(status: string): Promise<Company[]>;
+  updateCompanyPANVerification(companyId: string, data: {
+    panVerificationStatus: string;
+    panVerifiedAt: Date;
+    panVerifiedBy: string;
+    isBasicDetailsLocked: boolean;
+    verificationNotes?: string;
+  }): Promise<Company>;
+  
   // User feedback operations
   createFeedback(feedback: InsertUserFeedback): Promise<UserFeedback>;
   getAllFeedback(): Promise<UserFeedback[]>;
@@ -1845,6 +1855,38 @@ export class DatabaseStorage implements IStorage {
         cinVerificationStatus: data.cinVerificationStatus,
         cinVerifiedAt: data.cinVerifiedAt,
         cinVerifiedBy: data.cinVerifiedBy,
+        isBasicDetailsLocked: data.isBasicDetailsLocked,
+        verificationNotes: data.verificationNotes,
+        updatedAt: new Date()
+      })
+      .where(eq(companies.id, companyId))
+      .returning();
+    
+    return updatedCompany;
+  }
+
+  // PAN verification operations
+  async getCompaniesByPANVerificationStatus(status: string): Promise<Company[]> {
+    return await db
+      .select()
+      .from(companies)
+      .where(eq(companies.panVerificationStatus, status))
+      .orderBy(desc(companies.createdAt));
+  }
+
+  async updateCompanyPANVerification(companyId: string, data: {
+    panVerificationStatus: string;
+    panVerifiedAt: Date;
+    panVerifiedBy: string;
+    isBasicDetailsLocked: boolean;
+    verificationNotes?: string;
+  }): Promise<Company> {
+    const [updatedCompany] = await db
+      .update(companies)
+      .set({
+        panVerificationStatus: data.panVerificationStatus,
+        panVerifiedAt: data.panVerifiedAt,
+        panVerifiedBy: data.panVerifiedBy,
         isBasicDetailsLocked: data.isBasicDetailsLocked,
         verificationNotes: data.verificationNotes,
         updatedAt: new Date()
