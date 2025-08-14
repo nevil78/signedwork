@@ -38,6 +38,7 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
   const [employeeSearch, setEmployeeSearch] = useState("");
   const [companySearch, setCompanySearch] = useState("");
+  const [cinVerificationNotes, setCinVerificationNotes] = useState<Record<string, string>>({});
 
   // Fetch current admin user
   const { data: userData, isLoading: userLoading } = useQuery<UserData>({
@@ -111,6 +112,26 @@ export default function AdminDashboard() {
     },
   });
 
+  // Fetch companies pending CIN verification
+  const { data: pendingCinCompanies } = useQuery<Company[]>({
+    queryKey: ["/api/admin/companies/pending-cin-verification"],
+    enabled: userData?.userType === "admin" && activeTab === "cin-verification",
+  });
+
+  // CIN verification mutation
+  const cinVerificationMutation = useMutation({
+    mutationFn: ({ companyId, status, notes }: { companyId: string; status: string; notes?: string }) =>
+      apiRequest("PATCH", `/api/admin/companies/${companyId}/cin-verification`, { status, notes }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/companies/pending-cin-verification"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/companies"] });
+      toast({
+        title: "CIN verification updated",
+        description: "Company CIN verification status has been updated successfully",
+      });
+    },
+  });
+
   // Logout
   const logoutMutation = useMutation({
     mutationFn: () => apiRequest("POST", "/api/auth/logout"),
@@ -157,6 +178,7 @@ export default function AdminDashboard() {
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="employees">Employees</TabsTrigger>
             <TabsTrigger value="companies">Companies</TabsTrigger>
+            <TabsTrigger value="cin-verification">CIN Verification</TabsTrigger>
             <TabsTrigger value="verifications">Verifications</TabsTrigger>
             <TabsTrigger value="feedback">Feedback</TabsTrigger>
           </TabsList>
@@ -418,6 +440,102 @@ export default function AdminDashboard() {
                 ) : (
                   <Alert>
                     <AlertDescription>No companies found</AlertDescription>
+                  </Alert>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* CIN Verification Tab */}
+          <TabsContent value="cin-verification">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Shield className="h-5 w-5 mr-2" />
+                  CIN Verification Management
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {pendingCinCompanies && pendingCinCompanies.length > 0 ? (
+                  <div className="space-y-6">
+                    {pendingCinCompanies.map((company) => (
+                      <div key={company.id} className="border rounded-lg p-6 bg-white">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div>
+                            <h3 className="text-lg font-semibold mb-4">{company.name}</h3>
+                            <div className="space-y-2 text-sm">
+                              <div><strong>Company ID:</strong> {company.companyId}</div>
+                              <div><strong>Email:</strong> {company.email}</div>
+                              <div><strong>Industry:</strong> {company.industry}</div>
+                              <div><strong>Establishment Year:</strong> {company.establishmentYear}</div>
+                              <div><strong>Location:</strong> {company.city}, {company.state}, {company.country}</div>
+                              <div><strong>CIN Number:</strong> 
+                                <Badge variant="outline" className="ml-2 font-mono">
+                                  {company.cin}
+                                </Badge>
+                              </div>
+                              <div><strong>Registration Date:</strong> {format(new Date(company.createdAt), "PPP")}</div>
+                            </div>
+                          </div>
+                          
+                          <div>
+                            <div className="mb-4">
+                              <label className="block text-sm font-medium mb-2">
+                                Verification Notes (Optional)
+                              </label>
+                              <textarea
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                                rows={4}
+                                placeholder="Add verification notes, MCA portal findings, or rejection reasons..."
+                                value={cinVerificationNotes[company.id] || ""}
+                                onChange={(e) => setCinVerificationNotes(prev => ({
+                                  ...prev,
+                                  [company.id]: e.target.value
+                                }))}
+                              />
+                            </div>
+                            
+                            <div className="flex space-x-3">
+                              <Button
+                                onClick={() => cinVerificationMutation.mutate({
+                                  companyId: company.id,
+                                  status: "verified",
+                                  notes: cinVerificationNotes[company.id]
+                                })}
+                                disabled={cinVerificationMutation.isPending}
+                                className="bg-green-600 hover:bg-green-700"
+                                data-testid={`button-verify-cin-${company.id}`}
+                              >
+                                <ShieldCheck className="h-4 w-4 mr-2" />
+                                Verify CIN
+                              </Button>
+                              
+                              <Button
+                                variant="destructive"
+                                onClick={() => cinVerificationMutation.mutate({
+                                  companyId: company.id,
+                                  status: "rejected",
+                                  notes: cinVerificationNotes[company.id]
+                                })}
+                                disabled={cinVerificationMutation.isPending}
+                                data-testid={`button-reject-cin-${company.id}`}
+                              >
+                                <UserX className="h-4 w-4 mr-2" />
+                                Reject CIN
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <Alert>
+                    <ShieldCheck className="h-4 w-4" />
+                    <AlertTitle>No Pending CIN Verifications</AlertTitle>
+                    <AlertDescription>
+                      All company CIN numbers have been processed. New registrations requiring CIN verification will appear here.
+                    </AlertDescription>
                   </Alert>
                 )}
               </CardContent>

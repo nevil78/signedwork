@@ -157,13 +157,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      const company = await storage.createCompany(validatedData);
+      const company = await storage.createCompany({
+        ...validatedData,
+        cinVerificationStatus: "pending", // Set initial status as pending
+      });
+      
+      // Emit real-time update for admin panel
+      emitRealTimeUpdate("cin_verification_pending", {
+        companyId: company.id,
+        companyName: company.name,
+        cin: company.cin,
+        timestamp: new Date().toISOString()
+      });
       
       // Remove password from response
       const { password, ...companyResponse } = company;
       
       res.status(201).json({ 
-        message: "Company account created successfully! You can now log in.",
+        message: "Company account created successfully! CIN verification is pending.",
         company: companyResponse
       });
     } catch (error: any) {
@@ -797,6 +808,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Update verification status error:", error);
       res.status(500).json({ message: "Failed to update verification status" });
+    }
+  });
+
+  // CIN verification endpoints
+  app.get("/api/admin/companies/pending-cin-verification", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    if (!sessionUser || sessionUser.type !== "admin") {
+      return res.status(401).json({ message: "Not authenticated as admin" });
+    }
+    
+    try {
+      const pendingCompanies = await storage.getCompaniesByCINVerificationStatus("pending");
+      res.json(pendingCompanies);
+    } catch (error) {
+      console.error("Get pending CIN verifications error:", error);
+      res.status(500).json({ message: "Failed to fetch pending CIN verifications" });
+    }
+  });
+
+  app.patch("/api/admin/companies/:id/cin-verification", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    if (!sessionUser || sessionUser.type !== "admin") {
+      return res.status(401).json({ message: "Not authenticated as admin" });
+    }
+    
+    try {
+      const { id } = req.params;
+      const { status, notes } = req.body;
+      
+      if (!["verified", "rejected"].includes(status)) {
+        return res.status(400).json({ message: "Invalid verification status" });
+      }
+
+      const updatedCompany = await storage.updateCompanyCINVerification(id, {
+        cinVerificationStatus: status,
+        cinVerifiedAt: new Date(),
+        cinVerifiedBy: sessionUser.id,
+        isBasicDetailsLocked: status === "verified",
+        verificationNotes: notes
+      });
+
+      // Emit real-time update
+      emitRealTimeUpdate("cin_verification_updated", {
+        companyId: id,
+        status,
+        timestamp: new Date().toISOString()
+      }, [`company-${id}`]);
+
+      res.json({
+        message: `Company CIN ${status === "verified" ? "verified" : "rejected"} successfully`,
+        company: updatedCompany
+      });
+    } catch (error) {
+      console.error("Update CIN verification error:", error);
+      res.status(500).json({ message: "Failed to update CIN verification" });
     }
   });
 

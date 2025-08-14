@@ -218,11 +218,44 @@ export default function CompanyDashboard() {
           <p className="text-muted-foreground">
             Manage your employees and generate invitation codes
           </p>
-          {user?.companyId && (
-            <Badge variant="secondary" className="mt-2">
-              Company ID: {user.companyId}
-            </Badge>
-          )}
+          <div className="flex items-center gap-3 mt-3">
+            {user?.companyId && (
+              <Badge variant="secondary">
+                Company ID: {user.companyId}
+              </Badge>
+            )}
+            {user?.cin && (
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="text-xs">
+                  CIN: {user.cin}
+                </Badge>
+                <Badge 
+                  variant={user.cinVerificationStatus === "verified" ? "default" : 
+                          user.cinVerificationStatus === "pending" ? "secondary" : "destructive"}
+                  className="text-xs"
+                >
+                  {user.cinVerificationStatus === "verified" && (
+                    <>
+                      <CheckCircle className="h-3 w-3 mr-1" />
+                      Verified
+                    </>
+                  )}
+                  {user.cinVerificationStatus === "pending" && (
+                    <>
+                      <Clock className="h-3 w-3 mr-1" />
+                      Verification Pending
+                    </>
+                  )}
+                  {user.cinVerificationStatus === "rejected" && (
+                    <>
+                      <AlertCircle className="h-3 w-3 mr-1" />
+                      Verification Rejected
+                    </>
+                  )}
+                </Badge>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Management Tools Section */}
