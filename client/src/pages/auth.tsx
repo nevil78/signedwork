@@ -138,6 +138,7 @@ export default function AuthPage() {
       address: "",
       pincode: "",
       registrationNumber: "",
+      cin: "",
       email: "",
       size: "",
       establishmentYear: new Date().getFullYear(),
@@ -707,32 +708,9 @@ export default function AuthPage() {
                       <div className="border-b border-slate-200 pb-4">
                         <h3 className="text-lg font-semibold text-slate-900">Legal Information</h3>
                         <p className="text-sm text-slate-600">
-                          <span className="font-medium text-red-600">Required:</span> CIN number is mandatory for company verification and credibility.
+                          Optional: CIN number enhances company verification and credibility.
                         </p>
                       </div>
-                      
-                      <FormField
-                        control={companyForm.control}
-                        name="cin"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Corporate Identification Number (CIN) *</FormLabel>
-                            <FormControl>
-                              <Input 
-                                placeholder="L12345AB2020PLC123456" 
-                                {...field}
-                                className="uppercase"
-                                maxLength={21}
-                                onChange={(e) => field.onChange(e.target.value.toUpperCase())}
-                              />
-                            </FormControl>
-                            <p className="text-xs text-slate-500">
-                              21-character CIN number from MCA registration. Format: L12345AB2020PLC123456
-                            </p>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
                       
                       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <FormField
@@ -774,6 +752,29 @@ export default function AuthPage() {
                           )}
                         />
                       </div>
+                      
+                      <FormField
+                        control={companyForm.control}
+                        name="cin"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Corporate Identification Number (CIN)</FormLabel>
+                            <FormControl>
+                              <Input 
+                                placeholder="L12345AB2020PLC123456 (Optional)" 
+                                {...field}
+                                className="uppercase"
+                                maxLength={21}
+                                onChange={(e) => field.onChange(e.target.value.toUpperCase())}
+                              />
+                            </FormControl>
+                            <p className="text-xs text-slate-500">
+                              21-character CIN number from MCA registration. Format: L12345AB2020PLC123456
+                            </p>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
                     </div>
 
                     {/* Address Information Section */}

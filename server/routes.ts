@@ -157,24 +157,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      const company = await storage.createCompany({
+      // Handle empty CIN string - convert to null for database
+      const companyData = {
         ...validatedData,
-        cinVerificationStatus: "pending", // Set initial status as pending
-      });
+        cin: validatedData.cin && validatedData.cin.trim() ? validatedData.cin.trim() : null,
+        cinVerificationStatus: validatedData.cin && validatedData.cin.trim() ? "pending" : "pending", // Set status regardless for consistency
+      };
       
-      // Emit real-time update for admin panel
-      emitRealTimeUpdate("cin_verification_pending", {
-        companyId: company.id,
-        companyName: company.name,
-        cin: company.cin,
-        timestamp: new Date().toISOString()
-      });
+      const company = await storage.createCompany(companyData);
+      
+      // Only emit real-time update for admin panel if CIN is provided
+      if (company.cin) {
+        emitRealTimeUpdate("cin_verification_pending", {
+          companyId: company.id,
+          companyName: company.name,
+          cin: company.cin,
+          timestamp: new Date().toISOString()
+        });
+      }
       
       // Remove password from response
       const { password, ...companyResponse } = company;
       
       res.status(201).json({ 
-        message: "Company account created successfully! CIN verification is pending.",
+        message: company.cin 
+          ? "Company account created successfully! CIN verification is pending."
+          : "Company account created successfully! You can add CIN later for verification.",
         company: companyResponse
       });
     } catch (error: any) {

@@ -172,7 +172,7 @@ export const companies = pgTable("companies", {
   pincode: text("pincode").notNull(),
   registrationType: text("registration_type"), // CIN or PAN (optional)
   registrationNumber: text("registration_number"), // Registration number (optional)
-  cin: text("cin").unique(), // Corporate Identification Number (21 characters)
+  cin: text("cin").unique(), // Corporate Identification Number (21 characters) - Optional
   cinVerificationStatus: text("cin_verification_status", { 
     enum: ["pending", "verified", "rejected"] 
   }).default("pending"),
@@ -560,9 +560,9 @@ export const insertCompanySchema = createInsertSchema(companies).omit({
     .min(1800, "Invalid establishment year")
     .max(new Date().getFullYear(), "Invalid establishment year"),
   cin: z.string()
-    .min(21, "CIN must be exactly 21 characters")
-    .max(21, "CIN must be exactly 21 characters")
-    .regex(/^[A-Z][0-9]{5}[A-Z]{2}[0-9]{4}[A-Z]{3}[0-9]{6}$/, "Invalid CIN format. Example: L12345AB2020PLC123456"),
+    .optional()
+    .refine((val) => !val || val.length === 21, "CIN must be exactly 21 characters")
+    .refine((val) => !val || /^[A-Z][0-9]{5}[A-Z]{2}[0-9]{4}[A-Z]{3}[0-9]{6}$/.test(val), "Invalid CIN format. Example: L12345AB2020PLC123456"),
 });
 
 export const insertCompanyInvitationCodeSchema = createInsertSchema(companyInvitationCodes).omit({
