@@ -4,6 +4,7 @@ import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Building2, Copy, Users, Clock, CheckCircle, AlertCircle, FileText, BarChart3, Settings, Briefcase, Mail, UserSearch, ArrowRight, Calendar, UserPlus, LogOut, ChevronDown } from 'lucide-react';
+import signedLogo from "@assets/Signed-Logo_1755167773532.png";
 import { toast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import {
@@ -167,7 +168,7 @@ export default function CompanyDashboard() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
-              <Building2 className="text-primary text-2xl mr-3" />
+              <img src={signedLogo} alt="Signedwork" className="h-8 w-8 mr-3" />
               <span className="text-xl font-bold text-slate-800 dark:text-slate-200">Signedwork</span>
             </div>
             <div className="flex items-center space-x-3">
