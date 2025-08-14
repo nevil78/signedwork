@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Building2, Copy, Users, Clock, CheckCircle, AlertCircle, FileText, BarChart3, Settings, Briefcase, Mail, UserSearch, ArrowRight, Calendar, UserPlus, LogOut, ChevronDown } from 'lucide-react';
+import { Building2, Copy, Users, Clock, CheckCircle, AlertCircle, FileText, BarChart3, Settings, Briefcase, Mail, UserSearch, ArrowRight, Calendar, UserPlus, LogOut, ChevronDown, ShieldCheck } from 'lucide-react';
 import signedworkLogo from "@assets/Signed-work-Logo (1)_1755168042120.png";
 import { toast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
@@ -194,6 +194,13 @@ export default function CompanyDashboard() {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link href="/admin/setup" className="flex items-center cursor-pointer text-blue-600" data-testid="link-company-admin-panel">
+                    <ShieldCheck className="h-4 w-4 mr-2" />
+                    Admin Panel
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem 
                   onClick={() => logout.mutate()}
                   disabled={logout.isPending}
@@ -228,6 +235,25 @@ export default function CompanyDashboard() {
         <div className="mb-8">
           <h3 className="text-lg font-semibold mb-4">Management Tools</h3>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {/* Admin Panel Card */}
+            <Card 
+              className="cursor-pointer hover:shadow-md hover:border-blue-200 transition-all duration-200" 
+              onClick={() => navigate('/admin/setup')}
+              data-testid="admin-panel-card"
+            >
+              <CardHeader className="pb-4">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
+                    <ShieldCheck className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <CardTitle className="text-base font-semibold">Admin Panel</CardTitle>
+                </div>
+                <CardDescription className="text-sm">
+                  Administrative controls and platform management
+                </CardDescription>
+              </CardHeader>
+            </Card>
+
             {/* Manage Employees Card */}
             <Card 
               className="cursor-pointer hover:shadow-md hover:border-orange-200 transition-all duration-200" 

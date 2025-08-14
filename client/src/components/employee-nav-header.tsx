@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'wouter';
-import { User, Briefcase, Search, LogOut, Settings, ChevronDown } from 'lucide-react';
+import { User, Briefcase, Search, LogOut, Settings, ChevronDown, ShieldCheck } from 'lucide-react';
 import { FeedbackButton } from '@/components/FeedbackButton';
 import signedworkLogo from "@assets/Signed-work-Logo (1)_1755168042120.png";
 import { Button } from '@/components/ui/button';
@@ -123,6 +123,13 @@ export default function EmployeeNavHeader({ employeeId, employeeName }: Employee
                   <Link href="/change-password" className="flex items-center cursor-pointer" data-testid="link-change-password">
                     <Settings className="h-4 w-4 mr-2" />
                     Change Password
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link href="/admin/setup" className="flex items-center cursor-pointer text-blue-600" data-testid="link-admin-panel">
+                    <ShieldCheck className="h-4 w-4 mr-2" />
+                    Admin Panel
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />

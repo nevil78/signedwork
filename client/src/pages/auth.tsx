@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
-import { Shield, User, Building, ArrowLeft, Check, Eye, EyeOff, AlertCircle } from "lucide-react";
+import { Shield, User, Building, ArrowLeft, Check, Eye, EyeOff, AlertCircle, ShieldCheck } from "lucide-react";
 import signedworkLogo from "@assets/Signed-work-Logo (1)_1755168042120.png";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -265,6 +265,7 @@ export default function AuthPage() {
                 <a href="#" className="text-slate-600 hover:text-primary transition-colors">About</a>
                 <a href="#" className="text-slate-600 hover:text-primary transition-colors">Support</a>
                 <a href="#" className="text-slate-600 hover:text-primary transition-colors">Contact</a>
+                <a href="/admin/setup" className="text-slate-600 hover:text-primary transition-colors text-sm" data-testid="link-admin-access">Admin</a>
               </nav>
             </div>
           </div>
@@ -319,6 +320,19 @@ export default function AuthPage() {
                 </Button>
               </p>
               
+              {/* Admin Access */}
+              <div className="pt-4 border-t border-slate-200">
+                <Button 
+                  variant="outline"
+                  size="sm"
+                  onClick={() => window.location.href = "/admin/setup"}
+                  className="w-full text-blue-600 border-blue-200 hover:bg-blue-50"
+                  data-testid="button-admin-access"
+                >
+                  <ShieldCheck className="h-4 w-4 mr-2" />
+                  Admin Panel Access
+                </Button>
+              </div>
 
             </div>
           </div>
