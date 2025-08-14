@@ -20,11 +20,22 @@ export function CompanyVerificationEdit({ company }: CompanyVerificationEditProp
   const [cin, setCin] = useState(company?.cin || '');
   const queryClient = useQueryClient();
 
+  // Don't render until we have company data  
+  if (!company) {
+    return <div>Loading verification details...</div>;
+  }
+
   // Sync local state with company prop when it changes
   useEffect(() => {
+    console.log('CompanyVerificationEdit - company data updated:', {
+      panNumber: company?.panNumber,
+      cin: company?.cin,
+      panVerificationStatus: company?.panVerificationStatus,
+      cinVerificationStatus: company?.cinVerificationStatus
+    });
     setPanNumber(company?.panNumber || '');
     setCin(company?.cin || '');
-  }, [company?.panNumber, company?.cin]);
+  }, [company?.panNumber, company?.cin, company?.panVerificationStatus, company?.cinVerificationStatus]);
 
   const updateVerificationMutation = useMutation({
     mutationFn: async (data: { panNumber?: string; cin?: string }) => {
@@ -152,6 +163,13 @@ export function CompanyVerificationEdit({ company }: CompanyVerificationEditProp
       </div>
     );
   }
+
+  // Debug render
+  console.log('CompanyVerificationEdit - rendering with company:', {
+    panNumber: company?.panNumber,
+    cin: company?.cin,
+    isEditing
+  });
 
   return (
     <div className="space-y-4">

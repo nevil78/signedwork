@@ -79,7 +79,7 @@ export default function CompanyDashboard() {
   });
 
   // Get current user
-  const { data: user } = useQuery<Company>({
+  const { data: user, isLoading: isUserLoading } = useQuery<Company>({
     queryKey: ['/api/auth/user'],
   });
 
@@ -295,7 +295,7 @@ export default function CompanyDashboard() {
         </div>
 
         {/* Verification Details Section */}
-        {!user?.isBasicDetailsLocked && (
+        {!isUserLoading && !user?.isBasicDetailsLocked && (
           <Card className="mb-8">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -308,6 +308,15 @@ export default function CompanyDashboard() {
             </CardHeader>
             <CardContent>
               <CompanyVerificationEdit company={user} />
+            </CardContent>
+          </Card>
+        )}
+        
+        {/* Loading state for verification section */}
+        {isUserLoading && (
+          <Card className="mb-8">
+            <CardContent className="py-8">
+              <div className="text-center text-gray-500">Loading verification details...</div>
             </CardContent>
           </Card>
         )}
