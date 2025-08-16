@@ -2917,11 +2917,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
           verified: true,
         });
       } else if (purpose === "email_verification") {
-        // Mark user as email verified
+        // Mark user as email verified and sync login email
         if (verification.userType === 'employee') {
           await storage.markEmployeeEmailVerified(verification.userId);
+          
+          // Update session email if user is currently logged in
+          const sessionUser = (req.session as any)?.user;
+          if (sessionUser && sessionUser.type === 'employee' && sessionUser.id === verification.userId) {
+            sessionUser.email = verification.email;
+          }
         } else {
           await storage.markCompanyEmailVerified(verification.userId);
+          
+          // Update session email if user is currently logged in
+          const sessionUser = (req.session as any)?.user;
+          if (sessionUser && sessionUser.type === 'company' && sessionUser.id === verification.userId) {
+            sessionUser.email = verification.email;
+          }
         }
         
         // Mark OTP as used
@@ -3033,6 +3045,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Company email verification endpoint
+  // Update company email (only if not verified)
+  app.patch("/api/company/email", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    if (!sessionUser || sessionUser.type !== 'company') {
+      return res.status(401).json({ message: "Not authenticated as company" });
+    }
+
+    try {
+      const { email } = req.body;
+      
+      if (!email || !email.includes('@')) {
+        return res.status(400).json({ message: "Valid email is required" });
+      }
+
+      const company = await storage.getCompany(sessionUser.id);
+      if (!company) {
+        return res.status(404).json({ message: "Company not found" });
+      }
+
+      if (company.emailVerified) {
+        return res.status(400).json({ message: "Cannot change email after verification. Contact support if needed." });
+      }
+
+      // Check if email is already taken by another company
+      const existingCompany = await storage.getCompanyByEmail(email);
+      if (existingCompany && existingCompany.id !== company.id) {
+        return res.status(400).json({ message: "Email is already registered" });
+      }
+
+      // Update email and reset verification status
+      const updatedCompany = await storage.updateCompany(company.id, {
+        email: email.toLowerCase().trim(),
+        emailVerified: false
+      });
+
+      // Update session email for login consistency
+      (req.session as any).user.email = email.toLowerCase().trim();
+
+      const { password, ...companyResponse } = updatedCompany;
+      res.json({ 
+        message: "Email updated successfully. Please verify your new email.",
+        user: companyResponse 
+      });
+    } catch (error: any) {
+      console.error("Update email error:", error);
+      res.status(500).json({ message: "Failed to update email" });
+    }
+  });
+
   app.post("/api/company/send-verification", async (req, res) => {
     const sessionUser = (req.session as any).user;
     

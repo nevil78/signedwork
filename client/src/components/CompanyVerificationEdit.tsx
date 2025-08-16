@@ -20,6 +20,8 @@ export function CompanyVerificationEdit({ company }: CompanyVerificationEditProp
   const [cin, setCin] = useState(company?.cin || '');
   const [otpCode, setOtpCode] = useState("");
   const [isVerifyingEmail, setIsVerifyingEmail] = useState(false);
+  const [isEditingEmail, setIsEditingEmail] = useState(false);
+  const [newEmail, setNewEmail] = useState("");
   const queryClient = useQueryClient();
 
   // Don't render until we have company data  
@@ -38,6 +40,29 @@ export function CompanyVerificationEdit({ company }: CompanyVerificationEditProp
     setPanNumber(company?.panNumber || '');
     setCin(company?.cin || '');
   }, [company?.panNumber, company?.cin, company?.panVerificationStatus, company?.cinVerificationStatus]);
+
+  // Email update mutation
+  const updateEmailMutation = useMutation({
+    mutationFn: async (email: string) => {
+      return await apiRequest("PATCH", "/api/company/email", { email });
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Email Updated Successfully",
+        description: data.message,
+      });
+      setIsEditingEmail(false);
+      setNewEmail("");
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to Update Email",
+        description: error.message || "Unable to update email. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
 
   // Email verification mutations
   const sendVerificationMutation = useMutation({
@@ -165,6 +190,28 @@ export function CompanyVerificationEdit({ company }: CompanyVerificationEditProp
     setOtpCode("");
   };
 
+  const handleEditEmail = () => {
+    setNewEmail(company?.email || "");
+    setIsEditingEmail(true);
+  };
+
+  const handleSaveEmail = () => {
+    if (!newEmail.trim() || !newEmail.includes('@')) {
+      toast({
+        title: "Invalid Email",
+        description: "Please enter a valid email address.",
+        variant: "destructive",
+      });
+      return;
+    }
+    updateEmailMutation.mutate(newEmail.trim());
+  };
+
+  const handleCancelEmailEdit = () => {
+    setIsEditingEmail(false);
+    setNewEmail("");
+  };
+
   const isPanValid = (pan: string) => {
     return !pan || /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(pan);
   };
@@ -234,7 +281,52 @@ export function CompanyVerificationEdit({ company }: CompanyVerificationEditProp
             )}
           </div>
           
-          <code className="bg-gray-100 px-3 py-2 rounded text-sm block">{company.email}</code>
+          {isEditingEmail ? (
+            <div className="space-y-2">
+              <Input
+                type="email"
+                placeholder="Enter new email address"
+                value={newEmail}
+                onChange={(e) => setNewEmail(e.target.value)}
+                className="w-full"
+                data-testid="input-new-email"
+              />
+              <div className="flex gap-2">
+                <Button
+                  onClick={handleSaveEmail}
+                  disabled={updateEmailMutation.isPending || !newEmail.trim()}
+                  size="sm"
+                  data-testid="button-save-email"
+                >
+                  {updateEmailMutation.isPending ? "Saving..." : "Save"}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={handleCancelEmailEdit}
+                  size="sm"
+                  data-testid="button-cancel-email-edit"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center justify-between">
+              <code className="bg-gray-100 px-3 py-2 rounded text-sm flex-1 mr-2">{company.email}</code>
+              {!company?.emailVerified && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleEditEmail}
+                  className="flex items-center gap-1 text-xs"
+                  data-testid="button-edit-email"
+                >
+                  <Edit className="w-3 h-3" />
+                  Change
+                </Button>
+              )}
+            </div>
+          )}
           
           {company?.emailVerified ? (
             <div className="text-center p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
@@ -377,7 +469,52 @@ export function CompanyVerificationEdit({ company }: CompanyVerificationEditProp
           )}
         </div>
         
-        <code className="bg-gray-100 px-3 py-2 rounded text-sm block">{company?.email}</code>
+        {isEditingEmail ? (
+          <div className="space-y-2">
+            <Input
+              type="email"
+              placeholder="Enter new email address"
+              value={newEmail}
+              onChange={(e) => setNewEmail(e.target.value)}
+              className="w-full"
+              data-testid="input-new-email-main"
+            />
+            <div className="flex gap-2">
+              <Button
+                onClick={handleSaveEmail}
+                disabled={updateEmailMutation.isPending || !newEmail.trim()}
+                size="sm"
+                data-testid="button-save-email-main"
+              >
+                {updateEmailMutation.isPending ? "Saving..." : "Save"}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleCancelEmailEdit}
+                size="sm"
+                data-testid="button-cancel-email-edit-main"
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center justify-between">
+            <code className="bg-gray-100 px-3 py-2 rounded text-sm flex-1 mr-2">{company?.email}</code>
+            {!company?.emailVerified && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleEditEmail}
+                className="flex items-center gap-1 text-xs"
+                data-testid="button-edit-email-main"
+              >
+                <Edit className="w-3 h-3" />
+                Change
+              </Button>
+            )}
+          </div>
+        )}
         
         {company?.emailVerified ? (
           <div className="text-center p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
