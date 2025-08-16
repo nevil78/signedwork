@@ -50,7 +50,7 @@ export default function Dashboard() {
   
   // Redirect to appropriate dashboard
   if (isEmployee) {
-    window.location.href = "/profile";
+    window.location.href = "/summary";
     return null;
   } else {
     window.location.href = "/company-dashboard";

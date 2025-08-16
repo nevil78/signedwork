@@ -374,9 +374,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         console.log(`Google OAuth successful for ${employee.email}, isNew: ${isNew}`);
         
-        // Redirect to profile page for employees
+        // Redirect to summary dashboard for employees
         const redirectQuery = isNew ? '?welcome=true' : '';
-        res.redirect(`/profile${redirectQuery}`);
+        res.redirect(`/summary${redirectQuery}`);
       } catch (error) {
         console.error("Google OAuth callback error:", error);
         res.redirect('/auth?error=auth_failed');

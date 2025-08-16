@@ -204,11 +204,11 @@ export default function AuthPage() {
       console.log("Login successful, response:", response);
       // Redirect based on user type
       if (response.userType === "employee") {
-        console.log("Redirecting to profile");
-        window.location.href = "/profile";
+        console.log("Redirecting to employee summary dashboard");
+        window.location.href = "/summary";
       } else {
-        console.log("Redirecting to dashboard");
-        window.location.href = "/dashboard";
+        console.log("Redirecting to company dashboard");
+        window.location.href = "/company-dashboard";
       }
     },
     onError: (error: any) => {
