@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
+import EmployeeNavHeader from "@/components/employee-nav-header";
 import { 
   Building2, 
   FileText, 
@@ -103,18 +104,21 @@ export function EmployeeSummaryDashboard() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold">Employee Summary</h1>
-        </div>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {[1, 2, 3, 4].map((i) => (
-            <Card key={i}>
-              <CardContent className="p-6">
-                <div className="h-20 bg-gray-200 animate-pulse rounded"></div>
-              </CardContent>
-            </Card>
-          ))}
+      <div data-testid="page-employee-summary-dashboard">
+        <EmployeeNavHeader />
+        <div className="container mx-auto p-6 space-y-6">
+          <div className="flex items-center justify-between">
+            <h1 className="text-3xl font-bold">Employee Summary</h1>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {[1, 2, 3, 4].map((i) => (
+              <Card key={i}>
+                <CardContent className="p-6">
+                  <div className="h-20 bg-gray-200 animate-pulse rounded"></div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -122,12 +126,15 @@ export function EmployeeSummaryDashboard() {
 
   if (error || !dashboardData) {
     return (
-      <div className="container mx-auto p-6">
-        <Card>
-          <CardContent className="p-6 text-center">
-            <p className="text-red-500">Failed to load dashboard data. Please try again.</p>
-          </CardContent>
-        </Card>
+      <div data-testid="page-employee-summary-dashboard">
+        <EmployeeNavHeader />
+        <div className="container mx-auto p-6">
+          <Card>
+            <CardContent className="p-6 text-center">
+              <p className="text-red-500">Failed to load dashboard data. Please try again.</p>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }
@@ -135,9 +142,11 @@ export function EmployeeSummaryDashboard() {
   const { quickStats, careerSummary, applicationsSummary, workActivitySummary, loginHistory } = dashboardData;
 
   return (
-    <div className="container mx-auto p-6 space-y-6" data-testid="page-employee-summary-dashboard">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+    <div data-testid="page-employee-summary-dashboard">
+      <EmployeeNavHeader />
+      <div className="container mx-auto p-6 space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Employee Summary</h1>
           <p className="text-muted-foreground">Your personal analytics and career statistics</p>
@@ -442,6 +451,7 @@ export function EmployeeSummaryDashboard() {
             )}
           </CardContent>
         </Card>
+      </div>
       </div>
     </div>
   );
