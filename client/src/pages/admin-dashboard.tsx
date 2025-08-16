@@ -16,7 +16,7 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Users, Building, Briefcase, TrendingUp, LogOut, 
-  ShieldCheck, UserCheck, UserX, Calendar, Mail, Search, Shield, MessageSquare
+  ShieldCheck, UserCheck, UserX, Calendar, Mail, Search, Shield, MessageSquare, Menu
 } from "lucide-react";
 import signedworkLogo from "@assets/Signed-work-Logo (1)_1755168042120.png";
 import { format } from "date-fns";
@@ -176,19 +176,23 @@ export default function AdminDashboard() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
-              <img src={signedworkLogo} alt="Signedwork" className="h-8 w-8 mr-3" />
+              <img src={signedworkLogo} alt="Signedwork" className="h-6 w-6 md:h-8 md:w-8 mr-2 md:mr-3" />
               <div>
-                <h1 className="text-xl font-semibold">Signedwork Admin</h1>
-                <p className="text-sm text-gray-500">Welcome, {admin?.username}</p>
+                <h1 className="text-base md:text-xl font-semibold">Signedwork Admin</h1>
+                <p className="text-xs md:text-sm text-gray-500 hidden sm:block">Welcome, {admin?.username}</p>
               </div>
             </div>
             <Button
               variant="outline"
               onClick={() => logoutMutation.mutate()}
               disabled={logoutMutation.isPending}
+              size="sm"
+              className="flex items-center"
             >
-              <LogOut className="h-4 w-4 mr-2" />
-              Logout
+              <LogOut className="h-4 w-4 md:mr-2" />
+              <span className="hidden md:inline">
+                {logoutMutation.isPending ? "Logging out..." : "Logout"}
+              </span>
             </Button>
           </div>
         </div>
@@ -197,17 +201,41 @@ export default function AdminDashboard() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="mb-8">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="employees">Employees</TabsTrigger>
-            <TabsTrigger value="companies">Companies</TabsTrigger>
-            <TabsTrigger value="employee-management">Employee Management</TabsTrigger>
-            <TabsTrigger value="company-management">Company Management</TabsTrigger>
-            <TabsTrigger value="cin-verification">CIN Verification</TabsTrigger>
-            <TabsTrigger value="pan-verification">PAN Verification</TabsTrigger>
-            <TabsTrigger value="verifications">Verifications</TabsTrigger>
-            <TabsTrigger value="feedback">Feedback</TabsTrigger>
-          </TabsList>
+          {/* Desktop Tabs */}
+          <div className="hidden lg:block mb-8">
+            <TabsList className="grid grid-cols-9 w-full">
+              <TabsTrigger value="overview" className="text-xs">Overview</TabsTrigger>
+              <TabsTrigger value="employees" className="text-xs">Employees</TabsTrigger>
+              <TabsTrigger value="companies" className="text-xs">Companies</TabsTrigger>
+              <TabsTrigger value="employee-management" className="text-xs">Employee Mgmt</TabsTrigger>
+              <TabsTrigger value="company-management" className="text-xs">Company Mgmt</TabsTrigger>
+              <TabsTrigger value="cin-verification" className="text-xs">CIN</TabsTrigger>
+              <TabsTrigger value="pan-verification" className="text-xs">PAN</TabsTrigger>
+              <TabsTrigger value="verifications" className="text-xs">Verifications</TabsTrigger>
+              <TabsTrigger value="feedback" className="text-xs">Feedback</TabsTrigger>
+            </TabsList>
+          </div>
+          
+          {/* Mobile Tab Selector */}
+          <div className="lg:hidden mb-8">
+            <div className="relative">
+              <select 
+                value={activeTab} 
+                onChange={(e) => setActiveTab(e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-md bg-white text-sm font-medium"
+              >
+                <option value="overview">Overview</option>
+                <option value="employees">Employees</option>
+                <option value="companies">Companies</option>
+                <option value="employee-management">Employee Management</option>
+                <option value="company-management">Company Management</option>
+                <option value="cin-verification">CIN Verification</option>
+                <option value="pan-verification">PAN Verification</option>
+                <option value="verifications">Verifications</option>
+                <option value="feedback">Feedback</option>
+              </select>
+            </div>
+          </div>
 
           {/* Overview Tab */}
           <TabsContent value="overview">

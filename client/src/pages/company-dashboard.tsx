@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Building2, Copy, Users, Clock, CheckCircle, AlertCircle, FileText, BarChart3, Settings, Briefcase, Mail, UserSearch, ArrowRight, Calendar, UserPlus, LogOut, ChevronDown, ShieldCheck } from 'lucide-react';
+import { Building2, Copy, Users, Clock, CheckCircle, AlertCircle, FileText, BarChart3, Settings, Briefcase, Mail, UserSearch, ArrowRight, Calendar, UserPlus, LogOut, ChevronDown, ShieldCheck, Menu } from 'lucide-react';
 import signedworkLogo from "@assets/Signed-work-Logo (1)_1755168042120.png";
 import { toast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
@@ -171,11 +171,15 @@ export default function CompanyDashboard() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
-              <img src={signedworkLogo} alt="Signedwork" className="h-8 w-8 mr-3" />
-              <span className="text-xl font-bold text-slate-800 dark:text-slate-200">Signedwork</span>
+              <img src={signedworkLogo} alt="Signedwork" className="h-6 w-6 md:h-8 md:w-8 mr-2 md:mr-3" />
+              <span className="text-base md:text-xl font-bold text-slate-800 dark:text-slate-200">Signedwork</span>
             </div>
-            <div className="flex items-center space-x-3">
-              <FeedbackButton variant="outline" size="sm" />
+            <div className="flex items-center space-x-2 md:space-x-3">
+              {/* Feedback button - hidden on mobile */}
+              <div className="hidden md:block">
+                <FeedbackButton variant="outline" size="sm" />
+              </div>
+              
               <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button 
@@ -184,12 +188,35 @@ export default function CompanyDashboard() {
                   className="text-gray-500 hover:text-gray-700"
                   data-testid="button-company-account-menu"
                 >
-                  <Settings className="h-4 w-4 mr-2" />
-                  Account
-                  <ChevronDown className="h-4 w-4 ml-2" />
+                  <Settings className="h-4 w-4 md:mr-2" />
+                  <span className="hidden md:inline">Account</span>
+                  <ChevronDown className="h-4 w-4 md:ml-2 ml-1" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
+                {/* Mobile-only company info */}
+                <div className="md:hidden px-2 py-2 border-b">
+                  <div className="text-sm font-medium text-gray-900">
+                    {user?.name || 'Company'}
+                  </div>
+                  {user?.companyId && (
+                    <div className="text-xs text-gray-500">ID: {user.companyId}</div>
+                  )}
+                </div>
+                
+                {/* Mobile-only feedback option */}
+                <div className="md:hidden">
+                  <DropdownMenuItem className="flex items-center p-0">
+                    <FeedbackButton 
+                      variant="ghost" 
+                      size="sm" 
+                      className="w-full justify-start p-2 h-auto font-normal text-sm"
+                      data-testid="mobile-company-feedback-button"
+                    />
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                </div>
+                
                 <DropdownMenuItem asChild>
                   <Link href="/change-password" className="flex items-center cursor-pointer" data-testid="link-company-change-password">
                     <Settings className="h-4 w-4 mr-2" />
@@ -217,20 +244,20 @@ export default function CompanyDashboard() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Welcome Section */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Welcome, {user?.name}</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-xl md:text-3xl font-bold mb-2">Welcome, {user?.name}</h1>
+          <p className="text-sm md:text-base text-muted-foreground">
             Manage your employees and generate invitation codes
           </p>
-          <div className="flex items-center gap-3 mt-3">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 mt-3">
             {user?.companyId && (
               <Badge variant="secondary">
                 Company ID: {user.companyId}
               </Badge>
             )}
             {(user?.cin || user?.panNumber) && (
-              <div className="flex items-center gap-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
                 {user?.cin && (
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
                     <Badge variant="outline" className="text-xs">
                       CIN: {user.cin}
                     </Badge>
@@ -261,7 +288,7 @@ export default function CompanyDashboard() {
                   </div>
                 )}
                 {user?.panNumber && (
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
                     <Badge variant="outline" className="text-xs">
                       PAN: {user.panNumber}
                     </Badge>
