@@ -70,11 +70,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(401).json({ message: "Not authenticated" });
     }
     
+    // Calculate session expiry time
+    const sessionExpiresAt = new Date(Date.now() + (24 * 60 * 60 * 1000)); // 24 hours from now
+    
     // Session will be automatically saved due to rolling: true
     res.json({ 
       message: "Session renewed",
       userId: sessionUser.id,
-      userType: sessionUser.type
+      userType: sessionUser.type,
+      expiresAt: sessionExpiresAt.toISOString(),
+      remainingTime: "24 hours"
+    });
+  });
+
+  // Session status endpoint to check session validity and remaining time
+  app.get("/api/auth/session-status", (req, res) => {
+    const sessionUser = (req.session as any).user;
+    if (!sessionUser) {
+      return res.status(401).json({ 
+        message: "Not authenticated",
+        authenticated: false
+      });
+    }
+    
+    // Calculate remaining session time based on rolling sessions
+    const sessionExpiresAt = new Date(Date.now() + (24 * 60 * 60 * 1000)); // 24 hours from now due to rolling
+    const remainingMs = sessionExpiresAt.getTime() - Date.now();
+    const remainingHours = Math.floor(remainingMs / (1000 * 60 * 60));
+    const remainingMinutes = Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60));
+    
+    res.json({
+      authenticated: true,
+      userId: sessionUser.id,
+      userType: sessionUser.type,
+      expiresAt: sessionExpiresAt.toISOString(),
+      remainingTime: `${remainingHours}h ${remainingMinutes}m`,
+      cycleLength: "24 hours"
     });
   });
 

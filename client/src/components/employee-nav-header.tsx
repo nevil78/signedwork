@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'wouter';
-import { User, Briefcase, Search, LogOut, Settings, ChevronDown, ShieldCheck, Menu, MessageSquare, BarChart3 } from 'lucide-react';
+import { User, Briefcase, Search, LogOut, Settings, ChevronDown, ShieldCheck, Menu, MessageSquare, BarChart3, Clock } from 'lucide-react';
 import { FeedbackButton } from '@/components/FeedbackButton';
 import signedworkLogo from "@assets/Signed-work-Logo (1)_1755168042120.png";
 import { Button } from '@/components/ui/button';
@@ -14,6 +14,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useEffect, useState } from 'react';
 
 interface EmployeeNavHeaderProps {
   employeeId?: string;
@@ -23,12 +24,39 @@ interface EmployeeNavHeaderProps {
 export default function EmployeeNavHeader({ employeeId, employeeName }: EmployeeNavHeaderProps) {
   const [location, setLocation] = useLocation();
   const { toast } = useToast();
+  const [sessionTime, setSessionTime] = useState<string>('24h 0m');
 
   // Fetch employee data if not provided
   const { data: employee } = useQuery({
     queryKey: ['/api/employee/me'],
     enabled: !employeeId && !employeeName,
   });
+
+  // Session status query
+  const { data: sessionStatus } = useQuery({
+    queryKey: ['/api/auth/session-status'],
+    refetchInterval: 60000, // Refresh every minute
+  });
+
+  // Update session time display
+  useEffect(() => {
+    if (sessionStatus?.remainingTime) {
+      setSessionTime(sessionStatus.remainingTime);
+    }
+  }, [sessionStatus]);
+
+  // Session heartbeat to keep session alive (every 15 minutes)
+  useEffect(() => {
+    const heartbeatInterval = setInterval(async () => {
+      try {
+        await apiRequest("POST", "/api/auth/heartbeat", {});
+      } catch (error) {
+        console.log('Session heartbeat failed:', error);
+      }
+    }, 15 * 60 * 1000); // 15 minutes
+
+    return () => clearInterval(heartbeatInterval);
+  }, []);
 
   const displayEmployeeId = employeeId || (employee as any)?.employeeId;
   const displayEmployeeName = employeeName || (employee as any)?.name;
@@ -192,6 +220,12 @@ export default function EmployeeNavHeader({ employeeId, employeeName }: Employee
           </div>
           
           <div className="flex items-center space-x-2 md:space-x-4">
+            {/* Session Status Indicator */}
+            <div className="flex items-center space-x-2 text-sm text-gray-600 hidden lg:flex">
+              <Clock className="h-4 w-4 text-green-600" />
+              <span className="text-xs">Session: {sessionTime}</span>
+            </div>
+            
             {/* Employee ID - hidden on mobile */}
             {displayEmployeeId && (
               <span className="text-sm text-gray-600 hidden md:block">ID: {displayEmployeeId}</span>
@@ -224,6 +258,10 @@ export default function EmployeeNavHeader({ employeeId, employeeName }: Employee
                   {displayEmployeeId && (
                     <div className="text-xs text-gray-500">ID: {displayEmployeeId}</div>
                   )}
+                  <div className="flex items-center mt-1 text-xs text-gray-500">
+                    <Clock className="h-3 w-3 mr-1 text-green-600" />
+                    Session: {sessionTime}
+                  </div>
                 </div>
                 
                 {/* Mobile-only feedback option */}
