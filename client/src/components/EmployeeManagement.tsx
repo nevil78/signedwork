@@ -276,7 +276,7 @@ export default function EmployeeManagement() {
                         {employee.isActive ? "🟢 Active" : "🔴 Inactive"}
                       </Badge>
                       {employee.currentStatus === 'employed' && (
-                        <Badge variant="success">Currently Employed</Badge>
+                        <Badge variant="default" className="bg-green-100 text-green-800">Currently Employed</Badge>
                       )}
                     </div>
                   </TableCell>
