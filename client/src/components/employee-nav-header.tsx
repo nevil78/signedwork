@@ -89,7 +89,7 @@ export default function EmployeeNavHeader({ employeeId, employeeName }: Employee
                 <TabsList className="h-full bg-transparent border-none rounded-none p-0">
                   <TabsTrigger 
                     value="dashboard" 
-                    className="data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 rounded-none h-full px-4"
+                    className="data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 data-[state=active]:bg-blue-50 rounded-none h-full px-6 font-medium border border-transparent hover:border-gray-200"
                   >
                     <BarChart3 className="h-4 w-4 mr-2" />
                     Dashboard
@@ -135,7 +135,7 @@ export default function EmployeeNavHeader({ employeeId, employeeName }: Employee
                 <DropdownMenuContent align="start" className="w-48">
                   <DropdownMenuItem 
                     onClick={() => setLocation('/summary')}
-                    className={`flex items-center cursor-pointer ${getCurrentTab() === 'dashboard' ? 'bg-blue-50 text-blue-600' : ''}`}
+                    className={`flex items-center cursor-pointer font-medium ${getCurrentTab() === 'dashboard' ? 'bg-blue-50 text-blue-600' : ''}`}
                     data-testid="mobile-nav-dashboard"
                   >
                     <BarChart3 className="h-4 w-4 mr-2" />
