@@ -214,23 +214,113 @@ export function CompanyVerificationEdit({ company }: CompanyVerificationEditProp
           </p>
         </div>
         
-        {/* Email verification in locked state */}
-        <div className="flex items-center gap-2">
-          <Label className="flex items-center gap-2">
-            <Mail className="h-4 w-4" />
-            Email:
-          </Label>
-          <code className="bg-gray-100 px-2 py-1 rounded text-sm">{company.email}</code>
+        {/* Email verification in locked state - still allow email verification */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <Label className="flex items-center gap-2">
+              <Mail className="h-4 w-4" />
+              Email Verification
+            </Label>
+            {company?.emailVerified ? (
+              <Badge variant="default" className="flex items-center gap-1">
+                <CheckCircle className="w-3 h-3" />
+                Verified
+              </Badge>
+            ) : (
+              <Badge variant="secondary" className="flex items-center gap-1">
+                <AlertCircle className="w-3 h-3" />
+                Not Verified
+              </Badge>
+            )}
+          </div>
+          
+          <code className="bg-gray-100 px-3 py-2 rounded text-sm block">{company.email}</code>
+          
           {company?.emailVerified ? (
-            <Badge variant="default" className="flex items-center gap-1 text-xs">
-              <CheckCircle className="w-3 h-3" />
-              Email Verified
-            </Badge>
+            <div className="text-center p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+              <CheckCircle className="w-6 h-6 text-green-600 mx-auto mb-2" />
+              <p className="text-sm text-green-700 dark:text-green-300">
+                Your email is verified! You can now use the forgot password feature.
+              </p>
+            </div>
+          ) : isVerifyingEmail ? (
+            <div className="space-y-3">
+              <div className="text-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                <Clock className="w-6 h-6 text-blue-600 mx-auto mb-2" />
+                <p className="text-sm text-blue-700 dark:text-blue-300">
+                  Verification code sent! Check your email and enter the code below.
+                </p>
+              </div>
+              
+              <div className="space-y-2">
+                <Label>Verification Code</Label>
+                <Input
+                  type="text"
+                  placeholder="Enter 6-digit code"
+                  value={otpCode}
+                  onChange={(e) => setOtpCode(e.target.value)}
+                  maxLength={6}
+                  className="text-center text-lg tracking-wider"
+                  data-testid="input-otp-code"
+                />
+              </div>
+              
+              <div className="flex gap-2">
+                <Button
+                  onClick={handleVerifyOTP}
+                  disabled={verifyOTPMutation.isPending || !otpCode.trim()}
+                  className="flex-1"
+                  data-testid="button-verify-otp"
+                >
+                  {verifyOTPMutation.isPending ? "Verifying..." : "Verify Code"}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={handleCancelEmailVerification}
+                  data-testid="button-cancel-verification"
+                >
+                  Cancel
+                </Button>
+              </div>
+
+              <Button
+                variant="ghost"
+                onClick={handleSendVerification}
+                disabled={sendVerificationMutation.isPending}
+                className="w-full text-sm"
+                data-testid="button-resend-code"
+              >
+                Didn't receive the code? Send again
+              </Button>
+            </div>
           ) : (
-            <Badge variant="secondary" className="flex items-center gap-1 text-xs">
-              <AlertCircle className="w-3 h-3" />
-              Email Not Verified
-            </Badge>
+            <div className="space-y-3">
+              <div className="text-center p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
+                <AlertCircle className="w-6 h-6 text-amber-600 mx-auto mb-2" />
+                <p className="text-sm text-amber-700 dark:text-amber-300">
+                  Email verification is required to use the forgot password feature.
+                </p>
+              </div>
+              
+              <Button
+                onClick={handleSendVerification}
+                disabled={sendVerificationMutation.isPending}
+                className="w-full flex items-center gap-2"
+                data-testid="button-send-verification"
+              >
+                {sendVerificationMutation.isPending ? (
+                  <>
+                    <Clock className="w-4 h-4 animate-spin" />
+                    Sending...
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-4 h-4" />
+                    Send Verification Email
+                  </>
+                )}
+              </Button>
+            </div>
           )}
         </div>
         
