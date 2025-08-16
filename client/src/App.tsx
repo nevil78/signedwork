@@ -22,6 +22,7 @@ import CompanyJobsPage from "@/pages/company-jobs";
 import CompanyRecruiterPage from "@/pages/company-recruiter";
 import CompanyEmployeeWorkDiary from "@/pages/company-employee-work-diary";
 import CompanyEmployees from "@/pages/company-employees";
+import { EmployeeSummaryDashboard } from "@/pages/employee-summary-dashboard";
 import AdminLogin from "@/pages/admin-login";
 import AdminDashboard from "@/pages/admin-dashboard";
 import AdminSetup from "@/pages/admin-setup";
@@ -40,6 +41,7 @@ function Router() {
       <Route path="/verify-email" component={EmailVerificationPage} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/profile" component={ProfessionalProfile} />
+      <Route path="/summary" component={EmployeeSummaryDashboard} />
       <Route path="/work-diary" component={ProfessionalWorkDiary} />
       <Route path="/work-diary/:companyId" component={WorkDiaryCompany} />
       <Route path="/legacy-profile" component={Profile} />

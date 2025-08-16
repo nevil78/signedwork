@@ -357,6 +357,23 @@ export const userFeedback = pgTable("user_feedback", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Login sessions table for tracking user login history
+export const loginSessions = pgTable("login_sessions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userType: varchar("user_type", { length: 10 }).notNull(), // 'employee', 'company', 'admin'
+  userId: varchar("user_id").notNull(), // References the user ID
+  sessionId: varchar("session_id").notNull(),
+  loginAt: timestamp("login_at").defaultNow(),
+  logoutAt: timestamp("logout_at"),
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  browserInfo: text("browser_info"),
+  deviceType: text("device_type"), // 'desktop', 'mobile', 'tablet'
+  location: text("location"), // Inferred from IP if available
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Relations
 export const employeesRelations = relations(employees, ({ many }) => ({
   experiences: many(experiences),
@@ -673,6 +690,11 @@ export const insertEmailVerificationSchema = createInsertSchema(emailVerificatio
   userType: z.enum(["employee", "company"]),
 });
 
+export const insertLoginSessionSchema = createInsertSchema(loginSessions).omit({
+  id: true,
+  createdAt: true,
+});
+
 export const verifyOTPSchema = z.object({
   email: z.string().email("Invalid email format"),
   otpCode: z.string().length(6, "OTP code must be 6 digits"),
@@ -780,3 +802,11 @@ export type InsertJobAlert = z.infer<typeof insertJobAlertSchema>;
 // Admin types
 export type Admin = typeof admins.$inferSelect;
 export type InsertAdmin = z.infer<typeof insertAdminSchema>;
+
+// Login session types
+export type LoginSession = typeof loginSessions.$inferSelect;
+export type InsertLoginSession = z.infer<typeof insertLoginSessionSchema>;
+
+// Feedback types
+export type UserFeedback = typeof userFeedback.$inferSelect;
+export type InsertFeedback = z.infer<typeof insertFeedbackSchema>;

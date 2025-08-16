@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'wouter';
-import { User, Briefcase, Search, LogOut, Settings, ChevronDown, ShieldCheck, Menu, MessageSquare } from 'lucide-react';
+import { User, Briefcase, Search, LogOut, Settings, ChevronDown, ShieldCheck, Menu, MessageSquare, BarChart3 } from 'lucide-react';
 import { FeedbackButton } from '@/components/FeedbackButton';
 import signedworkLogo from "@assets/Signed-work-Logo (1)_1755168042120.png";
 import { Button } from '@/components/ui/button';
@@ -51,6 +51,7 @@ export default function EmployeeNavHeader({ employeeId, employeeName }: Employee
 
   const getCurrentTab = () => {
     if (location === '/profile') return 'profile';
+    if (location === '/summary') return 'summary';
     if (location === '/work-diary' || location.startsWith('/work-diary/')) return 'work-diary';
     if (location === '/job-discovery') return 'job-discovery';
     if (location === '/change-password') return 'settings';
@@ -59,6 +60,7 @@ export default function EmployeeNavHeader({ employeeId, employeeName }: Employee
 
   const handleTabChange = (value: string) => {
     if (value === 'profile') setLocation('/profile');
+    else if (value === 'summary') setLocation('/summary');
     else if (value === 'work-diary') setLocation('/work-diary');
     else if (value === 'job-discovery') setLocation('/job-discovery');
   };
@@ -90,6 +92,13 @@ export default function EmployeeNavHeader({ employeeId, employeeName }: Employee
                   >
                     <User className="h-4 w-4 mr-2" />
                     Profile
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="summary" 
+                    className="data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 rounded-none h-full px-4"
+                  >
+                    <BarChart3 className="h-4 w-4 mr-2" />
+                    Summary
                   </TabsTrigger>
                   <TabsTrigger 
                     value="work-diary" 
@@ -130,6 +139,14 @@ export default function EmployeeNavHeader({ employeeId, employeeName }: Employee
                   >
                     <User className="h-4 w-4 mr-2" />
                     Profile
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => setLocation('/summary')}
+                    className={`flex items-center cursor-pointer ${getCurrentTab() === 'summary' ? 'bg-blue-50 text-blue-600' : ''}`}
+                    data-testid="mobile-nav-summary"
+                  >
+                    <BarChart3 className="h-4 w-4 mr-2" />
+                    Summary
                   </DropdownMenuItem>
                   <DropdownMenuItem 
                     onClick={() => setLocation('/work-diary')}

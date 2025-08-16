@@ -1,6 +1,6 @@
 import { 
   employees, companies, experiences, educations, certifications, projects, endorsements, workEntries, employeeCompanies,
-  companyInvitationCodes, companyEmployees, jobListings, jobApplications, savedJobs, jobAlerts, profileViews, admins, emailVerifications, userFeedback,
+  companyInvitationCodes, companyEmployees, jobListings, jobApplications, savedJobs, jobAlerts, profileViews, admins, emailVerifications, userFeedback, loginSessions,
   type Employee, type Company, type InsertEmployee, type InsertCompany,
   type Experience, type Education, type Certification, type Project, type Endorsement, type WorkEntry, type EmployeeCompany,
   type InsertExperience, type InsertEducation, type InsertCertification, 
@@ -8,7 +8,7 @@ import {
   type CompanyInvitationCode, type CompanyEmployee, type InsertCompanyInvitationCode, type InsertCompanyEmployee,
   type JobListing, type JobApplication, type SavedJob, type JobAlert, type ProfileView,
   type InsertJobListing, type InsertJobApplication, type InsertSavedJob, type InsertJobAlert,
-  type Admin, type InsertAdmin
+  type Admin, type InsertAdmin, type LoginSession, type InsertLoginSession
 } from "@shared/schema";
 
 type UserFeedback = typeof userFeedback.$inferSelect;
@@ -218,6 +218,41 @@ export interface IStorage {
   recordProfileView(viewerCompanyId: string, viewedEmployeeId: string, context: string): Promise<ProfileView>;
   getProfileViews(employeeId: string): Promise<ProfileView[]>;
   
+  // Employee Summary Dashboard
+  getEmployeeSummaryDashboard(employeeId: string): Promise<{
+    quickStats: {
+      totalCompaniesWorked: number;
+      totalApplicationsMade: number;
+      totalWorkSummaries: number;
+      totalLogins: number;
+    };
+    careerSummary: {
+      currentCompany: { name: string; joinedAt: Date; position?: string } | null;
+      pastCompanies: { name: string; joinedAt: Date; leftAt: Date; position?: string }[];
+      totalCompanies: number;
+    };
+    applicationsSummary: {
+      total: number;
+      pending: number;
+      shortlisted: number;
+      interviewed: number;
+      offered: number;
+      rejected: number;
+      recent: { jobTitle: string; companyName: string; status: string; appliedAt: Date }[];
+    };
+    workActivitySummary: {
+      total: number;
+      pending: number;
+      approved: number;
+      rejected: number;
+      recent: { title: string; companyName: string; status: string; createdAt: Date }[];
+    };
+    loginHistory: {
+      total: number;
+      recent: { loginAt: Date; deviceType?: string; location?: string }[];
+    };
+  }>;
+  
   // Company employee access with privacy controls
   getEmployeeCompanyRelation(employeeId: string, companyId: string): Promise<CompanyEmployee | null>;
   getWorkEntriesForEmployeeAndCompany(employeeId: string, companyId: string): Promise<WorkEntry[]>;
@@ -340,6 +375,47 @@ export interface IStorage {
     resolved: number;
     byType: Record<string, number>;
   }>;
+
+  // Employee Summary Dashboard operations
+  getEmployeeSummaryDashboard(employeeId: string): Promise<{
+    quickStats: {
+      totalCompaniesWorked: number;
+      totalApplicationsMade: number;
+      totalWorkSummaries: number;
+      totalLogins: number;
+    };
+    careerSummary: {
+      currentCompany: { name: string; joinedAt: Date; position?: string } | null;
+      pastCompanies: { name: string; joinedAt: Date; leftAt: Date; position?: string }[];
+      totalCompanies: number;
+    };
+    applicationsSummary: {
+      total: number;
+      pending: number;
+      shortlisted: number;
+      interviewed: number;
+      offered: number;
+      rejected: number;
+      recent: { jobTitle: string; companyName: string; status: string; appliedAt: Date }[];
+    };
+    workActivitySummary: {
+      total: number;
+      pending: number;
+      approved: number;
+      rejected: number;
+      recent: { title: string; companyName: string; status: string; createdAt: Date }[];
+    };
+    loginHistory: {
+      total: number;
+      recent: { loginAt: Date; deviceType?: string; location?: string }[];
+    };
+  }>;
+
+  // Login session operations
+  createLoginSession(session: InsertLoginSession): Promise<LoginSession>;
+  getLoginSessions(userId: string, userType: string): Promise<LoginSession[]>;
+  updateLoginSession(sessionId: string, data: Partial<LoginSession>): Promise<LoginSession>;
+  getLoginSessionsCount(userId: string, userType: string): Promise<number>;
 }
 
 export interface JobSearchFilters {
@@ -2211,6 +2287,279 @@ export class DatabaseStorage implements IStorage {
       .returning();
     
     return updatedCompany;
+  }
+
+  // Employee Summary Dashboard operations
+  async getEmployeeSummaryDashboard(employeeId: string): Promise<{
+    quickStats: {
+      totalCompaniesWorked: number;
+      totalApplicationsMade: number;
+      totalWorkSummaries: number;
+      totalLogins: number;
+    };
+    careerSummary: {
+      currentCompany: { name: string; joinedAt: Date; position?: string } | null;
+      pastCompanies: { name: string; joinedAt: Date; leftAt: Date; position?: string }[];
+      totalCompanies: number;
+    };
+    applicationsSummary: {
+      total: number;
+      pending: number;
+      shortlisted: number;
+      interviewed: number;
+      offered: number;
+      rejected: number;
+      recent: { jobTitle: string; companyName: string; status: string; appliedAt: Date }[];
+    };
+    workActivitySummary: {
+      total: number;
+      pending: number;
+      approved: number;
+      rejected: number;
+      recent: { title: string; companyName: string; status: string; createdAt: Date }[];
+    };
+    loginHistory: {
+      total: number;
+      recent: { loginAt: Date; deviceType?: string; location?: string }[];
+    };
+  }> {
+    // Get total companies worked count
+    const companyRelations = await db
+      .select()
+      .from(companyEmployees)
+      .leftJoin(companies, eq(companyEmployees.companyId, companies.id))
+      .where(eq(companyEmployees.employeeId, employeeId))
+      .orderBy(desc(companyEmployees.joinedAt));
+
+    const totalCompaniesWorked = companyRelations.length;
+    
+    // Separate current and past companies
+    let currentCompany = null;
+    const pastCompanies = [];
+    
+    for (const relation of companyRelations) {
+      const company = relation.companies;
+      const employeeRelation = relation.company_employees;
+      
+      if (company && employeeRelation) {
+        if (employeeRelation.status === 'employed') {
+          currentCompany = {
+            name: company.name,
+            joinedAt: employeeRelation.joinedAt,
+            position: employeeRelation.position || undefined
+          };
+        } else if (employeeRelation.leftAt) {
+          pastCompanies.push({
+            name: company.name,
+            joinedAt: employeeRelation.joinedAt,
+            leftAt: employeeRelation.leftAt,
+            position: employeeRelation.position || undefined
+          });
+        }
+      }
+    }
+
+    // Get job applications statistics
+    const [totalAppsResult] = await db
+      .select({ count: sql<number>`COUNT(*)` })
+      .from(jobApplications)
+      .where(eq(jobApplications.employeeId, employeeId));
+
+    const totalApplicationsMade = totalAppsResult?.count || 0;
+
+    // Get applications by status
+    const applicationsByStatus = await db
+      .select({
+        status: jobApplications.status,
+        count: sql<number>`COUNT(*)`
+      })
+      .from(jobApplications)
+      .where(eq(jobApplications.employeeId, employeeId))
+      .groupBy(jobApplications.status);
+
+    const statusCounts = {
+      pending: 0,
+      shortlisted: 0,
+      interviewed: 0,
+      offered: 0,
+      rejected: 0
+    };
+
+    applicationsByStatus.forEach(row => {
+      if (row.status in statusCounts) {
+        statusCounts[row.status as keyof typeof statusCounts] = row.count;
+      }
+    });
+
+    // Get recent job applications
+    const recentApplications = await db
+      .select({
+        jobTitle: jobListings.jobTitle,
+        companyName: companies.name,
+        status: jobApplications.status,
+        appliedAt: jobApplications.appliedAt
+      })
+      .from(jobApplications)
+      .leftJoin(jobListings, eq(jobApplications.jobId, jobListings.id))
+      .leftJoin(companies, eq(jobListings.companyId, companies.id))
+      .where(eq(jobApplications.employeeId, employeeId))
+      .orderBy(desc(jobApplications.appliedAt))
+      .limit(5);
+
+    // Get work entries statistics
+    const [totalWorkResult] = await db
+      .select({ count: sql<number>`COUNT(*)` })
+      .from(workEntries)
+      .where(eq(workEntries.employeeId, employeeId));
+
+    const totalWorkSummaries = totalWorkResult?.count || 0;
+
+    // Get work entries by status
+    const workByStatus = await db
+      .select({
+        status: workEntries.status,
+        count: sql<number>`COUNT(*)`
+      })
+      .from(workEntries)
+      .where(eq(workEntries.employeeId, employeeId))
+      .groupBy(workEntries.status);
+
+    const workStatusCounts = {
+      pending: 0,
+      approved: 0,
+      rejected: 0
+    };
+
+    workByStatus.forEach(row => {
+      if (row.status in workStatusCounts) {
+        workStatusCounts[row.status as keyof typeof workStatusCounts] = row.count;
+      }
+    });
+
+    // Get recent work entries
+    const recentWork = await db
+      .select({
+        title: workEntries.workTitle,
+        companyName: companies.name,
+        status: workEntries.status,
+        createdAt: workEntries.createdAt
+      })
+      .from(workEntries)
+      .leftJoin(companies, eq(workEntries.companyId, companies.id))
+      .where(eq(workEntries.employeeId, employeeId))
+      .orderBy(desc(workEntries.createdAt))
+      .limit(5);
+
+    // Get login sessions statistics
+    const [totalLoginsResult] = await db
+      .select({ count: sql<number>`COUNT(*)` })
+      .from(loginSessions)
+      .where(and(
+        eq(loginSessions.userId, employeeId),
+        eq(loginSessions.userType, 'employee')
+      ));
+
+    const totalLogins = totalLoginsResult?.count || 0;
+
+    // Get recent login sessions
+    const recentLogins = await db
+      .select({
+        loginAt: loginSessions.loginAt,
+        deviceType: loginSessions.deviceType,
+        location: loginSessions.location
+      })
+      .from(loginSessions)
+      .where(and(
+        eq(loginSessions.userId, employeeId),
+        eq(loginSessions.userType, 'employee')
+      ))
+      .orderBy(desc(loginSessions.loginAt))
+      .limit(5);
+
+    return {
+      quickStats: {
+        totalCompaniesWorked,
+        totalApplicationsMade,
+        totalWorkSummaries,
+        totalLogins
+      },
+      careerSummary: {
+        currentCompany,
+        pastCompanies,
+        totalCompanies: totalCompaniesWorked
+      },
+      applicationsSummary: {
+        total: totalApplicationsMade,
+        pending: statusCounts.pending,
+        shortlisted: statusCounts.shortlisted,
+        interviewed: statusCounts.interviewed,
+        offered: statusCounts.offered,
+        rejected: statusCounts.rejected,
+        recent: recentApplications.map(app => ({
+          jobTitle: app.jobTitle || 'Unknown Position',
+          companyName: app.companyName || 'Unknown Company',
+          status: app.status,
+          appliedAt: app.appliedAt
+        }))
+      },
+      workActivitySummary: {
+        total: totalWorkSummaries,
+        pending: workStatusCounts.pending,
+        approved: workStatusCounts.approved,
+        rejected: workStatusCounts.rejected,
+        recent: recentWork.map(work => ({
+          title: work.title,
+          companyName: work.companyName || 'Unknown Company',
+          status: work.status,
+          createdAt: work.createdAt
+        }))
+      },
+      loginHistory: {
+        total: totalLogins,
+        recent: recentLogins.map(login => ({
+          loginAt: login.loginAt,
+          deviceType: login.deviceType || undefined,
+          location: login.location || undefined
+        }))
+      }
+    };
+  }
+
+  // Login session operations
+  async createLoginSession(sessionData: InsertLoginSession): Promise<LoginSession> {
+    const [session] = await db.insert(loginSessions).values(sessionData).returning();
+    return session;
+  }
+
+  async getLoginSessions(userId: string, userType: string): Promise<LoginSession[]> {
+    return await db
+      .select()
+      .from(loginSessions)
+      .where(and(
+        eq(loginSessions.userId, userId),
+        eq(loginSessions.userType, userType)
+      ))
+      .orderBy(desc(loginSessions.loginAt));
+  }
+
+  async updateLoginSession(sessionId: string, data: Partial<LoginSession>): Promise<LoginSession> {
+    const [updatedSession] = await db
+      .update(loginSessions)
+      .set(data)
+      .where(eq(loginSessions.sessionId, sessionId))
+      .returning();
+    return updatedSession;
+  }
+
+  async getLoginSessionsCount(userId: string, userType: string): Promise<number> {
+    const [result] = await db
+      .select({ count: sql<number>`COUNT(*)` })
+      .from(loginSessions)
+      .where(and(
+        eq(loginSessions.userId, userId),
+        eq(loginSessions.userType, userType)
+      ));
+    return result?.count || 0;
   }
 }
 

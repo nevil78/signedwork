@@ -1018,6 +1018,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Employee Summary Dashboard
+  app.get("/api/employee/summary-dashboard", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    if (!sessionUser || sessionUser.type !== "employee") {
+      return res.status(401).json({ message: "Not authenticated as employee" });
+    }
+    
+    try {
+      const dashboardData = await storage.getEmployeeSummaryDashboard(sessionUser.id);
+      res.json(dashboardData);
+    } catch (error) {
+      console.error("Get employee summary dashboard error:", error);
+      res.status(500).json({ message: "Failed to get dashboard data" });
+    }
+  });
+
   // Experience Routes
   app.post("/api/employee/experience", async (req, res) => {
     const sessionUser = (req.session as any).user;
