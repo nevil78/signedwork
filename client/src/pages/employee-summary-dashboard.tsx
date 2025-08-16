@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
+import { useLocation } from "wouter";
 import EmployeeNavHeader from "@/components/employee-nav-header";
 import { 
   Building2, 
@@ -98,6 +99,7 @@ function QuickStatsCard({ title, value, icon: Icon, description }: {
 }
 
 export function EmployeeSummaryDashboard() {
+  const [, setLocation] = useLocation();
   const { data: dashboardData, isLoading, error } = useQuery<DashboardData>({
     queryKey: ["/api/employee/summary-dashboard"],
   });
@@ -198,7 +200,12 @@ export function EmployeeSummaryDashboard() {
                 Your employment history and current position
               </CardDescription>
             </div>
-            <Button variant="outline" size="sm" data-testid="button-view-all-career">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setLocation('/profile')}
+              data-testid="button-view-all-career"
+            >
               <Eye className="h-4 w-4 mr-1" />
               View All
             </Button>
@@ -279,7 +286,12 @@ export function EmployeeSummaryDashboard() {
                 Job application status and history
               </CardDescription>
             </div>
-            <Button variant="outline" size="sm" data-testid="button-view-all-applications">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setLocation('/job-discovery')}
+              data-testid="button-view-all-applications"
+            >
               <Eye className="h-4 w-4 mr-1" />
               View All
             </Button>
@@ -348,7 +360,12 @@ export function EmployeeSummaryDashboard() {
                 Work entries and approval status
               </CardDescription>
             </div>
-            <Button variant="outline" size="sm" data-testid="button-view-all-work">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setLocation('/work-diary')}
+              data-testid="button-view-all-work"
+            >
               <Eye className="h-4 w-4 mr-1" />
               View All
             </Button>
@@ -417,7 +434,12 @@ export function EmployeeSummaryDashboard() {
                 Your recent platform access sessions
               </CardDescription>
             </div>
-            <Button variant="outline" size="sm" data-testid="button-view-all-logins">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setLocation('/profile')}
+              data-testid="button-view-all-logins"
+            >
               <Eye className="h-4 w-4 mr-1" />
               View All
             </Button>
