@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { useLocation } from "wouter";
@@ -100,6 +101,9 @@ function QuickStatsCard({ title, value, icon: Icon, description }: {
 
 export function EmployeeSummaryDashboard() {
   const [, setLocation] = useLocation();
+  const [expandedCareer, setExpandedCareer] = useState(false);
+  const [showApplicationsModal, setShowApplicationsModal] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
   const { data: dashboardData, isLoading, error } = useQuery<DashboardData>({
     queryKey: ["/api/employee/summary-dashboard"],
   });
@@ -203,11 +207,11 @@ export function EmployeeSummaryDashboard() {
             <Button 
               variant="outline" 
               size="sm" 
-              onClick={() => setLocation('/profile')}
+              onClick={() => setExpandedCareer(!expandedCareer)}
               data-testid="button-view-all-career"
             >
               <Eye className="h-4 w-4 mr-1" />
-              View All
+              {expandedCareer ? 'Show Less' : 'Show More'}
             </Button>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -248,7 +252,7 @@ export function EmployeeSummaryDashboard() {
                 <Separator />
                 <span className="font-medium text-sm text-muted-foreground">PAST COMPANIES</span>
                 <div className="space-y-2">
-                  {careerSummary.pastCompanies.slice(0, 3).map((company, index) => (
+                  {(expandedCareer ? careerSummary.pastCompanies : careerSummary.pastCompanies.slice(0, 3)).map((company, index) => (
                     <div key={index} className="flex items-center justify-between py-2 px-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
                       <div>
                         <p className="font-medium text-sm" data-testid={`text-past-company-${index}`}>
@@ -263,7 +267,7 @@ export function EmployeeSummaryDashboard() {
                       </div>
                     </div>
                   ))}
-                  {careerSummary.pastCompanies.length > 3 && (
+                  {!expandedCareer && careerSummary.pastCompanies.length > 3 && (
                     <p className="text-xs text-muted-foreground text-center">
                       +{careerSummary.pastCompanies.length - 3} more companies
                     </p>
@@ -289,11 +293,11 @@ export function EmployeeSummaryDashboard() {
             <Button 
               variant="outline" 
               size="sm" 
-              onClick={() => setLocation('/job-discovery')}
+              onClick={() => setShowApplicationsModal(true)}
               data-testid="button-view-all-applications"
             >
               <Eye className="h-4 w-4 mr-1" />
-              View All
+              View History
             </Button>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -437,11 +441,11 @@ export function EmployeeSummaryDashboard() {
             <Button 
               variant="outline" 
               size="sm" 
-              onClick={() => setLocation('/profile')}
+              onClick={() => setShowLoginModal(true)}
               data-testid="button-view-all-logins"
             >
               <Eye className="h-4 w-4 mr-1" />
-              View All
+              View History
             </Button>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -475,6 +479,87 @@ export function EmployeeSummaryDashboard() {
         </Card>
       </div>
       </div>
+
+      {/* Applications History Modal */}
+      <Dialog open={showApplicationsModal} onOpenChange={setShowApplicationsModal}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Complete Application History</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {applicationsSummary.recent.map((application, index) => (
+              <div key={index} className="flex items-center justify-between py-3 px-4 border rounded-lg">
+                <div>
+                  <p className="font-medium" data-testid={`modal-application-title-${index}`}>
+                    {application.jobTitle}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {application.companyName}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Applied on {format(new Date(application.appliedAt), "MMM dd, yyyy")}
+                  </p>
+                </div>
+                <Badge 
+                  variant={
+                    application.status === 'offered' ? 'default' :
+                    application.status === 'shortlisted' || application.status === 'interviewed' ? 'secondary' :
+                    application.status === 'rejected' ? 'destructive' : 'outline'
+                  }
+                  data-testid={`modal-application-status-${index}`}
+                >
+                  {application.status}
+                </Badge>
+              </div>
+            ))}
+            {applicationsSummary.recent.length === 0 && (
+              <div className="text-center py-8 text-muted-foreground">
+                <Send className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>No applications found</p>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Login History Modal */}
+      <Dialog open={showLoginModal} onOpenChange={setShowLoginModal}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Complete Login History</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {loginHistory.recent.map((login, index) => (
+              <div key={index} className="flex items-center justify-between py-3 px-4 border rounded-lg">
+                <div className="flex items-center gap-3">
+                  <LogIn className="h-5 w-5 text-muted-foreground" />
+                  <div>
+                    <p className="font-medium" data-testid={`modal-login-date-${index}`}>
+                      {format(new Date(login.loginAt), "EEEE, MMM dd, yyyy")}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {format(new Date(login.loginAt), "HH:mm:ss")}
+                    </p>
+                    {(login.deviceType || login.location) && (
+                      <p className="text-xs text-muted-foreground">
+                        {login.deviceType && `${login.deviceType}`}
+                        {login.deviceType && login.location && ' • '}
+                        {login.location && `${login.location}`}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+            {loginHistory.recent.length === 0 && (
+              <div className="text-center py-8 text-muted-foreground">
+                <LogIn className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>No login history found</p>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
