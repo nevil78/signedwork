@@ -57,9 +57,6 @@ export function CompanyVerificationEdit({ company }: CompanyVerificationEditProp
       queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
       queryClient.invalidateQueries({ queryKey: ['/api/company/verification-status'] });
       
-      // Force a re-fetch to get fresh data immediately
-      queryClient.refetchQueries({ queryKey: ['/api/auth/user'] });
-      
       setIsEditing(false);
       toast({
         title: "Success",
@@ -168,6 +165,8 @@ export function CompanyVerificationEdit({ company }: CompanyVerificationEditProp
   console.log('CompanyVerificationEdit - rendering with company:', {
     panNumber: company?.panNumber,
     cin: company?.cin,
+    panVerificationStatus: company?.panVerificationStatus,
+    cinVerificationStatus: company?.cinVerificationStatus,
     isEditing
   });
 

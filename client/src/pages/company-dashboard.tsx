@@ -78,10 +78,12 @@ export default function CompanyDashboard() {
     },
   });
 
-  // Get current user
-  const { data: user, isLoading: isUserLoading } = useQuery<Company>({
+  // Get current user - explicitly type the response structure
+  const { data: authResponse, isLoading: isUserLoading } = useQuery<{user: Company}>({
     queryKey: ['/api/auth/user'],
   });
+  
+  const user = authResponse?.user;
 
   // Initialize WebSocket for real-time updates
   const { joinCompanyRoom } = useSocket(user?.id);
