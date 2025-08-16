@@ -214,6 +214,26 @@ export function CompanyVerificationEdit({ company }: CompanyVerificationEditProp
           </p>
         </div>
         
+        {/* Email verification in locked state */}
+        <div className="flex items-center gap-2">
+          <Label className="flex items-center gap-2">
+            <Mail className="h-4 w-4" />
+            Email:
+          </Label>
+          <code className="bg-gray-100 px-2 py-1 rounded text-sm">{company.email}</code>
+          {company?.emailVerified ? (
+            <Badge variant="default" className="flex items-center gap-1 text-xs">
+              <CheckCircle className="w-3 h-3" />
+              Email Verified
+            </Badge>
+          ) : (
+            <Badge variant="secondary" className="flex items-center gap-1 text-xs">
+              <AlertCircle className="w-3 h-3" />
+              Email Not Verified
+            </Badge>
+          )}
+        </div>
+        
         {company.panNumber && (
           <div className="flex items-center gap-2">
             <Label>PAN Number:</Label>
@@ -235,11 +255,14 @@ export function CompanyVerificationEdit({ company }: CompanyVerificationEditProp
 
   // Debug render - remove in production
   console.log('CompanyVerificationEdit - rendering with company:', {
+    email: company?.email,
+    emailVerified: company?.emailVerified,
     panNumber: company?.panNumber,
     cin: company?.cin,
     panVerificationStatus: company?.panVerificationStatus,
     cinVerificationStatus: company?.cinVerificationStatus,
-    isEditing
+    isEditing,
+    isVerifyingEmail
   });
 
   return (
