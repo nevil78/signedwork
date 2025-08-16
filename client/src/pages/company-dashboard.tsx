@@ -297,7 +297,7 @@ export default function CompanyDashboard() {
         </div>
 
         {/* Verification Details Section */}
-        {!isUserLoading && !user?.isBasicDetailsLocked && (
+        {!isUserLoading && (
           <Card className="mb-8">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -305,7 +305,10 @@ export default function CompanyDashboard() {
                 Verification Details
               </CardTitle>
               <CardDescription>
-                Verify your email and add PAN/CIN numbers for complete company verification. Details can be edited until approved by admin.
+                {user?.isBasicDetailsLocked 
+                  ? "Your verification details have been approved and locked. Contact support for changes."
+                  : "Verify your email and add PAN/CIN numbers for complete company verification. Details can be edited until approved by admin."
+                }
               </CardDescription>
             </CardHeader>
             <CardContent>
