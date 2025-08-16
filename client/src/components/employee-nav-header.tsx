@@ -124,23 +124,32 @@ export default function EmployeeNavHeader({ employeeId, employeeName }: Employee
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button 
-                    variant="ghost" 
+                    variant="outline" 
                     size="sm"
-                    className="text-gray-500 hover:text-gray-700"
+                    className="flex items-center gap-2 px-3 py-2 border-2 border-gray-300 hover:border-blue-500 hover:bg-blue-50 transition-all duration-200 shadow-sm"
                     data-testid="button-mobile-nav-menu"
                   >
-                    <Menu className="h-4 w-4" />
+                    <Menu className="h-5 w-5" />
+                    <span className="text-sm font-medium">Menu</span>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-56">
+                <DropdownMenuContent align="start" className="w-64 p-2 bg-white shadow-lg border border-gray-200 rounded-lg">
+                  {/* Menu Header */}
+                  <div className="px-2 py-1 mb-2">
+                    <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                      <Menu className="h-4 w-4" />
+                      Navigation Menu
+                    </h3>
+                  </div>
+                  
                   {/* Dashboard - Most Prominent */}
-                  <div className="px-2 py-1">
+                  <div className="px-1 py-1">
                     <DropdownMenuItem 
                       onClick={() => setLocation('/summary')}
-                      className={`flex items-center cursor-pointer font-semibold text-base py-3 px-2 rounded-md ${getCurrentTab() === 'dashboard' ? 'bg-blue-100 text-blue-700 border border-blue-200' : 'hover:bg-gray-100'}`}
+                      className={`flex items-center cursor-pointer font-semibold text-base py-3 px-3 rounded-lg transition-all duration-200 ${getCurrentTab() === 'dashboard' ? 'bg-blue-100 text-blue-700 border-2 border-blue-300 shadow-sm' : 'hover:bg-blue-50 hover:border hover:border-blue-200 border border-transparent'}`}
                       data-testid="mobile-nav-dashboard"
                     >
-                      <BarChart3 className="h-5 w-5 mr-3" />
+                      <BarChart3 className="h-5 w-5 mr-3 text-blue-600" />
                       <div className="flex flex-col">
                         <span>Dashboard</span>
                         <span className="text-xs font-normal text-muted-foreground">Analytics & Overview</span>
@@ -148,33 +157,35 @@ export default function EmployeeNavHeader({ employeeId, employeeName }: Employee
                     </DropdownMenuItem>
                   </div>
                   
-                  <div className="border-t my-1"></div>
+                  <div className="border-t border-gray-200 my-2"></div>
                   
                   {/* Other Navigation Options */}
-                  <DropdownMenuItem 
-                    onClick={() => setLocation('/profile')}
-                    className={`flex items-center cursor-pointer py-2 ${getCurrentTab() === 'profile' ? 'bg-blue-50 text-blue-600' : ''}`}
-                    data-testid="mobile-nav-profile"
-                  >
-                    <User className="h-4 w-4 mr-2" />
-                    Profile
-                  </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    onClick={() => setLocation('/work-diary')}
-                    className={`flex items-center cursor-pointer ${getCurrentTab() === 'work-diary' ? 'bg-blue-50 text-blue-600' : ''}`}
-                    data-testid="mobile-nav-work-diary"
-                  >
-                    <Briefcase className="h-4 w-4 mr-2" />
-                    Work Diary
-                  </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    onClick={() => setLocation('/job-discovery')}
-                    className={`flex items-center cursor-pointer ${getCurrentTab() === 'job-discovery' ? 'bg-blue-50 text-blue-600' : ''}`}
-                    data-testid="mobile-nav-job-discovery"
-                  >
-                    <Search className="h-4 w-4 mr-2" />
-                    Job Discovery
-                  </DropdownMenuItem>
+                  <div className="space-y-1">
+                    <DropdownMenuItem 
+                      onClick={() => setLocation('/profile')}
+                      className={`flex items-center cursor-pointer py-3 px-3 rounded-lg transition-all duration-200 ${getCurrentTab() === 'profile' ? 'bg-blue-50 text-blue-600 border border-blue-200' : 'hover:bg-gray-50 border border-transparent'}`}
+                      data-testid="mobile-nav-profile"
+                    >
+                      <User className="h-5 w-5 mr-3 text-gray-600" />
+                      <span className="font-medium">Profile</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => setLocation('/work-diary')}
+                      className={`flex items-center cursor-pointer py-3 px-3 rounded-lg transition-all duration-200 ${getCurrentTab() === 'work-diary' ? 'bg-blue-50 text-blue-600 border border-blue-200' : 'hover:bg-gray-50 border border-transparent'}`}
+                      data-testid="mobile-nav-work-diary"
+                    >
+                      <Briefcase className="h-5 w-5 mr-3 text-gray-600" />
+                      <span className="font-medium">Work Diary</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => setLocation('/job-discovery')}
+                      className={`flex items-center cursor-pointer py-3 px-3 rounded-lg transition-all duration-200 ${getCurrentTab() === 'job-discovery' ? 'bg-blue-50 text-blue-600 border border-blue-200' : 'hover:bg-gray-50 border border-transparent'}`}
+                      data-testid="mobile-nav-job-discovery"
+                    >
+                      <Search className="h-5 w-5 mr-3 text-gray-600" />
+                      <span className="font-medium">Job Discovery</span>
+                    </DropdownMenuItem>
+                  </div>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
