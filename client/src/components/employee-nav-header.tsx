@@ -160,14 +160,6 @@ export default function EmployeeNavHeader({ employeeId, employeeName }: Employee
                     Profile
                   </DropdownMenuItem>
                   <DropdownMenuItem 
-                    onClick={() => setLocation('/profile')}
-                    className={`flex items-center cursor-pointer ${getCurrentTab() === 'profile' ? 'bg-blue-50 text-blue-600' : ''}`}
-                    data-testid="mobile-nav-profile"
-                  >
-                    <User className="h-4 w-4 mr-2" />
-                    Profile
-                  </DropdownMenuItem>
-                  <DropdownMenuItem 
                     onClick={() => setLocation('/work-diary')}
                     className={`flex items-center cursor-pointer ${getCurrentTab() === 'work-diary' ? 'bg-blue-50 text-blue-600' : ''}`}
                     data-testid="mobile-nav-work-diary"
