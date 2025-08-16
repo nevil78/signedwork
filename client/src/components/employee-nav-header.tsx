@@ -171,6 +171,18 @@ export default function EmployeeNavHeader({ employeeId, employeeName }: Employee
           </div>
           
           <div className="flex items-center space-x-2 md:space-x-4">
+            {/* Quick Dashboard Access Button */}
+            <Button
+              onClick={() => setLocation('/summary')}
+              variant={getCurrentTab() === 'dashboard' ? 'default' : 'outline'}
+              size="sm"
+              className="flex items-center gap-2 font-medium"
+              data-testid="quick-dashboard-button"
+            >
+              <BarChart3 className="h-4 w-4" />
+              <span className="hidden sm:inline">Dashboard</span>
+            </Button>
+            
             {/* Employee ID - hidden on mobile */}
             {displayEmployeeId && (
               <span className="text-sm text-gray-600 hidden md:block">ID: {displayEmployeeId}</span>
