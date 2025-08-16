@@ -172,7 +172,14 @@ export default function CompanyDashboard() {
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
               <img src={signedworkLogo} alt="Signedwork" className="h-6 w-6 md:h-8 md:w-8 mr-2 md:mr-3" />
-              <span className="text-base md:text-xl font-bold text-slate-800 dark:text-slate-200">Signedwork</span>
+              <div className="flex items-center">
+                <span className="text-base md:text-xl font-bold text-slate-800 dark:text-slate-200">Signedwork</span>
+                {user?.name && (
+                  <span className="text-sm md:text-lg font-medium text-slate-600 dark:text-slate-300 ml-2 hidden sm:inline">
+                    - {user.name}
+                  </span>
+                )}
+              </div>
             </div>
             <div className="flex items-center space-x-2 md:space-x-3">
               {/* Feedback button - hidden on mobile */}

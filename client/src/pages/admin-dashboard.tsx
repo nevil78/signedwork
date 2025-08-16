@@ -178,8 +178,15 @@ export default function AdminDashboard() {
             <div className="flex items-center">
               <img src={signedworkLogo} alt="Signedwork" className="h-6 w-6 md:h-8 md:w-8 mr-2 md:mr-3" />
               <div>
-                <h1 className="text-base md:text-xl font-semibold">Signedwork Admin</h1>
-                <p className="text-xs md:text-sm text-gray-500 hidden sm:block">Welcome, {admin?.username}</p>
+                <div className="flex items-center">
+                  <h1 className="text-base md:text-xl font-semibold">Signedwork Admin</h1>
+                  {admin?.username && (
+                    <span className="text-sm md:text-lg font-medium text-gray-600 ml-2 hidden sm:inline">
+                      - {admin.username}
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs md:text-sm text-gray-500 hidden md:block">Welcome back!</p>
               </div>
             </div>
             <Button

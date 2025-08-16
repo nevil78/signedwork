@@ -70,7 +70,14 @@ export default function EmployeeNavHeader({ employeeId, employeeName }: Employee
           <div className="flex items-center space-x-2 md:space-x-8">
             <div className="flex items-center space-x-2">
               <img src={signedworkLogo} alt="Signedwork" className="h-6 w-6" />
-              <h1 className="text-base md:text-lg font-semibold text-gray-900">Signedwork</h1>
+              <div className="flex items-center">
+                <h1 className="text-base md:text-lg font-semibold text-gray-900">Signedwork</h1>
+                {displayEmployeeName && (
+                  <span className="text-sm md:text-base font-medium text-gray-600 ml-2 hidden sm:inline">
+                    - {displayEmployeeName}
+                  </span>
+                )}
+              </div>
             </div>
             
             {/* Desktop Navigation */}
