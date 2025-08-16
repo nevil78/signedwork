@@ -132,14 +132,32 @@ export default function EmployeeNavHeader({ employeeId, employeeName }: Employee
                     <Menu className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-48">
+                <DropdownMenuContent align="start" className="w-56">
+                  {/* Dashboard - Most Prominent */}
+                  <div className="px-2 py-1">
+                    <DropdownMenuItem 
+                      onClick={() => setLocation('/summary')}
+                      className={`flex items-center cursor-pointer font-semibold text-base py-3 px-2 rounded-md ${getCurrentTab() === 'dashboard' ? 'bg-blue-100 text-blue-700 border border-blue-200' : 'hover:bg-gray-100'}`}
+                      data-testid="mobile-nav-dashboard"
+                    >
+                      <BarChart3 className="h-5 w-5 mr-3" />
+                      <div className="flex flex-col">
+                        <span>Dashboard</span>
+                        <span className="text-xs font-normal text-muted-foreground">Analytics & Overview</span>
+                      </div>
+                    </DropdownMenuItem>
+                  </div>
+                  
+                  <div className="border-t my-1"></div>
+                  
+                  {/* Other Navigation Options */}
                   <DropdownMenuItem 
-                    onClick={() => setLocation('/summary')}
-                    className={`flex items-center cursor-pointer font-medium ${getCurrentTab() === 'dashboard' ? 'bg-blue-50 text-blue-600' : ''}`}
-                    data-testid="mobile-nav-dashboard"
+                    onClick={() => setLocation('/profile')}
+                    className={`flex items-center cursor-pointer py-2 ${getCurrentTab() === 'profile' ? 'bg-blue-50 text-blue-600' : ''}`}
+                    data-testid="mobile-nav-profile"
                   >
-                    <BarChart3 className="h-4 w-4 mr-2" />
-                    Dashboard
+                    <User className="h-4 w-4 mr-2" />
+                    Profile
                   </DropdownMenuItem>
                   <DropdownMenuItem 
                     onClick={() => setLocation('/profile')}
@@ -171,18 +189,6 @@ export default function EmployeeNavHeader({ employeeId, employeeName }: Employee
           </div>
           
           <div className="flex items-center space-x-2 md:space-x-4">
-            {/* Quick Dashboard Access Button */}
-            <Button
-              onClick={() => setLocation('/summary')}
-              variant={getCurrentTab() === 'dashboard' ? 'default' : 'outline'}
-              size="sm"
-              className="flex items-center gap-2 font-medium"
-              data-testid="quick-dashboard-button"
-            >
-              <BarChart3 className="h-4 w-4" />
-              <span className="hidden sm:inline">Dashboard</span>
-            </Button>
-            
             {/* Employee ID - hidden on mobile */}
             {displayEmployeeId && (
               <span className="text-sm text-gray-600 hidden md:block">ID: {displayEmployeeId}</span>
