@@ -6,6 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import EmployeeManagement from "@/components/EmployeeManagement";
+import CompanyManagement from "@/components/CompanyManagement";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -199,6 +201,8 @@ export default function AdminDashboard() {
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="employees">Employees</TabsTrigger>
             <TabsTrigger value="companies">Companies</TabsTrigger>
+            <TabsTrigger value="employee-management">Employee Management</TabsTrigger>
+            <TabsTrigger value="company-management">Company Management</TabsTrigger>
             <TabsTrigger value="cin-verification">CIN Verification</TabsTrigger>
             <TabsTrigger value="pan-verification">PAN Verification</TabsTrigger>
             <TabsTrigger value="verifications">Verifications</TabsTrigger>
@@ -466,6 +470,16 @@ export default function AdminDashboard() {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Employee Management Tab */}
+          <TabsContent value="employee-management">
+            <EmployeeManagement />
+          </TabsContent>
+
+          {/* Company Management Tab */}
+          <TabsContent value="company-management">
+            <CompanyManagement />
           </TabsContent>
 
           {/* CIN Verification Tab */}

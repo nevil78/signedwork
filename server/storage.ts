@@ -17,7 +17,7 @@ type InsertUserFeedback = typeof userFeedback.$inferInsert;
 type EmailVerification = typeof emailVerifications.$inferSelect;
 type InsertEmailVerification = typeof emailVerifications.$inferInsert;
 import { db } from "./db";
-import { eq, and, sql, desc, asc, inArray, count, like, or } from "drizzle-orm";
+import { eq, and, sql, desc, asc, inArray, count, like, or, getTableColumns } from "drizzle-orm";
 import bcrypt from "bcrypt";
 
 // Generate a short, memorable employee ID
@@ -244,6 +244,46 @@ export interface IStorage {
   activateEmployee(employeeId: string): Promise<void>;
   deactivateCompany(companyId: string): Promise<void>;
   activateCompany(companyId: string): Promise<void>;
+  
+  // Enhanced admin employee-company management
+  getEmployeeWithCompanyHistory(employeeId: string): Promise<{
+    employee: Employee;
+    companyHistory: CompanyEmployee[];
+    currentCompany: Company | null;
+  }>;
+  getCompanyWithEmployeeHistory(companyId: string): Promise<{
+    company: Company;
+    currentEmployees: (CompanyEmployee & { employee: Employee })[];
+    pastEmployees: (CompanyEmployee & { employee: Employee })[];
+    totalEmployeesCount: number;
+  }>;
+  getAllEmployeesWithCurrentCompany(): Promise<(Employee & {
+    currentCompany?: Company;
+    currentPosition?: string;
+    currentStatus?: string;
+  })[]>;
+  getAllCompaniesWithEmployeeCounts(): Promise<(Company & {
+    currentEmployeesCount: number;
+    totalEmployeesCount: number;
+  })[]>;
+  transferEmployeeBetweenCompanies(employeeId: string, fromCompanyId: string, toCompanyId: string, newPosition?: string): Promise<void>;
+  updateEmployeeCompanyRelationship(relationshipId: string, updates: Partial<CompanyEmployee>): Promise<CompanyEmployee>;
+  getEmployeeCareerReport(employeeId: string): Promise<{
+    employee: Employee;
+    totalTenure: number; // in days
+    companiesWorked: number;
+    longestTenure: { company: Company; days: number };
+    currentPosition: string | null;
+    careerHistory: (CompanyEmployee & { company: Company })[];
+  }>;
+  getCompanyEmployeeReport(companyId: string): Promise<{
+    company: Company;
+    currentEmployees: (CompanyEmployee & { employee: Employee })[];
+    exEmployees: (CompanyEmployee & { employee: Employee })[];
+    averageTenure: number; // in days
+    longestTenuredEmployee: { employee: Employee; days: number } | null;
+    departmentCounts: Record<string, number>;
+  }>;
   
   // Email verification operations
   createEmailVerification(data: InsertEmailVerification): Promise<EmailVerification>;
@@ -1594,6 +1634,272 @@ export class DatabaseStorage implements IStorage {
 
   async getAllCompanies(): Promise<Company[]> {
     return await db.select().from(companies).orderBy(desc(companies.createdAt));
+  }
+
+  // Enhanced admin employee-company management implementations
+  async getEmployeeWithCompanyHistory(employeeId: string): Promise<{
+    employee: Employee;
+    companyHistory: CompanyEmployee[];
+    currentCompany: Company | null;
+  }> {
+    const employee = await this.getEmployee(employeeId);
+    if (!employee) throw new Error("Employee not found");
+
+    const companyHistory = await db.select()
+      .from(companyEmployees)
+      .where(eq(companyEmployees.employeeId, employeeId))
+      .orderBy(desc(companyEmployees.joinedAt));
+
+    const currentRelation = companyHistory.find(relation => relation.status === 'employed');
+    let currentCompany = null;
+    if (currentRelation) {
+      currentCompany = await this.getCompany(currentRelation.companyId);
+    }
+
+    return {
+      employee,
+      companyHistory,
+      currentCompany
+    };
+  }
+
+  async getCompanyWithEmployeeHistory(companyId: string): Promise<{
+    company: Company;
+    currentEmployees: (CompanyEmployee & { employee: Employee })[];
+    pastEmployees: (CompanyEmployee & { employee: Employee })[];
+    totalEmployeesCount: number;
+  }> {
+    const company = await this.getCompany(companyId);
+    if (!company) throw new Error("Company not found");
+
+    // Get current employees
+    const currentEmployees = await db.select()
+      .from(companyEmployees)
+      .leftJoin(employees, eq(companyEmployees.employeeId, employees.id))
+      .where(and(
+        eq(companyEmployees.companyId, companyId),
+        eq(companyEmployees.status, 'employed')
+      ))
+      .orderBy(desc(companyEmployees.joinedAt));
+
+    // Get past employees
+    const pastEmployees = await db.select()
+      .from(companyEmployees)
+      .leftJoin(employees, eq(companyEmployees.employeeId, employees.id))
+      .where(and(
+        eq(companyEmployees.companyId, companyId),
+        eq(companyEmployees.status, 'ex-employee')
+      ))
+      .orderBy(desc(companyEmployees.leftAt));
+
+    const totalEmployeesCount = currentEmployees.length + pastEmployees.length;
+
+    return {
+      company,
+      currentEmployees: currentEmployees.map(row => ({
+        ...row.company_employees,
+        employee: row.employees!
+      })),
+      pastEmployees: pastEmployees.map(row => ({
+        ...row.company_employees,
+        employee: row.employees!
+      })),
+      totalEmployeesCount
+    };
+  }
+
+  async getAllEmployeesWithCurrentCompany(): Promise<(Employee & {
+    currentCompany?: Company;
+    currentPosition?: string;
+    currentStatus?: string;
+  })[]> {
+    const allEmployees = await db.select()
+      .from(employees)
+      .leftJoin(companyEmployees, and(
+        eq(employees.id, companyEmployees.employeeId),
+        eq(companyEmployees.status, 'employed')
+      ))
+      .leftJoin(companies, eq(companyEmployees.companyId, companies.id))
+      .orderBy(desc(employees.createdAt));
+
+    return allEmployees.map(row => ({
+      ...row.employees,
+      currentCompany: row.companies || undefined,
+      currentPosition: row.company_employees?.position || undefined,
+      currentStatus: row.company_employees?.status || undefined
+    }));
+  }
+
+  async getAllCompaniesWithEmployeeCounts(): Promise<(Company & {
+    currentEmployeesCount: number;
+    totalEmployeesCount: number;
+  })[]> {
+    const companiesWithCounts = await db.select({
+      ...getTableColumns(companies),
+      currentEmployeesCount: sql<number>`COUNT(CASE WHEN ${companyEmployees.status} = 'employed' THEN 1 END)`,
+      totalEmployeesCount: sql<number>`COUNT(${companyEmployees.id})`
+    })
+      .from(companies)
+      .leftJoin(companyEmployees, eq(companies.id, companyEmployees.companyId))
+      .groupBy(companies.id)
+      .orderBy(desc(companies.createdAt));
+
+    return companiesWithCounts;
+  }
+
+  async transferEmployeeBetweenCompanies(employeeId: string, fromCompanyId: string, toCompanyId: string, newPosition?: string): Promise<void> {
+    const now = new Date();
+    
+    // Mark previous company as ex-employee
+    await db.update(companyEmployees)
+      .set({
+        status: 'ex-employee',
+        leftAt: now,
+        isActive: false
+      })
+      .where(and(
+        eq(companyEmployees.employeeId, employeeId),
+        eq(companyEmployees.companyId, fromCompanyId),
+        eq(companyEmployees.status, 'employed')
+      ));
+
+    // Add new company relationship
+    await db.insert(companyEmployees).values({
+      id: crypto.randomUUID(),
+      employeeId,
+      companyId: toCompanyId,
+      position: newPosition,
+      joinedAt: now,
+      status: 'employed',
+      isActive: true
+    });
+  }
+
+  async updateEmployeeCompanyRelationship(relationshipId: string, updates: Partial<CompanyEmployee>): Promise<CompanyEmployee> {
+    const [updated] = await db.update(companyEmployees)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(companyEmployees.id, relationshipId))
+      .returning();
+    
+    if (!updated) throw new Error("Relationship not found");
+    return updated;
+  }
+
+  async getEmployeeCareerReport(employeeId: string): Promise<{
+    employee: Employee;
+    totalTenure: number;
+    companiesWorked: number;
+    longestTenure: { company: Company; days: number };
+    currentPosition: string | null;
+    careerHistory: (CompanyEmployee & { company: Company })[];
+  }> {
+    const employee = await this.getEmployee(employeeId);
+    if (!employee) throw new Error("Employee not found");
+
+    const careerHistory = await db.select()
+      .from(companyEmployees)
+      .leftJoin(companies, eq(companyEmployees.companyId, companies.id))
+      .where(eq(companyEmployees.employeeId, employeeId))
+      .orderBy(desc(companyEmployees.joinedAt));
+
+    let totalTenure = 0;
+    let longestTenure = { company: null as Company | null, days: 0 };
+    let currentPosition: string | null = null;
+
+    const history = careerHistory.map(row => {
+      const relation = row.company_employees;
+      const company = row.companies!;
+      
+      const startDate = relation.joinedAt;
+      const endDate = relation.leftAt || new Date();
+      const days = Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+      
+      totalTenure += days;
+      
+      if (days > longestTenure.days) {
+        longestTenure = { company, days };
+      }
+      
+      if (relation.status === 'employed') {
+        currentPosition = relation.position;
+      }
+      
+      return {
+        ...relation,
+        company
+      };
+    });
+
+    return {
+      employee,
+      totalTenure,
+      companiesWorked: careerHistory.length,
+      longestTenure: longestTenure as { company: Company; days: number },
+      currentPosition,
+      careerHistory: history
+    };
+  }
+
+  async getCompanyEmployeeReport(companyId: string): Promise<{
+    company: Company;
+    currentEmployees: (CompanyEmployee & { employee: Employee })[];
+    exEmployees: (CompanyEmployee & { employee: Employee })[];
+    averageTenure: number;
+    longestTenuredEmployee: { employee: Employee; days: number } | null;
+    departmentCounts: Record<string, number>;
+  }> {
+    const company = await this.getCompany(companyId);
+    if (!company) throw new Error("Company not found");
+
+    const allRelations = await db.select()
+      .from(companyEmployees)
+      .leftJoin(employees, eq(companyEmployees.employeeId, employees.id))
+      .where(eq(companyEmployees.companyId, companyId))
+      .orderBy(desc(companyEmployees.joinedAt));
+
+    const currentEmployees: (CompanyEmployee & { employee: Employee })[] = [];
+    const exEmployees: (CompanyEmployee & { employee: Employee })[] = [];
+    let totalTenureDays = 0;
+    let longestTenuredEmployee: { employee: Employee; days: number } | null = null;
+    const departmentCounts: Record<string, number> = {};
+
+    allRelations.forEach(row => {
+      const relation = row.company_employees;
+      const employee = row.employees!;
+      
+      const startDate = relation.joinedAt;
+      const endDate = relation.leftAt || new Date();
+      const days = Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+      
+      totalTenureDays += days;
+      
+      if (!longestTenuredEmployee || days > longestTenuredEmployee.days) {
+        longestTenuredEmployee = { employee, days };
+      }
+      
+      if (relation.department) {
+        departmentCounts[relation.department] = (departmentCounts[relation.department] || 0) + 1;
+      }
+      
+      const relationWithEmployee = { ...relation, employee };
+      
+      if (relation.status === 'employed') {
+        currentEmployees.push(relationWithEmployee);
+      } else {
+        exEmployees.push(relationWithEmployee);
+      }
+    });
+
+    const averageTenure = allRelations.length > 0 ? totalTenureDays / allRelations.length : 0;
+
+    return {
+      company,
+      currentEmployees,
+      exEmployees,
+      averageTenure,
+      longestTenuredEmployee,
+      departmentCounts
+    };
   }
 
   async getEmployeeCount(): Promise<number> {

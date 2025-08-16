@@ -1569,6 +1569,283 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // =====================================================
+  // ENHANCED ADMIN EMPLOYEE-COMPANY MANAGEMENT ROUTES
+  // =====================================================
+  
+  // Get employees with current company details
+  app.get("/api/admin/employees-with-companies", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    if (!sessionUser || sessionUser.type !== "admin") {
+      return res.status(401).json({ message: "Not authenticated as admin" });
+    }
+    
+    try {
+      const { search, sortBy = 'createdAt', sortOrder = 'desc' } = req.query;
+      
+      let employees = await storage.getAllEmployeesWithCurrentCompany();
+      
+      // Apply search filter
+      if (search && typeof search === 'string') {
+        const searchTerm = search.toLowerCase().trim();
+        employees = employees.filter(emp => 
+          emp.email.toLowerCase().includes(searchTerm) ||
+          emp.phone?.toLowerCase().includes(searchTerm) ||
+          emp.firstName.toLowerCase().includes(searchTerm) ||
+          emp.lastName.toLowerCase().includes(searchTerm) ||
+          `${emp.firstName} ${emp.lastName}`.toLowerCase().includes(searchTerm) ||
+          emp.employeeId.toLowerCase().includes(searchTerm) ||
+          emp.currentCompany?.name.toLowerCase().includes(searchTerm) ||
+          emp.currentPosition?.toLowerCase().includes(searchTerm)
+        );
+      }
+      
+      // Apply sorting
+      employees.sort((a, b) => {
+        let aValue: any = null;
+        let bValue: any = null;
+        
+        switch (sortBy) {
+          case 'name':
+            aValue = `${a.firstName} ${a.lastName}`;
+            bValue = `${b.firstName} ${b.lastName}`;
+            break;
+          case 'company':
+            aValue = a.currentCompany?.name || '';
+            bValue = b.currentCompany?.name || '';
+            break;
+          case 'position':
+            aValue = a.currentPosition || '';
+            bValue = b.currentPosition || '';
+            break;
+          default:
+            aValue = a.createdAt;
+            bValue = b.createdAt;
+        }
+        
+        if (sortOrder === 'asc') {
+          return aValue > bValue ? 1 : -1;
+        } else {
+          return aValue < bValue ? 1 : -1;
+        }
+      });
+      
+      // Remove passwords from response
+      const employeesResponse = employees.map(({ password, ...emp }) => emp);
+      res.json(employeesResponse);
+    } catch (error) {
+      console.error("Get employees with companies error:", error);
+      res.status(500).json({ message: "Failed to get employees with companies" });
+    }
+  });
+  
+  // Get companies with employee counts
+  app.get("/api/admin/companies-with-counts", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    if (!sessionUser || sessionUser.type !== "admin") {
+      return res.status(401).json({ message: "Not authenticated as admin" });
+    }
+    
+    try {
+      const { search, sortBy = 'createdAt', sortOrder = 'desc' } = req.query;
+      
+      let companies = await storage.getAllCompaniesWithEmployeeCounts();
+      
+      // Apply search filter
+      if (search && typeof search === 'string') {
+        const searchTerm = search.toLowerCase().trim();
+        companies = companies.filter(comp => 
+          comp.email.toLowerCase().includes(searchTerm) ||
+          comp.name.toLowerCase().includes(searchTerm) ||
+          comp.companyId.toLowerCase().includes(searchTerm) ||
+          comp.industry?.toLowerCase().includes(searchTerm)
+        );
+      }
+      
+      // Apply sorting
+      companies.sort((a, b) => {
+        let aValue: any = null;
+        let bValue: any = null;
+        
+        switch (sortBy) {
+          case 'name':
+            aValue = a.name;
+            bValue = b.name;
+            break;
+          case 'employees':
+            aValue = a.currentEmployeesCount;
+            bValue = b.currentEmployeesCount;
+            break;
+          case 'totalEmployees':
+            aValue = a.totalEmployeesCount;
+            bValue = b.totalEmployeesCount;
+            break;
+          default:
+            aValue = a.createdAt;
+            bValue = b.createdAt;
+        }
+        
+        if (sortOrder === 'asc') {
+          return aValue > bValue ? 1 : -1;
+        } else {
+          return aValue < bValue ? 1 : -1;
+        }
+      });
+      
+      // Remove passwords from response
+      const companiesResponse = companies.map(({ password, ...comp }) => comp);
+      res.json(companiesResponse);
+    } catch (error) {
+      console.error("Get companies with counts error:", error);
+      res.status(500).json({ message: "Failed to get companies with counts" });
+    }
+  });
+  
+  // Get employee with complete work history
+  app.get("/api/admin/employees/:id/history", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    if (!sessionUser || sessionUser.type !== "admin") {
+      return res.status(401).json({ message: "Not authenticated as admin" });
+    }
+    
+    try {
+      const { id } = req.params;
+      const employeeHistory = await storage.getEmployeeWithCompanyHistory(id);
+      res.json(employeeHistory);
+    } catch (error) {
+      console.error("Get employee history error:", error);
+      res.status(500).json({ message: "Failed to get employee history" });
+    }
+  });
+  
+  // Get company with complete employee history  
+  app.get("/api/admin/companies/:id/employee-history", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    if (!sessionUser || sessionUser.type !== "admin") {
+      return res.status(401).json({ message: "Not authenticated as admin" });
+    }
+    
+    try {
+      const { id } = req.params;
+      const companyHistory = await storage.getCompanyWithEmployeeHistory(id);
+      res.json(companyHistory);
+    } catch (error) {
+      console.error("Get company employee history error:", error);
+      res.status(500).json({ message: "Failed to get company employee history" });
+    }
+  });
+  
+  // Transfer employee between companies
+  app.post("/api/admin/employees/:employeeId/transfer", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    if (!sessionUser || sessionUser.type !== "admin") {
+      return res.status(401).json({ message: "Not authenticated as admin" });
+    }
+    
+    try {
+      const { employeeId } = req.params;
+      const { fromCompanyId, toCompanyId, newPosition } = req.body;
+      
+      if (!fromCompanyId || !toCompanyId) {
+        return res.status(400).json({ message: "Both fromCompanyId and toCompanyId are required" });
+      }
+      
+      if (fromCompanyId === toCompanyId) {
+        return res.status(400).json({ message: "Cannot transfer employee to the same company" });
+      }
+      
+      await storage.transferEmployeeBetweenCompanies(
+        employeeId, 
+        fromCompanyId, 
+        toCompanyId, 
+        newPosition
+      );
+      
+      // Emit real-time updates
+      emitRealTimeUpdate("employee_transferred", {
+        employeeId,
+        fromCompanyId,
+        toCompanyId,
+        newPosition,
+        transferredBy: sessionUser.id,
+        transferredAt: new Date()
+      });
+      
+      res.json({ message: "Employee transferred successfully" });
+    } catch (error) {
+      console.error("Transfer employee error:", error);
+      res.status(500).json({ message: "Failed to transfer employee" });
+    }
+  });
+  
+  // Update employee-company relationship
+  app.patch("/api/admin/employee-company-relationships/:relationshipId", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    if (!sessionUser || sessionUser.type !== "admin") {
+      return res.status(401).json({ message: "Not authenticated as admin" });
+    }
+    
+    try {
+      const { relationshipId } = req.params;
+      const updates = req.body;
+      
+      const updatedRelationship = await storage.updateEmployeeCompanyRelationship(
+        relationshipId, 
+        updates
+      );
+      
+      res.json({
+        message: "Employee-company relationship updated successfully",
+        relationship: updatedRelationship
+      });
+    } catch (error) {
+      console.error("Update employee-company relationship error:", error);
+      res.status(500).json({ message: "Failed to update relationship" });
+    }
+  });
+  
+  // Get employee career report
+  app.get("/api/admin/employees/:id/career-report", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    if (!sessionUser || sessionUser.type !== "admin") {
+      return res.status(401).json({ message: "Not authenticated as admin" });
+    }
+    
+    try {
+      const { id } = req.params;
+      const careerReport = await storage.getEmployeeCareerReport(id);
+      res.json(careerReport);
+    } catch (error) {
+      console.error("Get employee career report error:", error);
+      res.status(500).json({ message: "Failed to get career report" });
+    }
+  });
+  
+  // Get company employee report
+  app.get("/api/admin/companies/:id/employee-report", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    if (!sessionUser || sessionUser.type !== "admin") {
+      return res.status(401).json({ message: "Not authenticated as admin" });
+    }
+    
+    try {
+      const { id } = req.params;
+      const employeeReport = await storage.getCompanyEmployeeReport(id);
+      res.json(employeeReport);
+    } catch (error) {
+      console.error("Get company employee report error:", error);
+      res.status(500).json({ message: "Failed to get employee report" });
+    }
+  });
+
   // Employee Company Routes  
   app.get("/api/employee-companies", async (req, res) => {
     const sessionUser = (req.session as any).user;

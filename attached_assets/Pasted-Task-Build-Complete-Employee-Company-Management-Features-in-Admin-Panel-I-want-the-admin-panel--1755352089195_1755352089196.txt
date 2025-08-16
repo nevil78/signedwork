@@ -1,0 +1,97 @@
+Task – Build Complete Employee & Company Management Features in Admin Panel
+
+I want the admin panel to have full control and visibility over employees and companies, including employee history and company transitions.
+
+✅ Features Required
+
+1. Employee Records & History
+
+Show a master list of all employees with details (ID, name, email, position, current company, status).
+
+For each employee, maintain a full work history:
+
+Company name
+
+Joining date
+
+Leaving date (if applicable)
+
+Status (Active / Past Company)
+
+Example:
+
+Employee A worked at Company X (01 Jan 2023 – 01 Jun 2023)
+
+Now works at Company Y (01 Jun 2023 – Present, Active)
+
+2. Company Records & Summary
+
+Show total employees per company.
+
+Show list of employees currently working in that company.
+
+Show list of ex-employees (with their joining/leaving dates).
+
+For each company, display:
+
+Company details (CIN, PAN, verified status).
+
+Current employee count.
+
+Employee history (who joined, who left, when).
+
+3. Employee Transfers Between Companies
+
+If an employee leaves company X and joins company Y:
+
+Mark company X status as “Past Company” with leaving date auto-filled.
+
+Mark company Y as “Active Company” with joining date.
+
+Ensure the employee always has exactly one active company at a time.
+
+4. Admin Controls
+
+Admin can view, edit, or update employee-company relationships.
+
+Admin can correct records (e.g., fix wrong joining date).
+
+Admin can add/remove employees from companies if needed.
+
+Admin can generate reports:
+
+Employees per company
+
+Employees with longest tenure
+
+Ex-employees of a company
+
+Employee career history
+
+5. UI/UX Requirements
+
+In the Admin Panel:
+
+Employee Section: Search/filter employees, view full history.
+
+Company Section: Search/filter companies, view active & ex-employees.
+
+Status indicators:
+
+🟢 Active Company
+
+🔴 Past Company (with leaving date)
+
+Use tables with sorting (by join date, company name, etc.).
+
+🎯 Goal
+
+Build a robust admin panel where I can track:
+
+Every employee’s full career history (companies worked in).
+
+Every company’s employee history (active + past).
+
+Auto-updated statuses when employees switch companies.
+
+Reports & summaries that give me full visibility.
