@@ -17,7 +17,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import type { Company } from '@shared/schema';
-import CompanyEmailVerification from '@/components/CompanyEmailVerification';
+
 
 import {
   DropdownMenu,
@@ -305,7 +305,7 @@ export default function CompanyDashboard() {
                 Verification Details
               </CardTitle>
               <CardDescription>
-                Add your PAN and CIN numbers for verification. These details can be edited until approved by admin.
+                Verify your email and add PAN/CIN numbers for complete company verification. Details can be edited until approved by admin.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -391,9 +391,6 @@ export default function CompanyDashboard() {
         </div>
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {/* Email Verification Section */}
-          <CompanyEmailVerification />
-
           {/* Invitation Code Section */}
           <Card>
             <CardHeader className="pb-4">
