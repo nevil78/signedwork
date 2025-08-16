@@ -50,8 +50,8 @@ export default function EmployeeNavHeader({ employeeId, employeeName }: Employee
   });
 
   const getCurrentTab = () => {
+    if (location === '/summary') return 'dashboard';
     if (location === '/profile') return 'profile';
-    if (location === '/summary') return 'summary';
     if (location === '/work-diary' || location.startsWith('/work-diary/')) return 'work-diary';
     if (location === '/job-discovery') return 'job-discovery';
     if (location === '/change-password') return 'settings';
@@ -60,8 +60,8 @@ export default function EmployeeNavHeader({ employeeId, employeeName }: Employee
   };
 
   const handleTabChange = (value: string) => {
-    if (value === 'profile') setLocation('/profile');
-    else if (value === 'summary') setLocation('/summary');
+    if (value === 'dashboard') setLocation('/summary');
+    else if (value === 'profile') setLocation('/profile');
     else if (value === 'work-diary') setLocation('/work-diary');
     else if (value === 'job-discovery') setLocation('/job-discovery');
   };
@@ -88,18 +88,18 @@ export default function EmployeeNavHeader({ employeeId, employeeName }: Employee
               <Tabs value={getCurrentTab()} onValueChange={handleTabChange} className="h-full">
                 <TabsList className="h-full bg-transparent border-none rounded-none p-0">
                   <TabsTrigger 
+                    value="dashboard" 
+                    className="data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 rounded-none h-full px-4"
+                  >
+                    <BarChart3 className="h-4 w-4 mr-2" />
+                    Dashboard
+                  </TabsTrigger>
+                  <TabsTrigger 
                     value="profile" 
                     className="data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 rounded-none h-full px-4"
                   >
                     <User className="h-4 w-4 mr-2" />
                     Profile
-                  </TabsTrigger>
-                  <TabsTrigger 
-                    value="summary" 
-                    className="data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 rounded-none h-full px-4"
-                  >
-                    <BarChart3 className="h-4 w-4 mr-2" />
-                    Summary
                   </TabsTrigger>
                   <TabsTrigger 
                     value="work-diary" 
@@ -134,20 +134,20 @@ export default function EmployeeNavHeader({ employeeId, employeeName }: Employee
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="w-48">
                   <DropdownMenuItem 
+                    onClick={() => setLocation('/summary')}
+                    className={`flex items-center cursor-pointer ${getCurrentTab() === 'dashboard' ? 'bg-blue-50 text-blue-600' : ''}`}
+                    data-testid="mobile-nav-dashboard"
+                  >
+                    <BarChart3 className="h-4 w-4 mr-2" />
+                    Dashboard
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
                     onClick={() => setLocation('/profile')}
                     className={`flex items-center cursor-pointer ${getCurrentTab() === 'profile' ? 'bg-blue-50 text-blue-600' : ''}`}
                     data-testid="mobile-nav-profile"
                   >
                     <User className="h-4 w-4 mr-2" />
                     Profile
-                  </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    onClick={() => setLocation('/summary')}
-                    className={`flex items-center cursor-pointer ${getCurrentTab() === 'summary' ? 'bg-blue-50 text-blue-600' : ''}`}
-                    data-testid="mobile-nav-summary"
-                  >
-                    <BarChart3 className="h-4 w-4 mr-2" />
-                    Summary
                   </DropdownMenuItem>
                   <DropdownMenuItem 
                     onClick={() => setLocation('/work-diary')}
