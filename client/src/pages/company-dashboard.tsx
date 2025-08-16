@@ -18,7 +18,7 @@ import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import type { Company } from '@shared/schema';
 import CompanyEmailVerification from '@/components/CompanyEmailVerification';
-import { CompanyRegistrationVerification } from '@/components/CompanyRegistrationVerification';
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -393,9 +393,6 @@ export default function CompanyDashboard() {
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {/* Email Verification Section */}
           <CompanyEmailVerification />
-
-          {/* Registration Verification Section */}
-          <CompanyRegistrationVerification />
 
           {/* Invitation Code Section */}
           <Card>

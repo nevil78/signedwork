@@ -161,7 +161,7 @@ export function CompanyVerificationEdit({ company }: CompanyVerificationEditProp
     );
   }
 
-  // Debug render
+  // Debug render - remove in production
   console.log('CompanyVerificationEdit - rendering with company:', {
     panNumber: company?.panNumber,
     cin: company?.cin,
