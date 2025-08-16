@@ -55,7 +55,8 @@ export default function EmployeeNavHeader({ employeeId, employeeName }: Employee
     if (location === '/work-diary' || location.startsWith('/work-diary/')) return 'work-diary';
     if (location === '/job-discovery') return 'job-discovery';
     if (location === '/change-password') return 'settings';
-    return 'profile';
+    // Don't default to profile - return the actual location or empty string
+    return '';
   };
 
   const handleTabChange = (value: string) => {

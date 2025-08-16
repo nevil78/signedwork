@@ -2323,41 +2323,46 @@ export class DatabaseStorage implements IStorage {
       recent: { loginAt: Date; deviceType?: string; location?: string }[];
     };
   }> {
-    // Get total companies worked count
-    const companyRelations = await db
-      .select()
-      .from(companyEmployees)
-      .leftJoin(companies, eq(companyEmployees.companyId, companies.id))
-      .where(eq(companyEmployees.employeeId, employeeId))
-      .orderBy(desc(companyEmployees.joinedAt));
+    try {
+      // Get total companies worked count
+      const companyRelations = await db
+        .select({
+          companyId: companyEmployees.companyId,
+          companyName: companies.name,
+          joinedAt: companyEmployees.joinedAt,
+          leftAt: companyEmployees.leftAt,
+          status: companyEmployees.status,
+          position: companyEmployees.position
+        })
+        .from(companyEmployees)
+        .leftJoin(companies, eq(companyEmployees.companyId, companies.id))
+        .where(eq(companyEmployees.employeeId, employeeId))
+        .orderBy(desc(companyEmployees.joinedAt));
 
-    const totalCompaniesWorked = companyRelations.length;
-    
-    // Separate current and past companies
-    let currentCompany = null;
-    const pastCompanies = [];
-    
-    for (const relation of companyRelations) {
-      const company = relation.companies;
-      const employeeRelation = relation.company_employees;
+      const totalCompaniesWorked = companyRelations.length;
       
-      if (company && employeeRelation) {
-        if (employeeRelation.status === 'employed') {
-          currentCompany = {
-            name: company.name,
-            joinedAt: employeeRelation.joinedAt,
-            position: employeeRelation.position || undefined
-          };
-        } else if (employeeRelation.leftAt) {
-          pastCompanies.push({
-            name: company.name,
-            joinedAt: employeeRelation.joinedAt,
-            leftAt: employeeRelation.leftAt,
-            position: employeeRelation.position || undefined
-          });
+      // Separate current and past companies
+      let currentCompany = null;
+      const pastCompanies = [];
+      
+      for (const relation of companyRelations) {
+        if (relation.companyName && relation.joinedAt) {
+          if (relation.status === 'employed') {
+            currentCompany = {
+              name: relation.companyName,
+              joinedAt: relation.joinedAt,
+              position: relation.position || undefined
+            };
+          } else if (relation.leftAt) {
+            pastCompanies.push({
+              name: relation.companyName,
+              joinedAt: relation.joinedAt,
+              leftAt: relation.leftAt,
+              position: relation.position || undefined
+            });
+          }
         }
       }
-    }
 
     // Get job applications statistics
     const [totalAppsResult] = await db
@@ -2394,7 +2399,7 @@ export class DatabaseStorage implements IStorage {
     // Get recent job applications
     const recentApplications = await db
       .select({
-        jobTitle: jobListings.jobTitle,
+        jobTitle: jobListings.title,
         companyName: companies.name,
         status: jobApplications.status,
         appliedAt: jobApplications.appliedAt
@@ -2439,7 +2444,7 @@ export class DatabaseStorage implements IStorage {
     // Get recent work entries
     const recentWork = await db
       .select({
-        title: workEntries.workTitle,
+        title: workEntries.title,
         companyName: companies.name,
         status: workEntries.status,
         createdAt: workEntries.createdAt
@@ -2476,53 +2481,90 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(loginSessions.loginAt))
       .limit(5);
 
-    return {
-      quickStats: {
-        totalCompaniesWorked,
-        totalApplicationsMade,
-        totalWorkSummaries,
-        totalLogins
-      },
-      careerSummary: {
-        currentCompany,
-        pastCompanies,
-        totalCompanies: totalCompaniesWorked
-      },
-      applicationsSummary: {
-        total: totalApplicationsMade,
-        pending: statusCounts.pending,
-        shortlisted: statusCounts.shortlisted,
-        interviewed: statusCounts.interviewed,
-        offered: statusCounts.offered,
-        rejected: statusCounts.rejected,
-        recent: recentApplications.map(app => ({
-          jobTitle: app.jobTitle || 'Unknown Position',
-          companyName: app.companyName || 'Unknown Company',
-          status: app.status,
-          appliedAt: app.appliedAt
-        }))
-      },
-      workActivitySummary: {
-        total: totalWorkSummaries,
-        pending: workStatusCounts.pending,
-        approved: workStatusCounts.approved,
-        rejected: workStatusCounts.rejected,
-        recent: recentWork.map(work => ({
-          title: work.title,
-          companyName: work.companyName || 'Unknown Company',
-          status: work.status,
-          createdAt: work.createdAt
-        }))
-      },
-      loginHistory: {
-        total: totalLogins,
-        recent: recentLogins.map(login => ({
-          loginAt: login.loginAt,
-          deviceType: login.deviceType || undefined,
-          location: login.location || undefined
-        }))
-      }
-    };
+      return {
+        quickStats: {
+          totalCompaniesWorked,
+          totalApplicationsMade,
+          totalWorkSummaries,
+          totalLogins
+        },
+        careerSummary: {
+          currentCompany,
+          pastCompanies,
+          totalCompanies: totalCompaniesWorked
+        },
+        applicationsSummary: {
+          total: totalApplicationsMade,
+          pending: statusCounts.pending,
+          shortlisted: statusCounts.shortlisted,
+          interviewed: statusCounts.interviewed,
+          offered: statusCounts.offered,
+          rejected: statusCounts.rejected,
+          recent: recentApplications.map(app => ({
+            jobTitle: app.jobTitle || 'Unknown Position',
+            companyName: app.companyName || 'Unknown Company',
+            status: app.status,
+            appliedAt: app.appliedAt || new Date()
+          }))
+        },
+        workActivitySummary: {
+          total: totalWorkSummaries,
+          pending: workStatusCounts.pending,
+          approved: workStatusCounts.approved,
+          rejected: workStatusCounts.rejected,
+          recent: recentWork.map(work => ({
+            title: work.title,
+            companyName: work.companyName || 'Unknown Company',
+            status: work.status,
+            createdAt: work.createdAt || new Date()
+          }))
+        },
+        loginHistory: {
+          total: totalLogins,
+          recent: recentLogins.map(login => ({
+            loginAt: login.loginAt || new Date(),
+            deviceType: login.deviceType || undefined,
+            location: login.location || undefined
+          }))
+        }
+      };
+    } catch (error) {
+      console.error("Employee summary dashboard error:", error);
+      // Return empty dashboard data on error
+      return {
+        quickStats: {
+          totalCompaniesWorked: 0,
+          totalApplicationsMade: 0,
+          totalWorkSummaries: 0,
+          totalLogins: 0
+        },
+        careerSummary: {
+          currentCompany: null,
+          pastCompanies: [],
+          totalCompanies: 0
+        },
+        applicationsSummary: {
+          total: 0,
+          pending: 0,
+          shortlisted: 0,
+          interviewed: 0,
+          offered: 0,
+          rejected: 0,
+          recent: []
+        },
+        workActivitySummary: {
+          total: 0,
+          pending: 0,
+          approved: 0,
+          rejected: 0,
+          recent: []
+        },
+        loginHistory: {
+          total: 0,
+          recent: []
+        }
+      };
+    }
   }
 
   // Login session operations
