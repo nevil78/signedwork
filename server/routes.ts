@@ -21,6 +21,7 @@ import { sendPasswordResetOTP } from "./sendgrid";
 import { fromZodError } from "zod-validation-error";
 import { setupGoogleAuth } from "./googleAuth";
 import { SecureEmailService } from "./secureEmailService";
+import { OTPEmailService } from "./otpEmailService";
 import { sendEmail } from "./sendgrid";
 import { 
   emailChangeRequestSchema, 
@@ -4315,6 +4316,123 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Get user emails error:", error);
       res.status(500).json({ message: "Failed to get user emails" });
+    }
+  });
+
+  // OTP Email Verification Routes
+  app.post("/api/email-verification/send-otp", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    if (!sessionUser) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    try {
+      const { email } = req.body;
+      if (!email) {
+        return res.status(400).json({ message: "Email is required" });
+      }
+
+      const result = await OTPEmailService.sendEmailVerificationOTP(
+        sessionUser.id,
+        email,
+        sessionUser.type
+      );
+
+      if (result.success) {
+        res.json({ message: result.message });
+      } else {
+        res.status(400).json({ message: result.message });
+      }
+    } catch (error) {
+      console.error("Send OTP error:", error);
+      res.status(500).json({ message: "Failed to send verification code" });
+    }
+  });
+
+  app.post("/api/email-verification/verify-otp", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    if (!sessionUser) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    try {
+      const { email, otp } = req.body;
+      if (!email || !otp) {
+        return res.status(400).json({ message: "Email and OTP are required" });
+      }
+
+      const ipAddress = req.ip;
+      const userAgent = req.get('User-Agent');
+
+      const result = await OTPEmailService.verifyEmailOTP(
+        sessionUser.id,
+        email,
+        otp,
+        ipAddress,
+        userAgent
+      );
+
+      if (result.success) {
+        res.json({ message: result.message });
+      } else {
+        res.status(400).json({ message: result.message });
+      }
+    } catch (error) {
+      console.error("Verify OTP error:", error);
+      res.status(500).json({ message: "Failed to verify OTP" });
+    }
+  });
+
+  app.post("/api/email-verification/resend-otp", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    if (!sessionUser) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    try {
+      const { email } = req.body;
+      if (!email) {
+        return res.status(400).json({ message: "Email is required" });
+      }
+
+      const result = await OTPEmailService.resendEmailVerificationOTP(
+        sessionUser.id,
+        email,
+        sessionUser.type
+      );
+
+      if (result.success) {
+        res.json({ message: result.message });
+      } else {
+        res.status(400).json({ message: result.message });
+      }
+    } catch (error) {
+      console.error("Resend OTP error:", error);
+      res.status(500).json({ message: "Failed to resend verification code" });
+    }
+  });
+
+  app.get("/api/email-verification/status", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    if (!sessionUser) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    try {
+      const email = req.query.email as string;
+      if (!email) {
+        return res.status(400).json({ message: "Email parameter is required" });
+      }
+
+      const status = await OTPEmailService.getEmailVerificationStatus(
+        sessionUser.id,
+        email
+      );
+
+      res.json(status);
+    } catch (error) {
+      console.error("Get verification status error:", error);
+      res.status(500).json({ message: "Failed to get verification status" });
     }
   });
 
