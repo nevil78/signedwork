@@ -170,13 +170,6 @@ export default function CompanyNavHeader({ companyId, companyName }: CompanyNavH
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="w-64 p-2 bg-white shadow-lg border border-gray-200 rounded-lg">
-                  {/* Menu Header */}
-                  <div className="px-2 py-1 mb-2">
-                    <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                      <Menu className="h-4 w-4" />
-                      Company Navigation
-                    </h3>
-                  </div>
                   
                   {/* Dashboard - Most Prominent */}
                   <div className="px-1 py-1">
