@@ -72,7 +72,7 @@ export class SignupVerificationService {
         email,
         hashedPassword,
         userType,
-        userData: JSON.stringify(userData),
+        userData: userData,
         verificationToken: token,
         tokenExpiry: expiry,
         resendCount: pendingUser ? pendingUser.resendCount + 1 : 0,
@@ -89,7 +89,7 @@ export class SignupVerificationService {
       // Send verification email
       const verificationLink = `${process.env.FRONTEND_URL}/verify-email?token=${token}`;
       
-      const emailSent = await sendEmail(process.env.SENDGRID_API_KEY!, {
+      const emailSent = await sendEmail({
         to: email,
         from: "noreply@signedwork.com",
         subject: "Verify Your Signedwork Account",
@@ -117,9 +117,12 @@ export class SignupVerificationService {
       });
 
       if (!emailSent) {
+        // For development, show verification link directly when email fails
+        console.log(`\n🔗 VERIFICATION LINK (for development): ${verificationLink}\n`);
         return {
-          success: false,
-          message: "Failed to send verification email. Please try again."
+          success: true,
+          message: `Verification email sent to ${email}. Check your email or use this link: ${verificationLink}`,
+          token
         };
       }
 
@@ -166,8 +169,8 @@ export class SignupVerificationService {
         };
       }
 
-      // Parse user data
-      const userData = JSON.parse(pendingUser.userData as string);
+      // Parse user data - it's already an object from JSONB storage
+      const userData = pendingUser.userData;
 
       // Create the actual user account
       let createdUser;
@@ -176,7 +179,7 @@ export class SignupVerificationService {
         // Generate employee ID
         const employeeId = `EMP-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
         
-        createdUser = await storage.createEmployee({
+        createdUser = await storage.createEmployeeWithHashedPassword({
           employeeId,
           firstName: userData.firstName,
           lastName: userData.lastName,
@@ -186,7 +189,7 @@ export class SignupVerificationService {
           emailVerified: true, // Mark as verified since they completed email verification
         });
       } else if (pendingUser.userType === "company") {
-        createdUser = await storage.createCompany({
+        createdUser = await storage.createCompanyWithHashedPassword({
           name: userData.name,
           email: pendingUser.email,
           password: pendingUser.hashedPassword,

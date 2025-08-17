@@ -105,12 +105,14 @@ export interface IStorage {
   getEmployee(id: string): Promise<Employee | undefined>;
   getEmployeeByEmail(email: string): Promise<Employee | undefined>;
   createEmployee(employee: InsertEmployee): Promise<Employee>;
+  createEmployeeWithHashedPassword(employee: InsertEmployee): Promise<Employee>;
   updateEmployee(id: string, data: Partial<Employee>): Promise<Employee>;
   
   // Company operations
   getCompany(id: string): Promise<Company | undefined>;
   getCompanyByEmail(email: string): Promise<Company | undefined>;
   createCompany(company: InsertCompany): Promise<Company>;
+  createCompanyWithHashedPassword(company: InsertCompany): Promise<Company>;
   updateCompany(id: string, data: Partial<Company>): Promise<Company>;
   
   // Authentication
@@ -482,6 +484,43 @@ export class DatabaseStorage implements IStorage {
     return employee;
   }
 
+  async createEmployeeWithHashedPassword(employeeData: InsertEmployee): Promise<Employee> {
+    // Password is already hashed, don't hash again
+    const normalizedEmail = employeeData.email.toLowerCase();
+    
+    // Generate a unique employee ID
+    let employeeId = generateEmployeeId();
+    let attempts = 0;
+    const maxAttempts = 10;
+    
+    // Ensure the employee ID is unique
+    while (attempts < maxAttempts) {
+      const existing = await db.select().from(employees).where(eq(employees.employeeId, employeeId));
+      if (existing.length === 0) {
+        break;
+      }
+      employeeId = generateEmployeeId();
+      attempts++;
+    }
+    
+    if (attempts >= maxAttempts) {
+      throw new Error("Failed to generate unique employee ID");
+    }
+    
+    const [employee] = await db
+      .insert(employees)
+      .values({
+        ...employeeData,
+        employeeId: employeeData.employeeId || employeeId,
+        email: normalizedEmail,
+        password: employeeData.password, // Use password as-is (already hashed)
+        isActive: true,
+        emailVerified: employeeData.emailVerified || false,
+      })
+      .returning();
+    return employee;
+  }
+
   async getCompany(id: string): Promise<Company | undefined> {
     const [company] = await db.select().from(companies).where(eq(companies.id, id));
     return company || undefined;
@@ -524,6 +563,41 @@ export class DatabaseStorage implements IStorage {
         companyId,
         email: normalizedEmail,
         password: hashedPassword,
+      })
+      .returning();
+    return company;
+  }
+
+  async createCompanyWithHashedPassword(companyData: InsertCompany): Promise<Company> {
+    // Password is already hashed, don't hash again
+    const normalizedEmail = companyData.email.toLowerCase();
+    
+    // Generate a unique company ID
+    let companyId = generateCompanyId();
+    let attempts = 0;
+    const maxAttempts = 10;
+    
+    // Ensure the company ID is unique
+    while (attempts < maxAttempts) {
+      const existing = await db.select().from(companies).where(eq(companies.companyId, companyId));
+      if (existing.length === 0) {
+        break;
+      }
+      companyId = generateCompanyId();
+      attempts++;
+    }
+    
+    if (attempts >= maxAttempts) {
+      throw new Error("Failed to generate unique company ID");
+    }
+    
+    const [company] = await db
+      .insert(companies)
+      .values({
+        ...companyData,
+        companyId,
+        email: normalizedEmail,
+        password: companyData.password, // Use password as-is (already hashed)
       })
       .returning();
     return company;
