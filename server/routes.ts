@@ -4098,6 +4098,121 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // === POST-LOGIN EMAIL VERIFICATION ROUTES ===
+  
+  // Check post-login verification status
+  app.get("/api/post-login-verification/status", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    if (!sessionUser) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    
+    try {
+      const { email } = req.query;
+      if (!email || typeof email !== 'string') {
+        return res.status(400).json({ message: "Email parameter required" });
+      }
+      
+      const otpEmailService = new OTPEmailService();
+      const status = await otpEmailService.getVerificationStatus(email);
+      
+      res.json(status);
+    } catch (error) {
+      console.error("Get post-login verification status error:", error);
+      res.status(500).json({ message: "Failed to get verification status" });
+    }
+  });
+  
+  // Send post-login verification OTP
+  app.post("/api/post-login-verification/send-otp", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    if (!sessionUser) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    
+    try {
+      const { email } = req.body;
+      if (!email) {
+        return res.status(400).json({ message: "Email is required" });
+      }
+      
+      const otpEmailService = new OTPEmailService();
+      
+      // Check if already verified
+      const status = await otpEmailService.getVerificationStatus(email);
+      if (status.isVerified) {
+        return res.status(400).json({ message: "Email already verified" });
+      }
+      
+      // Check cooldown
+      if (status.hasPendingVerification && !status.canResend) {
+        return res.status(429).json({ 
+          message: `Please wait ${status.timeUntilResend} seconds before requesting another code` 
+        });
+      }
+      
+      // Send OTP
+      await otpEmailService.sendVerificationOTP(email, {
+        name: `${sessionUser.firstName || ''} ${sessionUser.lastName || ''}`.trim() || 'User',
+        subject: "Verify Your Email - Signedwork"
+      });
+      
+      res.json({ message: "Verification code sent successfully" });
+    } catch (error: any) {
+      console.error("Send post-login verification OTP error:", error);
+      if (error.message?.includes('rate limit')) {
+        res.status(429).json({ message: error.message });
+      } else {
+        res.status(500).json({ message: "Failed to send verification code" });
+      }
+    }
+  });
+  
+  // Verify post-login verification OTP
+  app.post("/api/post-login-verification/verify-otp", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    if (!sessionUser) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    
+    try {
+      const { email, code } = req.body;
+      if (!email || !code) {
+        return res.status(400).json({ message: "Email and code are required" });
+      }
+      
+      const otpEmailService = new OTPEmailService();
+      
+      // Verify OTP
+      const isValid = await otpEmailService.verifyOTP(email, code);
+      if (!isValid) {
+        return res.status(400).json({ message: "Invalid or expired verification code" });
+      }
+      
+      // Mark email as verified and lock it
+      if (sessionUser.type === 'employee') {
+        await storage.updateEmployee(sessionUser.id, { 
+          emailVerified: true,
+          updatedAt: new Date()
+        });
+      } else if (sessionUser.type === 'company') {
+        await storage.updateCompany(sessionUser.id, { 
+          emailVerified: true,
+          updatedAt: new Date()
+        });
+      }
+      
+      res.json({ 
+        message: "Email verified successfully",
+        verified: true,
+        emailLocked: true
+      });
+    } catch (error: any) {
+      console.error("Verify post-login verification OTP error:", error);
+      res.status(500).json({ message: "Failed to verify code" });
+    }
+  });
+
   // === SECURE EMAIL MANAGEMENT ROUTES ===
   
   // Check email availability for signup
