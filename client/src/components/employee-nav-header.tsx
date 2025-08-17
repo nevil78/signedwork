@@ -26,10 +26,16 @@ export default function EmployeeNavHeader({ employeeId, employeeName }: Employee
   const { toast } = useToast();
   const [sessionTime, setSessionTime] = useState<string>('24h 0m');
 
-  // Fetch employee data if not provided
+  // Fetch current employee data - align with profile update invalidation
   const { data: employee } = useQuery({
     queryKey: ['/api/employee/me'],
-    enabled: !employeeId && !employeeName,
+    refetchOnWindowFocus: true,
+  });
+
+  // Also listen to auth user data for immediate name updates
+  const { data: authUser } = useQuery({
+    queryKey: ['/api/auth/user'],
+    refetchOnWindowFocus: true,
   });
 
   // Session status query
@@ -58,8 +64,34 @@ export default function EmployeeNavHeader({ employeeId, employeeName }: Employee
     return () => clearInterval(heartbeatInterval);
   }, []);
 
-  const displayEmployeeId = employeeId || (employee as any)?.employeeId;
-  const displayEmployeeName = employeeName || (employee as any)?.name;
+  // Use the most current employee data from multiple sources
+  const currentEmployee = employee as any;
+  const currentAuthUser = (authUser as any)?.user;
+  
+  // Construct full name with priority: props > employee API > auth user API
+  const getDisplayName = () => {
+    // Use provided prop first
+    if (employeeName) return employeeName;
+    
+    // Try employee API data
+    if (currentEmployee?.firstName && currentEmployee?.lastName) {
+      return `${currentEmployee.firstName} ${currentEmployee.lastName}`;
+    }
+    if (currentEmployee?.firstName) return currentEmployee.firstName;
+    if (currentEmployee?.name) return currentEmployee.name;
+    
+    // Try auth user API data
+    if (currentAuthUser?.firstName && currentAuthUser?.lastName) {
+      return `${currentAuthUser.firstName} ${currentAuthUser.lastName}`;
+    }
+    if (currentAuthUser?.firstName) return currentAuthUser.firstName;
+    if (currentAuthUser?.name) return currentAuthUser.name;
+    
+    return null;
+  };
+  
+  const fullDisplayName = getDisplayName();
+  const displayEmployeeId = employeeId || currentEmployee?.employeeId || currentAuthUser?.id;
 
   const logout = useMutation({
     mutationFn: async () => {
@@ -101,12 +133,22 @@ export default function EmployeeNavHeader({ employeeId, employeeName }: Employee
           <div className="flex items-center space-x-2 md:space-x-8">
             <div className="flex items-center space-x-2">
               <img src={signedworkLogo} alt="Signedwork" className="h-6 w-6" />
-              <div className="flex items-center">
-                <h1 className="text-base md:text-lg font-semibold text-gray-900">Signedwork</h1>
-                {displayEmployeeName && (
-                  <span className="text-sm md:text-base font-medium text-gray-600 ml-2 hidden sm:inline">
-                    - {displayEmployeeName}
-                  </span>
+              <div className="flex items-center min-w-0 flex-1">
+                <h1 className="text-base md:text-lg font-semibold text-gray-900 whitespace-nowrap">Signedwork</h1>
+                {fullDisplayName && (
+                  <>
+                    {/* Desktop and tablet display */}
+                    <span className="text-sm md:text-base font-medium text-gray-600 ml-2 hidden sm:inline whitespace-nowrap">
+                      – {fullDisplayName}
+                    </span>
+                    {/* Mobile display with smart truncation */}
+                    <span 
+                      className="text-xs font-medium text-gray-600 ml-1 sm:hidden truncate max-w-20"
+                      title={fullDisplayName}
+                    >
+                      – {fullDisplayName.split(' ')[0]}
+                    </span>
+                  </>
                 )}
               </div>
             </div>

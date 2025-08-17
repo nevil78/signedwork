@@ -170,6 +170,8 @@ function OverviewSection({ user }: { user: Employee }) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/employee/me"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/employee/profile"] });
       setEditingProfile(false);
       toast({
         title: "Profile Updated",

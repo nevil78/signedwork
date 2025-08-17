@@ -62,6 +62,13 @@ This project is a LinkedIn-like professional networking platform built with Expr
   * Skills search functionality with intelligent matching algorithms
   * Interactive skill cards with detailed market insights and growth indicators
   * Complete API endpoints for skills management and preference tracking
+- **GLOBAL HEADER USER NAME DISPLAY**: Enhanced employee navigation header with consistent name display:
+  * Dynamic user name fetching from authenticated session and profile data
+  * Responsive design with adaptive text display (full name on desktop, first name on mobile)
+  * Real-time updates when user edits their profile information
+  * Consistent "Signedwork – [User Name]" format across all employee pages
+  * Query invalidation system for immediate name updates after profile changes
+  * Smart name resolution with fallback priority: props > employee API > auth user API
 
 # User Preferences
 

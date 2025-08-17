@@ -359,10 +359,12 @@ function ProfileOverview({ user }: { user: Employee }) {
     },
     onSuccess: () => {
       toast({
-        title: "Success",
+        title: "Success", 
         description: "Profile updated successfully",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/employee/me"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/employee/profile"] });
       setIsEditDialogOpen(false);
     },
     onError: () => {
