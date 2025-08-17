@@ -265,6 +265,7 @@ export const jobApplications = pgTable("job_applications", {
   statusUpdatedAt: timestamp("status_updated_at").defaultNow(),
   companyNotes: text("company_notes"),
   interviewNotes: text("interview_notes"),
+  rejectionReason: text("rejection_reason"), // For tracking why candidates were rejected
   salaryExpectation: text("salary_expectation"),
 });
 

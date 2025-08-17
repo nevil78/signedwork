@@ -1357,6 +1357,7 @@ export class DatabaseStorage implements IStorage {
     status?: string; 
     companyNotes?: string; 
     interviewNotes?: string; 
+    rejectionReason?: string;
   }): Promise<JobApplication> {
     const [application] = await db
       .update(jobApplications)

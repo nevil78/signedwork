@@ -2951,10 +2951,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     try {
-      const { status, companyNotes, interviewNotes } = req.body;
+      const { status, companyNotes, interviewNotes, rejectionReason } = req.body;
       const application = await storage.updateJobApplicationStatus(
         req.params.applicationId,
-        { status, companyNotes, interviewNotes }
+        { status, companyNotes, interviewNotes, rejectionReason }
       );
       
       res.json({
