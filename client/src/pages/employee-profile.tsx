@@ -5,6 +5,7 @@ import {
   GraduationCap, Award, Code, MessageSquare, Camera, Trash2,
   Calendar, ExternalLink, Github
 } from "lucide-react";
+import { EditableEmailSection } from "@/components/EditableEmailSection";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -275,6 +276,9 @@ function OverviewSection({ user }: { user: Employee }) {
           </div>
         </CardContent>
       </Card>
+
+      {/* Email Management */}
+      <EditableEmailSection user={user} />
 
       {/* Skills */}
       {user.skills && user.skills.length > 0 && (

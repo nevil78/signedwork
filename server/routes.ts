@@ -512,6 +512,174 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update employee email (with verification reset)
+  app.patch("/api/employee/email", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    if (!sessionUser || sessionUser.type !== "employee") {
+      return res.status(401).json({ message: "Not authenticated as employee" });
+    }
+
+    try {
+      const { email } = req.body;
+      
+      if (!email || typeof email !== "string") {
+        return res.status(400).json({ message: "Valid email is required" });
+      }
+
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return res.status(400).json({ message: "Invalid email format" });
+      }
+
+      // Get current employee data
+      const employee = await storage.getEmployee(sessionUser.id);
+      if (!employee) {
+        return res.status(404).json({ message: "Employee not found" });
+      }
+
+      // Check if email is already verified - prevent changes to verified emails
+      if (employee.emailVerified && employee.email !== email) {
+        return res.status(403).json({ 
+          message: "Cannot change email after verification. Contact support if you need to update your verified email." 
+        });
+      }
+
+      // Check if email is already in use
+      const existingEmployee = await storage.getEmployeeByEmail(email);
+      if (existingEmployee && existingEmployee.id !== sessionUser.id) {
+        return res.status(409).json({ message: "Email is already in use by another account" });
+      }
+
+      // Update email and reset verification status
+      const updatedEmployee = await storage.updateEmployee(sessionUser.id, { 
+        email, 
+        emailVerified: false // Reset verification when email changes
+      });
+
+      // Update session email for consistency
+      (req.session as any).user.email = email;
+
+      const { password, ...employeeResponse } = updatedEmployee;
+      res.json(employeeResponse);
+    } catch (error) {
+      console.error("Update employee email error:", error);
+      res.status(500).json({ message: "Failed to update email" });
+    }
+  });
+
+  // Send email verification for employee (specific endpoint)
+  app.post("/api/employee/send-verification-email", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    if (!sessionUser || sessionUser.type !== "employee") {
+      return res.status(401).json({ message: "Not authenticated as employee" });
+    }
+
+    try {
+      const employee = await storage.getEmployee(sessionUser.id);
+      if (!employee) {
+        return res.status(404).json({ message: "Employee not found" });
+      }
+
+      if (employee.emailVerified) {
+        return res.status(400).json({ message: "Email is already verified" });
+      }
+
+      // Generate OTP for email verification
+      const otpCode = generateOTPCode();
+      const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+
+      // Save OTP to database
+      await storage.createEmailVerification({
+        email: employee.email,
+        otpCode,
+        purpose: "email_verification",
+        userType: "employee",
+        userId: employee.id,
+        expiresAt,
+      });
+
+      // Send OTP email
+      const emailSent = await sendOTPEmail({
+        to: employee.email,
+        firstName: employee.firstName,
+        otpCode,
+        purpose: "email_verification",
+      });
+
+      if (!emailSent) {
+        return res.status(500).json({ message: "Failed to send verification email" });
+      }
+
+      res.json({ 
+        message: "Verification code sent to your email address",
+        email: employee.email
+      });
+    } catch (error: any) {
+      console.error("Send employee email verification error:", error);
+      res.status(500).json({ message: "Failed to send verification email" });
+    }
+  });
+
+  // Enhanced OTP verification that syncs session email
+  app.post("/api/auth/verify-otp", async (req, res) => {
+    try {
+      const { email, otpCode, purpose, userType } = req.body;
+
+      if (!email || !otpCode || !purpose || !userType) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+
+      // Get stored OTP
+      const verification = await storage.getEmailVerificationByEmail(email);
+      if (!verification) {
+        return res.status(400).json({ message: "No verification code found for this email" });
+      }
+
+      // Check if OTP has expired
+      if (new Date() > verification.expiresAt) {
+        return res.status(400).json({ message: "Verification code has expired" });
+      }
+
+      // Verify OTP code
+      if (verification.otpCode !== otpCode) {
+        return res.status(400).json({ message: "Invalid verification code" });
+      }
+
+      // Mark email as verified based on user type
+      if (userType === "employee") {
+        await storage.updateEmployee(verification.userId, { emailVerified: true });
+        
+        // Update session email if user is logged in
+        const sessionUser = (req.session as any).user;
+        if (sessionUser && sessionUser.id === verification.userId) {
+          sessionUser.email = email;
+        }
+      } else if (userType === "company") {
+        await storage.updateCompany(verification.userId, { emailVerified: true });
+        
+        // Update session email if user is logged in
+        const sessionUser = (req.session as any).user;
+        if (sessionUser && sessionUser.id === verification.userId) {
+          sessionUser.email = email;
+        }
+      }
+
+      // Delete used verification record
+      await storage.deleteEmailVerification(verification.id);
+
+      res.json({ 
+        message: "Email verified successfully",
+        verified: true
+      });
+    } catch (error: any) {
+      console.error("OTP verification error:", error);
+      res.status(500).json({ message: "Verification failed" });
+    }
+  });
+
   // Get current user
   app.get("/api/auth/user", async (req, res) => {
     // Debug session information

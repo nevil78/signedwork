@@ -42,7 +42,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { ObjectUploader } from "@/components/ObjectUploader";
 import type { UploadResult } from "@uppy/core";
 import EmployeeNavHeader from "@/components/employee-nav-header";
-import EmailVerificationCard from "@/components/EmailVerificationCard";
+import { EditableEmailSection } from "@/components/EditableEmailSection";
 import {
   User,
   Mail,
@@ -1253,9 +1253,7 @@ export default function ProfessionalProfile() {
 
               {/* Overview Section */}
               <TabsContent value="overview" className="space-y-6">
-                {!user.emailVerified && (
-                  <EmailVerificationCard user={user} userType="employee" />
-                )}
+                <EditableEmailSection user={user} />
                 
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between">
