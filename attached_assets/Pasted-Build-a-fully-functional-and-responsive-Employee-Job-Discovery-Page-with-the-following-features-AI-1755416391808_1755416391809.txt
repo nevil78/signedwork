@@ -1,0 +1,67 @@
+Build a fully functional and responsive Employee Job Discovery Page with the following features:
+
+AI-Powered Search & Categories:
+
+Add search by job title, skills, or company.
+
+Enable quick filters using category chips (Remote, Full-time, Entry Level, Senior, Tech, Finance).
+
+Results should update dynamically as filters are applied.
+
+Smart Sections:
+
+Perfect Matches: Show jobs with highest compatibility based on employee’s profile, skills, and history.
+
+Trending Skills: Display in-demand skills (React, Python, AI, etc.) and allow one-click filtering.
+
+Quick Apply: 1-click application for jobs that don’t need long forms.
+
+Tabs for Navigation:
+
+Discover: Default tab showing all jobs with filters.
+
+Saved Jobs: Jobs the employee bookmarked for later.
+
+Applications: Track all jobs the employee applied for with live recruiter status (New, Viewed, Shortlisted, Interviewed, Offered, Hired, Rejected).
+
+Job Alerts: Notifications for new matching jobs based on filters.
+
+Advanced Filters Sidebar:
+
+Filters: Location, Employment Type (Full-time, Part-time, Contract, Internship, Freelance), Experience Level (Entry → Executive), Work Style (Office, Remote, Hybrid), Salary Range.
+
+On desktop: filters appear in sidebar.
+
+On mobile: filters collapse into a drawer with toggle button.
+
+Job Cards:
+
+Show job title, type (full-time, part-time, etc.), level (entry/mid/senior), company, location, work style, salary, posted date.
+
+Each card must have Save (bookmark) and Apply buttons.
+
+Clicking a card opens Job Details Page with full description and apply option.
+
+Applications Tracking:
+
+When an employee applies, status syncs with recruiter dashboard in real time.
+
+Employee can see status updates (Viewed, Shortlisted, Interviewed, etc.) inside Applications tab.
+
+Responsive Design:
+
+Desktop: two-column layout (filters left, jobs right).
+
+Tablet: filters collapsible, jobs in grid/list.
+
+Mobile: filters in a bottom drawer, jobs stack vertically.
+
+Ensure smooth scaling and touch-friendly UI.
+
+Performance & UX:
+
+Infinite scroll or “Load More” for job listings.
+
+Real-time updates for applications.
+
+Consistent UI across all devices.

@@ -2522,6 +2522,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Get perfect matches for employee (AI-powered recommendations)
+  app.get("/api/jobs/perfect-matches", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    if (!sessionUser || sessionUser.type !== "employee") {
+      return res.status(401).json({ message: "Not authenticated as employee" });
+    }
+    
+    try {
+      // Get employee profile for better matching
+      const employee = await storage.getEmployee(sessionUser.id);
+      if (!employee) {
+        return res.status(404).json({ message: "Employee profile not found" });
+      }
+      
+      // For now, return jobs that match employee's skills or experience
+      // This could be enhanced with ML algorithms in the future
+      const filters = {
+        keywords: employee.skills?.join(' ') || '',
+        experienceLevel: employee.experienceLevel ? [employee.experienceLevel] : undefined
+      };
+      
+      const jobs = await storage.searchJobs(filters);
+      res.json(jobs.slice(0, 5)); // Return top 5 matches
+    } catch (error) {
+      console.error("Perfect matches error:", error);
+      res.status(500).json({ message: "Failed to get perfect matches" });
+    }
+  });
+  
+  // Get employee's job applications (must come before /:jobId route)
+  app.get("/api/jobs/my-applications", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    if (!sessionUser || sessionUser.type !== "employee") {
+      return res.status(401).json({ message: "Not authenticated as employee" });
+    }
+    
+    try {
+      const applications = await storage.getJobApplications(sessionUser.id);
+      res.json(applications);
+    } catch (error) {
+      console.error("Get applications error:", error);
+      res.status(500).json({ message: "Failed to get applications" });
+    }
+  });
+  
+  // Get saved jobs (must come before /:jobId route)
+  app.get("/api/jobs/saved", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    if (!sessionUser || sessionUser.type !== "employee") {
+      return res.status(401).json({ message: "Not authenticated as employee" });
+    }
+    
+    try {
+      const savedJobs = await storage.getSavedJobs(sessionUser.id);
+      res.json(savedJobs);
+    } catch (error) {
+      console.error("Get saved jobs error:", error);
+      res.status(500).json({ message: "Failed to get saved jobs" });
+    }
+  });
+  
   // Get job by ID
   app.get("/api/jobs/:jobId", async (req, res) => {
     const sessionUser = (req.session as any).user;
@@ -2579,22 +2640,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Get employee's job applications
-  app.get("/api/jobs/my-applications", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    if (!sessionUser || sessionUser.type !== "employee") {
-      return res.status(401).json({ message: "Not authenticated as employee" });
-    }
-    
-    try {
-      const applications = await storage.getJobApplications(sessionUser.id);
-      res.json(applications);
-    } catch (error) {
-      console.error("Get applications error:", error);
-      res.status(500).json({ message: "Failed to get applications" });
-    }
-  });
-  
   // Save/unsave a job
   app.post("/api/jobs/:jobId/save", async (req, res) => {
     const sessionUser = (req.session as any).user;
@@ -2639,21 +2684,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Get saved jobs
-  app.get("/api/jobs/saved", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    if (!sessionUser || sessionUser.type !== "employee") {
-      return res.status(401).json({ message: "Not authenticated as employee" });
-    }
-    
-    try {
-      const savedJobs = await storage.getSavedJobs(sessionUser.id);
-      res.json(savedJobs);
-    } catch (error) {
-      console.error("Get saved jobs error:", error);
-      res.status(500).json({ message: "Failed to get saved jobs" });
-    }
-  });
+
   
   // Job alerts management
   app.get("/api/job-alerts", async (req, res) => {
