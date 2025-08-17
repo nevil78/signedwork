@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { CheckCircle, AlertCircle, Clock, Calendar, User, Users, Building, ArrowLeft, Building2, Lock, Star, Briefcase, Target, DollarSign, Tag, Trophy, BookOpen, AlertTriangle, FileText, Paperclip } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import CompanyNavHeader from '@/components/company-nav-header';
 
 type WorkEntryStatus = "pending" | "approved" | "needs_changes";
 
@@ -82,31 +83,7 @@ export default function CompanyWorkEntries() {
     queryKey: ['/api/company/employees'],
   });
 
-  // Logout mutation
-  const logout = useMutation({
-    mutationFn: async () => {
-      const response = await fetch("/api/auth/logout", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-      if (!response.ok) {
-        throw new Error("Logout failed");
-      }
-      return response.json();
-    },
-    onSuccess: () => {
-      navigate("/");
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to logout",
-        variant: "destructive",
-      });
-    },
-  });
+
 
   const getEmployeeName = (entry: any) => {
     return entry.employeeName || 'Unknown Employee';
@@ -546,34 +523,8 @@ export default function CompanyWorkEntries() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
-      <header className="bg-white dark:bg-gray-800 shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center">
-              <Button
-                variant="ghost"
-                onClick={() => navigate('/company-dashboard')}
-                className="mr-4"
-                data-testid="button-back-dashboard"
-              >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Dashboard
-              </Button>
-              <Building2 className="text-primary text-2xl mr-3" />
-              <span className="text-xl font-bold text-slate-800 dark:text-slate-200">Work Entry Reviews</span>
-            </div>
-            <Button
-              variant="outline"
-              onClick={() => logout.mutate()}
-              disabled={logout.isPending}
-              data-testid="button-logout"
-            >
-              {logout.isPending ? "Logging out..." : "Logout"}
-            </Button>
-          </div>
-        </div>
-      </header>
+      {/* Navigation Header */}
+      <CompanyNavHeader />
 
       <div className="container mx-auto p-6 max-w-6xl">
         <div className="mb-6">
