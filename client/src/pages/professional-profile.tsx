@@ -44,6 +44,7 @@ import type { UploadResult } from "@uppy/core";
 import EmployeeNavHeader from "@/components/employee-nav-header";
 import { EditableEmailSection } from "@/components/EditableEmailSection";
 import { SecureEmailManager } from "@/components/SecureEmailManager";
+import { OTPEmailVerification } from "@/components/OTPEmailVerification";
 import {
   User,
   Mail,
@@ -1254,7 +1255,40 @@ export default function ProfessionalProfile() {
 
               {/* Overview Section */}
               <TabsContent value="overview" className="space-y-6">
-                <SecureEmailManager />
+                {/* Email Verification Section */}
+                <div className="space-y-4">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Mail className="h-5 w-5" />
+                        Email Verification Options
+                      </CardTitle>
+                      <p className="text-sm text-gray-600">
+                        Choose your preferred email verification method
+                      </p>
+                    </CardHeader>
+                    <CardContent>
+                      <Tabs defaultValue="otp" className="w-full">
+                        <TabsList className="grid w-full grid-cols-2">
+                          <TabsTrigger value="otp">OTP Verification</TabsTrigger>
+                          <TabsTrigger value="delayed">Delayed Verification</TabsTrigger>
+                        </TabsList>
+                        
+                        <TabsContent value="otp" className="mt-4">
+                          <OTPEmailVerification
+                            email={user.email}
+                            title="Traditional Email Verification"
+                            description="Get a 6-digit code sent to your email for immediate verification"
+                          />
+                        </TabsContent>
+                        
+                        <TabsContent value="delayed" className="mt-4">
+                          <SecureEmailManager />
+                        </TabsContent>
+                      </Tabs>
+                    </CardContent>
+                  </Card>
+                </div>
                 
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between">
