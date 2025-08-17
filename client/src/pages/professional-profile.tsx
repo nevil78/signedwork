@@ -43,6 +43,7 @@ import { ObjectUploader } from "@/components/ObjectUploader";
 import type { UploadResult } from "@uppy/core";
 import EmployeeNavHeader from "@/components/employee-nav-header";
 import { EditableEmailSection } from "@/components/EditableEmailSection";
+import { SecureEmailManager } from "@/components/SecureEmailManager";
 import {
   User,
   Mail,
@@ -1253,7 +1254,7 @@ export default function ProfessionalProfile() {
 
               {/* Overview Section */}
               <TabsContent value="overview" className="space-y-6">
-                <EditableEmailSection user={user} />
+                <SecureEmailManager />
                 
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between">

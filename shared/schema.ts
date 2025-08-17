@@ -736,6 +736,8 @@ export const changePasswordSchema = z.object({
 
 
 
+
+
 export const companyInvitationCodesRelations = relations(companyInvitationCodes, ({ one }) => ({
   company: one(companies, {
     fields: [companyInvitationCodes.companyId],
@@ -757,6 +759,8 @@ export const companyEmployeesRelations = relations(companyEmployees, ({ one }) =
     references: [employees.id],
   }),
 }));
+
+
 
 // Export types
 export type Employee = typeof employees.$inferSelect;
@@ -811,6 +815,135 @@ export type InsertLoginSession = z.infer<typeof insertLoginSessionSchema>;
 // Feedback types
 export type UserFeedback = typeof userFeedback.$inferSelect;
 export type InsertFeedback = z.infer<typeof insertFeedbackSchema>;
+
+// Secure Email Management System Tables
+
+// Users table with primary_email concept
+export const users = pgTable("users", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  primaryEmail: text("primary_email").notNull().unique(), // The email used for login and notifications
+  passwordHash: text("password_hash").notNull(),
+  twoFactorEnabled: boolean("two_factor_enabled").default(false),
+  twoFactorSecret: text("two_factor_secret"), // TOTP secret
+  accountType: text("account_type").notNull(), // 'employee' or 'company'
+  isActive: boolean("is_active").default(true),
+  lastLoginAt: timestamp("last_login_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Emails table - tracks all emails associated with a user
+export const emails = pgTable("emails", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  email: text("email").notNull().unique(),
+  status: text("status").notNull(), // 'primary', 'detached', 'pending_verification'
+  verificationToken: text("verification_token"), // UUID for email verification
+  verificationExpiresAt: timestamp("verification_expires_at"),
+  verifiedAt: timestamp("verified_at"),
+  detachedAt: timestamp("detached_at"), // When email became detached
+  graceExpiresAt: timestamp("grace_expires_at"), // When 30-day grace period ends
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_emails_user_id").on(table.userId),
+  index("idx_emails_status").on(table.status),
+  index("idx_emails_verification_token").on(table.verificationToken),
+]);
+
+// Email change logs - comprehensive audit trail
+export const emailChangeLogs = pgTable("email_change_logs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  oldEmail: text("old_email").notNull(),
+  newEmail: text("new_email").notNull(),
+  changeType: text("change_type").notNull(), // 'primary_change', 'verification_requested', 'verification_completed'
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  twoFactorUsed: boolean("two_factor_used").default(false),
+  verificationToken: text("verification_token"), // Reference to verification
+  status: text("status").notNull().default("pending"), // 'pending', 'verified', 'failed', 'expired'
+  timestamp: timestamp("timestamp").defaultNow(),
+}, (table) => [
+  index("idx_email_change_logs_user_id").on(table.userId),
+  index("idx_email_change_logs_timestamp").on(table.timestamp),
+]);
+
+// Secure Email Management Schemas (after table definitions)
+export const insertUserSchema = createInsertSchema(users).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertEmailSchema = createInsertSchema(emails).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertEmailChangeLogSchema = createInsertSchema(emailChangeLogs).omit({
+  id: true,
+  timestamp: true,
+});
+
+// Email change request schema with security requirements
+export const emailChangeRequestSchema = z.object({
+  newEmail: z.string().email("Invalid email format"),
+  currentPassword: z.string().min(1, "Current password is required"),
+  twoFactorCode: z.string().optional(), // Optional TOTP code if 2FA is enabled
+});
+
+// Email verification schema
+export const emailVerificationSchema = z.object({
+  verificationToken: z.string().uuid("Invalid verification token"),
+  email: z.string().email("Invalid email format"),
+});
+
+// Email ownership verification for signup blocking
+export const emailOwnershipCheckSchema = z.object({
+  email: z.string().email("Invalid email format"),
+});
+
+// Account recovery schema
+export const accountRecoverySchema = z.object({
+  email: z.string().email("Invalid email format"),
+  twoFactorCode: z.string().optional(),
+});
+
+// Email Management Relations (after all table definitions)
+export const usersRelations = relations(users, ({ many }) => ({
+  emails: many(emails),
+  emailChangeLogs: many(emailChangeLogs),
+}));
+
+export const emailsRelations = relations(emails, ({ one }) => ({
+  user: one(users, {
+    fields: [emails.userId],
+    references: [users.id],
+  }),
+}));
+
+export const emailChangeLogsRelations = relations(emailChangeLogs, ({ one }) => ({
+  user: one(users, {
+    fields: [emailChangeLogs.userId],
+    references: [users.id],
+  }),
+}));
+
+// Secure Email Management Types
+export type User = typeof users.$inferSelect;
+export type Email = typeof emails.$inferSelect;
+export type EmailChangeLog = typeof emailChangeLogs.$inferSelect;
+
+export type InsertUser = z.infer<typeof insertUserSchema>;
+export type InsertEmail = z.infer<typeof insertEmailSchema>;
+export type InsertEmailChangeLog = z.infer<typeof insertEmailChangeLogSchema>;
+
+export type EmailChangeRequestData = z.infer<typeof emailChangeRequestSchema>;
+export type EmailVerificationData = z.infer<typeof emailVerificationSchema>;
+export type EmailOwnershipCheckData = z.infer<typeof emailOwnershipCheckSchema>;
+export type AccountRecoveryData = z.infer<typeof accountRecoverySchema>;
 
 // Skills taxonomy and trending data
 export const skills = pgTable("skills", {

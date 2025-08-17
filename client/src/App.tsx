@@ -8,6 +8,7 @@ import AuthPage from "@/pages/auth";
 import { ForgotPasswordPage } from "@/pages/forgot-password";
 import { ChangePasswordPage } from "@/pages/change-password";
 import EmailVerificationPage from "@/pages/email-verification";
+import VerifyEmailChangePage from "@/pages/verify-email-change";
 import Dashboard from "@/pages/dashboard";
 import Profile from "@/pages/profile";
 import WorkDiary from "@/pages/work-diary";
@@ -39,6 +40,7 @@ function Router() {
       <Route path="/forgot-password" component={ForgotPasswordPage} />
       <Route path="/change-password" component={ChangePasswordPage} />
       <Route path="/verify-email" component={EmailVerificationPage} />
+      <Route path="/verify-email-change" component={VerifyEmailChangePage} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/profile" component={ProfessionalProfile} />
       <Route path="/summary" component={EmployeeSummaryDashboard} />

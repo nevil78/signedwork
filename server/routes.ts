@@ -20,6 +20,15 @@ import { sendOTPEmail, generateOTPCode, isOTPExpired } from "./emailService";
 import { sendPasswordResetOTP } from "./sendgrid";
 import { fromZodError } from "zod-validation-error";
 import { setupGoogleAuth } from "./googleAuth";
+import { SecureEmailService } from "./secureEmailService";
+import { 
+  emailChangeRequestSchema, 
+  emailVerificationSchema, 
+  emailOwnershipCheckSchema,
+  type EmailChangeRequestData,
+  type EmailVerificationData,
+  type EmailOwnershipCheckData
+} from "@shared/schema";
 
 // Global variable to store the Socket.IO server instance for real-time updates
 let io: SocketIOServer;
@@ -4077,6 +4086,156 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Get skill preferences error:", error);
       res.status(500).json({ message: "Failed to get skill preferences" });
+    }
+  });
+
+  // === SECURE EMAIL MANAGEMENT ROUTES ===
+  
+  // Check email availability for signup
+  app.post("/api/secure-email/check-availability", async (req, res) => {
+    try {
+      const { email } = emailOwnershipCheckSchema.parse(req.body);
+      const availability = await SecureEmailService.isEmailAvailableForSignup(email);
+      res.json(availability);
+    } catch (error: any) {
+      if (error.name === "ZodError") {
+        const validationError = fromZodError(error);
+        return res.status(400).json({ 
+          message: validationError.message,
+          errors: error.errors
+        });
+      }
+      console.error("Check email availability error:", error);
+      res.status(500).json({ message: "Failed to check email availability" });
+    }
+  });
+
+  // Request email change (requires authentication + password + 2FA)
+  app.post("/api/secure-email/request-change", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    if (!sessionUser) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    try {
+      const requestData: EmailChangeRequestData = emailChangeRequestSchema.parse(req.body);
+      const clientIP = req.ip || req.connection.remoteAddress || 'unknown';
+      const userAgent = req.get('User-Agent') || 'unknown';
+
+      const result = await SecureEmailService.requestEmailChange(
+        sessionUser.id,
+        requestData.newEmail,
+        requestData.currentPassword,
+        requestData.twoFactorCode,
+        clientIP,
+        userAgent
+      );
+
+      if (!result.success) {
+        return res.status(400).json({ message: result.error });
+      }
+
+      res.json({
+        message: "Email change verification sent. Please check your new email.",
+        verificationSent: true
+      });
+    } catch (error: any) {
+      if (error.name === "ZodError") {
+        const validationError = fromZodError(error);
+        return res.status(400).json({ 
+          message: validationError.message,
+          errors: error.errors
+        });
+      }
+      console.error("Request email change error:", error);
+      res.status(500).json({ message: "Failed to process email change request" });
+    }
+  });
+
+  // Verify email change
+  app.post("/api/secure-email/verify-change", async (req, res) => {
+    try {
+      const verificationData: EmailVerificationData = emailVerificationSchema.parse(req.body);
+      const clientIP = req.ip || req.connection.remoteAddress || 'unknown';
+      const userAgent = req.get('User-Agent') || 'unknown';
+
+      const result = await SecureEmailService.completeEmailChange(
+        verificationData.verificationToken,
+        verificationData.email,
+        clientIP,
+        userAgent
+      );
+
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: "Invalid or expired verification token" 
+        });
+      }
+
+      res.json({
+        message: "Email successfully changed",
+        user: result.user
+      });
+    } catch (error: any) {
+      if (error.name === "ZodError") {
+        const validationError = fromZodError(error);
+        return res.status(400).json({ 
+          message: validationError.message,
+          errors: error.errors
+        });
+      }
+      console.error("Verify email change error:", error);
+      res.status(500).json({ message: "Failed to verify email change" });
+    }
+  });
+
+  // Get user's email history (for security audit)
+  app.get("/api/secure-email/change-history", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    if (!sessionUser) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    try {
+      const history = await SecureEmailService.getEmailChangeHistory(sessionUser.id);
+      res.json(history);
+    } catch (error) {
+      console.error("Get email change history error:", error);
+      res.status(500).json({ message: "Failed to get email change history" });
+    }
+  });
+
+  // Get all user emails (current + detached)
+  app.get("/api/secure-email/user-emails", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    if (!sessionUser) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    try {
+      const emails = await SecureEmailService.getUserEmails(sessionUser.id);
+      res.json(emails);
+    } catch (error) {
+      console.error("Get user emails error:", error);
+      res.status(500).json({ message: "Failed to get user emails" });
+    }
+  });
+
+  // Admin route: Clean up expired grace periods
+  app.post("/api/secure-email/admin/cleanup-expired", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    // Only admin can access this endpoint
+    if (!sessionUser || sessionUser.type !== "admin") {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+
+    try {
+      await SecureEmailService.cleanupExpiredGracePeriods();
+      res.json({ message: "Expired grace periods cleaned up successfully" });
+    } catch (error) {
+      console.error("Cleanup expired grace periods error:", error);
+      res.status(500).json({ message: "Failed to cleanup expired grace periods" });
     }
   });
 
