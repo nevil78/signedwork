@@ -969,7 +969,7 @@ export default function JobDiscoveryPage() {
                 <Checkbox
                   id="include-profile"
                   checked={includeProfile}
-                  onCheckedChange={setIncludeProfile}
+                  onCheckedChange={(checked) => setIncludeProfile(checked === true)}
                   data-testid="checkbox-include-profile"
                 />
                 <Label htmlFor="include-profile">
@@ -981,7 +981,7 @@ export default function JobDiscoveryPage() {
                 <Checkbox
                   id="include-work-diary"
                   checked={includeWorkDiary}
-                  onCheckedChange={setIncludeWorkDiary}
+                  onCheckedChange={(checked) => setIncludeWorkDiary(checked === true)}
                   data-testid="checkbox-include-work-diary"
                 />
                 <Label htmlFor="include-work-diary">

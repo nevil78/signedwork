@@ -46,8 +46,8 @@ export default function EmployeeNavHeader({ employeeId, employeeName }: Employee
 
   // Update session time display
   useEffect(() => {
-    if (sessionStatus?.remainingTime) {
-      setSessionTime(sessionStatus.remainingTime);
+    if ((sessionStatus as any)?.remainingTime) {
+      setSessionTime((sessionStatus as any).remainingTime);
     }
   }, [sessionStatus]);
 
@@ -295,7 +295,7 @@ export default function EmployeeNavHeader({ employeeId, employeeName }: Employee
                 {/* Mobile-only user info */}
                 <div className="md:hidden px-2 py-2 border-b">
                   <div className="text-sm font-medium text-gray-900">
-                    {displayEmployeeName || 'Employee'}
+                    {fullDisplayName || 'Employee'}
                   </div>
                   {displayEmployeeId && (
                     <div className="text-xs text-gray-500">ID: {displayEmployeeId}</div>
