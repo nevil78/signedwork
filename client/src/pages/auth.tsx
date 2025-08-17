@@ -82,6 +82,8 @@ export default function AuthPage() {
   const [currentView, setCurrentView] = useState<AuthView>("selection");
   const [loginError, setLoginError] = useState<boolean>(false);
   const [verificationEmail, setVerificationEmail] = useState<string>("");
+  const [otp, setOTP] = useState("");
+  const [countdown, setCountdown] = useState(300); // 5 minutes
   const { toast } = useToast();
 
   // Handle OAuth error redirects
@@ -1204,16 +1206,15 @@ export default function AuthPage() {
     );
   }
 
-  if (currentView === "otp-verification") {
-    const [otp, setOTP] = useState("");
-    const [countdown, setCountdown] = useState(300); // 5 minutes
+  // OTP countdown effect
+  useEffect(() => {
+    if (currentView === "otp-verification" && countdown > 0) {
+      const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [currentView, countdown]);
 
-    useEffect(() => {
-      if (countdown > 0) {
-        const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
-        return () => clearTimeout(timer);
-      }
-    }, [countdown]);
+  if (currentView === "otp-verification") {
 
     const formatTime = (seconds: number) => {
       const mins = Math.floor(seconds / 60);
@@ -1228,12 +1229,11 @@ export default function AuthPage() {
     };
 
     const handleResendOTP = () => {
-      // Resend OTP logic here
+      // Resend OTP by calling the signup endpoint again
+      const formData = employeeForm.getValues();
+      employeeRegistration.mutate(formData);
       setCountdown(300);
-      toast({
-        title: "OTP Resent",
-        description: "A new verification code has been sent to your email.",
-      });
+      setOTP(""); // Clear current OTP
     };
 
     return (
