@@ -1196,6 +1196,130 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update employee email
+  app.post("/api/employee/update-email", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    if (!sessionUser || sessionUser.type !== "employee") {
+      return res.status(401).json({ message: "Not authenticated as employee" });
+    }
+
+    try {
+      const { email } = req.body;
+      
+      if (!email) {
+        return res.status(400).json({ message: "Email is required" });
+      }
+
+      // Basic email validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return res.status(400).json({ message: "Invalid email format" });
+      }
+
+      // Check if email is already verified (lock if verified)
+      const currentStatus = await OTPEmailService.getEmailVerificationStatus(
+        sessionUser.id,
+        sessionUser.email || ""
+      );
+
+      if (currentStatus.isVerified) {
+        return res.status(403).json({ 
+          message: "Cannot change email after verification. Verified emails are locked for security." 
+        });
+      }
+
+      // Check if new email already exists
+      const existingEmployee = await storage.getEmployeeByEmail(email);
+      const existingCompany = await storage.getCompanyByEmail(email);
+      
+      if ((existingEmployee && existingEmployee.id !== sessionUser.id) || existingCompany) {
+        return res.status(400).json({ message: "Email already in use" });
+      }
+
+      // Update email
+      const updatedEmployee = await storage.updateEmployee(sessionUser.id, { email });
+      
+      // Update session email
+      (req.session as any).user.email = email;
+      
+      // Remove password from response
+      const { password: _, ...employeeResponse } = updatedEmployee;
+      
+      res.json({ 
+        message: "Email updated successfully",
+        employee: employeeResponse
+      });
+    } catch (error: any) {
+      console.error("Update employee email error:", error);
+      res.status(500).json({ 
+        message: error.message || "Failed to update email" 
+      });
+    }
+  });
+
+  // Update company email
+  app.post("/api/company/update-email", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    if (!sessionUser || sessionUser.type !== "company") {
+      return res.status(401).json({ message: "Not authenticated as company" });
+    }
+
+    try {
+      const { email } = req.body;
+      
+      if (!email) {
+        return res.status(400).json({ message: "Email is required" });
+      }
+
+      // Basic email validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return res.status(400).json({ message: "Invalid email format" });
+      }
+
+      // Check if email is already verified (lock if verified)
+      const currentStatus = await OTPEmailService.getEmailVerificationStatus(
+        sessionUser.id,
+        sessionUser.email || ""
+      );
+
+      if (currentStatus.isVerified) {
+        return res.status(403).json({ 
+          message: "Cannot change email after verification. Verified emails are locked for security." 
+        });
+      }
+
+      // Check if new email already exists
+      const existingEmployee = await storage.getEmployeeByEmail(email);
+      const existingCompany = await storage.getCompanyByEmail(email);
+      
+      if (existingEmployee || (existingCompany && existingCompany.id !== sessionUser.id)) {
+        return res.status(400).json({ message: "Email already in use" });
+      }
+
+      // Update email
+      const updatedCompany = await storage.updateCompany(sessionUser.id, { email });
+      
+      // Update session email
+      (req.session as any).user.email = email;
+      
+      // Remove password from response
+      const { password: _, ...companyResponse } = updatedCompany;
+      
+      res.json({ 
+        message: "Email updated successfully",
+        company: companyResponse
+      });
+    } catch (error: any) {
+      console.error("Update company email error:", error);
+      res.status(500).json({ 
+        message: error.message || "Failed to update email" 
+      });
+    }
+  });
+
   // Employee Profile Routes
   
   // Get employee profile data

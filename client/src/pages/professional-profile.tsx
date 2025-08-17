@@ -43,6 +43,7 @@ import { ObjectUploader } from "@/components/ObjectUploader";
 import type { UploadResult } from "@uppy/core";
 import EmployeeNavHeader from "@/components/employee-nav-header";
 import { OTPEmailVerification } from "@/components/OTPEmailVerification";
+import { EditableEmail } from "@/components/EditableEmail";
 import {
   User,
   Mail,
@@ -1269,7 +1270,7 @@ export default function ProfessionalProfile() {
                       <Tabs defaultValue="otp" className="w-full">
                         <TabsList className="grid w-full grid-cols-2">
                           <TabsTrigger value="otp">OTP Verification</TabsTrigger>
-                          <TabsTrigger value="delayed">Delayed Verification</TabsTrigger>
+                          <TabsTrigger value="delayed">Email Management</TabsTrigger>
                         </TabsList>
                         
                         <TabsContent value="otp" className="mt-4">
@@ -1281,11 +1282,11 @@ export default function ProfessionalProfile() {
                         </TabsContent>
                         
                         <TabsContent value="delayed" className="mt-4">
-                          <div className="text-center py-8 text-gray-500">
-                            <Mail className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                            <p>Email management tools have been simplified.</p>
-                            <p className="text-sm mt-2">Use the verification button above to verify your email when needed.</p>
-                          </div>
+                          <EditableEmail
+                            currentEmail={user.email}
+                            userId={user.id}
+                            userType="employee"
+                          />
                         </TabsContent>
                       </Tabs>
                     </CardContent>
