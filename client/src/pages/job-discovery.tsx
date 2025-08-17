@@ -42,9 +42,11 @@ export default function JobDiscoveryPage() {
   // Search and filter state
   const [filters, setFilters] = useState<JobSearchFilters>({});
   const [searchKeywords, setSearchKeywords] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
   const [selectedTab, setSelectedTab] = useState('discover');
   const [showFilters, setShowFilters] = useState(false);
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
+  const [quickFilters, setQuickFilters] = useState<string[]>([]);
   
   // Application dialog state
   const [isApplyDialogOpen, setIsApplyDialogOpen] = useState(false);
@@ -210,6 +212,48 @@ export default function JobDiscoveryPage() {
     
     setFilters(prev => ({ ...prev, ...quickFilters[category] }));
   };
+
+  // Toggle quick filter chips
+  const toggleQuickFilter = (value: string) => {
+    setQuickFilters(prev => 
+      prev.includes(value) 
+        ? prev.filter(f => f !== value)
+        : [...prev, value]
+    );
+    
+    // Apply filter based on value
+    const filterMap: Record<string, Partial<JobSearchFilters>> = {
+      'remote': { remoteType: ['remote'] },
+      'full-time': { employmentType: ['full-time'] },
+      'entry': { experienceLevel: ['entry'] },
+      'senior': { experienceLevel: ['senior'] },
+      'technology': { keywords: 'technology' },
+      'design': { keywords: 'design' },
+      'marketing': { keywords: 'marketing' }
+    };
+    
+    if (quickFilters.includes(value)) {
+      // Remove filter
+      setFilters(prev => {
+        const newFilters = { ...prev };
+        if (value === 'remote') newFilters.remoteType = [];
+        if (value === 'full-time') newFilters.employmentType = [];
+        if (['entry', 'senior'].includes(value)) newFilters.experienceLevel = [];
+        if (['technology', 'design', 'marketing'].includes(value)) newFilters.keywords = '';
+        return newFilters;
+      });
+    } else {
+      // Add filter
+      setFilters(prev => ({ ...prev, ...filterMap[value] }));
+    }
+  };
+
+  // Sync searchTerm with filters
+  useEffect(() => {
+    if (searchTerm) {
+      setFilters(prev => ({ ...prev, keywords: searchTerm }));
+    }
+  }, [searchTerm]);
 
   const isJobSaved = (jobId: string) => {
     return savedJobs.some((saved: SavedJob) => saved.jobId === jobId);
@@ -592,6 +636,89 @@ export default function JobDiscoveryPage() {
           </Card>
         </div>
 
+        {/* Advanced Search and Filter Section */}
+        <div className="space-y-4 bg-card rounded-lg p-6 border">
+          <div className="flex flex-col lg:flex-row gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+              <Input
+                placeholder="Search jobs by title, skills, or company..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 pr-4 py-3 text-lg border-2 focus:border-blue-500"
+                data-testid="input-job-search"
+              />
+            </div>
+            {/* Desktop Filters Button */}
+            <Button
+              variant="outline"
+              onClick={() => setShowFilters(!showFilters)}
+              className="hidden lg:flex items-center gap-2 px-6 py-3 h-auto"
+              data-testid="button-desktop-filters"
+            >
+              <Filter className="h-5 w-5" />
+              Filters
+              {Object.values(filters).some(val => val && (Array.isArray(val) ? val.length > 0 : true)) && (
+                <span className="ml-1 bg-blue-500 text-white rounded-full text-xs px-2 py-1">
+                  {Object.values(filters).filter(val => val && (Array.isArray(val) ? val.length > 0 : true)).length}
+                </span>
+              )}
+            </Button>
+          </div>
+          
+          {/* Category chips for quick filtering */}
+          <div className="flex flex-wrap gap-2">
+            {[
+              { label: "Remote", value: "remote" },
+              { label: "Full-time", value: "full-time" },
+              { label: "Entry Level", value: "entry" },
+              { label: "Senior", value: "senior" },
+              { label: "Tech", value: "technology" },
+              { label: "Design", value: "design" },
+              { label: "Marketing", value: "marketing" }
+            ].map((chip) => (
+              <Button
+                key={chip.value}
+                variant={quickFilters.includes(chip.value) ? "default" : "outline"}
+                size="sm"
+                onClick={() => toggleQuickFilter(chip.value)}
+                className="rounded-full"
+                data-testid={`chip-${chip.value}`}
+              >
+                {chip.label}
+              </Button>
+            ))}
+          </div>
+
+          {/* Mobile Filters Button - Under category chips */}
+          <div className="lg:hidden">
+            <Sheet open={showFilters} onOpenChange={setShowFilters}>
+              <SheetTrigger asChild>
+                <Button variant="outline" className="w-full flex items-center justify-center gap-2" data-testid="button-mobile-filters">
+                  <Filter className="h-5 w-5" />
+                  Advanced Filters
+                  {Object.values(filters).some(val => val && (Array.isArray(val) ? val.length > 0 : true)) && (
+                    <span className="ml-1 bg-blue-500 text-white rounded-full text-xs px-2 py-1">
+                      {Object.values(filters).filter(val => val && (Array.isArray(val) ? val.length > 0 : true)).length}
+                    </span>
+                  )}
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="bottom" className="h-[90vh] max-h-[90vh] flex flex-col">
+                <SheetHeader className="flex-shrink-0 pb-4">
+                  <SheetTitle className="flex items-center gap-2">
+                    <Filter className="h-5 w-5" />
+                    Advanced Filters
+                  </SheetTitle>
+                </SheetHeader>
+                <div className="flex-1 overflow-y-auto px-1 pb-4">
+                  <FiltersSidebar />
+                </div>
+              </SheetContent>
+            </Sheet>
+          </div>
+        </div>
+
         {/* Main Content Tabs */}
         <Tabs value={selectedTab} onValueChange={setSelectedTab} className="space-y-6">
           <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4 bg-muted p-1 rounded-lg">
@@ -616,43 +743,32 @@ export default function JobDiscoveryPage() {
           {/* Discover Tab */}
           <TabsContent value="discover" className="space-y-6">
             <div className="flex gap-6">
-              {/* Desktop Filters Sidebar */}
-              <div className="hidden lg:block w-80">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Filter className="h-5 w-5" />
-                      Advanced Filters
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <FiltersSidebar />
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Mobile Filters Button */}
-              <div className="lg:hidden fixed bottom-4 right-4 z-50">
-                <Sheet open={showFilters} onOpenChange={setShowFilters}>
-                  <SheetTrigger asChild>
-                    <Button size="lg" className="rounded-full shadow-lg" data-testid="button-mobile-filters">
-                      <Filter className="h-5 w-5 mr-2" />
-                      Filters
-                    </Button>
-                  </SheetTrigger>
-                  <SheetContent side="bottom" className="h-[85vh] max-h-[85vh] flex flex-col">
-                    <SheetHeader className="flex-shrink-0 pb-4">
-                      <SheetTitle className="flex items-center gap-2">
-                        <Filter className="h-5 w-5" />
-                        Advanced Filters
-                      </SheetTitle>
-                    </SheetHeader>
-                    <div className="flex-1 overflow-y-auto px-1 pb-4">
+              {/* Desktop Filters Sidebar - Toggle visibility */}
+              {showFilters && (
+                <div className="hidden lg:block w-80">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Filter className="h-5 w-5" />
+                          Advanced Filters
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setShowFilters(false)}
+                          className="h-8 w-8 p-0"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
                       <FiltersSidebar />
-                    </div>
-                  </SheetContent>
-                </Sheet>
-              </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
 
               {/* Jobs List */}
               <div className="flex-1 space-y-4">
