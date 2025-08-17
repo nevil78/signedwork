@@ -21,6 +21,7 @@ import { sendPasswordResetOTP } from "./sendgrid";
 import { fromZodError } from "zod-validation-error";
 import { setupGoogleAuth } from "./googleAuth";
 import { OTPEmailService } from "./otpEmailService";
+import { SignupVerificationService } from "./signupVerificationService";
 import { sendEmail } from "./sendgrid";
 
 // Global variable to store the Socket.IO server instance for real-time updates
@@ -245,12 +246,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.status(201).json({ 
         message,
-        company: companyResponse,
-        emailStatus: {
-          isVerified: false,
-          canEditFreely: true,
-          email: emailRecord.email
-        }
+        company: companyResponse
       });
     } catch (error: any) {
       console.error("Company registration error:", error);
@@ -318,6 +314,128 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error("Resend verification error:", error);
       res.status(500).json({ message: "Failed to resend verification code" });
+    }
+  });
+
+  // NEW SIGNUP VERIFICATION ROUTES (Replaces old registration flow)
+  
+  // Employee signup with email verification (Step 1)
+  app.post("/api/auth/signup/employee", async (req, res) => {
+    try {
+      const { firstName, lastName, email, phoneNumber, password } = req.body;
+      
+      if (!firstName || !lastName || !email || !password) {
+        return res.status(400).json({ 
+          message: "First name, last name, email, and password are required" 
+        });
+      }
+
+      const result = await SignupVerificationService.initiateSignup(
+        email,
+        password,
+        "employee",
+        { firstName, lastName, phoneNumber }
+      );
+
+      if (!result.success) {
+        return res.status(400).json({ message: result.message });
+      }
+
+      res.status(200).json({ 
+        message: result.message,
+        verificationRequired: true
+      });
+    } catch (error: any) {
+      console.error("Employee signup error:", error);
+      res.status(500).json({ message: "Failed to initiate signup" });
+    }
+  });
+
+  // Company signup with email verification (Step 1)
+  app.post("/api/auth/signup/company", async (req, res) => {
+    try {
+      const { 
+        name, description, industryType, companySize, location, 
+        email, password, cin, panNumber 
+      } = req.body;
+      
+      if (!name || !email || !password || !industryType) {
+        return res.status(400).json({ 
+          message: "Company name, email, password, and industry type are required" 
+        });
+      }
+
+      const result = await SignupVerificationService.initiateSignup(
+        email,
+        password,
+        "company",
+        { 
+          name, description, industryType, companySize, location, 
+          cin: cin?.trim() || undefined, 
+          panNumber: panNumber?.trim() || undefined 
+        }
+      );
+
+      if (!result.success) {
+        return res.status(400).json({ message: result.message });
+      }
+
+      res.status(200).json({ 
+        message: result.message,
+        verificationRequired: true
+      });
+    } catch (error: any) {
+      console.error("Company signup error:", error);
+      res.status(500).json({ message: "Failed to initiate signup" });
+    }
+  });
+
+  // Verify email and complete account creation (Step 2)
+  app.get("/api/auth/verify-signup", async (req, res) => {
+    try {
+      const { token } = req.query;
+      
+      if (!token || typeof token !== 'string') {
+        return res.status(400).json({ message: "Verification token is required" });
+      }
+
+      const result = await SignupVerificationService.verifySignup(token);
+
+      if (!result.success) {
+        return res.status(400).json({ message: result.message });
+      }
+
+      res.status(200).json({ 
+        message: result.message,
+        user: result.user,
+        userType: result.userType,
+        verified: true
+      });
+    } catch (error: any) {
+      console.error("Signup verification error:", error);
+      res.status(500).json({ message: "Failed to verify signup" });
+    }
+  });
+
+  // Resend verification email
+  app.post("/api/auth/resend-signup-verification", async (req, res) => {
+    try {
+      const { email } = req.body;
+      
+      if (!email) {
+        return res.status(400).json({ message: "Email is required" });
+      }
+
+      const result = await SignupVerificationService.resendVerification(email);
+
+      if (!result.success) {
+        return res.status(400).json({ message: result.message });
+      }
+
+      res.status(200).json({ message: result.message });
+    } catch (error: any) {
+      console.error("Resend verification error:", error);
+      res.status(500).json({ message: "Failed to resend verification" });
     }
   });
 

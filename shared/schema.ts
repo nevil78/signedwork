@@ -3,6 +3,22 @@ import { pgTable, text, varchar, timestamp, integer, boolean, numeric, jsonb, in
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Pending user verification table for signup process
+export const pendingUsers = pgTable("pending_users", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  email: text("email").notNull().unique(),
+  hashedPassword: text("hashed_password").notNull(),
+  userType: text("user_type").notNull(), // 'employee' or 'company'
+  userData: jsonb("user_data").notNull(), // Store all signup data as JSON
+  verificationToken: varchar("verification_token").notNull().unique(),
+  tokenExpiry: timestamp("token_expiry").notNull(),
+  resendCount: integer("resend_count").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("pending_users_email_idx").on(table.email),
+  index("pending_users_token_idx").on(table.verificationToken),
+]);
+
 export const employees = pgTable("employees", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   employeeId: varchar("employee_id").notNull().unique(),
@@ -1018,3 +1034,8 @@ export type InsertSkill = z.infer<typeof insertSkillSchema>;
 export type InsertSkillTrend = z.infer<typeof insertSkillTrendSchema>;
 export type InsertUserSkillPreference = z.infer<typeof insertUserSkillPreferenceSchema>;
 export type InsertSkillAnalytic = z.infer<typeof insertSkillAnalyticSchema>;
+
+// Pending user types for signup verification
+export type InsertPendingUser = typeof pendingUsers.$inferInsert;
+export type PendingUser = typeof pendingUsers.$inferSelect;
+export const insertPendingUserSchema = createInsertSchema(pendingUsers);

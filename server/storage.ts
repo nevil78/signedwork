@@ -1,7 +1,7 @@
 import { 
   employees, companies, experiences, educations, certifications, projects, endorsements, workEntries, employeeCompanies,
   companyInvitationCodes, companyEmployees, jobListings, jobApplications, savedJobs, jobAlerts, profileViews, admins, emailVerifications, userFeedback, loginSessions,
-  skills, skillTrends, userSkillPreferences, skillAnalytics,
+  skills, skillTrends, userSkillPreferences, skillAnalytics, pendingUsers,
   type Employee, type Company, type InsertEmployee, type InsertCompany,
   type Experience, type Education, type Certification, type Project, type Endorsement, type WorkEntry, type EmployeeCompany,
   type InsertExperience, type InsertEducation, type InsertCertification, 
@@ -11,7 +11,8 @@ import {
   type InsertJobListing, type InsertJobApplication, type InsertSavedJob, type InsertJobAlert,
   type Admin, type InsertAdmin, type LoginSession, type InsertLoginSession,
   type Skill, type SkillTrend, type UserSkillPreference, type SkillAnalytic,
-  type InsertSkill, type InsertSkillTrend, type InsertUserSkillPreference, type InsertSkillAnalytic
+  type InsertSkill, type InsertSkillTrend, type InsertUserSkillPreference, type InsertSkillAnalytic,
+  type PendingUser, type InsertPendingUser
 } from "@shared/schema";
 
 type UserFeedback = typeof userFeedback.$inferSelect;
@@ -20,7 +21,7 @@ type InsertUserFeedback = typeof userFeedback.$inferInsert;
 type EmailVerification = typeof emailVerifications.$inferSelect;
 type InsertEmailVerification = typeof emailVerifications.$inferInsert;
 import { db } from "./db";
-import { eq, and, sql, desc, asc, inArray, count, like, or, getTableColumns } from "drizzle-orm";
+import { eq, and, sql, desc, asc, inArray, count, like, or, getTableColumns, lt, ilike } from "drizzle-orm";
 import bcrypt from "bcrypt";
 
 // Generate a short, memorable employee ID
@@ -2799,6 +2800,53 @@ export class DatabaseStorage implements IStorage {
       .returning();
     
     return trend;
+  }
+
+  // Pending Users Methods for Signup Verification
+  async createPendingUser(data: InsertPendingUser): Promise<PendingUser> {
+    const [pendingUser] = await db
+      .insert(pendingUsers)
+      .values(data)
+      .returning();
+    return pendingUser;
+  }
+
+  async getPendingUserByEmail(email: string): Promise<PendingUser | undefined> {
+    const [pendingUser] = await db
+      .select()
+      .from(pendingUsers)
+      .where(eq(pendingUsers.email, email));
+    return pendingUser;
+  }
+
+  async getPendingUserByToken(token: string): Promise<PendingUser | undefined> {
+    const [pendingUser] = await db
+      .select()
+      .from(pendingUsers)
+      .where(eq(pendingUsers.verificationToken, token));
+    return pendingUser;
+  }
+
+  async updatePendingUser(id: string, data: Partial<InsertPendingUser>): Promise<PendingUser> {
+    const [pendingUser] = await db
+      .update(pendingUsers)
+      .set(data)
+      .where(eq(pendingUsers.id, id))
+      .returning();
+    return pendingUser;
+  }
+
+  async deletePendingUser(id: string): Promise<void> {
+    await db
+      .delete(pendingUsers)
+      .where(eq(pendingUsers.id, id));
+  }
+
+  async deleteExpiredPendingUsers(): Promise<number> {
+    const result = await db
+      .delete(pendingUsers)
+      .where(lt(pendingUsers.tokenExpiry, new Date()));
+    return result.rowCount || 0;
   }
 }
 

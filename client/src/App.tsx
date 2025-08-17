@@ -10,6 +10,7 @@ import { ChangePasswordPage } from "@/pages/change-password";
 import EmailVerificationPage from "@/pages/email-verification";
 import VerifyEmailChangePage from "@/pages/verify-email-change";
 import VerifyDelayedEmail from "@/pages/verify-delayed-email";
+import VerifyEmail from "@/pages/verify-email";
 import EmailOTPVerificationPage from "@/pages/email-otp-verification";
 import Dashboard from "@/pages/dashboard";
 import Profile from "@/pages/profile";
@@ -41,10 +42,11 @@ function Router() {
       <Route path="/auth" component={AuthPage} />
       <Route path="/forgot-password" component={ForgotPasswordPage} />
       <Route path="/change-password" component={ChangePasswordPage} />
-      <Route path="/verify-email" component={VerifyDelayedEmail} />
+      <Route path="/verify-email" component={VerifyEmail} />
+      <Route path="/legacy-verify-email" component={VerifyDelayedEmail} />
       <Route path="/email-otp-verification" component={EmailOTPVerificationPage} />
       <Route path="/verify-email-change" component={VerifyEmailChangePage} />
-      <Route path="/legacy-verify-email" component={EmailVerificationPage} />
+      <Route path="/email-verification" component={EmailVerificationPage} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/profile" component={ProfessionalProfile} />
       <Route path="/summary" component={EmployeeSummaryDashboard} />

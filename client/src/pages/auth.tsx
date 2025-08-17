@@ -17,7 +17,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { insertEmployeeSchema, insertCompanySchema, loginSchema, type InsertEmployee, type InsertCompany, type LoginData } from "@shared/schema";
 import { Link } from "wouter";
 
-type AuthView = "selection" | "employee" | "company" | "login" | "success";
+type AuthView = "selection" | "employee" | "company" | "login" | "success" | "verification-pending";
 
 interface PasswordRequirement {
   id: string;
@@ -81,6 +81,7 @@ function PasswordInput({ field, placeholder, className = "" }: { field: any; pla
 export default function AuthPage() {
   const [currentView, setCurrentView] = useState<AuthView>("selection");
   const [loginError, setLoginError] = useState<boolean>(false);
+  const [verificationEmail, setVerificationEmail] = useState<string>("");
   const { toast } = useToast();
 
   // Handle OAuth error redirects
@@ -158,19 +159,29 @@ export default function AuthPage() {
 
   const employeeRegistration = useMutation({
     mutationFn: async (data: InsertEmployee) => {
-      return await apiRequest("POST", "/api/auth/register/employee", data);
+      return await apiRequest("/api/auth/signup/employee", {
+        method: "POST",
+        body: {
+          firstName: data.firstName,
+          lastName: data.lastName,
+          email: data.email,
+          phoneNumber: data.phone,
+          password: data.password
+        }
+      });
     },
-    onSuccess: () => {
-      setCurrentView("success");
+    onSuccess: (response: any) => {
+      setVerificationEmail(employeeForm.getValues("email"));
+      setCurrentView("verification-pending");
       toast({
-        title: "Registration Successful!",
-        description: "Your employee account has been created successfully.",
+        title: "Verification Email Sent!",
+        description: response.message || "Please check your email to verify your account.",
       });
     },
     onError: (error: any) => {
       toast({
         title: "Registration Failed",
-        description: error.message || "Failed to create employee account",
+        description: error.message || "Failed to initiate signup",
         variant: "destructive",
       });
     },
@@ -178,19 +189,33 @@ export default function AuthPage() {
 
   const companyRegistration = useMutation({
     mutationFn: async (data: InsertCompany) => {
-      return await apiRequest("POST", "/api/auth/register/company", data);
+      return await apiRequest("/api/auth/signup/company", {
+        method: "POST",
+        body: {
+          name: data.name,
+          description: data.description,
+          industryType: data.industry,
+          companySize: data.size,
+          location: data.address,
+          email: data.email,
+          password: data.password,
+          cin: data.cin,
+          panNumber: data.panNumber
+        }
+      });
     },
-    onSuccess: () => {
-      setCurrentView("success");
+    onSuccess: (response: any) => {
+      setVerificationEmail(companyForm.getValues("email"));
+      setCurrentView("verification-pending");
       toast({
-        title: "Registration Successful!",
-        description: "Your company account has been created successfully.",
+        title: "Verification Email Sent!",
+        description: response.message || "Please check your email to verify your account.",
       });
     },
     onError: (error: any) => {
       toast({
         title: "Registration Failed",
-        description: error.message || "Failed to create company account",
+        description: error.message || "Failed to initiate signup",
         variant: "destructive",
       });
     },
@@ -1154,6 +1179,107 @@ export default function AuthPage() {
                 <Button onClick={() => setCurrentView("login")}>
                   Continue to Sign In
                 </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  if (currentView === "verification-pending") {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+        <header className="bg-white shadow-sm border-b border-slate-200">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between items-center h-16">
+              <div className="flex items-center">
+                <img src={signedworkLogo} alt="Signedwork" className="h-8 w-8 mr-3" />
+                <span className="text-xl font-bold text-slate-800">Signedwork</span>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <main className="flex-1 py-12 px-4 sm:px-6 lg:px-8">
+          <div className="max-w-md mx-auto">
+            <Card className="rounded-2xl shadow-xl">
+              <CardContent className="p-8 text-center">
+                <div className="mb-6">
+                  <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Shield className="text-blue-600 text-2xl" />
+                  </div>
+                  <h2 className="text-2xl font-bold text-slate-900 mb-2">Check Your Email</h2>
+                  <p className="text-slate-600">
+                    We've sent a verification link to <strong>{verificationEmail}</strong>
+                  </p>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <div className="flex items-start space-x-3">
+                      <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5" />
+                      <div className="text-left">
+                        <p className="text-sm text-blue-800 font-medium">Next Steps:</p>
+                        <ol className="text-sm text-blue-700 mt-2 space-y-1">
+                          <li>1. Check your email inbox</li>
+                          <li>2. Click the verification link</li>
+                          <li>3. Your account will be created automatically</li>
+                          <li>4. You can then login normally</li>
+                        </ol>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <Button
+                      onClick={() => {
+                        apiRequest("/api/auth/resend-signup-verification", {
+                          method: "POST",
+                          body: { email: verificationEmail }
+                        })
+                        .then(() => {
+                          toast({
+                            title: "Verification Email Resent!",
+                            description: "Please check your email inbox again.",
+                          });
+                        })
+                        .catch((error: any) => {
+                          toast({
+                            title: "Resend Failed",
+                            description: error.message || "Failed to resend verification email",
+                            variant: "destructive",
+                          });
+                        });
+                      }}
+                      variant="outline"
+                      className="w-full"
+                      data-testid="button-resend-verification"
+                    >
+                      Resend Verification Email
+                    </Button>
+
+                    <Button
+                      onClick={() => setCurrentView("selection")}
+                      variant="ghost"
+                      className="w-full"
+                      data-testid="button-back-to-signup"
+                    >
+                      Back to Sign Up
+                    </Button>
+
+                    <p className="text-sm text-slate-600">
+                      Already verified?{" "}
+                      <Button 
+                        variant="link" 
+                        className="p-0 h-auto text-primary hover:text-primary-dark font-medium"
+                        onClick={() => setCurrentView("login")}
+                      >
+                        Sign in here
+                      </Button>
+                    </p>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </div>
