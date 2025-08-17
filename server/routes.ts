@@ -4117,7 +4117,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const employee = await storage.getEmployeeByEmail(email);
       const company = await storage.getCompanyByEmail(email);
       
-      const isVerified = employee?.emailVerified || company?.emailVerified || false;
+      const isVerified = (employee?.emailVerified ?? false) || (company?.emailVerified ?? false);
       
       if (isVerified) {
         return res.json({

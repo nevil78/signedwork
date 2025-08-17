@@ -42,12 +42,17 @@ export default function PostLoginVerificationWrapper({ children }: PostLoginVeri
   }
 
   // If user is authenticated but email not verified, show verification flow
-  if ((authUser as any)?.user && verificationStatus && !verificationStatus.isVerified) {
+  const userEmailVerified = (authUser as any)?.user?.emailVerified;
+  
+  // Check if email verification is required (user not verified and has email)
+  if ((authUser as any)?.user?.email && userEmailVerified === false) {
     return (
       <PostLoginVerification
         email={(authUser as any).user.email}
         onVerificationComplete={() => {
           refetchVerification();
+          // Also refetch user data to get updated emailVerified status
+          window.location.reload(); // Force a page reload to clear all caches
         }}
       />
     );
