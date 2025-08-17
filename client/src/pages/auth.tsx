@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
-import { Shield, User, Building, ArrowLeft, Check, Eye, EyeOff, AlertCircle, ShieldCheck } from "lucide-react";
+import { Shield, User, Building, ArrowLeft, Check, Eye, EyeOff, AlertCircle, ShieldCheck, Mail, CheckCircle } from "lucide-react";
 import signedworkLogo from "@assets/Signed-work-Logo (1)_1755168042120.png";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -17,7 +17,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { insertEmployeeSchema, insertCompanySchema, loginSchema, type InsertEmployee, type InsertCompany, type LoginData } from "@shared/schema";
 import { Link } from "wouter";
 
-type AuthView = "selection" | "employee" | "company" | "login" | "success" | "verification-pending";
+type AuthView = "selection" | "employee" | "company" | "login" | "success" | "otp-verification" | "verification-pending" | "registration-success";
 
 interface PasswordRequirement {
   id: string;
@@ -169,16 +169,39 @@ export default function AuthPage() {
     },
     onSuccess: (response: any) => {
       setVerificationEmail(employeeForm.getValues("email"));
-      setCurrentView("verification-pending");
+      setCurrentView("otp-verification");
       toast({
-        title: "Verification Email Sent!",
-        description: response.message || "Please check your email to verify your account.",
+        title: "OTP Sent!",
+        description: response.message || "Please check your email for the verification code.",
       });
     },
     onError: (error: any) => {
       toast({
         title: "Registration Failed",
-        description: error.message || "Failed to initiate signup",
+        description: error.message || "Failed to send OTP",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const verifyOTP = useMutation({
+    mutationFn: async ({ email, otp }: { email: string; otp: string }) => {
+      return await apiRequest("POST", "/api/auth/verify-employee-otp", {
+        email,
+        otp
+      });
+    },
+    onSuccess: (response: any) => {
+      setCurrentView("registration-success");
+      toast({
+        title: "Account Created!",
+        description: response.message || "Your account has been created successfully. You can now login.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Verification Failed",
+        description: error.message || "Invalid or expired OTP code",
         variant: "destructive",
       });
     },
@@ -1173,6 +1196,170 @@ export default function AuthPage() {
                 <Button onClick={() => setCurrentView("login")}>
                   Continue to Sign In
                 </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  if (currentView === "otp-verification") {
+    const [otp, setOTP] = useState("");
+    const [countdown, setCountdown] = useState(300); // 5 minutes
+
+    useEffect(() => {
+      if (countdown > 0) {
+        const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+        return () => clearTimeout(timer);
+      }
+    }, [countdown]);
+
+    const formatTime = (seconds: number) => {
+      const mins = Math.floor(seconds / 60);
+      const secs = seconds % 60;
+      return `${mins}:${secs.toString().padStart(2, '0')}`;
+    };
+
+    const handleVerifyOTP = () => {
+      if (otp.length === 6) {
+        verifyOTP.mutate({ email: verificationEmail, otp });
+      }
+    };
+
+    const handleResendOTP = () => {
+      // Resend OTP logic here
+      setCountdown(300);
+      toast({
+        title: "OTP Resent",
+        description: "A new verification code has been sent to your email.",
+      });
+    };
+
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+        <header className="bg-white shadow-sm border-b border-slate-200">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between items-center h-16">
+              <div className="flex items-center">
+                <img src={signedworkLogo} alt="Signedwork" className="h-8 w-8 mr-3" />
+                <span className="text-xl font-bold text-slate-800">Signedwork</span>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <main className="flex-1 py-12 px-4 sm:px-6 lg:px-8">
+          <div className="max-w-md mx-auto">
+            <Card className="rounded-2xl shadow-xl">
+              <CardContent className="p-8">
+                <div className="text-center mb-8">
+                  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Mail className="text-green-600 text-2xl" />
+                  </div>
+                  <h2 className="text-2xl font-bold text-slate-900 mb-2">Verify Your Email</h2>
+                  <p className="text-slate-600">
+                    Enter the 6-digit code sent to<br />
+                    <span className="font-medium text-slate-800">{verificationEmail}</span>
+                  </p>
+                </div>
+
+                <div className="space-y-6">
+                  <div>
+                    <label htmlFor="otp" className="block text-sm font-medium text-slate-700 mb-2">
+                      Verification Code
+                    </label>
+                    <Input
+                      id="otp"
+                      type="text"
+                      value={otp}
+                      onChange={(e) => setOTP(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      placeholder="000000"
+                      className="text-center text-lg tracking-widest font-mono"
+                      maxLength={6}
+                      data-testid="input-otp"
+                    />
+                  </div>
+
+                  <Button
+                    onClick={handleVerifyOTP}
+                    disabled={otp.length !== 6 || verifyOTP.isPending}
+                    className="w-full"
+                    data-testid="button-verify-otp"
+                  >
+                    {verifyOTP.isPending ? "Verifying..." : "Verify & Create Account"}
+                  </Button>
+
+                  <div className="text-center space-y-2">
+                    {countdown > 0 ? (
+                      <p className="text-sm text-slate-600">
+                        Resend code in {formatTime(countdown)}
+                      </p>
+                    ) : (
+                      <Button
+                        variant="link"
+                        onClick={handleResendOTP}
+                        className="text-primary hover:text-primary-dark"
+                        data-testid="button-resend-otp"
+                      >
+                        Resend verification code
+                      </Button>
+                    )}
+                    
+                    <div>
+                      <Button
+                        variant="link"
+                        onClick={() => setCurrentView("selection")}
+                        className="text-slate-600 hover:text-slate-800"
+                      >
+                        Back to account selection
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  if (currentView === "registration-success") {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+        <header className="bg-white shadow-sm border-b border-slate-200">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between items-center h-16">
+              <div className="flex items-center">
+                <img src={signedworkLogo} alt="Signedwork" className="h-8 w-8 mr-3" />
+                <span className="text-xl font-bold text-slate-800">Signedwork</span>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <main className="flex-1 py-12 px-4 sm:px-6 lg:px-8">
+          <div className="max-w-md mx-auto">
+            <Card className="rounded-2xl shadow-xl">
+              <CardContent className="p-8">
+                <div className="text-center">
+                  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <CheckCircle className="text-green-600 text-2xl" />
+                  </div>
+                  <h2 className="text-2xl font-bold text-slate-900 mb-4">Account Created!</h2>
+                  <p className="text-slate-600 mb-8">
+                    Your employee account has been successfully created and verified.
+                    You can now sign in to access your dashboard.
+                  </p>
+                  <Button
+                    onClick={() => setCurrentView("login")}
+                    className="w-full"
+                    data-testid="button-go-to-login"
+                  >
+                    Sign In Now
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </div>

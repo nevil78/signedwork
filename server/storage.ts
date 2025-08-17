@@ -679,6 +679,75 @@ export class DatabaseStorage implements IStorage {
     return this.updateEmployee(id, { profilePhoto: profilePicturePath });
   }
 
+  // Pending employee OTP signup methods
+  async createPendingEmployee(email: string, userData: any): Promise<string> {
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const hashedPassword = await bcrypt.hash(userData.password, 10);
+    
+    await db.insert(pendingUsers).values({
+      email,
+      hashedPassword,
+      userType: 'employee',
+      userData: userData,
+      verificationToken: otp,
+      tokenExpiry: new Date(Date.now() + 5 * 60 * 1000), // 5 minutes
+    }).onConflictDoUpdate({
+      target: pendingUsers.email,
+      set: {
+        hashedPassword,
+        userData: userData,
+        verificationToken: otp,
+        tokenExpiry: new Date(Date.now() + 5 * 60 * 1000),
+        resendCount: sql`${pendingUsers.resendCount} + 1`,
+      }
+    });
+    
+    return otp;
+  }
+
+  async getPendingEmployeeByEmail(email: string): Promise<any | null> {
+    const result = await db.select()
+      .from(pendingUsers)
+      .where(and(
+        eq(pendingUsers.email, email),
+        eq(pendingUsers.userType, 'employee'),
+        sql`${pendingUsers.tokenExpiry} > NOW()`
+      ))
+      .limit(1);
+    
+    return result.length > 0 ? result[0] : null;
+  }
+
+  async deletePendingEmployeeByEmail(email: string): Promise<void> {
+    await db.delete(pendingUsers)
+      .where(and(
+        eq(pendingUsers.email, email),
+        eq(pendingUsers.userType, 'employee')
+      ));
+  }
+
+  async verifyEmployeeOTP(email: string, otp: string): Promise<{ success: boolean; message: string; userData?: any }> {
+    const pending = await db.select()
+      .from(pendingUsers)
+      .where(and(
+        eq(pendingUsers.email, email),
+        eq(pendingUsers.userType, 'employee'),
+        eq(pendingUsers.verificationToken, otp),
+        sql`${pendingUsers.tokenExpiry} > NOW()`
+      ))
+      .limit(1);
+
+    if (pending.length === 0) {
+      return { success: false, message: "Invalid or expired OTP code" };
+    }
+
+    return { 
+      success: true, 
+      message: "OTP verified successfully", 
+      userData: pending[0] 
+    };
+  }
+
   // Employee Profile Data
   async getEmployeeProfile(employeeId: string): Promise<{
     experiences: Experience[];

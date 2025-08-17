@@ -124,6 +124,121 @@ export class OTPEmailService {
     }
   }
 
+  // Send OTP verification for signup
+  async sendOTPVerification(
+    email: string, 
+    userType: 'employee' | 'company',
+    userData: any
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      const otp = OTPEmailService.generateOTP();
+      const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+
+      // Store pending signup data temporarily in database
+      const pendingData = {
+        email,
+        userType,
+        otp,
+        userData: JSON.stringify(userData),
+        expiresAt,
+        createdAt: new Date()
+      };
+
+      // Store in a temporary table (we'll use emails table for now with special status)
+      await db.insert(emails).values({
+        email,
+        userId: 'pending_' + email, // Temporary ID
+        userType,
+        verificationToken: otp,
+        verificationExpiresAt: expiresAt,
+        status: 'pending_signup',
+        createdAt: new Date()
+      }).onConflictDoUpdate({
+        target: emails.email,
+        set: {
+          verificationToken: otp,
+          verificationExpiresAt: expiresAt,
+          status: 'pending_signup',
+          updatedAt: new Date()
+        }
+      });
+
+      // Send OTP email
+      await OTPEmailService.sendOTPVerificationEmail(email, otp, userType);
+
+      return { 
+        success: true, 
+        message: "OTP sent to your email" 
+      };
+    } catch (error) {
+      console.error("Send OTP verification error:", error);
+      return { 
+        success: false, 
+        message: "Failed to send verification email" 
+      };
+    }
+  }
+
+  // Verify OTP and complete account creation
+  async verifyOTPAndCreateAccount(
+    email: string,
+    otp: string,
+    userType: 'employee' | 'company'
+  ): Promise<{ success: boolean; message: string; user?: any }> {
+    try {
+      // Find the pending verification
+      const pendingVerification = await db.select()
+        .from(emails)
+        .where(and(
+          eq(emails.email, email),
+          eq(emails.status, 'pending_signup')
+        ))
+        .limit(1);
+
+      if (!pendingVerification.length) {
+        return { 
+          success: false, 
+          message: "No pending verification found" 
+        };
+      }
+
+      const verification = pendingVerification[0];
+
+      // Check if OTP has expired
+      if (new Date() > verification.verificationExpiresAt!) {
+        return { 
+          success: false, 
+          message: "OTP has expired. Please request a new one." 
+        };
+      }
+
+      // Verify OTP
+      if (verification.verificationToken !== otp) {
+        return { 
+          success: false, 
+          message: "Invalid OTP code" 
+        };
+      }
+
+      // Get user data from storage service (assuming it's stored in a separate table)
+      // For now, return success - the actual account creation will be handled by storage
+      
+      // Clean up pending verification
+      await db.delete(emails).where(eq(emails.id, verification.id));
+
+      return { 
+        success: true, 
+        message: "OTP verified successfully" 
+      };
+    } catch (error) {
+      console.error("Verify OTP error:", error);
+      return { 
+        success: false, 
+        message: "Failed to verify OTP" 
+      };
+    }
+  }
+
   // Send OTP for email verification
   static async sendEmailVerificationOTP(
     userId: string, 

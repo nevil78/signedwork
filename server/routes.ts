@@ -319,7 +319,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // NEW SIGNUP VERIFICATION ROUTES (Replaces old registration flow)
   
-  // Employee signup with email verification (Step 1)
+  // Employee signup with email OTP verification (Step 1 - Send OTP)
   app.post("/api/auth/signup/employee", async (req, res) => {
     try {
       const { firstName, lastName, email, phoneNumber, password } = req.body;
@@ -330,24 +330,91 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      const result = await SignupVerificationService.initiateSignup(
-        email,
-        password,
-        "employee",
-        { firstName, lastName, phoneNumber }
-      );
-
-      if (!result.success) {
-        return res.status(400).json({ message: result.message });
+      // Check if email already exists in users
+      const existingEmployee = await storage.getEmployeeByEmail(email);
+      const existingCompany = await storage.getCompanyByEmail(email);
+      
+      if (existingEmployee || existingCompany) {
+        return res.status(400).json({ message: "Email already registered" });
       }
 
-      res.status(200).json({ 
-        message: result.message,
-        verificationRequired: true
+      // Create pending employee and send OTP
+      const otp = await storage.createPendingEmployee(email, {
+        firstName,
+        lastName,
+        phoneNumber,
+        password
+      });
+
+      // Send OTP email using the private static method via instance
+      await sendOTPEmail({
+        to: email,
+        firstName: firstName,
+        otpCode: otp,
+        purpose: "signup_verification"
+      });
+
+      res.json({ 
+        message: "OTP sent to your email. Please verify to complete registration.",
+        email: email
       });
     } catch (error: any) {
       console.error("Employee signup error:", error);
-      res.status(500).json({ message: "Failed to initiate signup" });
+      res.status(500).json({ message: "Failed to send OTP. Please try again." });
+    }
+  });
+
+  // Employee OTP verification and account creation (Step 2)
+  app.post("/api/auth/verify-employee-otp", async (req, res) => {
+    try {
+      const { email, otp } = req.body;
+      
+      if (!email || !otp) {
+        return res.status(400).json({ 
+          message: "Email and OTP are required" 
+        });
+      }
+
+      // Verify OTP and get pending user data
+      const verificationResult = await storage.verifyEmployeeOTP(email, otp);
+      
+      if (!verificationResult.success) {
+        return res.status(400).json({ message: verificationResult.message });
+      }
+
+      const pendingUser = verificationResult.userData;
+      if (!pendingUser) {
+        return res.status(400).json({ message: "Registration session expired. Please start again." });
+      }
+      
+      // Create the employee account using the already hashed password
+      const userData = pendingUser.userData as any;
+      const employeeData = {
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        email: pendingUser.email,
+        phone: userData.phoneNumber || null,
+        password: pendingUser.hashedPassword, // Use already hashed password
+        emailVerified: true // Mark as verified since OTP was successful
+      };
+
+      const employee = await storage.createEmployeeWithHashedPassword(employeeData);
+      
+      // Clean up pending user data
+      await storage.deletePendingEmployeeByEmail(email);
+
+      // Remove password from response
+      const { password: _, ...employeeResponse } = employee;
+
+      res.status(201).json({
+        message: "Account created successfully! You can now login.",
+        user: employeeResponse,
+        userType: "employee",
+        verified: true
+      });
+    } catch (error: any) {
+      console.error("Employee OTP verification error:", error);
+      res.status(500).json({ message: "Failed to verify OTP. Please try again." });
     }
   });
 
