@@ -42,8 +42,6 @@ import { apiRequest } from "@/lib/queryClient";
 import { ObjectUploader } from "@/components/ObjectUploader";
 import type { UploadResult } from "@uppy/core";
 import EmployeeNavHeader from "@/components/employee-nav-header";
-import { EditableEmailSection } from "@/components/EditableEmailSection";
-import { SecureEmailManager } from "@/components/SecureEmailManager";
 import { OTPEmailVerification } from "@/components/OTPEmailVerification";
 import {
   User,
@@ -1283,7 +1281,11 @@ export default function ProfessionalProfile() {
                         </TabsContent>
                         
                         <TabsContent value="delayed" className="mt-4">
-                          <SecureEmailManager />
+                          <div className="text-center py-8 text-gray-500">
+                            <Mail className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                            <p>Email management tools have been simplified.</p>
+                            <p className="text-sm mt-2">Use the verification button above to verify your email when needed.</p>
+                          </div>
                         </TabsContent>
                       </Tabs>
                     </CardContent>

@@ -20,17 +20,8 @@ import { sendOTPEmail, generateOTPCode, isOTPExpired } from "./emailService";
 import { sendPasswordResetOTP } from "./sendgrid";
 import { fromZodError } from "zod-validation-error";
 import { setupGoogleAuth } from "./googleAuth";
-import { SecureEmailService } from "./secureEmailService";
 import { OTPEmailService } from "./otpEmailService";
 import { sendEmail } from "./sendgrid";
-import { 
-  emailChangeRequestSchema, 
-  emailVerificationSchema, 
-  emailOwnershipCheckSchema,
-  type EmailChangeRequestData,
-  type EmailVerificationData,
-  type EmailOwnershipCheckData
-} from "@shared/schema";
 
 // Global variable to store the Socket.IO server instance for real-time updates
 let io: SocketIOServer;
@@ -145,21 +136,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Create user with unverified email using SecureEmailService
-      const { user, emailRecord } = await SecureEmailService.createUserWithUnverifiedEmail(
-        email, 
-        password, 
-        'employee'
-      );
+      // Check if email already exists
+      const existingEmployee = await storage.getEmployeeByEmail(email);
+      const existingCompany = await storage.getCompanyByEmail(email);
+      
+      if (existingEmployee || existingCompany) {
+        return res.status(400).json({ message: "Email already registered" });
+      }
+
+      // Hash password
+      const hashedPassword = await bcrypt.hash(password, 10);
 
       // Create employee profile
       const employeeData = {
-        id: user.id,
-        email: user.primaryEmail,
-        password: user.passwordHash,
+        email,
+        password: hashedPassword,
         firstName,
         lastName,
-        phoneNumber: phoneNumber || null,
+        phone: phoneNumber || null,
       };
 
       const employee = await storage.createEmployee(employeeData);
@@ -168,13 +162,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { password: _, ...employeeResponse } = employee;
       
       res.status(201).json({ 
-        message: "Account created successfully! You can edit your email freely until verification is required for critical actions like job applications.",
-        employee: employeeResponse,
-        emailStatus: {
-          isVerified: false,
-          canEditFreely: true,
-          email: emailRecord.email
-        }
+        message: "Account created successfully!",
+        employee: employeeResponse
       });
     } catch (error: any) {
       console.error("Employee registration error:", error);
@@ -195,18 +184,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Create user with unverified email using SecureEmailService
-      const { user, emailRecord } = await SecureEmailService.createUserWithUnverifiedEmail(
-        email, 
-        password, 
-        'company'
-      );
+      // Check if email already exists
+      const existingEmployee = await storage.getEmployeeByEmail(email);
+      const existingCompany = await storage.getCompanyByEmail(email);
+      
+      if (existingEmployee || existingCompany) {
+        return res.status(400).json({ message: "Email already registered" });
+      }
+
+      // Hash password
+      const hashedPassword = await bcrypt.hash(password, 10);
 
       // Handle empty CIN and PAN strings
       const companyData = {
-        id: user.id,
-        email: user.primaryEmail,
-        password: user.passwordHash,
+        email,
+        password: hashedPassword,
         name,
         description: description || null,
         industryType,
@@ -4100,227 +4092,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 
 
-  // === SECURE EMAIL MANAGEMENT ROUTES ===
-  
-  // Check email availability for signup
-  app.post("/api/secure-email/check-availability", async (req, res) => {
-    try {
-      const { email } = emailOwnershipCheckSchema.parse(req.body);
-      const availability = await SecureEmailService.isEmailAvailableForSignup(email);
-      res.json(availability);
-    } catch (error: any) {
-      if (error.name === "ZodError") {
-        const validationError = fromZodError(error);
-        return res.status(400).json({ 
-          message: validationError.message,
-          errors: error.errors
-        });
-      }
-      console.error("Check email availability error:", error);
-      res.status(500).json({ message: "Failed to check email availability" });
-    }
-  });
-
-  // Request email change (requires authentication + password + 2FA)
-  app.post("/api/secure-email/request-change", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    if (!sessionUser) {
-      return res.status(401).json({ message: "Not authenticated" });
-    }
-
-    try {
-      const requestData: EmailChangeRequestData = emailChangeRequestSchema.parse(req.body);
-      const clientIP = req.ip || req.connection.remoteAddress || 'unknown';
-      const userAgent = req.get('User-Agent') || 'unknown';
-
-      const result = await SecureEmailService.requestEmailChange(
-        sessionUser.id,
-        requestData.newEmail,
-        requestData.currentPassword,
-        requestData.twoFactorCode,
-        clientIP,
-        userAgent
-      );
-
-      if (!result.success) {
-        return res.status(400).json({ message: result.error });
-      }
-
-      res.json({
-        message: "Email change verification sent. Please check your new email.",
-        verificationSent: true
-      });
-    } catch (error: any) {
-      if (error.name === "ZodError") {
-        const validationError = fromZodError(error);
-        return res.status(400).json({ 
-          message: validationError.message,
-          errors: error.errors
-        });
-      }
-      console.error("Request email change error:", error);
-      res.status(500).json({ message: "Failed to process email change request" });
-    }
-  });
-
-  // Verify email change
-  app.post("/api/secure-email/verify-change", async (req, res) => {
-    try {
-      const verificationData: EmailVerificationData = emailVerificationSchema.parse(req.body);
-      const clientIP = req.ip || req.connection.remoteAddress || 'unknown';
-      const userAgent = req.get('User-Agent') || 'unknown';
-
-      const result = await SecureEmailService.completeEmailChange(
-        verificationData.verificationToken,
-        verificationData.email,
-        clientIP,
-        userAgent
-      );
-
-      if (!result.success) {
-        return res.status(400).json({ 
-          message: "Invalid or expired verification token" 
-        });
-      }
-
-      res.json({
-        message: "Email successfully changed",
-        user: result.user
-      });
-    } catch (error: any) {
-      if (error.name === "ZodError") {
-        const validationError = fromZodError(error);
-        return res.status(400).json({ 
-          message: validationError.message,
-          errors: error.errors
-        });
-      }
-      console.error("Verify email change error:", error);
-      res.status(500).json({ message: "Failed to verify email change" });
-    }
-  });
-
-  // Delayed Email Verification Routes
-  app.get("/api/secure-email/verification-status", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    if (!sessionUser) {
-      return res.status(401).json({ message: "Not authenticated" });
-    }
-
-    try {
-      const status = await SecureEmailService.checkEmailVerificationStatus(sessionUser.id);
-      res.json(status);
-    } catch (error) {
-      console.error("Get verification status error:", error);
-      res.status(500).json({ message: "Failed to get verification status" });
-    }
-  });
-
-  app.post("/api/secure-email/require-verification", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    if (!sessionUser) {
-      return res.status(401).json({ message: "Not authenticated" });
-    }
-
-    try {
-      const result = await SecureEmailService.requireEmailVerification(sessionUser.id);
-      res.json(result);
-    } catch (error) {
-      console.error("Require verification error:", error);
-      res.status(500).json({ message: error.message || "Failed to require verification" });
-    }
-  });
-
-  app.post("/api/secure-email/update-unverified", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    if (!sessionUser) {
-      return res.status(401).json({ message: "Not authenticated" });
-    }
-
-    try {
-      const { newEmail } = req.body;
-      if (!newEmail) {
-        return res.status(400).json({ message: "New email is required" });
-      }
-
-      const ipAddress = req.ip;
-      const userAgent = req.get('User-Agent');
-      
-      const updatedEmail = await SecureEmailService.updateUnverifiedEmail(
-        sessionUser.id, 
-        newEmail, 
-        ipAddress, 
-        userAgent
-      );
-      
-      res.json(updatedEmail);
-    } catch (error) {
-      console.error("Update unverified email error:", error);
-      res.status(500).json({ message: error.message || "Failed to update email" });
-    }
-  });
-
-  app.post("/api/secure-email/verify-delayed", async (req, res) => {
-    try {
-      const { verificationToken, email } = req.body;
-      
-      if (!verificationToken || !email) {
-        return res.status(400).json({ message: "Verification token and email are required" });
-      }
-
-      const ipAddress = req.ip;
-      const userAgent = req.get('User-Agent');
-      
-      const result = await SecureEmailService.verifyEmailAndMakePrimary(
-        verificationToken, 
-        email, 
-        ipAddress, 
-        userAgent
-      );
-      
-      if (result.success) {
-        res.json({ message: "Email verified successfully", user: result.user });
-      } else {
-        res.status(400).json({ message: "Invalid or expired verification token" });
-      }
-    } catch (error) {
-      console.error("Verify delayed email error:", error);
-      res.status(500).json({ message: "Failed to verify email" });
-    }
-  });
-
-  // Get user's email history (for security audit)
-  app.get("/api/secure-email/change-history", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    if (!sessionUser) {
-      return res.status(401).json({ message: "Not authenticated" });
-    }
-
-    try {
-      const history = await SecureEmailService.getEmailChangeHistory(sessionUser.id);
-      res.json(history);
-    } catch (error) {
-      console.error("Get email change history error:", error);
-      res.status(500).json({ message: "Failed to get email change history" });
-    }
-  });
-
-  // Get all user emails (current + detached)
-  app.get("/api/secure-email/user-emails", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    if (!sessionUser) {
-      return res.status(401).json({ message: "Not authenticated" });
-    }
-
-    try {
-      const emails = await SecureEmailService.getUserEmails(sessionUser.id);
-      res.json(emails);
-    } catch (error) {
-      console.error("Get user emails error:", error);
-      res.status(500).json({ message: "Failed to get user emails" });
-    }
-  });
-
   // OTP Email Verification Routes
   app.post("/api/email-verification/send-otp", async (req, res) => {
     const sessionUser = (req.session as any).user;
@@ -4438,23 +4209,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Admin route: Clean up expired grace periods
-  app.post("/api/secure-email/admin/cleanup-expired", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    // Only admin can access this endpoint
-    if (!sessionUser || sessionUser.type !== "admin") {
-      return res.status(403).json({ message: "Admin access required" });
-    }
 
-    try {
-      await SecureEmailService.cleanupExpiredGracePeriods();
-      res.json({ message: "Expired grace periods cleaned up successfully" });
-    } catch (error) {
-      console.error("Cleanup expired grace periods error:", error);
-      res.status(500).json({ message: "Failed to cleanup expired grace periods" });
-    }
-  });
 
   return httpServer;
 }
