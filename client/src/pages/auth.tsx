@@ -122,6 +122,14 @@ export default function AuthPage() {
     }
   }, [toast]);
 
+  // OTP countdown effect
+  useEffect(() => {
+    if (currentView === "otp-verification" && countdown > 0) {
+      const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [currentView, countdown]);
+
   const employeeForm = useForm<InsertEmployee>({
     resolver: zodResolver(insertEmployeeSchema),
     defaultValues: {
@@ -1205,14 +1213,6 @@ export default function AuthPage() {
       </div>
     );
   }
-
-  // OTP countdown effect
-  useEffect(() => {
-    if (currentView === "otp-verification" && countdown > 0) {
-      const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [currentView, countdown]);
 
   if (currentView === "otp-verification") {
 
