@@ -159,15 +159,12 @@ export default function AuthPage() {
 
   const employeeRegistration = useMutation({
     mutationFn: async (data: InsertEmployee) => {
-      return await apiRequest("/api/auth/signup/employee", {
-        method: "POST",
-        body: {
-          firstName: data.firstName,
-          lastName: data.lastName,
-          email: data.email,
-          phoneNumber: data.phone,
-          password: data.password
-        }
+      return await apiRequest("POST", "/api/auth/signup/employee", {
+        firstName: data.firstName,
+        lastName: data.lastName,
+        email: data.email,
+        phoneNumber: data.phone,
+        password: data.password
       });
     },
     onSuccess: (response: any) => {
@@ -189,19 +186,16 @@ export default function AuthPage() {
 
   const companyRegistration = useMutation({
     mutationFn: async (data: InsertCompany) => {
-      return await apiRequest("/api/auth/signup/company", {
-        method: "POST",
-        body: {
-          name: data.name,
-          description: data.description,
-          industryType: data.industry,
-          companySize: data.size,
-          location: data.address,
-          email: data.email,
-          password: data.password,
-          cin: data.cin,
-          panNumber: data.panNumber
-        }
+      return await apiRequest("POST", "/api/auth/signup/company", {
+        name: data.name,
+        description: data.description,
+        industryType: data.industry,
+        companySize: data.size,
+        location: data.address,
+        email: data.email,
+        password: data.password,
+        cin: data.cin,
+        panNumber: data.panNumber
       });
     },
     onSuccess: (response: any) => {
@@ -1234,10 +1228,7 @@ export default function AuthPage() {
                   <div className="space-y-3">
                     <Button
                       onClick={() => {
-                        apiRequest("/api/auth/resend-signup-verification", {
-                          method: "POST",
-                          body: { email: verificationEmail }
-                        })
+                        apiRequest("POST", "/api/auth/resend-signup-verification", { email: verificationEmail })
                         .then(() => {
                           toast({
                             title: "Verification Email Resent!",
