@@ -52,7 +52,7 @@ export function OTPEmailVerification({
       return response.json();
     },
     enabled: !!email,
-    refetchInterval: (status?.hasPendingVerification && countdown === 0) ? 5000 : undefined,
+    refetchInterval: 5000,
   });
 
   // Send OTP mutation

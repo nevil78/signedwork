@@ -986,9 +986,9 @@ export default function ProfessionalProfile() {
         preferredWorkType: (user.preferredWorkType as any) || "hybrid",
         location: user.location || "",
         website: user.website || "",
-        skills: Array.isArray(user.skills) ? user.skills : [],
-        specializations: Array.isArray(user.specializations) ? user.specializations : [],
-        languages: Array.isArray(user.languages) ? user.languages : [],
+        skills: (user.skills as string[]) || [] as string[],
+        specializations: (user.specializations as string[]) || [] as string[],
+        languages: (user.languages as string[]) || [] as string[],
       });
     }
   }, [userResponse?.user, editingProfile, profileForm]);
