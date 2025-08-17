@@ -986,9 +986,9 @@ export default function ProfessionalProfile() {
         preferredWorkType: (user.preferredWorkType as any) || "hybrid",
         location: user.location || "",
         website: user.website || "",
-        skills: (user.skills as string[]) || [],
-        specializations: (user.specializations as string[]) || [],
-        languages: (user.languages as string[]) || [],
+        skills: Array.isArray(user.skills) ? user.skills : [],
+        specializations: Array.isArray(user.specializations) ? user.specializations : [],
+        languages: Array.isArray(user.languages) ? user.languages : [],
       });
     }
   }, [userResponse?.user, editingProfile, profileForm]);
@@ -1397,7 +1397,7 @@ export default function ProfessionalProfile() {
                                   <div className="mt-3">
                                     <h5 className="text-sm font-medium text-gray-900 mb-2">Key Achievements:</h5>
                                     <ul className="text-sm text-gray-700 space-y-1">
-                                      {exp.achievements.map((achievement, index) => (
+                                      {(exp.achievements as string[]).map((achievement: string, index: number) => (
                                         <li key={index} className="flex items-start">
                                           <Trophy className="h-3 w-3 mr-2 mt-1 text-yellow-500 flex-shrink-0" />
                                           {achievement}
@@ -1420,7 +1420,7 @@ export default function ProfessionalProfile() {
                                     endDate: exp.endDate || "",
                                     current: exp.isCurrent || false,
                                     description: exp.description || "",
-                                    achievements: (exp.achievements as string[]) || [],
+                                    achievements: Array.isArray(exp.achievements) ? exp.achievements : [],
                                   });
                                 }}
                                 data-testid={`button-edit-experience-${exp.id}`}
