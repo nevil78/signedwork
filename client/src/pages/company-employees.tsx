@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
+import CompanyNavHeader from '@/components/company-nav-header';
 
 interface CompanyEmployee {
   id: string;
@@ -144,33 +145,8 @@ export default function CompanyEmployees() {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
-      {/* Header */}
-      <div className="bg-white dark:bg-slate-800 border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-4">
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={() => navigate('/company-dashboard')}
-                className="flex items-center"
-              >
-                <ChevronLeft className="w-4 h-4 mr-1" />
-                Back to Dashboard
-              </Button>
-              <div className="flex items-center">
-                <Users className="text-primary text-2xl mr-3" />
-                <div>
-                  <h1 className="text-xl font-bold text-slate-800 dark:text-slate-200">Manage Employees</h1>
-                  <p className="text-sm text-slate-600 dark:text-slate-400">
-                    Advanced employee management with status control
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      {/* Navigation Header */}
+      <CompanyNavHeader />
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

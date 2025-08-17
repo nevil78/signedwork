@@ -47,6 +47,7 @@ import {
   CheckCircle, XCircle, AlertCircle, Heart, ThumbsUp, Download
 } from 'lucide-react';
 import type { JobApplication, JobListing, Employee } from '@shared/schema';
+import CompanyNavHeader from '@/components/company-nav-header';
 
 interface ApplicationWithDetails extends JobApplication {
   job: JobListing;
@@ -153,47 +154,8 @@ export default function CompanyRecruiterPage() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-8">
-              <div className="flex items-center">
-                <Building2 className="text-primary text-2xl mr-3" />
-                <span className="text-xl font-bold text-slate-800">Company Dashboard</span>
-              </div>
-              {/* Page Navigation */}
-              <div className="flex space-x-1 bg-slate-100 rounded-lg p-1">
-                <Link to="/company-dashboard">
-                  <Button variant="ghost" size="sm">
-                    <Building2 className="w-4 h-4 mr-2" />
-                    Dashboard
-                  </Button>
-                </Link>
-                <Link to="/company-jobs">
-                  <Button variant="ghost" size="sm">
-                    <Briefcase className="w-4 h-4 mr-2" />
-                    Jobs
-                  </Button>
-                </Link>
-                <Link to="/company-recruiter">
-                  <Button variant="ghost" size="sm" className="bg-white shadow-sm text-blue-700">
-                    <Users className="w-4 h-4 mr-2" />
-                    Recruiter
-                  </Button>
-                </Link>
-              </div>
-            </div>
-            <Button
-              variant="outline"
-              onClick={() => logout.mutate()}
-              disabled={logout.isPending}
-            >
-              {logout.isPending ? "Logging out..." : "Logout"}
-            </Button>
-          </div>
-        </div>
-      </header>
+      {/* Navigation Header */}
+      <CompanyNavHeader />
 
       <div className="max-w-7xl mx-auto p-6 space-y-6">
         {/* Header Section */}

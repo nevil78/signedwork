@@ -30,6 +30,7 @@ import { Link } from 'wouter';
 import { useSocket } from '@/hooks/useSocket';
 import { FeedbackButton } from '@/components/FeedbackButton';
 import { CompanyVerificationEdit } from '@/components/CompanyVerificationEdit';
+import CompanyNavHeader from '@/components/company-nav-header';
 
 interface InvitationCode {
   code: string;
@@ -53,30 +54,7 @@ export default function CompanyDashboard() {
   const [location, navigate] = useLocation();
   const queryClient = useQueryClient();
 
-  // Logout mutation
-  const logout = useMutation({
-    mutationFn: async () => {
-      const response = await fetch("/api/auth/logout", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-      if (!response.ok) throw new Error("Failed to logout");
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.clear();
-      window.location.href = "/";
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to logout",
-        variant: "destructive",
-      });
-    },
-  });
+
 
   // Get current user - explicitly type the response structure
   const { data: authResponse, isLoading: isUserLoading } = useQuery<{user: Company}>({
@@ -166,87 +144,11 @@ export default function CompanyDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
-      <header className="bg-white dark:bg-gray-800 shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center">
-              <img src={signedworkLogo} alt="Signedwork" className="h-6 w-6 md:h-8 md:w-8 mr-2 md:mr-3" />
-              <div className="flex items-center">
-                <span className="text-base md:text-xl font-bold text-slate-800 dark:text-slate-200">Signedwork</span>
-                {user?.name && (
-                  <span className="text-sm md:text-lg font-medium text-slate-600 dark:text-slate-300 ml-2 hidden sm:inline">
-                    - {user.name}
-                  </span>
-                )}
-              </div>
-            </div>
-            <div className="flex items-center space-x-2 md:space-x-3">
-              {/* Feedback button - hidden on mobile */}
-              <div className="hidden md:block">
-                <FeedbackButton variant="outline" size="sm" />
-              </div>
-              
-              <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  className="text-gray-500 hover:text-gray-700"
-                  data-testid="button-company-account-menu"
-                >
-                  <Settings className="h-4 w-4 md:mr-2" />
-                  <span className="hidden md:inline">Account</span>
-                  <ChevronDown className="h-4 w-4 md:ml-2 ml-1" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                {/* Mobile-only company info */}
-                <div className="md:hidden px-2 py-2 border-b">
-                  <div className="text-sm font-medium text-gray-900">
-                    {user?.name || 'Company'}
-                  </div>
-                  {user?.companyId && (
-                    <div className="text-xs text-gray-500">ID: {user.companyId}</div>
-                  )}
-                </div>
-                
-                {/* Mobile-only feedback option */}
-                <div className="md:hidden">
-                  <DropdownMenuItem className="flex items-center p-0">
-                    <FeedbackButton 
-                      variant="ghost" 
-                      size="sm" 
-                      className="w-full justify-start p-2 h-auto font-normal text-sm"
-                      data-testid="mobile-company-feedback-button"
-                    />
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                </div>
-                
-                <DropdownMenuItem asChild>
-                  <Link href="/change-password" className="flex items-center cursor-pointer" data-testid="link-company-change-password">
-                    <Settings className="h-4 w-4 mr-2" />
-                    Change Password
-                  </Link>
-                </DropdownMenuItem>
-
-                <DropdownMenuSeparator />
-                <DropdownMenuItem 
-                  onClick={() => logout.mutate()}
-                  disabled={logout.isPending}
-                  className="text-red-600 focus:text-red-600 cursor-pointer"
-                  data-testid="menu-item-company-logout"
-                >
-                  <LogOut className="h-4 w-4 mr-2" />
-                  {logout.isPending ? "Logging out..." : "Logout"}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </div>
-        </div>
-      </header>
+      {/* Navigation Header */}
+      <CompanyNavHeader 
+        companyId={user?.companyId} 
+        companyName={user?.name} 
+      />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Welcome Section */}

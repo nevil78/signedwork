@@ -17,6 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Plus, Edit2, Eye, Users, Calendar, MapPin, Building2, Trash2, ArrowLeft, Briefcase } from "lucide-react";
 import { Link } from "wouter";
+import CompanyNavHeader from '@/components/company-nav-header';
 
 // Job posting form schema - aligned with actual database structure
 const jobPostingSchema = z.object({
@@ -192,41 +193,8 @@ export default function CompanyJobsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
-      <header className="bg-white dark:bg-gray-800 shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-8">
-              <div className="flex items-center">
-                <Building2 className="text-primary text-xl mr-3" />
-                <span className="text-lg font-bold text-slate-800 dark:text-slate-200">Company Dashboard</span>
-              </div>
-              {/* Page Navigation */}
-              <div className="flex space-x-1 bg-slate-100 dark:bg-slate-700 rounded-lg p-1">
-                <Link to="/company-dashboard">
-                  <Button variant="ghost" size="sm">
-                    <Building2 className="w-4 h-4 mr-2" />
-                    Dashboard
-                  </Button>
-                </Link>
-                <Link to="/company-jobs">
-                  <Button variant="ghost" size="sm" className="bg-white dark:bg-slate-600 shadow-sm text-green-700 dark:text-green-400">
-                    <Briefcase className="w-4 h-4 mr-2" />
-                    Jobs
-                  </Button>
-                </Link>
-                <Link to="/company-recruiter">
-                  <Button variant="ghost" size="sm">
-                    <Users className="w-4 h-4 mr-2" />
-                    Recruiter
-                  </Button>
-                </Link>
-              </div>
-            </div>
-            <div></div>
-          </div>
-        </div>
-      </header>
+      {/* Navigation Header */}
+      <CompanyNavHeader />
 
       <div className="max-w-7xl mx-auto p-6 space-y-6">
         {/* Header Section */}
