@@ -640,14 +640,14 @@ export default function JobDiscoveryPage() {
                       Filters
                     </Button>
                   </SheetTrigger>
-                  <SheetContent side="bottom" className="h-[80vh]">
-                    <SheetHeader>
+                  <SheetContent side="bottom" className="h-[85vh] max-h-[85vh] flex flex-col">
+                    <SheetHeader className="flex-shrink-0 pb-4">
                       <SheetTitle className="flex items-center gap-2">
                         <Filter className="h-5 w-5" />
                         Advanced Filters
                       </SheetTitle>
                     </SheetHeader>
-                    <div className="mt-6 overflow-y-auto">
+                    <div className="flex-1 overflow-y-auto px-1 pb-4">
                       <FiltersSidebar />
                     </div>
                   </SheetContent>
