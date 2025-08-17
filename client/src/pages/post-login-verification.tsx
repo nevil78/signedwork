@@ -1,13 +1,13 @@
-import { useState, useEffect } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Mail, Shield, CheckCircle, Clock, AlertCircle } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
-import logoPath from "@assets/ChatGPT Image Aug 13, 2025, 05_14_28 PM_1755085480087.png";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { CheckCircle, Mail, Clock, AlertTriangle } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 interface PostLoginVerificationProps {
   email: string;
@@ -15,66 +15,52 @@ interface PostLoginVerificationProps {
 }
 
 export default function PostLoginVerification({ email, onVerificationComplete }: PostLoginVerificationProps) {
-  const [otpCode, setOtpCode] = useState("");
+  const [verificationCode, setVerificationCode] = useState("");
+  const [step, setStep] = useState<"prompt" | "verify">("prompt");
   const [countdown, setCountdown] = useState(0);
-  const [showOTPInput, setShowOTPInput] = useState(false);
-  const { toast } = useToast();
 
-  // Check verification status
-  const { data: status, refetch: refetchStatus } = useQuery({
+  // Get verification status
+  const { data: verificationStatus, refetch: refetchStatus } = useQuery({
     queryKey: ["/api/post-login-verification/status", email],
     queryFn: async () => {
       const response = await apiRequest("GET", `/api/post-login-verification/status?email=${encodeURIComponent(email)}`);
       return response.json();
     },
-    refetchInterval: 3000,
+    refetchInterval: step === "verify" ? 5000 : false,
   });
 
   // Send OTP mutation
   const sendOTPMutation = useMutation({
     mutationFn: async () => {
-      return await apiRequest("POST", "/api/post-login-verification/send-otp", { email });
+      const response = await apiRequest("POST", "/api/post-login-verification/send-otp", {
+        email,
+      });
+      return response.json();
     },
     onSuccess: () => {
-      setShowOTPInput(true);
+      setStep("verify");
       setCountdown(60);
-      toast({
-        title: "Verification code sent",
-        description: "Check your email for the 6-digit verification code.",
-      });
       refetchStatus();
     },
     onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to send verification code",
-        variant: "destructive",
-      });
+      console.error("Send OTP error:", error);
     },
   });
 
   // Verify OTP mutation
   const verifyOTPMutation = useMutation({
     mutationFn: async (code: string) => {
-      return await apiRequest("POST", "/api/post-login-verification/verify-otp", {
+      const response = await apiRequest("POST", "/api/post-login-verification/verify-otp", {
         email,
         code,
       });
+      return response.json();
     },
     onSuccess: () => {
-      toast({
-        title: "Email verified successfully!",
-        description: "Your email has been verified and locked for security.",
-      });
       onVerificationComplete();
     },
     onError: (error: any) => {
-      toast({
-        title: "Verification failed",
-        description: error.message || "Invalid or expired verification code",
-        variant: "destructive",
-      });
-      setOtpCode("");
+      console.error("Verify OTP error:", error);
     },
   });
 
@@ -88,170 +74,148 @@ export default function PostLoginVerification({ email, onVerificationComplete }:
 
   // Auto-submit when 6 digits entered
   useEffect(() => {
-    if (otpCode.length === 6 && /^\d{6}$/.test(otpCode)) {
-      verifyOTPMutation.mutate(otpCode);
+    if (verificationCode.length === 6 && step === "verify") {
+      verifyOTPMutation.mutate(verificationCode);
     }
-  }, [otpCode]);
+  }, [verificationCode, step]);
 
   const handleSendOTP = () => {
     sendOTPMutation.mutate();
   };
 
-  const handleVerifyOTP = () => {
-    if (otpCode.length === 6) {
-      verifyOTPMutation.mutate(otpCode);
-    }
+  const handleResendOTP = () => {
+    sendOTPMutation.mutate();
+    setCountdown(60);
   };
 
-  // If already verified, don't show this component
-  if (status?.isVerified) {
-    return null;
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  if (verificationStatus?.isVerified) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <div className="mx-auto w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mb-4">
+              <CheckCircle className="w-6 h-6 text-green-600" />
+            </div>
+            <CardTitle className="text-xl">Email Verified!</CardTitle>
+            <CardDescription>Your email has been successfully verified</CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <Card className="w-full max-w-md">
-        <CardHeader className="text-center space-y-4">
-          <div className="flex justify-center">
-            <img 
-              src={logoPath} 
-              alt="Signedwork Logo" 
-              className="h-16 w-16 object-contain"
-            />
+        <CardHeader className="text-center">
+          <div className="mx-auto w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-4">
+            <Mail className="w-6 h-6 text-blue-600" />
           </div>
-          <CardTitle className="text-2xl font-bold text-gray-900">
-            Verify Your Email
-          </CardTitle>
-          <CardDescription className="text-gray-600">
-            To secure your account, please verify your email address: <strong>{email}</strong>
+          <CardTitle className="text-xl">Verify Your Email</CardTitle>
+          <CardDescription>
+            Please verify your email address to continue using Signedwork
           </CardDescription>
         </CardHeader>
-
+        
         <CardContent className="space-y-6">
-          {!showOTPInput ? (
-            // Initial verification prompt
+          <div className="text-center">
+            <p className="text-sm text-gray-600 mb-2">Email Address:</p>
+            <Badge variant="secondary" className="text-sm">{email}</Badge>
+          </div>
+
+          {step === "prompt" && (
             <div className="space-y-4">
               <Alert>
-                <Shield className="h-4 w-4" />
+                <AlertTriangle className="h-4 w-4" />
                 <AlertDescription>
-                  For security, your email address needs to be verified before you can access all features.
+                  Your email address needs to be verified for security purposes. Click the button below to receive a verification code.
                 </AlertDescription>
               </Alert>
-
-              <Button
+              
+              <Button 
                 onClick={handleSendOTP}
-                disabled={sendOTPMutation.isPending || countdown > 0}
+                disabled={sendOTPMutation.isPending}
                 className="w-full"
-                data-testid="button-verify-email"
+                data-testid="button-send-verification"
               >
-                {sendOTPMutation.isPending ? (
-                  <>
-                    <Clock className="h-4 w-4 mr-2 animate-spin" />
-                    Sending Code...
-                  </>
-                ) : countdown > 0 ? (
-                  <>
-                    <Clock className="h-4 w-4 mr-2" />
-                    Wait {countdown}s
-                  </>
-                ) : (
-                  <>
-                    <Mail className="h-4 w-4 mr-2" />
-                    Verify Email
-                  </>
-                )}
+                {sendOTPMutation.isPending ? "Sending..." : "Verify Email"}
               </Button>
-
-              <p className="text-sm text-gray-500 text-center">
-                A 6-digit verification code will be sent to your email address.
-              </p>
             </div>
-          ) : (
-            // OTP input form
+          )}
+
+          {step === "verify" && (
             <div className="space-y-4">
               <Alert>
-                <CheckCircle className="h-4 w-4" />
+                <Mail className="h-4 w-4" />
                 <AlertDescription>
-                  Verification code sent to your email. Check your inbox and enter the 6-digit code below.
+                  A 6-digit verification code has been sent to your email. Please check your inbox and spam folder.
                 </AlertDescription>
               </Alert>
 
-              <div className="space-y-3">
-                <label htmlFor="otp" className="block text-sm font-medium text-gray-700">
-                  Verification Code
-                </label>
+              <div className="space-y-2">
+                <Label htmlFor="verification-code">Verification Code</Label>
                 <Input
-                  id="otp"
+                  id="verification-code"
                   type="text"
-                  value={otpCode}
+                  value={verificationCode}
                   onChange={(e) => {
-                    const value = e.target.value.replace(/\D/g, "").slice(0, 6);
-                    setOtpCode(value);
+                    const value = e.target.value.replace(/\D/g, '').substring(0, 6);
+                    setVerificationCode(value);
                   }}
                   placeholder="Enter 6-digit code"
                   className="text-center text-lg tracking-widest"
                   maxLength={6}
-                  autoComplete="one-time-code"
-                  data-testid="input-otp-code"
+                  disabled={verifyOTPMutation.isPending}
+                  data-testid="input-verification-code"
                 />
               </div>
 
-              {status?.hasPendingVerification && (
-                <Alert variant="default">
-                  <AlertCircle className="h-4 w-4" />
+              {verifyOTPMutation.error && (
+                <Alert variant="destructive">
                   <AlertDescription>
-                    Code expires in: {Math.max(0, Math.ceil((status.expiresAt - Date.now()) / 1000 / 60))} minutes
+                    {(verifyOTPMutation.error as any)?.message || "Invalid verification code. Please try again."}
                   </AlertDescription>
                 </Alert>
               )}
 
-              <div className="flex gap-3">
-                <Button
-                  onClick={handleVerifyOTP}
-                  disabled={verifyOTPMutation.isPending || otpCode.length !== 6}
-                  className="flex-1"
-                  data-testid="button-verify-otp"
-                >
-                  {verifyOTPMutation.isPending ? (
-                    <>
-                      <Clock className="h-4 w-4 mr-2 animate-spin" />
-                      Verifying...
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                      Verify Code
-                    </>
-                  )}
-                </Button>
-
-                <Button
-                  variant="outline"
-                  onClick={handleSendOTP}
-                  disabled={sendOTPMutation.isPending || countdown > 0}
-                  data-testid="button-resend-otp"
-                >
-                  {sendOTPMutation.isPending ? (
-                    "Sending..."
-                  ) : countdown > 0 ? (
-                    `${countdown}s`
-                  ) : (
-                    "Resend"
-                  )}
-                </Button>
+              <div className="flex items-center justify-between text-sm text-gray-600">
+                <div className="flex items-center gap-1">
+                  <Clock className="w-4 h-4" />
+                  <span>Code expires in 10 minutes</span>
+                </div>
+                
+                {verificationStatus?.hasPendingVerification && !verificationStatus?.canResend && (
+                  <span>Resend in {verificationStatus.timeUntilResend}s</span>
+                )}
               </div>
 
-              <p className="text-sm text-gray-500 text-center">
-                The code will auto-submit when you enter all 6 digits.
-              </p>
+              {verificationStatus?.canResend && (
+                <Button
+                  variant="outline"
+                  onClick={handleResendOTP}
+                  disabled={sendOTPMutation.isPending}
+                  className="w-full"
+                  data-testid="button-resend-code"
+                >
+                  {sendOTPMutation.isPending ? "Sending..." : "Resend Code"}
+                </Button>
+              )}
+
+              {sendOTPMutation.error && (
+                <Alert variant="destructive">
+                  <AlertDescription>
+                    {(sendOTPMutation.error as any)?.message || "Failed to send verification code. Please try again."}
+                  </AlertDescription>
+                </Alert>
+              )}
             </div>
           )}
-
-          <div className="pt-4 border-t">
-            <p className="text-xs text-gray-500 text-center">
-              Once verified, your email will be locked for security and cannot be changed without additional verification.
-            </p>
-          </div>
         </CardContent>
       </Card>
     </div>

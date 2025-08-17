@@ -42,7 +42,7 @@ export default function PostLoginVerificationWrapper({ children }: PostLoginVeri
   }
 
   // If user is authenticated but email not verified, show verification flow
-  if ((authUser as any).user && verificationStatus && !verificationStatus.isVerified) {
+  if ((authUser as any)?.user && verificationStatus && !verificationStatus.isVerified) {
     return (
       <PostLoginVerification
         email={(authUser as any).user.email}

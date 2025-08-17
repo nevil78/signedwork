@@ -4113,10 +4113,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Email parameter required" });
       }
       
-      const otpEmailService = new OTPEmailService();
-      const status = await otpEmailService.getVerificationStatus(email);
+      // Check if user's email is already verified in main database
+      const employee = await storage.getEmployeeByEmail(email);
+      const company = await storage.getCompanyByEmail(email);
       
-      res.json(status);
+      const isVerified = employee?.emailVerified || company?.emailVerified || false;
+      
+      if (isVerified) {
+        return res.json({
+          isVerified: true,
+          hasPendingVerification: false,
+          canResend: false,
+          timeUntilResend: 0
+        });
+      }
+      
+      // Check if there's a pending verification
+      const otpEmailService = new OTPEmailService();
+      const pendingStatus = await otpEmailService.checkPendingVerification(email);
+      
+      res.json({
+        isVerified: false,
+        hasPendingVerification: pendingStatus.hasPending,
+        canResend: pendingStatus.canResend,
+        timeUntilResend: pendingStatus.timeUntilResend,
+        expiresAt: pendingStatus.expiresAt
+      });
     } catch (error) {
       console.error("Get post-login verification status error:", error);
       res.status(500).json({ message: "Failed to get verification status" });
@@ -4138,24 +4160,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const otpEmailService = new OTPEmailService();
       
-      // Check if already verified
-      const status = await otpEmailService.getVerificationStatus(email);
-      if (status.isVerified) {
+      // Check if already verified in main database
+      const employee = await storage.getEmployeeByEmail(email);
+      const company = await storage.getCompanyByEmail(email);
+      const isVerified = employee?.emailVerified || company?.emailVerified || false;
+      
+      if (isVerified) {
         return res.status(400).json({ message: "Email already verified" });
       }
       
       // Check cooldown
-      if (status.hasPendingVerification && !status.canResend) {
+      const pendingStatus = await otpEmailService.checkPendingVerification(email);
+      if (pendingStatus.hasPending && !pendingStatus.canResend) {
         return res.status(429).json({ 
-          message: `Please wait ${status.timeUntilResend} seconds before requesting another code` 
+          message: `Please wait ${pendingStatus.timeUntilResend} seconds before requesting another code` 
         });
       }
       
-      // Send OTP
-      await otpEmailService.sendVerificationOTP(email, {
-        name: `${sessionUser.firstName || ''} ${sessionUser.lastName || ''}`.trim() || 'User',
-        subject: "Verify Your Email - Signedwork"
-      });
+      // Send OTP using static method
+      await OTPEmailService.sendEmailVerificationOTP(sessionUser.id, email, sessionUser.type);
       
       res.json({ message: "Verification code sent successfully" });
     } catch (error: any) {
@@ -4183,10 +4206,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const otpEmailService = new OTPEmailService();
       
-      // Verify OTP
-      const isValid = await otpEmailService.verifyOTP(email, code);
-      if (!isValid) {
-        return res.status(400).json({ message: "Invalid or expired verification code" });
+      // Verify OTP using static method
+      const verificationResult = await OTPEmailService.verifyEmailOTP(email, code);
+      if (!verificationResult.success) {
+        return res.status(400).json({ message: verificationResult.message });
       }
       
       // Mark email as verified and lock it

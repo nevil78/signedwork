@@ -60,6 +60,70 @@ export class OTPEmailService {
     });
   }
 
+  // Check if there's a pending verification (without triggering new OTP)
+  async checkPendingVerification(email: string): Promise<{
+    hasPending: boolean;
+    canResend: boolean;
+    timeUntilResend: number;
+    expiresAt?: number;
+  }> {
+    try {
+      const existingEmail = await db.select()
+        .from(emails)
+        .where(eq(emails.email, email))
+        .limit(1);
+
+      if (!existingEmail.length) {
+        return {
+          hasPending: false,
+          canResend: true,
+          timeUntilResend: 0
+        };
+      }
+
+      const emailRecord = existingEmail[0];
+      const now = new Date();
+
+      // If already verified, no pending verification
+      if (emailRecord.verifiedAt) {
+        return {
+          hasPending: false,
+          canResend: false,
+          timeUntilResend: 0
+        };
+      }
+
+      // Check if there's a valid OTP
+      if (emailRecord.verificationToken && emailRecord.verificationExpiresAt) {
+        const isExpired = now > emailRecord.verificationExpiresAt;
+        const timeSinceGenerated = now.getTime() - (emailRecord.createdAt?.getTime() || 0);
+        const canResend = timeSinceGenerated > 60000; // 60 seconds cooldown
+
+        if (!isExpired) {
+          return {
+            hasPending: true,
+            canResend,
+            timeUntilResend: Math.max(0, 60 - Math.floor(timeSinceGenerated / 1000)),
+            expiresAt: emailRecord.verificationExpiresAt.getTime()
+          };
+        }
+      }
+
+      return {
+        hasPending: false,
+        canResend: true,
+        timeUntilResend: 0
+      };
+    } catch (error) {
+      console.error("Check pending verification error:", error);
+      return {
+        hasPending: false,
+        canResend: true,
+        timeUntilResend: 0
+      };
+    }
+  }
+
   // Send OTP for email verification
   static async sendEmailVerificationOTP(
     userId: string, 
@@ -144,13 +208,10 @@ export class OTPEmailService {
     }
   }
 
-  // Verify OTP and activate email
+  // Verify OTP and activate email (simplified version for post-login verification)
   static async verifyEmailOTP(
-    userId: string,
     email: string,
-    otp: string,
-    ipAddress?: string,
-    userAgent?: string
+    otp: string
   ): Promise<{ success: boolean; message: string }> {
     try {
       const now = new Date();
@@ -159,7 +220,6 @@ export class OTPEmailService {
       const emailRecord = await db.select()
         .from(emails)
         .where(and(
-          eq(emails.userId, userId),
           eq(emails.email, email),
           eq(emails.verificationToken, otp),
           sql`${emails.verificationExpiresAt} > ${now}`
@@ -187,18 +247,18 @@ export class OTPEmailService {
           })
           .where(eq(emails.id, email_record.id));
 
-        // Update user's primary email
+        // Update user's email verification status
         if (await this.isEmployee(email_record.userId)) {
           await tx.update(employees)
             .set({ 
-              email: email,
+              emailVerified: true,
               updatedAt: now,
             })
             .where(eq(employees.id, email_record.userId));
         } else {
           await tx.update(companies)
             .set({ 
-              email: email,
+              emailVerified: true,
               updatedAt: now,
             })
             .where(eq(companies.id, email_record.userId));
@@ -212,8 +272,6 @@ export class OTPEmailService {
           changeType: 'otp_verification_completed',
           status: 'verified',
           verificationToken: otp,
-          ipAddress,
-          userAgent,
         });
 
         return { 
