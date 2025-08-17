@@ -21,6 +21,7 @@ import { sendPasswordResetOTP } from "./sendgrid";
 import { fromZodError } from "zod-validation-error";
 import { setupGoogleAuth } from "./googleAuth";
 import { SecureEmailService } from "./secureEmailService";
+import { sendEmail } from "./sendgrid";
 import { 
   emailChangeRequestSchema, 
   emailVerificationSchema, 
@@ -132,80 +133,90 @@ export async function registerRoutes(app: Express): Promise<Server> {
     done(null, user);
   });
 
-  // Employee registration
+  // Employee registration with delayed email verification
   app.post("/api/auth/register/employee", async (req, res) => {
     try {
-      const validatedData = insertEmployeeSchema.parse(req.body);
+      const { email, password, firstName, lastName, phoneNumber } = req.body;
       
-      // Check if employee already exists (including deactivated accounts)
-      const existingEmployee = await storage.getEmployeeByEmail(validatedData.email);
-      if (existingEmployee) {
-        if (existingEmployee.isActive === false) {
-          return res.status(403).json({ 
-            message: "This email is associated with a deactivated account. Please contact support for account reactivation.",
-            field: "email"
-          });
-        } else {
-          return res.status(400).json({ 
-            message: "An account with this email already exists",
-            field: "email"
-          });
-        }
-      }
-      
-      const employee = await storage.createEmployee(validatedData);
-      
-      // Remove password from response
-      const { password, ...employeeResponse } = employee;
-      
-      res.status(201).json({ 
-        message: "Employee account created successfully! You can now log in.",
-        employee: employeeResponse
-      });
-    } catch (error: any) {
-      if (error.name === "ZodError") {
-        const validationError = fromZodError(error);
+      if (!email || !password || !firstName || !lastName) {
         return res.status(400).json({ 
-          message: validationError.message,
-          errors: error.errors
+          message: "Email, password, first name, and last name are required" 
         });
       }
+
+      // Create user with unverified email using SecureEmailService
+      const { user, emailRecord } = await SecureEmailService.createUserWithUnverifiedEmail(
+        email, 
+        password, 
+        'employee'
+      );
+
+      // Create employee profile
+      const employeeData = {
+        id: user.id,
+        email: user.primaryEmail,
+        password: user.passwordHash,
+        firstName,
+        lastName,
+        phoneNumber: phoneNumber || null,
+      };
+
+      const employee = await storage.createEmployee(employeeData);
       
+      // Remove password from response
+      const { password: _, ...employeeResponse } = employee;
+      
+      res.status(201).json({ 
+        message: "Account created successfully! You can edit your email freely until verification is required for critical actions like job applications.",
+        employee: employeeResponse,
+        emailStatus: {
+          isVerified: false,
+          canEditFreely: true,
+          email: emailRecord.email
+        }
+      });
+    } catch (error: any) {
       console.error("Employee registration error:", error);
-      res.status(500).json({ message: "Failed to create employee account" });
+      res.status(500).json({ 
+        message: error.message || "Failed to create employee account" 
+      });
     }
   });
 
-  // Company registration
+  // Company registration with delayed email verification
   app.post("/api/auth/register/company", async (req, res) => {
     try {
-      const validatedData = insertCompanySchema.parse(req.body);
+      const { email, password, name, description, industryType, companySize, location, cin, panNumber } = req.body;
       
-      // Check if company already exists (including deactivated accounts)
-      const existingCompany = await storage.getCompanyByEmail(validatedData.email);
-      if (existingCompany) {
-        if (existingCompany.isActive === false) {
-          return res.status(403).json({ 
-            message: "This email is associated with a deactivated account. Please contact support for account reactivation.",
-            field: "email"
-          });
-        } else {
-          return res.status(400).json({ 
-            message: "An account with this email already exists",
-            field: "email"
-          });
-        }
+      if (!email || !password || !name || !industryType) {
+        return res.status(400).json({ 
+          message: "Email, password, company name, and industry type are required" 
+        });
       }
-      
-      // Handle empty CIN and PAN strings - convert to undefined for database
+
+      // Create user with unverified email using SecureEmailService
+      const { user, emailRecord } = await SecureEmailService.createUserWithUnverifiedEmail(
+        email, 
+        password, 
+        'company'
+      );
+
+      // Handle empty CIN and PAN strings
       const companyData = {
-        ...validatedData,
-        cin: validatedData.cin && validatedData.cin.trim() ? validatedData.cin.trim() : undefined,
-        panNumber: validatedData.panNumber && validatedData.panNumber.trim() ? validatedData.panNumber.trim() : undefined,
-        cinVerificationStatus: validatedData.cin && validatedData.cin.trim() ? "pending" as const : "pending" as const,
-        panVerificationStatus: validatedData.panNumber && validatedData.panNumber.trim() ? "pending" as const : "pending" as const,
+        id: user.id,
+        email: user.primaryEmail,
+        password: user.passwordHash,
+        name,
+        description: description || null,
+        industryType,
+        companySize: companySize || null,
+        location: location || null,
+        cin: cin && cin.trim() ? cin.trim() : undefined,
+        panNumber: panNumber && panNumber.trim() ? panNumber.trim() : undefined,
+        cinVerificationStatus: "pending" as const,
+        panVerificationStatus: "pending" as const,
       };
-      
+
       const company = await storage.createCompany(companyData);
       
       // Emit real-time updates for admin panel if CIN or PAN is provided
@@ -228,34 +239,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Remove password from response
-      const { password, ...companyResponse } = company;
+      const { password: _, ...companyResponse } = company;
       
-      let message = "Company account created successfully!";
+      let message = "Company account created successfully! You can edit your email freely until verification is required.";
       if (company.cin && company.panNumber) {
         message += " CIN and PAN verification are pending.";
       } else if (company.cin) {
         message += " CIN verification is pending.";
       } else if (company.panNumber) {
         message += " PAN verification is pending.";
-      } else {
-        message += " You can add CIN/PAN later for verification.";
       }
       
       res.status(201).json({ 
         message,
-        company: companyResponse
+        company: companyResponse,
+        emailStatus: {
+          isVerified: false,
+          canEditFreely: true,
+          email: emailRecord.email
+        }
       });
     } catch (error: any) {
-      if (error.name === "ZodError") {
-        const validationError = fromZodError(error);
-        return res.status(400).json({ 
-          message: validationError.message,
-          errors: error.errors
-        });
-      }
-      
       console.error("Company registration error:", error);
-      res.status(500).json({ message: "Failed to create company account" });
+      res.status(500).json({ 
+        message: error.message || "Failed to create company account" 
+      });
     }
   });
 
@@ -4186,6 +4194,95 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       console.error("Verify email change error:", error);
       res.status(500).json({ message: "Failed to verify email change" });
+    }
+  });
+
+  // Delayed Email Verification Routes
+  app.get("/api/secure-email/verification-status", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    if (!sessionUser) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    try {
+      const status = await SecureEmailService.checkEmailVerificationStatus(sessionUser.id);
+      res.json(status);
+    } catch (error) {
+      console.error("Get verification status error:", error);
+      res.status(500).json({ message: "Failed to get verification status" });
+    }
+  });
+
+  app.post("/api/secure-email/require-verification", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    if (!sessionUser) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    try {
+      const result = await SecureEmailService.requireEmailVerification(sessionUser.id);
+      res.json(result);
+    } catch (error) {
+      console.error("Require verification error:", error);
+      res.status(500).json({ message: error.message || "Failed to require verification" });
+    }
+  });
+
+  app.post("/api/secure-email/update-unverified", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    if (!sessionUser) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    try {
+      const { newEmail } = req.body;
+      if (!newEmail) {
+        return res.status(400).json({ message: "New email is required" });
+      }
+
+      const ipAddress = req.ip;
+      const userAgent = req.get('User-Agent');
+      
+      const updatedEmail = await SecureEmailService.updateUnverifiedEmail(
+        sessionUser.id, 
+        newEmail, 
+        ipAddress, 
+        userAgent
+      );
+      
+      res.json(updatedEmail);
+    } catch (error) {
+      console.error("Update unverified email error:", error);
+      res.status(500).json({ message: error.message || "Failed to update email" });
+    }
+  });
+
+  app.post("/api/secure-email/verify-delayed", async (req, res) => {
+    try {
+      const { verificationToken, email } = req.body;
+      
+      if (!verificationToken || !email) {
+        return res.status(400).json({ message: "Verification token and email are required" });
+      }
+
+      const ipAddress = req.ip;
+      const userAgent = req.get('User-Agent');
+      
+      const result = await SecureEmailService.verifyEmailAndMakePrimary(
+        verificationToken, 
+        email, 
+        ipAddress, 
+        userAgent
+      );
+      
+      if (result.success) {
+        res.json({ message: "Email verified successfully", user: result.user });
+      } else {
+        res.status(400).json({ message: "Invalid or expired verification token" });
+      }
+    } catch (error) {
+      console.error("Verify delayed email error:", error);
+      res.status(500).json({ message: "Failed to verify email" });
     }
   });
 

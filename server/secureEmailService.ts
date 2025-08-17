@@ -1,6 +1,6 @@
 import { users, emails, emailChangeLogs, type User, type Email, type EmailChangeLog } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, sql, or, lt } from "drizzle-orm";
+import { eq, and, sql, or, lt, ne } from "drizzle-orm";
 import { sendEmail } from "./sendgrid";
 import crypto from "crypto";
 
@@ -56,44 +56,206 @@ export class SecureEmailService {
     return crypto.randomUUID();
   }
 
-  // Create a new user with primary email
-  static async createUserWithPrimaryEmail(
+  // Create a new user with unverified email (delayed verification)
+  static async createUserWithUnverifiedEmail(
     email: string, 
     passwordHash: string, 
     accountType: 'employee' | 'company'
   ): Promise<{ user: User; emailRecord: Email }> {
     
-    // Check email availability first
-    const availability = await this.isEmailAvailableForSignup(email);
-    if (!availability.available) {
-      throw new Error(`Cannot register with this email: ${availability.reason}`);
+    // Check if email is already verified by another user
+    const existingVerified = await db.select()
+      .from(emails)
+      .where(and(
+        eq(emails.email, email),
+        sql`${emails.verifiedAt} IS NOT NULL`
+      ))
+      .limit(1);
+
+    if (existingVerified.length > 0) {
+      throw new Error("Email is already verified and in use by another account");
     }
 
-    const verificationToken = this.generateVerificationToken();
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
-
     return await db.transaction(async (tx) => {
-      // Create user
+      // Create user without primary email
       const [user] = await tx.insert(users).values({
-        primaryEmail: email,
+        primaryEmail: email, // This will be updated once verified
         passwordHash,
         accountType,
       }).returning();
 
-      // Create primary email record (pending verification)
+      // Remove any existing unverified entries for this email
+      await tx.delete(emails)
+        .where(and(
+          eq(emails.email, email),
+          sql`${emails.verifiedAt} IS NULL`
+        ));
+
+      // Create unverified email record
       const [emailRecord] = await tx.insert(emails).values({
         userId: user.id,
         email,
-        status: "pending_verification",
-        verificationToken,
-        verificationExpiresAt: expiresAt,
+        status: "unverified",
       }).returning();
+
+      // Log the email initialization
+      await tx.insert(emailChangeLogs).values({
+        userId: user.id,
+        oldEmail: "",
+        newEmail: email,
+        changeType: 'signup_unverified',
+        status: 'pending',
+      });
 
       return { user, emailRecord };
     });
   }
 
-  // Verify email and make it primary
+  // Update unverified email (allowed until first verification)
+  static async updateUnverifiedEmail(
+    userId: string, 
+    newEmail: string, 
+    ipAddress?: string, 
+    userAgent?: string
+  ): Promise<Email> {
+    // Check if user has any verified emails
+    const verifiedEmails = await db.select()
+      .from(emails)
+      .where(and(
+        eq(emails.userId, userId),
+        sql`${emails.verifiedAt} IS NOT NULL`
+      ))
+      .limit(1);
+
+    if (verifiedEmails.length > 0) {
+      throw new Error("Cannot freely edit email - you have verified emails. Use secure change flow instead.");
+    }
+
+    // Check if new email is already verified by another user
+    const existingVerified = await db.select()
+      .from(emails)
+      .where(and(
+        eq(emails.email, newEmail),
+        sql`${emails.verifiedAt} IS NOT NULL`,
+        ne(emails.userId, userId)
+      ))
+      .limit(1);
+
+    if (existingVerified.length > 0) {
+      throw new Error("Email is already verified and in use by another account");
+    }
+
+    return await db.transaction(async (tx) => {
+      // Get current unverified email
+      const currentEmail = await tx.select()
+        .from(emails)
+        .where(and(
+          eq(emails.userId, userId),
+          sql`${emails.verifiedAt} IS NULL`
+        ))
+        .limit(1);
+
+      const oldEmail = currentEmail[0]?.email;
+
+      // Remove any existing unverified entries for this email
+      await tx.delete(emails)
+        .where(and(
+          eq(emails.email, newEmail),
+          sql`${emails.verifiedAt} IS NULL`
+        ));
+
+      // Update the user's unverified email
+      const [updatedEmail] = await tx.update(emails)
+        .set({
+          email: newEmail,
+          updatedAt: new Date(),
+        })
+        .where(and(
+          eq(emails.userId, userId),
+          sql`${emails.verifiedAt} IS NULL`
+        ))
+        .returning();
+
+      // Update user's primary email field
+      await tx.update(users)
+        .set({ primaryEmail: newEmail })
+        .where(eq(users.id, userId));
+
+      // Log the email update
+      await tx.insert(emailChangeLogs).values({
+        userId,
+        oldEmail: oldEmail || "",
+        newEmail,
+        changeType: 'update_unverified',
+        status: 'pending',
+        ipAddress,
+        userAgent,
+      });
+
+      return updatedEmail;
+    });
+  }
+
+  // Trigger email verification when required (before critical actions)
+  static async requireEmailVerification(userId: string): Promise<{ requiresVerification: boolean; verificationToken?: string }> {
+    // Check if user has any verified emails
+    const verifiedEmails = await db.select()
+      .from(emails)
+      .where(and(
+        eq(emails.userId, userId),
+        sql`${emails.verifiedAt} IS NOT NULL`
+      ))
+      .limit(1);
+
+    if (verifiedEmails.length > 0) {
+      return { requiresVerification: false };
+    }
+
+    // Get user's current unverified email
+    const unverifiedEmail = await db.select()
+      .from(emails)
+      .where(and(
+        eq(emails.userId, userId),
+        sql`${emails.verifiedAt} IS NULL`
+      ))
+      .limit(1);
+
+    if (unverifiedEmail.length === 0) {
+      throw new Error("No email found for user");
+    }
+
+    const emailRecord = unverifiedEmail[0];
+    
+    // Generate verification token and expiry
+    const verificationToken = this.generateVerificationToken();
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+    // Update email with verification token
+    await db.update(emails)
+      .set({
+        verificationToken,
+        verificationExpiresAt: expiresAt,
+        updatedAt: new Date(),
+      })
+      .where(eq(emails.id, emailRecord.id));
+
+    // Send verification email
+    await this.sendDelayedVerificationEmail(emailRecord.email, verificationToken);
+
+    // Log the verification requirement
+    await db.insert(emailChangeLogs).values({
+      userId,
+      oldEmail: emailRecord.email,
+      newEmail: emailRecord.email,
+      changeType: 'verification_required',
+      status: 'pending',
+      verificationToken,
+    });
+
+    return { requiresVerification: true, verificationToken };
+  }
+
+  // Verify email and make it primary (first-time verification)
   static async verifyEmailAndMakePrimary(
     verificationToken: string, 
     email: string,
@@ -111,7 +273,7 @@ export class SecureEmailService {
           and(
             eq(emails.verificationToken, verificationToken),
             eq(emails.email, email),
-            eq(emails.status, "pending_verification"),
+            sql`${emails.verifiedAt} IS NULL`,
             sql`${emails.verificationExpiresAt} > ${now}`
           )
         )
@@ -371,6 +533,36 @@ export class SecureEmailService {
           <li>Your old email will be detached and cannot be used for 30 days</li>
         </ul>
         <p style="color: #666; font-size: 14px;">If you didn't request this change, please contact our support immediately.</p>
+      </div>
+    `;
+
+    await sendEmail({
+      to: email,
+      from: "noreply@signedwork.com",
+      subject,
+      html,
+    });
+  }
+
+  // Send delayed verification email (when verification is required)
+  private static async sendDelayedVerificationEmail(email: string, token: string): Promise<void> {
+    const verificationUrl = `${process.env.BASE_URL || 'http://localhost:5000'}/verify-email?token=${token}&email=${encodeURIComponent(email)}`;
+    
+    const subject = "Verify Your Email Address - Signedwork";
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #2563eb;">Email Verification Required</h2>
+        <p>To proceed with critical actions on Signedwork (applying to jobs, submitting work, receiving payments), you need to verify your email address.</p>
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${verificationUrl}" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">Verify Email Address</a>
+        </div>
+        <p><strong>Important:</strong></p>
+        <ul>
+          <li>This link expires in 24 hours</li>
+          <li>Once verified, this email becomes your locked primary email</li>
+          <li>Changes to verified emails require password + 2FA confirmation</li>
+        </ul>
+        <p style="color: #666; font-size: 14px;">If you didn't request this verification, please ignore this email.</p>
       </div>
     `;
 
