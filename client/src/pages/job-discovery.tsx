@@ -622,15 +622,17 @@ export default function JobDiscoveryPage() {
           
           <Card className="border-l-4 border-l-blue-500">
             <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <TrendingUp className="h-8 w-8 text-blue-600" />
-                  <div>
-                    <h3 className="font-semibold">Trending Skills</h3>
-                    <p className="text-sm text-muted-foreground">Personalized recommendations</p>
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <TrendingUp className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600 flex-shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <h3 className="font-semibold text-sm sm:text-base">Trending Skills</h3>
+                    <p className="text-xs sm:text-sm text-muted-foreground truncate">Personalized recommendations</p>
                   </div>
                 </div>
-                <TrendingSkillsDialog />
+                <div className="flex-shrink-0">
+                  <TrendingSkillsDialog />
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -1062,7 +1064,7 @@ function TrendingSkillsDialog() {
   
   // Trending skills query with filters
   const { data: skills = [], isLoading } = useQuery({
-    queryKey: ['/api/skills/trending', { personalized: true, filter: selectedFilter }],
+    queryKey: [`/api/skills/trending?personalized=true&filter=${selectedFilter}`],
     enabled: open
   });
 
@@ -1123,9 +1125,15 @@ function TrendingSkillsDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700">
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          className="text-blue-600 hover:text-blue-700 flex-shrink-0 whitespace-nowrap px-2 sm:px-3"
+          data-testid="button-view-all-trending-skills"
+        >
           <TrendingUp className="h-4 w-4 mr-1" />
-          View All
+          <span className="hidden sm:inline">View All</span>
+          <span className="sm:hidden">All</span>
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
