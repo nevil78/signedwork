@@ -1,6 +1,7 @@
 import { 
   employees, companies, experiences, educations, certifications, projects, endorsements, workEntries, employeeCompanies,
   companyInvitationCodes, companyEmployees, jobListings, jobApplications, savedJobs, jobAlerts, profileViews, admins, emailVerifications, userFeedback, loginSessions,
+  skills, skillTrends, userSkillPreferences, skillAnalytics,
   type Employee, type Company, type InsertEmployee, type InsertCompany,
   type Experience, type Education, type Certification, type Project, type Endorsement, type WorkEntry, type EmployeeCompany,
   type InsertExperience, type InsertEducation, type InsertCertification, 
@@ -8,7 +9,9 @@ import {
   type CompanyInvitationCode, type CompanyEmployee, type InsertCompanyInvitationCode, type InsertCompanyEmployee,
   type JobListing, type JobApplication, type SavedJob, type JobAlert, type ProfileView,
   type InsertJobListing, type InsertJobApplication, type InsertSavedJob, type InsertJobAlert,
-  type Admin, type InsertAdmin, type LoginSession, type InsertLoginSession
+  type Admin, type InsertAdmin, type LoginSession, type InsertLoginSession,
+  type Skill, type SkillTrend, type UserSkillPreference, type SkillAnalytic,
+  type InsertSkill, type InsertSkillTrend, type InsertUserSkillPreference, type InsertSkillAnalytic
 } from "@shared/schema";
 
 type UserFeedback = typeof userFeedback.$inferSelect;
@@ -2603,6 +2606,199 @@ export class DatabaseStorage implements IStorage {
         eq(loginSessions.userType, userType)
       ));
     return result?.count || 0;
+  }
+
+  // Skills operations
+  async getTrendingSkills(params: {
+    limit?: number;
+    location?: string;
+    role?: string;
+    experience?: string;
+  } = {}): Promise<(Skill & SkillTrend)[]> {
+    const { limit = 20 } = params;
+    
+    return await db
+      .select()
+      .from(skills)
+      .innerJoin(skillTrends, eq(skills.id, skillTrends.skillId))
+      .orderBy(desc(skillTrends.trendingScore))
+      .limit(limit);
+  }
+
+  async getPersonalizedTrendingSkills(userId: string, params: {
+    limit?: number;
+    location?: string;
+    role?: string;
+    experience?: string;
+  } = {}): Promise<(Skill & SkillTrend & { isPinned?: boolean; isFromProfile?: boolean })[]> {
+    const { limit = 20 } = params;
+    
+    // Get user preferences
+    const userPrefs = await db
+      .select()
+      .from(userSkillPreferences)
+      .where(eq(userSkillPreferences.userId, userId));
+    
+    const pinnedSkillIds = userPrefs.filter(p => p.isPinned).map(p => p.skillId);
+    const hiddenSkillIds = userPrefs.filter(p => p.isHidden).map(p => p.skillId);
+    
+    // Get employee profile skills
+    const employee = await db
+      .select({ skills: employees.skills })
+      .from(employees)
+      .where(eq(employees.id, userId))
+      .limit(1);
+    
+    const profileSkills = employee[0]?.skills || [];
+    
+    // Get trending skills excluding hidden ones
+    let query = db
+      .select()
+      .from(skills)
+      .innerJoin(skillTrends, eq(skills.id, skillTrends.skillId));
+    
+    if (hiddenSkillIds.length > 0) {
+      query = query.where(sql`${skills.id} NOT IN (${hiddenSkillIds.map(id => `'${id}'`).join(',')})`);
+    }
+    
+    const trendingSkills = await query
+      .orderBy(desc(skillTrends.trendingScore))
+      .limit(limit * 2); // Get more to allow for personalization
+    
+    // Enhance with personalization flags
+    const enhancedSkills = trendingSkills.map((skill: any) => ({
+      ...skill.skills,
+      ...skill.skill_trends,
+      isPinned: pinnedSkillIds.includes(skill.skills.id),
+      isFromProfile: profileSkills.some((ps: string) => 
+        ps.toLowerCase().includes(skill.skills.name.toLowerCase()) ||
+        skill.skills.aliases?.some((alias: string) => ps.toLowerCase().includes(alias.toLowerCase()))
+      )
+    }));
+    
+    // Sort: pinned first, then profile skills, then by trending score
+    enhancedSkills.sort((a: any, b: any) => {
+      if (a.isPinned && !b.isPinned) return -1;
+      if (!a.isPinned && b.isPinned) return 1;
+      if (a.isFromProfile && !b.isFromProfile) return -1;
+      if (!a.isFromProfile && b.isFromProfile) return 1;
+      return parseFloat(b.trendingScore) - parseFloat(a.trendingScore);
+    });
+    
+    return enhancedSkills.slice(0, limit);
+  }
+
+  async pinSkill(userId: string, skillId: string): Promise<UserSkillPreference> {
+    const [preference] = await db
+      .insert(userSkillPreferences)
+      .values({
+        userId,
+        skillId,
+        isPinned: true,
+        isHidden: false
+      })
+      .onConflictDoUpdate({
+        target: userSkillPreferences.id,
+        set: {
+          isPinned: true,
+          isHidden: false,
+          updatedAt: new Date()
+        }
+      })
+      .returning();
+    
+    return preference;
+  }
+
+  async hideSkill(userId: string, skillId: string): Promise<UserSkillPreference> {
+    const [preference] = await db
+      .insert(userSkillPreferences)
+      .values({
+        userId,
+        skillId,
+        isPinned: false,
+        isHidden: true
+      })
+      .onConflictDoUpdate({
+        target: userSkillPreferences.id,
+        set: {
+          isPinned: false,
+          isHidden: true,
+          updatedAt: new Date()
+        }
+      })
+      .returning();
+    
+    return preference;
+  }
+
+  async searchSkills(query: string, limit: number = 50): Promise<Skill[]> {
+    return await db
+      .select()
+      .from(skills)
+      .where(
+        or(
+          like(skills.name, `%${query}%`),
+          like(skills.description, `%${query}%`),
+          sql`${skills.aliases} && ARRAY[${query}]`
+        )
+      )
+      .limit(limit);
+  }
+
+  async logSkillAnalytics(data: InsertSkillAnalytic): Promise<SkillAnalytic> {
+    const [analytics] = await db
+      .insert(skillAnalytics)
+      .values(data)
+      .returning();
+    
+    return analytics;
+  }
+
+  async getSkillById(skillId: string): Promise<Skill | undefined> {
+    const [skill] = await db
+      .select()
+      .from(skills)
+      .where(eq(skills.id, skillId))
+      .limit(1);
+    
+    return skill;
+  }
+
+  async getSkillBySlug(slug: string): Promise<Skill | undefined> {
+    const [skill] = await db
+      .select()
+      .from(skills)
+      .where(eq(skills.slug, slug))
+      .limit(1);
+    
+    return skill;
+  }
+
+  async getUserSkillPreferences(userId: string): Promise<UserSkillPreference[]> {
+    return await db
+      .select()
+      .from(userSkillPreferences)
+      .where(eq(userSkillPreferences.userId, userId));
+  }
+
+  async updateSkillTrends(skillId: string, data: Partial<InsertSkillTrend>): Promise<SkillTrend> {
+    const [trend] = await db
+      .insert(skillTrends)
+      .values({
+        skillId,
+        ...data
+      })
+      .onConflictDoUpdate({
+        target: skillTrends.skillId,
+        set: {
+          ...data,
+          updatedAt: new Date()
+        }
+      })
+      .returning();
+    
+    return trend;
   }
 }
 

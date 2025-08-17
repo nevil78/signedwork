@@ -98,8 +98,11 @@ export default function JobDiscoveryPage() {
     enabled: selectedTab === 'discover'
   });
 
-  // Trending skills
-  const trendingSkills = ['React', 'Python', 'AI/ML', 'Node.js', 'TypeScript', 'AWS', 'Data Science', 'UI/UX'];
+  // Trending skills query
+  const { data: trendingSkills = [] } = useQuery({
+    queryKey: ['/api/skills/trending', { personalized: true }],
+    enabled: selectedTab === 'discover'
+  });
 
   // Mutations
   const saveJobMutation = useMutation({
@@ -186,6 +189,23 @@ export default function JobDiscoveryPage() {
     onSuccess: () => {
       toast({ title: "Job alert created successfully!" });
       queryClient.invalidateQueries({ queryKey: ['/api/job-alerts'] });
+    }
+  });
+
+  // Skill preference mutations
+  const pinSkillMutation = useMutation({
+    mutationFn: (skillId: string) => apiRequest('POST', `/api/skills/${skillId}/pin`),
+    onSuccess: () => {
+      toast({ title: "Skill pinned!" });
+      queryClient.invalidateQueries({ queryKey: ['/api/skills/trending'] });
+    }
+  });
+
+  const hideSkillMutation = useMutation({
+    mutationFn: (skillId: string) => apiRequest('POST', `/api/skills/${skillId}/hide`),
+    onSuccess: () => {
+      toast({ title: "Skill hidden from recommendations" });
+      queryClient.invalidateQueries({ queryKey: ['/api/skills/trending'] });
     }
   });
 
@@ -602,23 +622,15 @@ export default function JobDiscoveryPage() {
           
           <Card className="border-l-4 border-l-blue-500">
             <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <TrendingUp className="h-8 w-8 text-blue-600" />
-                <div>
-                  <h3 className="font-semibold">Trending Skills</h3>
-                  <div className="flex flex-wrap gap-1 mt-1">
-                    {trendingSkills.slice(0, 3).map((skill) => (
-                      <Badge 
-                        key={skill} 
-                        variant="outline" 
-                        className="text-xs cursor-pointer"
-                        onClick={() => setFilters(prev => ({ ...prev, keywords: skill }))}
-                      >
-                        {skill}
-                      </Badge>
-                    ))}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <TrendingUp className="h-8 w-8 text-blue-600" />
+                  <div>
+                    <h3 className="font-semibold">Trending Skills</h3>
+                    <p className="text-sm text-muted-foreground">Personalized recommendations</p>
                   </div>
                 </div>
+                <TrendingSkillsDialog />
               </div>
             </CardContent>
           </Card>
@@ -1037,5 +1049,267 @@ export default function JobDiscoveryPage() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+// Comprehensive Trending Skills Dialog Component
+function TrendingSkillsDialog() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [selectedFilter, setSelectedFilter] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  
+  // Trending skills query with filters
+  const { data: skills = [], isLoading } = useQuery({
+    queryKey: ['/api/skills/trending', { personalized: true, filter: selectedFilter }],
+    enabled: open
+  });
+
+  // Skill preferences mutations
+  const pinSkillMutation = useMutation({
+    mutationFn: (skillId: string) => apiRequest('POST', `/api/skills/${skillId}/pin`),
+    onSuccess: () => {
+      toast({ title: "Skill pinned!" });
+      queryClient.invalidateQueries({ queryKey: ['/api/skills/trending'] });
+    }
+  });
+
+  const hideSkillMutation = useMutation({
+    mutationFn: (skillId: string) => apiRequest('POST', `/api/skills/${skillId}/hide`),
+    onSuccess: () => {
+      toast({ title: "Skill hidden from recommendations" });
+      queryClient.invalidateQueries({ queryKey: ['/api/skills/trending'] });
+    }
+  });
+
+  const viewSkillMutation = useMutation({
+    mutationFn: (data: { skillId: string; context?: any }) => 
+      apiRequest('POST', `/api/skills/${data.skillId}/view`, { context: data.context })
+  });
+
+  // Filtered skills based on search and category
+  const filteredSkills = skills.filter((skill: any) => {
+    const matchesSearch = skill.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      skill.description?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesFilter = selectedFilter === 'all' || 
+      (selectedFilter === 'technical' && skill.isTechnical) ||
+      (selectedFilter === 'soft' && !skill.isTechnical) ||
+      (selectedFilter === 'pinned' && skill.isPinned) ||
+      (selectedFilter === 'profile' && skill.isFromProfile);
+    return matchesSearch && matchesFilter;
+  });
+
+  const handleSkillClick = (skill: any) => {
+    viewSkillMutation.mutate({ 
+      skillId: skill.id, 
+      context: { source: 'trending_dialog', filter: selectedFilter }
+    });
+  };
+
+  const getSkillIcon = (skill: any) => {
+    if (skill.isPinned) return <Star className="h-4 w-4 text-yellow-500 fill-current" />;
+    if (skill.isFromProfile) return <User className="h-4 w-4 text-blue-500" />;
+    if (skill.isTechnical) return <Brain className="h-4 w-4 text-purple-500" />;
+    return <Globe className="h-4 w-4 text-green-500" />;
+  };
+
+  const getGrowthColor = (growth: number) => {
+    if (growth > 20) return 'text-green-600';
+    if (growth > 10) return 'text-yellow-600';
+    return 'text-red-600';
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700">
+          <TrendingUp className="h-4 w-4 mr-1" />
+          View All
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-3">
+            <TrendingUp className="h-6 w-6 text-blue-600" />
+            Trending Skills & Market Insights
+          </DialogTitle>
+        </DialogHeader>
+        
+        <div className="flex-1 overflow-hidden flex flex-col">
+          {/* Search and Filters */}
+          <div className="space-y-4 pb-4 border-b">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                placeholder="Search skills..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+                data-testid="input-skill-search"
+              />
+            </div>
+            
+            <div className="flex gap-2 flex-wrap">
+              {[
+                { label: 'All Skills', value: 'all' },
+                { label: 'Technical', value: 'technical' },
+                { label: 'Soft Skills', value: 'soft' },
+                { label: 'Pinned', value: 'pinned' },
+                { label: 'From Profile', value: 'profile' }
+              ].map((filter) => (
+                <Button
+                  key={filter.value}
+                  variant={selectedFilter === filter.value ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setSelectedFilter(filter.value)}
+                  className="rounded-full"
+                  data-testid={`filter-${filter.value}`}
+                >
+                  {filter.label}
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          {/* Skills Grid */}
+          <div className="flex-1 overflow-y-auto mt-4">
+            {isLoading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                  <Card key={i} className="animate-pulse">
+                    <CardContent className="p-4">
+                      <div className="space-y-3">
+                        <div className="h-4 bg-slate-200 rounded w-3/4"></div>
+                        <div className="h-3 bg-slate-200 rounded w-1/2"></div>
+                        <div className="h-3 bg-slate-200 rounded w-2/3"></div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : filteredSkills.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {filteredSkills.map((skill: any) => (
+                  <Card 
+                    key={skill.id} 
+                    className={`cursor-pointer transition-all hover:shadow-md ${
+                      skill.isPinned ? 'ring-2 ring-yellow-200' : ''
+                    } ${skill.isFromProfile ? 'ring-2 ring-blue-200' : ''}`}
+                    onClick={() => handleSkillClick(skill)}
+                    data-testid={`skill-card-${skill.slug}`}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            {getSkillIcon(skill)}
+                            <h3 className="font-semibold text-lg">{skill.name}</h3>
+                            <Badge 
+                              variant="secondary" 
+                              className="text-xs"
+                            >
+                              {skill.category}
+                            </Badge>
+                          </div>
+                          
+                          {skill.description && (
+                            <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
+                              {skill.description}
+                            </p>
+                          )}
+                          
+                          <div className="grid grid-cols-2 gap-3 text-sm">
+                            <div>
+                              <span className="text-muted-foreground">Jobs (7d):</span>
+                              <span className="ml-1 font-medium">{skill.jobCount7d || 0}</span>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground">Growth:</span>
+                              <span className={`ml-1 font-medium ${getGrowthColor(skill.growthPct || 0)}`}>
+                                {skill.growthPct ? `+${skill.growthPct}%` : 'N/A'}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground">Trending:</span>
+                              <span className="ml-1 font-medium">
+                                {skill.trendingScore ? (skill.trendingScore * 100).toFixed(0) : 0}/100
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground">Total Jobs:</span>
+                              <span className="ml-1 font-medium">{skill.jobCountTotal || 0}</span>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="flex flex-col gap-1 ml-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              pinSkillMutation.mutate(skill.id);
+                            }}
+                            disabled={pinSkillMutation.isPending}
+                            className="h-8 w-8 p-0"
+                            data-testid={`button-pin-${skill.slug}`}
+                          >
+                            <Star className={`h-4 w-4 ${skill.isPinned ? 'text-yellow-500 fill-current' : 'text-gray-400'}`} />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              hideSkillMutation.mutate(skill.id);
+                            }}
+                            disabled={hideSkillMutation.isPending}
+                            className="h-8 w-8 p-0"
+                            data-testid={`button-hide-${skill.slug}`}
+                          >
+                            <X className="h-4 w-4 text-gray-400" />
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <Card>
+                <CardContent className="p-8 text-center">
+                  <Brain className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                  <h3 className="text-lg font-semibold mb-2">No skills found</h3>
+                  <p className="text-muted-foreground">Try adjusting your search or filter criteria</p>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+
+          {/* Market Insights Footer */}
+          <div className="pt-4 border-t mt-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-green-600">{skills.length}</div>
+                <div className="text-muted-foreground">Trending Skills</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-blue-600">
+                  {skills.filter((s: any) => s.isPinned).length}
+                </div>
+                <div className="text-muted-foreground">Pinned by You</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-purple-600">
+                  {skills.filter((s: any) => s.isFromProfile).length}
+                </div>
+                <div className="text-muted-foreground">From Your Profile</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }

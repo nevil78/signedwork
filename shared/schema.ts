@@ -1,5 +1,5 @@
 import { sql, relations } from "drizzle-orm";
-import { pgTable, text, varchar, timestamp, integer, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, timestamp, integer, boolean, numeric, jsonb, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -811,3 +811,77 @@ export type InsertLoginSession = z.infer<typeof insertLoginSessionSchema>;
 // Feedback types
 export type UserFeedback = typeof userFeedback.$inferSelect;
 export type InsertFeedback = z.infer<typeof insertFeedbackSchema>;
+
+// Skills taxonomy and trending data
+export const skills = pgTable("skills", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name").notNull(),
+  slug: varchar("slug").unique().notNull(),
+  category: varchar("category").notNull(), // e.g., "technical", "soft", "language", "tool"
+  aliases: text("aliases").array().default([]), // Alternative names/spellings
+  relatedSkillIds: text("related_skill_ids").array().default([]),
+  isTechnical: boolean("is_technical").default(true),
+  description: text("description"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const skillTrends = pgTable("skill_trends", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  skillId: varchar("skill_id").references(() => skills.id, { onDelete: "cascade" }).notNull(),
+  jobCount7d: integer("job_count_7d").default(0),
+  jobCount30d: integer("job_count_30d").default(0),
+  jobCountTotal: integer("job_count_total").default(0),
+  growthPct: numeric("growth_pct", { precision: 5, scale: 2 }).default('0'),
+  clickThruRate: numeric("click_thru_rate", { precision: 5, scale: 4 }).default('0'),
+  applyRateFromSkill: numeric("apply_rate_from_skill", { precision: 5, scale: 4 }).default('0'),
+  trendingScore: numeric("trending_score", { precision: 5, scale: 4 }).default('0'),
+  region: varchar("region"), // Optional regional trends
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("skill_trends_skill_id_idx").on(table.skillId),
+  index("skill_trends_trending_score_idx").on(table.trendingScore),
+]);
+
+// User skill preferences
+export const userSkillPreferences = pgTable("user_skill_preferences", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => employees.id, { onDelete: "cascade" }).notNull(),
+  skillId: varchar("skill_id").references(() => skills.id, { onDelete: "cascade" }).notNull(),
+  isPinned: boolean("is_pinned").default(false),
+  isHidden: boolean("is_hidden").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("user_skill_prefs_user_id_idx").on(table.userId),
+  index("user_skill_prefs_skill_id_idx").on(table.skillId),
+]);
+
+// Analytics events for skills
+export const skillAnalytics = pgTable("skill_analytics", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => employees.id, { onDelete: "cascade" }),
+  skillId: varchar("skill_id").references(() => skills.id, { onDelete: "cascade" }),
+  eventType: varchar("event_type").notNull(), // trending_view, skill_chip_click, etc.
+  context: jsonb("context"), // Additional event data
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("skill_analytics_user_id_idx").on(table.userId),
+  index("skill_analytics_skill_id_idx").on(table.skillId),
+  index("skill_analytics_event_type_idx").on(table.eventType),
+]);
+
+export type Skill = typeof skills.$inferSelect;
+export type SkillTrend = typeof skillTrends.$inferSelect;
+export type UserSkillPreference = typeof userSkillPreferences.$inferSelect;
+export type SkillAnalytic = typeof skillAnalytics.$inferSelect;
+
+export const insertSkillSchema = createInsertSchema(skills);
+export const insertSkillTrendSchema = createInsertSchema(skillTrends);
+export const insertUserSkillPreferenceSchema = createInsertSchema(userSkillPreferences);
+export const insertSkillAnalyticSchema = createInsertSchema(skillAnalytics);
+
+export type InsertSkill = z.infer<typeof insertSkillSchema>;
+export type InsertSkillTrend = z.infer<typeof insertSkillTrendSchema>;
+export type InsertUserSkillPreference = z.infer<typeof insertUserSkillPreferenceSchema>;
+export type InsertSkillAnalytic = z.infer<typeof insertSkillAnalyticSchema>;

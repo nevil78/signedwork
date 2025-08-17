@@ -1,0 +1,130 @@
+Goal:
+Build a fully functional Trending Skills module that personalizes, filters, and explains market demand—seamlessly integrated with search, filters, saved searches, and applications. It must be responsive, fast, and synced with recruiter tags.
+
+A. Data & Scoring
+
+Create a normalized skills taxonomy with fields:
+
+id, name, slug, category, aliases[], relatedSkillIds[], isTechnical, createdAt, updatedAt
+
+
+Store trend metrics (updated daily or on demand):
+
+jobCount7d, jobCount30d, growthPct = ((7d/30d_avg)-1)*100,
+clickThruRate, applyRateFromSkill, region (optional)
+trendingScore = (0.6*normalize(jobCount7d) + 0.3*normalize(growthPct) + 0.1*normalize(applyRateFromSkill))
+
+
+Synonym handling: map query chips to canonical skill via aliases[].
+
+B. APIs
+
+GET /skills/trending?limit=20&location=&role=&experience= → list of skills with trendingScore, jobCount7d, growthPct, jobCountTotal.
+
+GET /jobs?skills=react,python&skillsMode=AND|OR&... → filtered jobs.
+
+POST /employees/:id/skills/pin body { skillId } → pin a skill.
+
+POST /employees/:id/skills/hide body { skillId } → hide a skill.
+
+POST /alerts body { name, skills[], skillsMode, otherFilters } → create job alert.
+
+POST /events for analytics: { type, skillId, context }.
+
+C. UI/UX (Desktop & Mobile)
+
+Trending Skills card
+
+Show top N chips (e.g., 6) with badge: ↑ +growthPct% and small jobCount7d.
+
+“See all” opens a modal/list with search + categories.
+
+Personalization badges: Pinned, New for you, From your profile.
+
+Interactions
+
+Click/press a chip → toggles it into the active filter bar as a selected chip.
+
+Multi-select supported; show AND/OR toggle next to the skills chips (default = OR).
+
+Selected chip shows x to remove; removing updates results immediately.
+
+Long-press (mobile) / hover (desktop) → popover with: description, related skills (quick-add), jobCount7d, growthPct, sample titles.
+
+“Pin” icon on chip (persists to user) and “Hide” (removes from your Trending view).
+
+Placement & Responsiveness
+
+Stays beneath hero and above listings.
+
+Mobile: horizontal scrollable chip row; “See all” opens full-screen sheet.
+
+Desktop: chip grid; “See all” opens right-side panel.
+
+Empty/Fallback States
+
+If no local trend, show global trends; if user hid everything, show “Reset hidden skills”.
+
+D. Search/Filter Integration
+
+Selecting Trending Skills composes with existing filters (location, type, salary, etc.).
+
+Results update with debounced fetch (200–300ms).
+
+Show a tiny result count next to the skills area (e.g., “47 matches”).
+
+E. Personalization Logic
+
+Sort order in the card:
+
+Pinned skills,
+
+Skills from user profile/resume,
+
+High trendingScore globally/regionally,
+
+Related to recent views/applies.
+
+Exclude hidden skills. Cold-start uses global top skills.
+
+If a selected skill is not in profile, show subtle “Skill gap?” CTA → “Add to profile” or “See learning resources”.
+
+F. Learning Nudge (Optional but nice)
+
+In popover, show “Improve skill → courses/resources” link when user lacks it.
+
+G. Analytics & Quality
+
+Track events: trending_view, skill_chip_click, skill_added_to_filter, skills_mode_changed, pin_skill, hide_skill, apply_after_skill_filter.
+
+Log A/B key metrics: CTR, downstream apply rate, dwell time, conversions.
+
+H. Performance
+
+Cache GET /skills/trending for 10–30 min; revalidate on tab focus.
+
+Virtualize long lists; lazy-load popover data.
+
+Keep interactions <100ms; API <300ms p95.
+
+I. Accessibility
+
+Keyboard nav for chips (arrow keys, Enter to toggle, Delete to remove).
+
+ARIA labels: “Trending skill React, up 12 percent, 230 jobs this week”.
+
+J. Acceptance Criteria
+
+Clicking one or more Trending Skills immediately filters jobs; AND/OR works.
+
+Counts and growth shown; tooltips/popovers display detail + related skills.
+
+Pins/hidden persist across sessions and reorder the card.
+
+“See all” modal works on desktop & mobile; search inside modal filters skills.
+
+Can Save Alert from current selection; creating alert succeeds.
+
+Analytics events fire for each interaction.
+
+No visual overlap with Apply buttons; layout responsive and touch-friendly.

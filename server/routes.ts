@@ -3768,5 +3768,149 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Skills API Routes
+  app.get("/api/skills/trending", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    if (!sessionUser || sessionUser.type !== "employee") {
+      return res.status(401).json({ message: "Not authenticated as employee" });
+    }
+    
+    try {
+      const { limit, location, role, experience, personalized } = req.query;
+      
+      if (personalized === 'true') {
+        const skills = await storage.getPersonalizedTrendingSkills(sessionUser.id, {
+          limit: limit ? parseInt(limit as string) : 20,
+          location: location as string,
+          role: role as string,
+          experience: experience as string
+        });
+        res.json(skills);
+      } else {
+        const skills = await storage.getTrendingSkills({
+          limit: limit ? parseInt(limit as string) : 20,
+          location: location as string,
+          role: role as string,
+          experience: experience as string
+        });
+        res.json(skills);
+      }
+    } catch (error) {
+      console.error("Get trending skills error:", error);
+      res.status(500).json({ message: "Failed to get trending skills" });
+    }
+  });
+
+  app.post("/api/skills/:skillId/pin", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    if (!sessionUser || sessionUser.type !== "employee") {
+      return res.status(401).json({ message: "Not authenticated as employee" });
+    }
+    
+    try {
+      const preference = await storage.pinSkill(sessionUser.id, req.params.skillId);
+      
+      // Log analytics
+      await storage.logSkillAnalytics({
+        userId: sessionUser.id,
+        skillId: req.params.skillId,
+        eventType: 'pin',
+        context: {}
+      });
+      
+      res.json({ message: "Skill pinned successfully", preference });
+    } catch (error) {
+      console.error("Pin skill error:", error);
+      res.status(500).json({ message: "Failed to pin skill" });
+    }
+  });
+
+  app.post("/api/skills/:skillId/hide", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    if (!sessionUser || sessionUser.type !== "employee") {
+      return res.status(401).json({ message: "Not authenticated as employee" });
+    }
+    
+    try {
+      const preference = await storage.hideSkill(sessionUser.id, req.params.skillId);
+      
+      // Log analytics
+      await storage.logSkillAnalytics({
+        userId: sessionUser.id,
+        skillId: req.params.skillId,
+        eventType: 'hide',
+        context: {}
+      });
+      
+      res.json({ message: "Skill hidden successfully", preference });
+    } catch (error) {
+      console.error("Hide skill error:", error);
+      res.status(500).json({ message: "Failed to hide skill" });
+    }
+  });
+
+  app.post("/api/skills/:skillId/view", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    if (!sessionUser || sessionUser.type !== "employee") {
+      return res.status(401).json({ message: "Not authenticated as employee" });
+    }
+    
+    try {
+      await storage.logSkillAnalytics({
+        userId: sessionUser.id,
+        skillId: req.params.skillId,
+        eventType: 'view',
+        context: req.body.context || {}
+      });
+      
+      res.json({ message: "Skill view logged" });
+    } catch (error) {
+      console.error("Log skill view error:", error);
+      res.status(500).json({ message: "Failed to log skill view" });
+    }
+  });
+
+  app.get("/api/skills/search", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    if (!sessionUser || sessionUser.type !== "employee") {
+      return res.status(401).json({ message: "Not authenticated as employee" });
+    }
+    
+    try {
+      const { q, limit } = req.query;
+      
+      if (!q || typeof q !== 'string') {
+        return res.status(400).json({ message: "Query parameter 'q' is required" });
+      }
+      
+      const skills = await storage.searchSkills(q, limit ? parseInt(limit as string) : 50);
+      res.json(skills);
+    } catch (error) {
+      console.error("Search skills error:", error);
+      res.status(500).json({ message: "Failed to search skills" });
+    }
+  });
+
+  app.get("/api/skills/preferences", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    if (!sessionUser || sessionUser.type !== "employee") {
+      return res.status(401).json({ message: "Not authenticated as employee" });
+    }
+    
+    try {
+      const preferences = await storage.getUserSkillPreferences(sessionUser.id);
+      res.json(preferences);
+    } catch (error) {
+      console.error("Get skill preferences error:", error);
+      res.status(500).json({ message: "Failed to get skill preferences" });
+    }
+  });
+
   return httpServer;
 }
