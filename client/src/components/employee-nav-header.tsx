@@ -268,15 +268,7 @@ export default function EmployeeNavHeader({ employeeId, employeeName }: Employee
               <span className="text-xs">Session: {sessionTime}</span>
             </div>
             
-            {/* Employee ID - hidden on mobile */}
-            {displayEmployeeId && (
-              <span className="text-sm text-gray-600 hidden md:block">ID: {displayEmployeeId}</span>
-            )}
-            
-            {/* Feedback button - hidden on mobile */}
-            <div className="hidden md:block">
-              <FeedbackButton variant="outline" size="sm" />
-            </div>
+
             
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -291,9 +283,9 @@ export default function EmployeeNavHeader({ employeeId, employeeName }: Employee
                   <ChevronDown className="h-4 w-4 md:ml-2 ml-1" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                {/* Mobile-only user info */}
-                <div className="md:hidden px-2 py-2 border-b">
+              <DropdownMenuContent align="end" className="w-56">
+                {/* User info section */}
+                <div className="px-3 py-2 border-b">
                   <div className="text-sm font-medium text-gray-900">
                     {fullDisplayName || 'Employee'}
                   </div>
@@ -306,14 +298,14 @@ export default function EmployeeNavHeader({ employeeId, employeeName }: Employee
                   </div>
                 </div>
                 
-                {/* Mobile-only feedback option */}
-                <div className="md:hidden">
+                {/* Feedback option */}
+                <div>
                   <DropdownMenuItem className="flex items-center p-0">
                     <FeedbackButton 
                       variant="ghost" 
                       size="sm" 
                       className="w-full justify-start p-2 h-auto font-normal text-sm"
-                      data-testid="mobile-feedback-button"
+                      data-testid="account-feedback-button"
                     />
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
