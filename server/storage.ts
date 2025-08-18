@@ -976,6 +976,8 @@ export class DatabaseStorage implements IStorage {
         endDate: workEntries.endDate,
         priority: workEntries.priority,
         hours: workEntries.hours,
+        actualHours: workEntries.actualHours,
+        estimatedHours: workEntries.estimatedHours,
         status: workEntries.status, // Employee task status
         approvalStatus: workEntries.approvalStatus, // Company approval status
         companyFeedback: workEntries.companyFeedback,
@@ -1008,6 +1010,8 @@ export class DatabaseStorage implements IStorage {
         endDate: workEntries.endDate,
         priority: workEntries.priority,
         hours: workEntries.hours,
+        actualHours: workEntries.actualHours,
+        estimatedHours: workEntries.estimatedHours,
         status: workEntries.status, // Employee task status (could be anything)
         approvalStatus: workEntries.approvalStatus, // This should be 'pending_review'
         companyFeedback: workEntries.companyFeedback,
