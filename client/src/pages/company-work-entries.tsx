@@ -326,12 +326,7 @@ export default function CompanyWorkEntries() {
                   <p className="font-medium text-blue-600 dark:text-blue-400">{entry.project}</p>
                 </div>
               )}
-              {entry.client && (
-                <div className="space-y-2">
-                  <p className="text-muted-foreground">Client:</p>
-                  <p className="font-medium text-purple-600 dark:text-purple-400">{entry.client}</p>
-                </div>
-              )}
+              {/* Client information is excluded from company view for privacy */}
             </div>
           </div>
 

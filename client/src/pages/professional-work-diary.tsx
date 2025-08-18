@@ -341,19 +341,8 @@ export default function ProfessionalWorkDiary() {
   console.log('Selected company:', selectedCompany);
   console.log('Entry statuses:', workEntries?.map(e => ({id: e.id, title: e.title, status: e.status, approvalStatus: e.approvalStatus})));
 
-  // TEMPORARY: Add test approved entry to demonstrate verification badges
-  const testFilteredEntries = filteredEntries.length > 0 ? [
-    {
-      ...filteredEntries[0],
-      id: 'test-approved-entry',
-      title: 'TEST: Approved Work Entry (Shows Verification Badges)',
-      status: 'approved',
-      approvalStatus: 'approved',
-      companyRating: 5,
-      companyFeedback: 'Excellent work! This demonstrates the verification system.'
-    },
-    ...filteredEntries
-  ] : filteredEntries;
+  // For demonstration: Show how verification badges will look once approved
+  const displayEntries = filteredEntries;
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -668,8 +657,8 @@ export default function ProfessionalWorkDiary() {
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
                   <p className="text-gray-600">Loading work entries...</p>
                 </div>
-              ) : testFilteredEntries.length > 0 ? (
-                testFilteredEntries.map((entry) => {
+              ) : displayEntries.length > 0 ? (
+                displayEntries.map((entry) => {
                   const StatusIcon = getStatusIcon(entry.status);
                   const WorkTypeIcon = getWorkTypeIcon(entry.workType);
                   
