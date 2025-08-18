@@ -157,10 +157,20 @@ export default function FeedbackPage() {
                 </Button>
                 <div>
                   <Button
-                    onClick={() => window.history.back()}
+                    variant="outline"
+                    onClick={() => {
+                      // First try to go back in history, if no history then go to dashboard
+                      if (window.history.length > 1) {
+                        window.history.back();
+                      } else {
+                        window.location.href = '/';
+                      }
+                    }}
+                    className="flex items-center font-medium"
                     data-testid="button-go-back"
                   >
-                    Go Back
+                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    ← Back to Dashboard
                   </Button>
                 </div>
               </div>
@@ -186,16 +196,23 @@ export default function FeedbackPage() {
       
       <div className="py-12 px-4">
         <div className="max-w-4xl mx-auto">
-          {/* Back Button Header */}
-          <div className="mb-6">
+          {/* Back Button Header - More Prominent */}
+          <div className="mb-8 bg-white p-4 rounded-lg shadow-sm border">
             <Button
-              variant="ghost"
-              onClick={() => window.history.back()}
-              className="flex items-center text-gray-600 hover:text-gray-900"
+              variant="outline"
+              onClick={() => {
+                // First try to go back in history, if no history then go to dashboard
+                if (window.history.length > 1) {
+                  window.history.back();
+                } else {
+                  window.location.href = '/';
+                }
+              }}
+              className="flex items-center text-gray-700 hover:text-gray-900 hover:bg-gray-50 border-gray-300 font-medium"
               data-testid="button-back-to-previous"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
+              ← Back to Dashboard
             </Button>
           </div>
 
