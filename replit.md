@@ -76,6 +76,19 @@ This project is a LinkedIn-like professional networking platform built with Expr
   * Real-time validation and duplicate email checking
   * Available for both employee and company accounts
   * Session synchronization for immediate UI updates
+- **OTP-BASED EMPLOYEE SIGNUP**: Comprehensive 6-digit email verification system for employee registration:
+  * Secure OTP generation with 5-minute expiration and bcrypt password hashing
+  * Responsive OTP verification page with countdown timer and resend functionality
+  * Temporary pendingUsers table for secure data storage during verification process
+  * Automatic account creation after successful OTP verification
+  * Company signup process unchanged (maintains existing verification flow)
+  * Professional email templates with SendGrid integration for reliable delivery
+- **ENHANCED DASHBOARD UX**: Improved Work Activity Summary interaction in employee dashboard:
+  * "View All" button now expands work entries view instead of immediate navigation
+  * Dynamic button text changes ("View All" ↔ "Show Less") based on expanded state
+  * Smart display showing all work entries when expanded vs. limited preview (3 items)
+  * Secondary navigation to Work Diary for comprehensive work management
+  * Helpful creation button for users with no work entries yet
 
 # User Preferences
 

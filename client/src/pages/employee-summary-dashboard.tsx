@@ -102,6 +102,7 @@ function QuickStatsCard({ title, value, icon: Icon, description }: {
 export function EmployeeSummaryDashboard() {
   const [, setLocation] = useLocation();
   const [expandedCareer, setExpandedCareer] = useState(false);
+  const [expandedWorkActivity, setExpandedWorkActivity] = useState(false);
   const [showApplicationsModal, setShowApplicationsModal] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const { data: dashboardData, isLoading, error } = useQuery<DashboardData>({
@@ -367,11 +368,11 @@ export function EmployeeSummaryDashboard() {
             <Button 
               variant="outline" 
               size="sm" 
-              onClick={() => setLocation('/work-diary')}
+              onClick={() => setExpandedWorkActivity(!expandedWorkActivity)}
               data-testid="button-view-all-work"
             >
               <Eye className="h-4 w-4 mr-1" />
-              View All
+              {expandedWorkActivity ? 'Show Less' : 'View All'}
             </Button>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -397,7 +398,7 @@ export function EmployeeSummaryDashboard() {
                 <Separator />
                 <span className="font-medium text-sm text-muted-foreground">RECENT WORK ENTRIES</span>
                 <div className="space-y-2">
-                  {workActivitySummary.recent.slice(0, 3).map((work, index) => (
+                  {workActivitySummary.recent.slice(0, expandedWorkActivity ? workActivitySummary.recent.length : 3).map((work, index) => (
                     <div key={index} className="flex items-center justify-between py-2 px-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-sm truncate" data-testid={`text-recent-work-${index}`}>
@@ -416,11 +417,35 @@ export function EmployeeSummaryDashboard() {
                     </div>
                   ))}
                 </div>
+                {expandedWorkActivity && workActivitySummary.recent.length > 3 && (
+                  <div className="pt-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setLocation('/work-diary')}
+                      className="w-full"
+                      data-testid="button-go-to-work-diary"
+                    >
+                      <ExternalLink className="h-4 w-4 mr-1" />
+                      Go to Work Diary for Full Management
+                    </Button>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="text-center py-4 text-muted-foreground">
                 <FileText className="h-8 w-8 mx-auto mb-2 opacity-50" />
                 <p>No work entries yet</p>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setLocation('/work-diary')}
+                  className="mt-2"
+                  data-testid="button-create-first-work-entry"
+                >
+                  <ExternalLink className="h-4 w-4 mr-1" />
+                  Create Your First Work Entry
+                </Button>
               </div>
             )}
           </CardContent>
