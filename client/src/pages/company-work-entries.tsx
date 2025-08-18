@@ -120,9 +120,11 @@ export default function CompanyWorkEntries() {
     }));
   };
 
-  const employeeGroups = groupEntriesByEmployee(allWorkEntries);
+  // Combine all entries and pending entries for complete view
+  const allEntriesForDisplay = [...allWorkEntries, ...pendingEntries];
+  const employeeGroups = groupEntriesByEmployee(allEntriesForDisplay);
   const selectedEmployeeEntries = selectedEmployeeId 
-    ? allWorkEntries.filter(entry => entry.employeeId === selectedEmployeeId)
+    ? allEntriesForDisplay.filter(entry => entry.employeeId === selectedEmployeeId)
     : [];
   const selectedEmployeeName = selectedEmployeeId 
     ? (selectedEmployeeEntries.length > 0 ? getEmployeeName(selectedEmployeeEntries[0]) : 'Unknown Employee')
@@ -560,7 +562,7 @@ export default function CompanyWorkEntries() {
         {viewMode === 'employees' ? (
           /* Employee List View */
           <div className="space-y-4">
-            {loadingAll ? (
+            {(loadingAll || loadingPending) ? (
               <div className="text-center py-8" data-testid="loading-employees">Loading employees...</div>
             ) : employeeGroups.length === 0 ? (
               <Card>
