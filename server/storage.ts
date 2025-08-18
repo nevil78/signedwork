@@ -1033,7 +1033,8 @@ export class DatabaseStorage implements IStorage {
 
   async approveWorkEntry(id: string, options?: { rating?: number; feedback?: string }): Promise<WorkEntry> {
     const updateData: any = { 
-      approvalStatus: "approved", // Update approval status, not task status
+      approvalStatus: "approved", // Company approval status
+      status: "approved", // Also set task status to approved for immutable protection
       updatedAt: new Date() 
     };
     

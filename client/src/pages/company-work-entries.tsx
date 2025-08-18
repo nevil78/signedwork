@@ -528,8 +528,8 @@ export default function CompanyWorkEntries() {
             </div>
           )}
 
-          {/* Action Buttons */}
-          {showActions && entry.approvalStatus === 'pending_review' && (
+          {/* Action Buttons - Only show for pending entries */}
+          {showActions && entry.approvalStatus === 'pending_review' && entry.status !== 'approved' && (
             <div className="flex gap-2 pt-4 border-t">
               <Button 
                 onClick={() => handleApprove(entry)}
@@ -537,7 +537,7 @@ export default function CompanyWorkEntries() {
                 data-testid={`approve-button-${entry.id}`}
               >
                 <CheckCircle className="w-4 h-4 mr-1" />
-                Approve
+                Approve & Lock Entry
               </Button>
               <Button 
                 onClick={() => handleRequestChanges(entry)}
@@ -552,10 +552,18 @@ export default function CompanyWorkEntries() {
           )}
           
           {/* Show immutable message for approved entries */}
-          {entry.approvalStatus === 'approved' && (
-            <div className="flex items-center gap-2 pt-4 border-t text-green-600 text-sm">
-              <Lock className="w-4 h-4" />
-              <span className="font-medium">Entry Verified & Locked - No further changes allowed</span>
+          {(entry.approvalStatus === 'approved' || entry.status === 'approved') && (
+            <div className="flex items-center gap-2 pt-4 border-t">
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2 text-blue-600">
+                  <Shield className="w-4 h-4" />
+                  <span className="text-sm font-medium">Company Verified</span>
+                </div>
+                <div className="flex items-center gap-2 text-green-600">
+                  <Lock className="w-4 h-4" />
+                  <span className="text-sm font-medium">Entry Locked & Immutable</span>
+                </div>
+              </div>
             </div>
           )}
         </div>
