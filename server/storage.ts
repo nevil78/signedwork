@@ -937,9 +937,15 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createWorkEntry(workEntry: InsertWorkEntry): Promise<WorkEntry> {
+    // CRITICAL FIX: Always start with pending_review approval status regardless of employee's task status
+    const workEntryWithApproval = {
+      ...workEntry,
+      approvalStatus: "pending_review" as const // Company must review all entries
+    };
+    
     const [newWorkEntry] = await db
       .insert(workEntries)
-      .values(workEntry)
+      .values(workEntryWithApproval)
       .returning();
     return newWorkEntry;
   }
@@ -958,6 +964,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getWorkEntriesForCompany(companyId: string): Promise<any[]> {
+    // Get all REVIEWED entries (approved or needs changes) - not pending review
     const result = await db
       .select({
         id: workEntries.id,
@@ -969,8 +976,10 @@ export class DatabaseStorage implements IStorage {
         endDate: workEntries.endDate,
         priority: workEntries.priority,
         hours: workEntries.hours,
-        status: workEntries.status,
+        status: workEntries.status, // Employee task status
+        approvalStatus: workEntries.approvalStatus, // Company approval status
         companyFeedback: workEntries.companyFeedback,
+        companyRating: workEntries.companyRating,
         createdAt: workEntries.createdAt,
         updatedAt: workEntries.updatedAt,
         employeeName: sql<string>`CONCAT(${employees.firstName}, ' ', ${employees.lastName})`,
@@ -978,12 +987,16 @@ export class DatabaseStorage implements IStorage {
       })
       .from(workEntries)
       .innerJoin(employees, eq(workEntries.employeeId, employees.id))
-      .where(eq(workEntries.companyId, companyId));
+      .where(and(
+        eq(workEntries.companyId, companyId),
+        inArray(workEntries.approvalStatus, ["approved", "needs_changes"])
+      ));
       
     return result;
   }
 
   async getPendingWorkEntriesForCompany(companyId: string): Promise<any[]> {
+    // Get all entries awaiting company review - regardless of employee task status
     const result = await db
       .select({
         id: workEntries.id,
@@ -995,8 +1008,10 @@ export class DatabaseStorage implements IStorage {
         endDate: workEntries.endDate,
         priority: workEntries.priority,
         hours: workEntries.hours,
-        status: workEntries.status,
+        status: workEntries.status, // Employee task status (could be anything)
+        approvalStatus: workEntries.approvalStatus, // This should be 'pending_review'
         companyFeedback: workEntries.companyFeedback,
+        companyRating: workEntries.companyRating,
         createdAt: workEntries.createdAt,
         updatedAt: workEntries.updatedAt,
         employeeName: sql<string>`CONCAT(${employees.firstName}, ' ', ${employees.lastName})`,
@@ -1004,14 +1019,17 @@ export class DatabaseStorage implements IStorage {
       })
       .from(workEntries)
       .innerJoin(employees, eq(workEntries.employeeId, employees.id))
-      .where(and(eq(workEntries.companyId, companyId), eq(workEntries.status, "pending")));
+      .where(and(
+        eq(workEntries.companyId, companyId), 
+        eq(workEntries.approvalStatus, "pending_review")
+      ));
       
     return result;
   }
 
   async approveWorkEntry(id: string, options?: { rating?: number; feedback?: string }): Promise<WorkEntry> {
     const updateData: any = { 
-      status: "approved", 
+      approvalStatus: "approved", // Update approval status, not task status
       updatedAt: new Date() 
     };
     
@@ -1035,7 +1053,11 @@ export class DatabaseStorage implements IStorage {
   async requestWorkEntryChanges(id: string, feedback: string): Promise<WorkEntry> {
     const [workEntry] = await db
       .update(workEntries)
-      .set({ status: "needs_changes", companyFeedback: feedback, updatedAt: new Date() })
+      .set({ 
+        approvalStatus: "needs_changes", // Update approval status, not task status
+        companyFeedback: feedback, 
+        updatedAt: new Date() 
+      })
       .where(eq(workEntries.id, id))
       .returning();
     return workEntry;

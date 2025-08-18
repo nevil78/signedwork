@@ -159,7 +159,8 @@ export const workEntries = pgTable("work_entries", {
   hours: integer("hours"), // optional hours field
   estimatedHours: integer("estimated_hours"), // estimated time to complete
   actualHours: integer("actual_hours"), // actual time spent
-  status: text("status").notNull().default("pending"), // pending, approved, needs_changes, in_progress, completed
+  status: text("status").notNull().default("pending"), // Employee task status: pending, in_progress, completed, on_hold
+  approvalStatus: text("approval_status").notNull().default("pending_review"), // Company approval: pending_review, approved, needs_changes
   workType: text("work_type").notNull().default("task"), // task, meeting, project, research, documentation, training
   category: text("category"), // development, design, management, client_work, etc.
   project: text("project"), // project name or identifier
