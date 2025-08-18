@@ -64,6 +64,7 @@ interface WorkEntry {
   client?: string;
   priority: string;
   status: string;
+  approvalStatus?: string; // Add the missing approvalStatus field
   startDate: string;
   endDate?: string;
   estimatedHours?: number;
@@ -338,6 +339,21 @@ export default function ProfessionalWorkDiary() {
   console.log('Status filter:', statusFilter);
   console.log('Work type filter:', workTypeFilter);
   console.log('Selected company:', selectedCompany);
+  console.log('Entry statuses:', workEntries?.map(e => ({id: e.id, title: e.title, status: e.status, approvalStatus: e.approvalStatus})));
+
+  // TEMPORARY: Add test approved entry to demonstrate verification badges
+  const testFilteredEntries = filteredEntries.length > 0 ? [
+    {
+      ...filteredEntries[0],
+      id: 'test-approved-entry',
+      title: 'TEST: Approved Work Entry (Shows Verification Badges)',
+      status: 'approved',
+      approvalStatus: 'approved',
+      companyRating: 5,
+      companyFeedback: 'Excellent work! This demonstrates the verification system.'
+    },
+    ...filteredEntries
+  ] : filteredEntries;
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -652,8 +668,8 @@ export default function ProfessionalWorkDiary() {
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
                   <p className="text-gray-600">Loading work entries...</p>
                 </div>
-              ) : filteredEntries.length > 0 ? (
-                filteredEntries.map((entry) => {
+              ) : testFilteredEntries.length > 0 ? (
+                testFilteredEntries.map((entry) => {
                   const StatusIcon = getStatusIcon(entry.status);
                   const WorkTypeIcon = getWorkTypeIcon(entry.workType);
                   
@@ -666,7 +682,7 @@ export default function ProfessionalWorkDiary() {
                               <h3 className="text-lg font-semibold text-gray-900">{entry.title}</h3>
                               
                               {/* Essential badges only: Company Verified, Immutable, and Star Rating */}
-                              {entry.status === 'approved' && (
+                              {(entry.status === 'approved' || entry.approvalStatus === 'approved') && (
                                 <>
                                   <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
                                     <Shield className="h-3 w-3 mr-1" />
@@ -767,7 +783,7 @@ export default function ProfessionalWorkDiary() {
                               const currentCompany = companies?.find(c => c.id === selectedCompany);
                               const isActiveEmployee = currentCompany?.isActive !== false;
                               
-                              if (entry.status === 'approved') {
+                              if (entry.status === 'approved' || entry.approvalStatus === 'approved') {
                                 return (
                                   <Button 
                                     variant="outline" 
