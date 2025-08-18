@@ -186,8 +186,9 @@ export default function AuthPage() {
       });
     },
     onError: (error: any) => {
+      const isEmailAlreadyRegistered = error.message && error.message.includes("Email already registered");
       toast({
-        title: "Registration Failed",
+        title: isEmailAlreadyRegistered ? "Email Already Registered" : "Registration Failed",
         description: error.message || "Failed to send OTP",
         variant: "destructive",
       });
@@ -240,8 +241,9 @@ export default function AuthPage() {
       });
     },
     onError: (error: any) => {
+      const isEmailAlreadyRegistered = error.message && error.message.includes("Email already registered");
       toast({
-        title: "Registration Failed",
+        title: isEmailAlreadyRegistered ? "Email Already Registered" : "Registration Failed", 
         description: error.message || "Failed to initiate signup",
         variant: "destructive",
       });
