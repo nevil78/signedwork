@@ -229,21 +229,6 @@ export default function CompanyNavHeader({ companyId, companyName }: CompanyNavH
           </div>
           
           <div className="flex items-center space-x-2 md:space-x-4">
-            {/* Session Status Indicator */}
-            <div className="flex items-center space-x-2 text-sm text-gray-600 hidden lg:flex">
-              <Clock className="h-4 w-4 text-green-600" />
-              <span className="text-xs">Session: {sessionTime}</span>
-            </div>
-            
-            {/* Company ID - hidden on mobile */}
-            {displayCompanyId && (
-              <span className="text-sm text-gray-600 hidden md:block">ID: {displayCompanyId}</span>
-            )}
-            
-            {/* Feedback button - hidden on mobile */}
-            <div className="hidden md:block">
-              <FeedbackButton variant="outline" size="sm" />
-            </div>
             
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -258,29 +243,25 @@ export default function CompanyNavHeader({ companyId, companyName }: CompanyNavH
                   <ChevronDown className="h-4 w-4 md:ml-2 ml-1" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                {/* Mobile-only company info */}
-                <div className="md:hidden px-2 py-2 border-b">
+              <DropdownMenuContent align="end" className="w-56">
+                {/* Company info section */}
+                <div className="px-3 py-2 border-b">
                   <div className="text-sm font-medium text-gray-900">
                     {displayCompanyName || 'Company'}
                   </div>
                   {displayCompanyId && (
                     <div className="text-xs text-gray-500">ID: {displayCompanyId}</div>
                   )}
-                  <div className="flex items-center mt-1 text-xs text-gray-500">
-                    <Clock className="h-3 w-3 mr-1 text-green-600" />
-                    Session: {sessionTime}
-                  </div>
                 </div>
                 
-                {/* Mobile-only feedback option */}
-                <div className="md:hidden">
+                {/* Feedback option */}
+                <div>
                   <DropdownMenuItem className="flex items-center p-0">
                     <FeedbackButton 
                       variant="ghost" 
                       size="sm" 
                       className="w-full justify-start p-2 h-auto font-normal text-sm"
-                      data-testid="mobile-company-feedback-button"
+                      data-testid="company-feedback-button"
                     />
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
