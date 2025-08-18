@@ -13,7 +13,8 @@ import { CheckCircle, AlertCircle, Clock, Calendar, User, Users, Building, Arrow
 import { useToast } from '@/hooks/use-toast';
 import CompanyNavHeader from '@/components/company-nav-header';
 
-type WorkEntryStatus = "pending" | "approved" | "needs_changes";
+type ApprovalStatus = "pending_review" | "approved" | "needs_changes";
+type EmployeeTaskStatus = "pending" | "in_progress" | "completed" | "on_hold" | "cancelled";
 
 interface WorkEntry {
   id: string;
@@ -27,7 +28,8 @@ interface WorkEntry {
   hours: number | null;
   estimatedHours: number | null;
   actualHours: number | null;
-  status: WorkEntryStatus;
+  status: EmployeeTaskStatus; // Employee's task status
+  approvalStatus: ApprovalStatus; // Company's approval status
   workType: string;
   category: string | null;
   project: string | null;
@@ -112,9 +114,9 @@ export default function CompanyWorkEntries() {
       employee: data.employee,
       entries: data.entries,
       totalCount: data.entries.length,
-      pendingCount: data.entries.filter(e => e.status === 'pending').length,
-      approvedCount: data.entries.filter(e => e.status === 'approved').length,
-      needsChangesCount: data.entries.filter(e => e.status === 'needs_changes').length
+      pendingCount: data.entries.filter(e => e.approvalStatus === 'pending_review').length,
+      approvedCount: data.entries.filter(e => e.approvalStatus === 'approved').length,
+      needsChangesCount: data.entries.filter(e => e.approvalStatus === 'needs_changes').length
     }));
   };
 
@@ -218,10 +220,10 @@ export default function CompanyWorkEntries() {
     }
   };
 
-  const getStatusBadge = (status: WorkEntryStatus) => {
-    switch (status) {
-      case 'pending':
-        return <Badge variant="secondary" className="bg-yellow-100 text-yellow-800"><Clock className="w-3 h-3 mr-1" />Pending</Badge>;
+  const getStatusBadge = (approvalStatus: ApprovalStatus) => {
+    switch (approvalStatus) {
+      case 'pending_review':
+        return <Badge variant="secondary" className="bg-yellow-100 text-yellow-800"><Clock className="w-3 h-3 mr-1" />Pending Review</Badge>;
       case 'approved':
         return <Badge variant="secondary" className="bg-green-100 text-green-800"><CheckCircle className="w-3 h-3 mr-1" />Approved</Badge>;
       case 'needs_changes':
@@ -258,7 +260,7 @@ export default function CompanyWorkEntries() {
             </CardDescription>
           </div>
           <div className="flex items-center gap-2">
-            {getStatusBadge(entry.status)}
+            {getStatusBadge(entry.approvalStatus)}
             {getPriorityBadge(entry.priority)}
           </div>
         </div>
@@ -487,7 +489,7 @@ export default function CompanyWorkEntries() {
           )}
 
           {/* Action Buttons */}
-          {showActions && entry.status === 'pending' && (
+          {showActions && entry.approvalStatus === 'pending_review' && (
             <div className="flex gap-2 pt-4 border-t">
               <Button 
                 onClick={() => handleApprove(entry)}
@@ -510,7 +512,7 @@ export default function CompanyWorkEntries() {
           )}
           
           {/* Show immutable message for approved entries */}
-          {entry.status === 'approved' && (
+          {entry.approvalStatus === 'approved' && (
             <div className="flex items-center gap-2 pt-4 border-t text-green-600 text-sm">
               <Lock className="w-4 h-4" />
               <span className="font-medium">Entry Verified & Locked - No further changes allowed</span>
@@ -643,18 +645,18 @@ export default function CompanyWorkEntries() {
           <Tabs defaultValue="pending" className="w-full">
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="pending" data-testid="tab-pending">
-                Pending ({selectedEmployeeEntries.filter(e => e.status === 'pending').length})
+                Pending ({selectedEmployeeEntries.filter(e => e.approvalStatus === 'pending_review').length})
               </TabsTrigger>
               <TabsTrigger value="all" data-testid="tab-all">
                 All ({selectedEmployeeEntries.length})
               </TabsTrigger>
               <TabsTrigger value="reviewed" data-testid="tab-reviewed">
-                Reviewed ({selectedEmployeeEntries.filter(e => e.status !== 'pending').length})
+                Reviewed ({selectedEmployeeEntries.filter(e => e.approvalStatus !== 'pending_review').length})
               </TabsTrigger>
             </TabsList>
 
             <TabsContent value="pending" className="mt-6">
-              {selectedEmployeeEntries.filter(e => e.status === 'pending').length === 0 ? (
+              {selectedEmployeeEntries.filter(e => e.approvalStatus === 'pending_review').length === 0 ? (
                 <Card>
                   <CardContent className="text-center py-8">
                     <Clock className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
@@ -667,7 +669,7 @@ export default function CompanyWorkEntries() {
               ) : (
                 <div className="space-y-4">
                   {selectedEmployeeEntries
-                    .filter(entry => entry.status === 'pending')
+                    .filter(entry => entry.approvalStatus === 'pending_review')
                     .map(entry => (
                       <WorkEntryCard key={entry.id} entry={entry} showActions={true} />
                     ))}
@@ -696,7 +698,7 @@ export default function CompanyWorkEntries() {
             </TabsContent>
 
             <TabsContent value="reviewed" className="mt-6">
-              {selectedEmployeeEntries.filter(e => e.status !== 'pending').length === 0 ? (
+              {selectedEmployeeEntries.filter(e => e.approvalStatus !== 'pending_review').length === 0 ? (
                 <Card>
                   <CardContent className="text-center py-8">
                     <CheckCircle className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
@@ -709,7 +711,7 @@ export default function CompanyWorkEntries() {
               ) : (
                 <div className="space-y-4">
                   {selectedEmployeeEntries
-                    .filter(entry => entry.status !== 'pending')
+                    .filter(entry => entry.approvalStatus !== 'pending_review')
                     .map(entry => (
                       <WorkEntryCard key={entry.id} entry={entry} />
                     ))}
