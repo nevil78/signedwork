@@ -855,35 +855,56 @@ export default function ProfessionalWorkDiary() {
                         : "Start documenting your professional work journey"
                       }
                     </p>
-                    <Button onClick={() => {
-                      // Fix 3: Proper handleAddEntry function with form reset
-                      setEditingEntry(null);
-                      workEntryForm.reset({
-                        title: "",
-                        description: "",
-                        workType: "task",
-                        category: "",
-                        project: "",
-                        client: "",
-                        priority: "medium",
-                        status: "pending",
-                        startDate: format(new Date(), 'yyyy-MM-dd'),
-                        endDate: "",
-                        estimatedHours: 0,
-                        actualHours: 0,
-                        billable: false,
-                        billableRate: 0,
-                        tags: [],
-                        achievements: [],
-                        challenges: "",
-                        learnings: "",
-                        companyId: selectedCompany, // Ensure company ID is set
-                      });
-                      setIsAddDialogOpen(true);
-                    }}>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Your First Entry
-                    </Button>
+                    {(() => {
+                      const currentCompany = companies?.find(c => c.id === selectedCompany);
+                      const isActiveEmployee = currentCompany?.isActive !== false;
+                      
+                      if (!isActiveEmployee) {
+                        return (
+                          <Button 
+                            disabled
+                            className="opacity-50 cursor-not-allowed"
+                            data-testid="button-add-entry-ex-employee"
+                            title="Ex-employees cannot add work entries"
+                          >
+                            <Plus className="h-4 w-4 mr-2" />
+                            Add Your First Entry
+                          </Button>
+                        );
+                      }
+                      
+                      return (
+                        <Button onClick={() => {
+                          // Fix 3: Proper handleAddEntry function with form reset
+                          setEditingEntry(null);
+                          workEntryForm.reset({
+                            title: "",
+                            description: "",
+                            workType: "task",
+                            category: "",
+                            project: "",
+                            client: "",
+                            priority: "medium",
+                            status: "pending",
+                            startDate: format(new Date(), 'yyyy-MM-dd'),
+                            endDate: "",
+                            estimatedHours: 0,
+                            actualHours: 0,
+                            billable: false,
+                            billableRate: 0,
+                            tags: [],
+                            achievements: [],
+                            challenges: "",
+                            learnings: "",
+                            companyId: selectedCompany, // Ensure company ID is set
+                          });
+                          setIsAddDialogOpen(true);
+                        }}>
+                          <Plus className="h-4 w-4 mr-2" />
+                          Add Your First Entry
+                        </Button>
+                      );
+                    })()}
                   </CardContent>
                 </Card>
               )}
