@@ -9,7 +9,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { CheckCircle, AlertCircle, Clock, Calendar, User, Users, Building, ArrowLeft, Building2, Lock, Star, Briefcase, Target, DollarSign, Tag, Trophy, BookOpen, AlertTriangle, FileText, Paperclip, Shield } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { CheckCircle, AlertCircle, Clock, Calendar, User, Users, Building, ArrowLeft, Building2, Lock, Star, Briefcase, Target, DollarSign, Tag, Trophy, BookOpen, AlertTriangle, FileText, Paperclip, Shield, Search } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import CompanyNavHeader from '@/components/company-nav-header';
 
@@ -69,6 +70,8 @@ export default function CompanyWorkEntries() {
   const [rating, setRating] = useState<number>(0);
   const [hoveredRating, setHoveredRating] = useState<number>(0);
   const [approvalFeedback, setApprovalFeedback] = useState('');
+  // Search functionality
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Fetch all work entries for the company
   const { data: allWorkEntries = [], isLoading: loadingAll } = useQuery<WorkEntry[]>({
@@ -123,6 +126,17 @@ export default function CompanyWorkEntries() {
   // Combine all entries and pending entries for complete view
   const allEntriesForDisplay = [...allWorkEntries, ...pendingEntries];
   const employeeGroups = groupEntriesByEmployee(allEntriesForDisplay);
+  
+  // Filter employee groups based on search query
+  const filteredEmployeeGroups = employeeGroups.filter(group => {
+    if (!searchQuery.trim()) return true;
+    
+    const query = searchQuery.toLowerCase();
+    const employeeName = getEmployeeName({ employeeName: group.employee?.firstName + ' ' + group.employee?.lastName }).toLowerCase();
+    const employeeEmail = (group.employee?.email || '').toLowerCase();
+    
+    return employeeName.includes(query) || employeeEmail.includes(query);
+  });
   const selectedEmployeeEntries = selectedEmployeeId 
     ? allEntriesForDisplay.filter(entry => entry.employeeId === selectedEmployeeId)
     : [];
@@ -605,6 +619,34 @@ export default function CompanyWorkEntries() {
           </div>
         </div>
 
+        {/* Search Bar - only show in employee list view */}
+        {viewMode === 'employees' && (
+          <div className="flex items-center gap-4 mb-6">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Input
+                type="text"
+                placeholder="Search employees by name or email..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+                data-testid="search-employees-input"
+              />
+            </div>
+            {searchQuery && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setSearchQuery('')}
+                className="text-gray-500 hover:text-gray-700"
+                data-testid="clear-search-button"
+              >
+                Clear
+              </Button>
+            )}
+          </div>
+        )}
+
         {/* Navigation breadcrumb */}
         {viewMode === 'entries' && selectedEmployeeId && (
           <div className="mb-6">
@@ -631,6 +673,16 @@ export default function CompanyWorkEntries() {
           <div className="space-y-4">
             {(loadingAll || loadingPending) ? (
               <div className="text-center py-8" data-testid="loading-employees">Loading employees...</div>
+            ) : filteredEmployeeGroups.length === 0 && searchQuery ? (
+              <Card>
+                <CardContent className="text-center py-8">
+                  <Search className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">No employees found</h3>
+                  <p className="text-muted-foreground">
+                    No employees match your search for "{searchQuery}"
+                  </p>
+                </CardContent>
+              </Card>
             ) : employeeGroups.length === 0 ? (
               <Card>
                 <CardContent className="text-center py-8">
@@ -643,7 +695,7 @@ export default function CompanyWorkEntries() {
               </Card>
             ) : (
               <div className="grid gap-4">
-                {employeeGroups.map(({ employeeId, employee, totalCount, pendingCount, approvedCount, needsChangesCount }) => (
+                {filteredEmployeeGroups.map(({ employeeId, employee, totalCount, pendingCount, approvedCount, needsChangesCount }) => (
                   <Card 
                     key={employeeId} 
                     className="cursor-pointer hover:shadow-lg transition-shadow" 
