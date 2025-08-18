@@ -196,7 +196,8 @@ function SkillsSection({ skills, employeeId }: { skills: string[]; employeeId: s
         <Button 
           onClick={() => setIsEditing(!isEditing)}
           size="sm"
-          variant={isEditing ? "destructive" : "outline"}
+          variant={isEditing ? "default" : "outline"}
+          className={isEditing ? "bg-green-600 hover:bg-green-700 text-white" : ""}
           data-testid="button-toggle-skills-edit"
         >
           {isEditing ? (
