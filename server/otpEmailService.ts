@@ -132,7 +132,7 @@ export class OTPEmailService {
   ): Promise<{ success: boolean; message: string }> {
     try {
       const otp = OTPEmailService.generateOTP();
-      const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes (longer than resend cooldown)
 
       // Store pending signup data temporarily in database
       const pendingData = {

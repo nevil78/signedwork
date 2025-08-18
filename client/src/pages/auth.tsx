@@ -83,7 +83,7 @@ export default function AuthPage() {
   const [loginError, setLoginError] = useState<boolean>(false);
   const [verificationEmail, setVerificationEmail] = useState<string>("");
   const [otp, setOTP] = useState("");
-  const [countdown, setCountdown] = useState(300); // 5 minutes
+  const [countdown, setCountdown] = useState(60); // 1 minute
   const { toast } = useToast();
 
   // Handle OAuth error redirects
@@ -1232,7 +1232,7 @@ export default function AuthPage() {
       // Resend OTP by calling the signup endpoint again
       const formData = employeeForm.getValues();
       employeeRegistration.mutate(formData);
-      setCountdown(300);
+      setCountdown(60);
       setOTP(""); // Clear current OTP
     };
 
