@@ -262,11 +262,6 @@ export default function EmployeeNavHeader({ employeeId, employeeName }: Employee
           </div>
           
           <div className="flex items-center space-x-2 md:space-x-4">
-            {/* Session Status Indicator */}
-            <div className="flex items-center space-x-2 text-sm text-gray-600 hidden lg:flex">
-              <Clock className="h-4 w-4 text-green-600" />
-              <span className="text-xs">Session: {sessionTime}</span>
-            </div>
             
 
             
@@ -292,10 +287,7 @@ export default function EmployeeNavHeader({ employeeId, employeeName }: Employee
                   {displayEmployeeId && (
                     <div className="text-xs text-gray-500">ID: {displayEmployeeId}</div>
                   )}
-                  <div className="flex items-center mt-1 text-xs text-gray-500">
-                    <Clock className="h-3 w-3 mr-1 text-green-600" />
-                    Session: {sessionTime}
-                  </div>
+
                 </div>
                 
                 {/* Feedback option */}
