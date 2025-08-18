@@ -71,19 +71,28 @@ export default function JobDiscoveryPage() {
       const response = await fetch(`/api/jobs/search?${searchParams}`);
       if (!response.ok) throw new Error('Failed to search jobs');
       return response.json();
-    }
+    },
+    refetchInterval: 5 * 60 * 1000, // Auto-refresh every 5 minutes for job listings
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
   });
 
   // Saved jobs query
   const { data: savedJobs = [] } = useQuery({
     queryKey: ['/api/jobs/saved'],
-    enabled: selectedTab === 'saved'
+    enabled: selectedTab === 'saved',
+    refetchInterval: 60000, // Auto-refresh every minute for saved jobs
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
   });
 
   // Job applications query
   const { data: myApplications = [] } = useQuery({
     queryKey: ['/api/jobs/my-applications'],
-    enabled: selectedTab === 'applications'
+    enabled: selectedTab === 'applications',
+    refetchInterval: 45000, // Auto-refresh every 45 seconds for applications
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
   });
 
   // Job alerts query
@@ -95,13 +104,19 @@ export default function JobDiscoveryPage() {
   // Perfect matches (AI-powered recommendations)
   const { data: perfectMatches = [] } = useQuery({
     queryKey: ['/api/jobs/perfect-matches'],
-    enabled: selectedTab === 'discover'
+    enabled: selectedTab === 'discover',
+    refetchInterval: 3 * 60 * 1000, // Auto-refresh every 3 minutes for AI recommendations
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
   });
 
   // Trending skills query
   const { data: trendingSkills = [] } = useQuery({
     queryKey: ['/api/skills/trending', { personalized: true }],
-    enabled: selectedTab === 'discover'
+    enabled: selectedTab === 'discover',
+    refetchInterval: 10 * 60 * 1000, // Auto-refresh every 10 minutes for trending skills
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
   });
 
   // Mutations

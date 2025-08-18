@@ -117,11 +117,17 @@ export default function ProfessionalWorkDiary() {
   // Fetch user companies
   const { data: companies } = useQuery<Company[]>({
     queryKey: ["/api/employee-companies"],
+    refetchInterval: 30000, // Auto-refresh every 30 seconds
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
   });
 
   // Get current user for WebSocket integration
   const { data: currentUser } = useQuery<{id: string}>({
     queryKey: ['/api/auth/user'],
+    refetchInterval: 60000, // Auto-refresh every minute
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
   });
 
   // Initialize WebSocket for real-time updates
@@ -159,6 +165,9 @@ export default function ProfessionalWorkDiary() {
       return response.json();
     },
     enabled: !!selectedCompany,
+    refetchInterval: 20000, // Auto-refresh every 20 seconds for work entries
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
   });
 
   // Analytics for the selected company - FIXED: Using query parameter format
@@ -175,6 +184,9 @@ export default function ProfessionalWorkDiary() {
       return response.json();
     },
     enabled: !!selectedCompany,
+    refetchInterval: 45000, // Auto-refresh analytics every 45 seconds
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
   });
 
   const invitationForm = useForm<InvitationCodeFormData>({

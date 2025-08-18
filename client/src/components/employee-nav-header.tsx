@@ -26,16 +26,20 @@ export default function EmployeeNavHeader({ employeeId, employeeName }: Employee
   const { toast } = useToast();
   const [sessionTime, setSessionTime] = useState<string>('24h 0m');
 
-  // Fetch current employee data - align with profile update invalidation
+  // Fetch current employee data with auto-refresh
   const { data: employee } = useQuery({
     queryKey: ['/api/employee/me'],
     refetchOnWindowFocus: true,
+    refetchInterval: 45000, // Auto-refresh every 45 seconds
+    refetchOnReconnect: true,
   });
 
   // Also listen to auth user data for immediate name updates
   const { data: authUser } = useQuery({
     queryKey: ['/api/auth/user'],
     refetchOnWindowFocus: true,
+    refetchInterval: 60000, // Auto-refresh every minute
+    refetchOnReconnect: true,
   });
 
   // Session status query

@@ -96,6 +96,8 @@ export function useSocket(userId?: string) {
       queryClient.invalidateQueries({ queryKey: ['/api/employee-companies'] });
       queryClient.invalidateQueries({ queryKey: ['/api/employee/companies'] });
       queryClient.invalidateQueries({ queryKey: ['/api/work-entries'] });
+      queryClient.invalidateQueries({ queryKey: ["/api/employee/summary-dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ['/api/employee/me'] });
       
       // Force a complete cache refresh for employee data
       queryClient.refetchQueries({ queryKey: ['/api/employee-companies'] });
@@ -108,6 +110,37 @@ export function useSocket(userId?: string) {
           description: `You have been ${statusText} by the company.`,
           variant: data.status === 'active' ? "default" : "destructive",
         });
+      }
+    });
+
+    // Listen for company join events
+    socket.on('company-join-success', (data) => {
+      console.log('Company join success:', data);
+      
+      // Invalidate all relevant employee queries for immediate update
+      queryClient.invalidateQueries({ queryKey: ['/api/employee-companies'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/employee/companies'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/employee/me'] });
+      queryClient.invalidateQueries({ queryKey: ["/api/employee/summary-dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/employee/profile"] });
+      
+      if (data.employeeId === userId) {
+        toast({
+          title: "Welcome to the team! 🎉",
+          description: `You've successfully joined ${data.companyName}.`,
+        });
+      }
+    });
+
+    // Listen for profile update events
+    socket.on('employee-profile-updated', (data) => {
+      console.log('Employee profile updated:', data);
+      
+      if (data.employeeId === userId) {
+        // Refresh profile and related data
+        queryClient.invalidateQueries({ queryKey: ["/api/employee/profile"] });
+        queryClient.invalidateQueries({ queryKey: ['/api/employee/me'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
       }
     });
 

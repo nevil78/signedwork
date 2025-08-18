@@ -912,6 +912,9 @@ export default function ProfessionalProfile() {
   }>({
     queryKey: ["/api/employee/profile", userResponse?.user?.id],
     enabled: !!userResponse?.user?.id && userResponse?.userType === "employee",
+    refetchInterval: 45000, // Auto-refresh every 45 seconds
+    refetchOnWindowFocus: true, // Refresh when window gains focus
+    refetchOnReconnect: true, // Refresh on network reconnect
   });
 
   // Analytics query for profile insights
@@ -922,6 +925,9 @@ export default function ProfessionalProfile() {
   }>({
     queryKey: ["/api/employee/analytics", userResponse?.user?.id],
     enabled: !!userResponse?.user?.id && userResponse?.userType === "employee",
+    refetchInterval: 60000, // Auto-refresh every minute for analytics
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
   });
 
   const profileForm = useForm({

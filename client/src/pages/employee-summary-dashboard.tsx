@@ -107,6 +107,9 @@ export function EmployeeSummaryDashboard() {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const { data: dashboardData, isLoading, error } = useQuery<DashboardData>({
     queryKey: ["/api/employee/summary-dashboard"],
+    refetchInterval: 30000, // Auto-refresh every 30 seconds
+    refetchOnWindowFocus: true, // Refresh when window gains focus
+    refetchOnReconnect: true, // Refresh on network reconnect
   });
 
   if (isLoading) {
