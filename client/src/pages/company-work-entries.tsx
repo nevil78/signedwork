@@ -465,10 +465,10 @@ export default function CompanyWorkEntries() {
             </div>
           )}
           
-          {/* Debug: Show when challenges field exists but is empty */}
+          {/* Show message when challenges field is empty */}
           {(!entry.challenges || !entry.challenges.trim()) && (
-            <div className="text-xs text-gray-400 italic p-2 border border-gray-200 rounded">
-              No challenges specified by employee for this work entry
+            <div className="text-sm text-gray-500 italic p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
+              Employee did not specify challenges for this work entry
             </div>
           )}
 
@@ -485,10 +485,10 @@ export default function CompanyWorkEntries() {
             </div>
           )}
           
-          {/* Debug: Show when learnings field exists but is empty */}
+          {/* Show message when learnings field is empty */}
           {(!entry.learnings || !entry.learnings.trim()) && (
-            <div className="text-xs text-gray-400 italic p-2 border border-gray-200 rounded">
-              No key learnings specified by employee for this work entry
+            <div className="text-sm text-gray-500 italic p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
+              Employee did not specify key learnings for this work entry
             </div>
           )}
 

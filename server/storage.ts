@@ -982,6 +982,18 @@ export class DatabaseStorage implements IStorage {
         approvalStatus: workEntries.approvalStatus, // Company approval status
         companyFeedback: workEntries.companyFeedback,
         companyRating: workEntries.companyRating,
+        // Add comprehensive work entry fields for reviewed entries too
+        workType: workEntries.workType,
+        category: workEntries.category,
+        project: workEntries.project,
+        client: workEntries.client, // Company can see but we hide in UI for privacy
+        billable: workEntries.billable,
+        billableRate: workEntries.billableRate,
+        tags: workEntries.tags,
+        achievements: workEntries.achievements,
+        challenges: workEntries.challenges,
+        learnings: workEntries.learnings,
+        attachments: workEntries.attachments,
         createdAt: workEntries.createdAt,
         updatedAt: workEntries.updatedAt,
         employeeName: sql<string>`CONCAT(${employees.firstName}, ' ', ${employees.lastName})`,
@@ -1016,6 +1028,18 @@ export class DatabaseStorage implements IStorage {
         approvalStatus: workEntries.approvalStatus, // This should be 'pending_review'
         companyFeedback: workEntries.companyFeedback,
         companyRating: workEntries.companyRating,
+        // Add comprehensive work entry fields that employees fill out
+        workType: workEntries.workType,
+        category: workEntries.category,
+        project: workEntries.project,
+        client: workEntries.client, // Company can see but we hide in UI for privacy
+        billable: workEntries.billable,
+        billableRate: workEntries.billableRate,
+        tags: workEntries.tags,
+        achievements: workEntries.achievements,
+        challenges: workEntries.challenges, // Key field for company review
+        learnings: workEntries.learnings, // Key field for company review
+        attachments: workEntries.attachments,
         createdAt: workEntries.createdAt,
         updatedAt: workEntries.updatedAt,
         employeeName: sql<string>`CONCAT(${employees.firstName}, ' ', ${employees.lastName})`,
