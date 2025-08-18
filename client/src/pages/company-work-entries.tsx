@@ -269,18 +269,46 @@ export default function CompanyWorkEntries() {
       </CardHeader>
       <CardContent>
         <div className="space-y-6">
+          {/* Employee Submission Summary */}
+          <div className="bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/20 dark:to-yellow-900/20 p-4 rounded-lg border border-amber-200 dark:border-amber-800">
+            <h4 className="font-semibold text-sm text-amber-800 dark:text-amber-200 mb-3 flex items-center gap-2">
+              <User className="w-4 h-4" />
+              Employee Submission Overview
+            </h4>
+            <div className="text-sm text-amber-900 dark:text-amber-100 grid grid-cols-2 md:grid-cols-4 gap-2">
+              <div>Submitted: {entry.createdAt ? new Date(entry.createdAt).toLocaleDateString() : 'N/A'}</div>
+              {entry.updatedAt !== entry.createdAt && (
+                <div>Updated: {entry.updatedAt ? new Date(entry.updatedAt).toLocaleDateString() : 'N/A'}</div>
+              )}
+              <div>Work Type: <span className="font-medium">{entry.workType || 'task'}</span></div>
+              <div>Status: <span className="font-medium capitalize">{entry.status || 'pending'}</span></div>
+            </div>
+          </div>
+
           {/* Basic Information Section */}
           <div>
             <h4 className="font-semibold text-sm text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
               <FileText className="w-4 h-4" />
               Work Details
             </h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
               <div className="space-y-2">
                 <p className="text-muted-foreground">Work Type:</p>
                 <Badge variant="outline" className="flex w-fit items-center gap-1">
                   <Briefcase className="w-3 h-3" />
                   {entry.workType || 'task'}
+                </Badge>
+              </div>
+              <div className="space-y-2">
+                <p className="text-muted-foreground">Employee Status:</p>
+                <Badge variant="outline" className={`flex w-fit items-center gap-1 ${
+                  entry.status === 'completed' ? 'bg-green-50 text-green-700' : 
+                  entry.status === 'in_progress' ? 'bg-blue-50 text-blue-700' :
+                  entry.status === 'on_hold' ? 'bg-orange-50 text-orange-700' :
+                  'bg-gray-50 text-gray-700'
+                }`}>
+                  <Clock className="w-3 h-3" />
+                  {entry.status || 'pending'}
                 </Badge>
               </div>
               {entry.category && (
@@ -295,13 +323,13 @@ export default function CompanyWorkEntries() {
               {entry.project && (
                 <div className="space-y-2">
                   <p className="text-muted-foreground">Project:</p>
-                  <p className="font-medium">{entry.project}</p>
+                  <p className="font-medium text-blue-600 dark:text-blue-400">{entry.project}</p>
                 </div>
               )}
               {entry.client && (
                 <div className="space-y-2">
                   <p className="text-muted-foreground">Client:</p>
-                  <p className="font-medium">{entry.client}</p>
+                  <p className="font-medium text-purple-600 dark:text-purple-400">{entry.client}</p>
                 </div>
               )}
             </div>
@@ -310,10 +338,15 @@ export default function CompanyWorkEntries() {
           {/* Description */}
           {entry.description && (
             <div>
-              <h4 className="font-semibold text-sm text-gray-700 dark:text-gray-300 mb-2">Description:</h4>
-              <p className="text-sm bg-gray-50 dark:bg-gray-800 p-3 rounded-lg" data-testid={`work-entry-description-${entry.id}`}>
-                {entry.description}
-              </p>
+              <h4 className="font-semibold text-sm text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
+                <FileText className="w-4 h-4" />
+                Work Description
+              </h4>
+              <div className="text-sm bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800" data-testid={`work-entry-description-${entry.id}`}>
+                <div className="whitespace-pre-wrap text-blue-900 dark:text-blue-100 leading-relaxed">
+                  {entry.description}
+                </div>
+              </div>
             </div>
           )}
           
@@ -323,39 +356,39 @@ export default function CompanyWorkEntries() {
               <Clock className="w-4 h-4" />
               Timeline & Hours
             </h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
-              <div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 text-sm">
+              <div className="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-lg">
                 <p className="text-muted-foreground">Start Date:</p>
-                <p className="flex items-center gap-1 font-medium" data-testid={`work-entry-start-date-${entry.id}`}>
+                <p className="flex items-center gap-1 font-medium text-green-600 dark:text-green-400" data-testid={`work-entry-start-date-${entry.id}`}>
                   <Calendar className="w-3 h-3" />
                   {entry.startDate}
                 </p>
               </div>
               {entry.endDate && (
-                <div>
+                <div className="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-lg">
                   <p className="text-muted-foreground">End Date:</p>
-                  <p className="flex items-center gap-1 font-medium" data-testid={`work-entry-end-date-${entry.id}`}>
+                  <p className="flex items-center gap-1 font-medium text-red-600 dark:text-red-400" data-testid={`work-entry-end-date-${entry.id}`}>
                     <Calendar className="w-3 h-3" />
                     {entry.endDate}
                   </p>
                 </div>
               )}
               {entry.estimatedHours && (
-                <div>
-                  <p className="text-muted-foreground">Estimated Hours:</p>
-                  <p className="font-medium">{entry.estimatedHours}h</p>
+                <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
+                  <p className="text-muted-foreground">Estimated:</p>
+                  <p className="font-medium text-blue-600 dark:text-blue-400">{entry.estimatedHours}h</p>
                 </div>
               )}
               {entry.actualHours && (
-                <div>
-                  <p className="text-muted-foreground">Actual Hours:</p>
-                  <p className="font-medium">{entry.actualHours}h</p>
+                <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg">
+                  <p className="text-muted-foreground">Actual:</p>
+                  <p className="font-medium text-green-600 dark:text-green-400">{entry.actualHours}h</p>
                 </div>
               )}
               {entry.hours && (
-                <div>
-                  <p className="text-muted-foreground">Total Hours:</p>
-                  <p className="font-medium" data-testid={`work-entry-hours-${entry.id}`}>{entry.hours}h</p>
+                <div className="bg-purple-50 dark:bg-purple-900/20 p-3 rounded-lg">
+                  <p className="text-muted-foreground">Total:</p>
+                  <p className="font-medium text-purple-600 dark:text-purple-400" data-testid={`work-entry-hours-${entry.id}`}>{entry.hours}h</p>
                 </div>
               )}
             </div>
@@ -363,22 +396,27 @@ export default function CompanyWorkEntries() {
 
           {/* Billing Information */}
           {(entry.billable || entry.billableRate) && (
-            <div>
+            <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 p-4 rounded-lg border border-green-200 dark:border-green-800">
               <h4 className="font-semibold text-sm text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
-                <DollarSign className="w-4 h-4" />
+                <DollarSign className="w-4 h-4 text-green-600" />
                 Billing Information
               </h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                 <div>
-                  <p className="text-muted-foreground">Billable:</p>
-                  <Badge variant={entry.billable ? "default" : "secondary"} className="mt-1">
-                    {entry.billable ? "Yes" : "No"}
+                  <p className="text-muted-foreground">Billable Work:</p>
+                  <Badge variant={entry.billable ? "default" : "secondary"} className={`mt-1 ${entry.billable ? 'bg-green-600 text-white' : ''}`}>
+                    {entry.billable ? "✓ Billable" : "Not Billable"}
                   </Badge>
                 </div>
                 {entry.billableRate && (
                   <div>
                     <p className="text-muted-foreground">Hourly Rate:</p>
-                    <p className="font-medium">${entry.billableRate}/hour</p>
+                    <p className="font-bold text-green-700 dark:text-green-300 text-lg">${entry.billableRate}/hour</p>
+                    {(entry.actualHours || entry.estimatedHours) && (
+                      <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+                        Est. Value: ${entry.billableRate * (entry.actualHours || entry.estimatedHours || 0)}
+                      </p>
+                    )}
                   </div>
                 )}
               </div>
@@ -532,10 +570,22 @@ export default function CompanyWorkEntries() {
 
       <div className="container mx-auto p-6 max-w-6xl">
         <div className="mb-6">
-          <h1 className="text-3xl font-bold mb-2" data-testid="page-title">Work Entry Reviews</h1>
-          <p className="text-muted-foreground">
-            Review and verify work entries submitted by your employees
-          </p>
+          <div className="flex justify-between items-start mb-4">
+            <div>
+              <h1 className="text-3xl font-bold mb-2" data-testid="page-title">Work Entry Reviews</h1>
+              <p className="text-muted-foreground">
+                Review and verify work entries submitted by your employees
+              </p>
+            </div>
+            <div className="text-right">
+              <div className="bg-blue-50 dark:bg-blue-900/20 px-4 py-2 rounded-lg border border-blue-200 dark:border-blue-800">
+                <div className="text-2xl font-bold text-blue-700 dark:text-blue-300">
+                  {pendingEntries.length}
+                </div>
+                <div className="text-xs text-blue-600 dark:text-blue-400">Pending Reviews</div>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Navigation breadcrumb */}
