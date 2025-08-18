@@ -453,28 +453,42 @@ export default function CompanyWorkEntries() {
           )}
 
           {/* Challenges */}
-          {entry.challenges && (
+          {entry.challenges && entry.challenges.trim() && (
             <div>
               <h4 className="font-semibold text-sm text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4" />
                 Challenges Faced
               </h4>
-              <p className="text-sm bg-orange-50 dark:bg-orange-900/20 p-3 rounded-lg text-orange-800 dark:text-orange-200">
+              <p className="text-sm bg-orange-50 dark:bg-orange-900/20 p-3 rounded-lg text-orange-800 dark:text-orange-200 whitespace-pre-wrap">
                 {entry.challenges}
               </p>
             </div>
           )}
+          
+          {/* Debug: Show when challenges field exists but is empty */}
+          {(!entry.challenges || !entry.challenges.trim()) && (
+            <div className="text-xs text-gray-400 italic p-2 border border-gray-200 rounded">
+              No challenges specified by employee for this work entry
+            </div>
+          )}
 
           {/* Learnings */}
-          {entry.learnings && (
+          {entry.learnings && entry.learnings.trim() && (
             <div>
               <h4 className="font-semibold text-sm text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
                 <BookOpen className="w-4 h-4" />
                 Key Learnings
               </h4>
-              <p className="text-sm bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg text-blue-800 dark:text-blue-200">
+              <p className="text-sm bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg text-blue-800 dark:text-blue-200 whitespace-pre-wrap">
                 {entry.learnings}
               </p>
+            </div>
+          )}
+          
+          {/* Debug: Show when learnings field exists but is empty */}
+          {(!entry.learnings || !entry.learnings.trim()) && (
+            <div className="text-xs text-gray-400 italic p-2 border border-gray-200 rounded">
+              No key learnings specified by employee for this work entry
             </div>
           )}
 
