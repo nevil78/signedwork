@@ -844,7 +844,7 @@ export default function CompanyWorkEntries() {
 
       {/* Enhanced Approval Dialog with Rating System */}
       <Dialog open={showApprovalDialog} onOpenChange={setShowApprovalDialog}>
-        <DialogContent className="max-w-md" data-testid="approval-dialog">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" data-testid="approval-dialog">
           <DialogHeader>
             <DialogTitle>Review & Approve Work Entry</DialogTitle>
             <DialogDescription>
@@ -852,22 +852,27 @@ export default function CompanyWorkEntries() {
             </DialogDescription>
           </DialogHeader>
           {selectedEntry && (
-            <div className="space-y-6">
+            <div className="space-y-6 py-4">
               {/* Work Entry Info */}
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h4 className="font-semibold text-lg">{selectedEntry.title}</h4>
+              <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg">
+                <h4 className="font-semibold text-lg break-words">{selectedEntry.title}</h4>
                 <p className="text-sm text-muted-foreground">
                   Submitted by: {getEmployeeName(selectedEntry)}
                 </p>
                 {selectedEntry.description && (
-                  <p className="text-sm text-gray-700 mt-2">{selectedEntry.description}</p>
+                  <div className="mt-3">
+                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description:</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed break-words whitespace-pre-wrap">
+                      {selectedEntry.description}
+                    </p>
+                  </div>
                 )}
               </div>
 
               {/* 5-Star Rating System */}
               <div className="space-y-3">
                 <Label className="text-sm font-medium">Rate this work (optional)</Label>
-                <div className="flex items-center space-x-1">
+                <div className="flex items-center space-x-2 flex-wrap">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <button
                       key={star}
@@ -875,7 +880,7 @@ export default function CompanyWorkEntries() {
                       onClick={() => setRating(star)}
                       onMouseEnter={() => setHoveredRating(star)}
                       onMouseLeave={() => setHoveredRating(0)}
-                      className="focus:outline-none transition-transform hover:scale-110"
+                      className="focus:outline-none transition-transform hover:scale-110 p-1"
                       data-testid={`star-${star}`}
                     >
                       <Star
@@ -888,7 +893,7 @@ export default function CompanyWorkEntries() {
                     </button>
                   ))}
                   {rating > 0 && (
-                    <span className="ml-3 text-sm text-gray-600">
+                    <span className="ml-3 text-sm text-gray-600 dark:text-gray-400">
                       {rating} star{rating > 1 ? 's' : ''}
                     </span>
                   )}
@@ -905,28 +910,29 @@ export default function CompanyWorkEntries() {
                   placeholder="Great work! Here's some feedback to help you improve..."
                   value={approvalFeedback}
                   onChange={(e) => setApprovalFeedback(e.target.value)}
-                  rows={4}
+                  rows={3}
                   className="resize-none"
                   data-testid="approval-feedback-textarea"
                 />
               </div>
             </div>
           )}
-          <DialogFooter className="flex gap-3">
+          <DialogFooter className="flex flex-col sm:flex-row gap-3 pt-4 border-t">
             <Button 
               variant="outline" 
               onClick={() => setShowApprovalDialog(false)} 
+              className="w-full sm:w-auto"
               data-testid="cancel-approval"
             >
               Cancel
             </Button>
             <Button 
               onClick={confirmApproval}
-              className="bg-green-600 hover:bg-green-700"
+              className="bg-green-600 hover:bg-green-700 w-full sm:w-auto"
               disabled={approveMutation.isPending}
               data-testid="confirm-approval"
             >
-              {approveMutation.isPending ? 'Approving...' : 'Approve Work'}
+              {approveMutation.isPending ? 'Approving...' : 'Approve & Lock Entry'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -934,7 +940,7 @@ export default function CompanyWorkEntries() {
 
       {/* Request Changes Dialog */}
       <Dialog open={showChangesDialog} onOpenChange={setShowChangesDialog}>
-        <DialogContent data-testid="request-changes-dialog">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" data-testid="request-changes-dialog">
           <DialogHeader>
             <DialogTitle>Request Changes</DialogTitle>
             <DialogDescription>
@@ -942,11 +948,13 @@ export default function CompanyWorkEntries() {
             </DialogDescription>
           </DialogHeader>
           {selectedEntry && (
-            <div className="py-4">
-              <h4 className="font-semibold">{selectedEntry.title}</h4>
-              <p className="text-sm text-muted-foreground mb-4">
-                Submitted by: {getEmployeeName(selectedEntry.employeeId)}
-              </p>
+            <div className="py-4 space-y-4">
+              <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg">
+                <h4 className="font-semibold break-words">{selectedEntry.title}</h4>
+                <p className="text-sm text-muted-foreground">
+                  Submitted by: {getEmployeeName(selectedEntry)}
+                </p>
+              </div>
               <div className="space-y-2">
                 <Label htmlFor="feedback">Feedback for Employee</Label>
                 <Textarea
@@ -955,18 +963,25 @@ export default function CompanyWorkEntries() {
                   value={feedback}
                   onChange={(e) => setFeedback(e.target.value)}
                   rows={4}
+                  className="resize-none"
                   data-testid="feedback-textarea"
                 />
               </div>
             </div>
           )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowChangesDialog(false)} data-testid="cancel-changes">
+          <DialogFooter className="flex flex-col sm:flex-row gap-3 pt-4 border-t">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowChangesDialog(false)} 
+              className="w-full sm:w-auto"
+              data-testid="cancel-changes"
+            >
               Cancel
             </Button>
             <Button 
               onClick={confirmRequestChanges}
               disabled={requestChangesMutation.isPending || !feedback.trim()}
+              className="w-full sm:w-auto"
               data-testid="confirm-changes"
             >
               {requestChangesMutation.isPending ? 'Sending...' : 'Request Changes'}
