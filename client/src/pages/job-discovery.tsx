@@ -743,7 +743,7 @@ export default function JobDiscoveryPage() {
               {smartSuggestions?.suggestions && smartSuggestions.suggestions.length > 0 && (
                 <div className="flex flex-wrap gap-1 items-center">
                   <span className="text-xs text-muted-foreground mr-2 py-1 flex items-center gap-1">
-                    <Brain className="h-3 w-3" />
+                    <Sparkles className="h-3 w-3" />
                     AI suggests:
                   </span>
                   {smartSuggestions.suggestions.slice(0, 4).map((suggestion: string, index: number) => (
@@ -1212,7 +1212,7 @@ function TrendingSkillsDialog() {
   const getSkillIcon = (skill: any) => {
     if (skill.isPinned) return <Star className="h-4 w-4 text-yellow-500 fill-current" />;
     if (skill.isFromProfile) return <User className="h-4 w-4 text-blue-500" />;
-    if (skill.isTechnical) return <Brain className="h-4 w-4 text-purple-500" />;
+    if (skill.isTechnical) return <Sparkles className="h-4 w-4 text-purple-500" />;
     return <Globe className="h-4 w-4 text-green-500" />;
   };
 
