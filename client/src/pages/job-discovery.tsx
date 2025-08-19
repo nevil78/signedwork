@@ -1387,7 +1387,7 @@ function TrendingSkillsDialog() {
             ) : (
               <Card>
                 <CardContent className="p-8 text-center">
-                  <Brain className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                  <Sparkles className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                   <h3 className="text-lg font-semibold mb-2">No skills found</h3>
                   <p className="text-muted-foreground">Try adjusting your search or filter criteria</p>
                 </CardContent>
