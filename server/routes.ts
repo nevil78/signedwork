@@ -3586,7 +3586,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Verify this application belongs to a job from this company
-      const job = await storage.getJobListing(application.jobId);
+      const job = await storage.getJobById(application.jobId);
       if (!job || job.companyId !== sessionUser.id) {
         return res.status(403).json({ message: "Unauthorized access to application" });
       }
