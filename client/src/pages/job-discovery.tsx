@@ -363,7 +363,7 @@ export default function JobDiscoveryPage() {
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-2">
                   <Building2 className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">Company Name</span>
+                  <span className="text-sm text-muted-foreground">{job.companyName}</span>
                 </div>
                 <h3 className="text-xl font-semibold mb-2 cursor-pointer hover:text-blue-600" 
                     onClick={() => setSelectedJobId(job.id)}

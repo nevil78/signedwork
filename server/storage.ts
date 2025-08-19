@@ -1419,9 +1419,31 @@ export class DatabaseStorage implements IStorage {
 
   // Job discovery operations
   async searchJobs(filters: JobSearchFilters): Promise<JobListing[]> {
-    let query = db.select().from(jobListings);
+    let query = db.select({
+      id: jobListings.id,
+      companyId: jobListings.companyId,
+      title: jobListings.title,
+      description: jobListings.description,
+      requirements: jobListings.requirements,
+      location: jobListings.location,
+      remoteType: jobListings.remoteType,
+      employmentType: jobListings.employmentType,
+      experienceLevel: jobListings.experienceLevel,
+      salaryRange: jobListings.salaryRange,
+      benefits: jobListings.benefits,
+      skills: jobListings.skills,
+      applicationDeadline: jobListings.applicationDeadline,
+      status: jobListings.status,
+      views: jobListings.views,
+      applicationsCount: jobListings.applicationsCount,
+      createdAt: jobListings.createdAt,
+      updatedAt: jobListings.updatedAt,
+      companyName: companies.name
+    })
+    .from(jobListings)
+    .innerJoin(companies, eq(jobListings.companyId, companies.id));
     
-    const conditions = [];
+    const conditions = [eq(jobListings.status, 'active')]; // Only show active jobs
     
     if (filters.keywords) {
       conditions.push(sql`(${jobListings.title} ILIKE ${'%' + filters.keywords + '%'} OR ${jobListings.description} ILIKE ${'%' + filters.keywords + '%'})`);
@@ -1450,15 +1472,34 @@ export class DatabaseStorage implements IStorage {
       conditions.push(eq(jobListings.companyId, filters.companyId));
     }
     
-    if (conditions.length > 0) {
-      return await query.where(and(...conditions));
-    }
-    
-    return await query;
+    return await query.where(and(...conditions)).orderBy(jobListings.createdAt);
   }
 
   async getJobById(id: string): Promise<JobListing | undefined> {
-    const [job] = await db.select().from(jobListings).where(eq(jobListings.id, id));
+    const [job] = await db.select({
+      id: jobListings.id,
+      companyId: jobListings.companyId,
+      title: jobListings.title,
+      description: jobListings.description,
+      requirements: jobListings.requirements,
+      location: jobListings.location,
+      remoteType: jobListings.remoteType,
+      employmentType: jobListings.employmentType,
+      experienceLevel: jobListings.experienceLevel,
+      salaryRange: jobListings.salaryRange,
+      benefits: jobListings.benefits,
+      skills: jobListings.skills,
+      applicationDeadline: jobListings.applicationDeadline,
+      status: jobListings.status,
+      views: jobListings.views,
+      applicationsCount: jobListings.applicationsCount,
+      createdAt: jobListings.createdAt,
+      updatedAt: jobListings.updatedAt,
+      companyName: companies.name
+    })
+    .from(jobListings)
+    .innerJoin(companies, eq(jobListings.companyId, companies.id))
+    .where(eq(jobListings.id, id));
     return job || undefined;
   }
 
