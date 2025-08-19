@@ -18,7 +18,7 @@ import {
   Search, Filter, MapPin, Clock, DollarSign, Building2, 
   Bookmark, BookmarkCheck, Bell, BellRing, Eye, Send,
   Briefcase, TrendingUp, Star, Users, ChevronRight,
-  Heart, HeartHandshake, Zap, Target, Brain, Globe, 
+  Heart, HeartHandshake, Zap, Target, Sparkles, Globe, 
   Paperclip, FileText, X, Menu, MoreVertical, Download,
   CheckCircle, XCircle, Calendar, User, AlertCircle
 } from 'lucide-react';
@@ -627,7 +627,7 @@ export default function JobDiscoveryPage() {
         <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-cyan-600 rounded-2xl p-6 lg:p-8 text-white">
           <div className="max-w-4xl mx-auto text-center space-y-4">
             <div className="flex items-center justify-center gap-2 mb-4">
-              <Brain className="h-6 w-6 lg:h-8 lg:w-8" />
+              <Sparkles className="h-6 w-6 lg:h-8 lg:w-8" />
               <h1 className="text-2xl lg:text-3xl font-bold">AI-Powered Job Discovery</h1>
             </div>
             <p className="text-lg lg:text-xl opacity-90">
