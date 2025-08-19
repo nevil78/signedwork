@@ -4393,6 +4393,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin endpoint to clean up duplicate applications
+  app.post("/api/admin/cleanup-duplicates", async (req, res) => {
+    try {
+      const result = await storage.cleanupDuplicateApplications();
+      res.json({
+        message: "Duplicate applications cleaned up successfully",
+        deletedCount: result.deletedCount,
+        keptCount: result.keptCount
+      });
+    } catch (error) {
+      console.error("Cleanup duplicates error:", error);
+      res.status(500).json({ message: "Failed to cleanup duplicate applications" });
+    }
+  });
+
   // Skills API Routes
   app.get("/api/skills/trending", async (req, res) => {
     const sessionUser = (req.session as any).user;

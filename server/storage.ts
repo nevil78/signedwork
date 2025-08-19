@@ -1524,7 +1524,8 @@ export class DatabaseStorage implements IStorage {
 
   // Company recruiter methods
   async getCompanyJobApplications(companyId: string): Promise<JobApplication[]> {
-    const applications = await db
+    // Get all applications for company jobs
+    const allApplications = await db
       .select({
         application: jobApplications,
         job: jobListings,
@@ -1536,7 +1537,23 @@ export class DatabaseStorage implements IStorage {
       .where(eq(jobListings.companyId, companyId))
       .orderBy(desc(jobApplications.appliedAt));
     
-    return applications.map(({ application, job, employee }) => ({
+    // Filter to keep only the latest application for each employee-job combination
+    const applicationMap = new Map<string, any>();
+    
+    for (const { application, job, employee } of allApplications) {
+      const key = `${application.employeeId}-${application.jobId}`;
+      const existing = applicationMap.get(key);
+      
+      if (!existing || new Date(application.appliedAt) > new Date(existing.application.appliedAt)) {
+        applicationMap.set(key, { application, job, employee });
+      }
+    }
+    
+    // Convert back to array and sort by application date
+    const uniqueApplications = Array.from(applicationMap.values())
+      .sort((a, b) => new Date(b.application.appliedAt).getTime() - new Date(a.application.appliedAt).getTime());
+    
+    return uniqueApplications.map(({ application, job, employee }) => ({
       ...application,
       job,
       employee
@@ -1580,6 +1597,59 @@ export class DatabaseStorage implements IStorage {
       .returning();
     
     return application;
+  }
+
+  // Clean up duplicate applications - keeps only the latest application for each employee-job combination
+  async cleanupDuplicateApplications(): Promise<{ deletedCount: number; keptCount: number }> {
+    // Get all applications grouped by employee-job combination
+    const allApplications = await db
+      .select()
+      .from(jobApplications)
+      .orderBy(desc(jobApplications.appliedAt));
+    
+    const applicationGroups = new Map<string, JobApplication[]>();
+    
+    // Group applications by employee-job combination
+    for (const application of allApplications) {
+      const key = `${application.employeeId}-${application.jobId}`;
+      if (!applicationGroups.has(key)) {
+        applicationGroups.set(key, []);
+      }
+      applicationGroups.get(key)!.push(application);
+    }
+    
+    const applicationsToDelete: string[] = [];
+    let keptCount = 0;
+    
+    // For each group, keep the latest and mark others for deletion
+    for (const [key, applications] of applicationGroups) {
+      if (applications.length > 1) {
+        // Sort by appliedAt date (latest first)
+        applications.sort((a, b) => new Date(b.appliedAt).getTime() - new Date(a.appliedAt).getTime());
+        
+        // Keep the latest (first in sorted array)
+        keptCount++;
+        
+        // Mark the rest for deletion
+        for (let i = 1; i < applications.length; i++) {
+          applicationsToDelete.push(applications[i].id);
+        }
+      } else {
+        keptCount++;
+      }
+    }
+    
+    // Delete the duplicate applications
+    if (applicationsToDelete.length > 0) {
+      await db
+        .delete(jobApplications)
+        .where(inArray(jobApplications.id, applicationsToDelete));
+    }
+    
+    return {
+      deletedCount: applicationsToDelete.length,
+      keptCount
+    };
   }
 
   // Saved jobs operations
