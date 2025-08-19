@@ -50,6 +50,7 @@ export const employees = pgTable("employees", {
   zipCode: text("zip_code"),
   country: text("country"),
   dateOfBirth: text("date_of_birth"),
+  gender: text("gender"), // male, female, not_prefer_to_say
   nationality: text("nationality"),
   maritalStatus: text("marital_status"),
   hobbies: text("hobbies").array(),

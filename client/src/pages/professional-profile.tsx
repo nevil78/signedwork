@@ -98,6 +98,10 @@ const profileUpdateSchema = z.object({
   skills: z.array(z.string()).optional(),
   specializations: z.array(z.string()).optional(),
   languages: z.array(z.string()).optional(),
+  // Basic Details
+  phone: z.string().optional(),
+  dateOfBirth: z.string().optional(),
+  gender: z.enum(["male", "female", "not_prefer_to_say"]).optional(),
 });
 
 type ProfileSection = "overview" | "skills" | "experience" | "education" | "certifications" | "analytics";
@@ -945,9 +949,13 @@ export default function ProfessionalProfile() {
       preferredWorkType: "hybrid" as const,
       location: "",
       website: "",
-      skills: [],
-      specializations: [],
-      languages: [],
+      skills: [] as string[],
+      specializations: [] as string[],
+      languages: [] as string[],
+      // Basic Details
+      phone: "",
+      dateOfBirth: "",
+      gender: "",
     },
   });
 
@@ -991,9 +999,13 @@ export default function ProfessionalProfile() {
         preferredWorkType: (user.preferredWorkType as any) || "hybrid",
         location: user.location || "",
         website: user.website || "",
-        skills: (user.skills as string[]) || [] as string[],
-        specializations: (user.specializations as string[]) || [] as string[],
-        languages: (user.languages as string[]) || [] as string[],
+        skills: user.skills || [],
+        specializations: user.specializations || [],
+        languages: user.languages || [],
+        // Basic Details
+        phone: user.phone || "",
+        dateOfBirth: user.dateOfBirth || "",
+        gender: (user.gender as any) || "",
       });
     }
   }, [userResponse?.user, editingProfile, profileForm]);
@@ -1325,6 +1337,37 @@ export default function ProfessionalProfile() {
                         </div>
                       </div>
                     )}
+
+                    {/* Basic Details Display Section */}
+                    <div className="border-t pt-6">
+                      <h3 className="text-sm font-medium text-gray-600 mb-3">Basic Details</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {user.phone && (
+                          <div>
+                            <span className="text-xs font-medium text-gray-500">Mobile Number</span>
+                            <p className="text-gray-900">{user.phone}</p>
+                          </div>
+                        )}
+                        
+                        {user.dateOfBirth && (
+                          <div>
+                            <span className="text-xs font-medium text-gray-500">Date of Birth</span>
+                            <p className="text-gray-900">{new Date(user.dateOfBirth).toLocaleDateString()}</p>
+                          </div>
+                        )}
+                        
+                        {user.gender && (
+                          <div>
+                            <span className="text-xs font-medium text-gray-500">Gender</span>
+                            <p className="text-gray-900 capitalize">{user.gender.replace('_', ' ')}</p>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {(!user.phone && !user.dateOfBirth && !user.gender) && (
+                        <p className="text-gray-500 italic text-sm">Add your basic details to complete your profile</p>
+                      )}
+                    </div>
                   </CardContent>
                 </Card>
               </TabsContent>
@@ -1583,6 +1626,62 @@ export default function ProfessionalProfile() {
                     </FormItem>
                   )}
                 />
+
+                {/* Basic Details Section */}
+                <div className="md:col-span-2">
+                  <h3 className="text-lg font-medium text-gray-900 mb-4 border-b pb-2">Basic Details</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <FormField
+                      control={profileForm.control}
+                      name="phone"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Mobile Number</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="e.g., +1 (555) 123-4567" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={profileForm.control}
+                      name="dateOfBirth"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Date of Birth</FormLabel>
+                          <FormControl>
+                            <Input {...field} type="date" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={profileForm.control}
+                      name="gender"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Gender</FormLabel>
+                          <FormControl>
+                            <select
+                              {...field}
+                              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              <option value="">Select gender</option>
+                              <option value="male">Male</option>
+                              <option value="female">Female</option>
+                              <option value="not_prefer_to_say">Not prefer to say</option>
+                            </select>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
               </div>
 
               <div className="flex justify-end space-x-2">
