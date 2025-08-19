@@ -20,7 +20,8 @@ import {
   ArrowLeft, FileText, User, Briefcase, GraduationCap, 
   Award, Mail, Phone, MapPin, Globe, Github, Linkedin,
   Calendar, Building, MapPin as LocationIcon, 
-  Download, ExternalLink, ClipboardList, ChevronDown, ChevronRight
+  Download, ExternalLink, ClipboardList, ChevronDown, ChevronRight,
+  CheckCircle, Shield
 } from 'lucide-react';
 import CompanyNavHeader from '@/components/company-nav-header';
 
@@ -512,44 +513,138 @@ export default function CompanySharedDocumentsPage() {
                                       className="flex justify-between items-start mb-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 p-2 rounded transition-colors"
                                       onClick={() => toggleEntry(entry.id)}
                                     >
-                                      <div className="flex items-center gap-2">
+                                      <div className="flex items-center gap-2 flex-1">
                                         {isExpanded ? (
                                           <ChevronDown className="h-4 w-4 text-gray-500" />
                                         ) : (
                                           <ChevronRight className="h-4 w-4 text-gray-500" />
                                         )}
                                         <h4 className="font-medium text-gray-900 dark:text-gray-100">{entry.title}</h4>
+                                        {entry.approvalStatus === "approved" && (
+                                          <div className="flex items-center gap-1 ml-2">
+                                            <Shield className="h-4 w-4 text-green-600" />
+                                            <Badge variant="outline" className="text-green-700 border-green-300 bg-green-50 dark:bg-green-900/20 dark:text-green-300 dark:border-green-600">
+                                              <CheckCircle className="h-3 w-3 mr-1" />
+                                              Verified
+                                            </Badge>
+                                          </div>
+                                        )}
                                       </div>
-                                      <div className="flex gap-2">
+                                      <div className="flex gap-2 flex-shrink-0">
                                         <Badge variant="outline">{entry.status}</Badge>
                                         <Badge variant="secondary">{entry.priority}</Badge>
                                       </div>
                                     </div>
                                     
                                     {isExpanded && (
-                                      <div className="ml-6 mt-2 space-y-3">
-                                        <p className="text-sm text-gray-600 dark:text-gray-400">{entry.description}</p>
+                                      <div className="ml-6 mt-3 space-y-4">
+                                        {/* Work Entry Details */}
+                                        <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
+                                          <h5 className="font-medium text-gray-900 dark:text-gray-100 mb-2">Work Description</h5>
+                                          <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">{entry.description}</p>
+                                        </div>
                                         
-                                        {entry.tags.length > 0 && (
-                                          <div className="flex flex-wrap gap-1">
-                                            {entry.tags.map((tag: string, tagIndex: number) => (
-                                              <Badge key={tagIndex} variant="outline" className="text-xs">{tag}</Badge>
-                                            ))}
+                                        {/* Work Details Grid */}
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                          <div className="space-y-2">
+                                            <div className="flex justify-between text-sm">
+                                              <span className="text-gray-500">Status:</span>
+                                              <Badge variant="outline">{entry.status}</Badge>
+                                            </div>
+                                            <div className="flex justify-between text-sm">
+                                              <span className="text-gray-500">Priority:</span>
+                                              <Badge variant="secondary">{entry.priority}</Badge>
+                                            </div>
+                                            <div className="flex justify-between text-sm">
+                                              <span className="text-gray-500">Created:</span>
+                                              <span className="text-gray-700 dark:text-gray-300">{new Date(entry.createdAt).toLocaleDateString()}</span>
+                                            </div>
+                                            {entry.updatedAt && entry.updatedAt !== entry.createdAt && (
+                                              <div className="flex justify-between text-sm">
+                                                <span className="text-gray-500">Last Updated:</span>
+                                                <span className="text-gray-700 dark:text-gray-300">{new Date(entry.updatedAt).toLocaleDateString()}</span>
+                                              </div>
+                                            )}
+                                          </div>
+                                          
+                                          <div className="space-y-2">
+                                            {entry.startDate && (
+                                              <div className="flex justify-between text-sm">
+                                                <span className="text-gray-500">Start Date:</span>
+                                                <span className="text-gray-700 dark:text-gray-300">{new Date(entry.startDate).toLocaleDateString()}</span>
+                                              </div>
+                                            )}
+                                            {entry.endDate && (
+                                              <div className="flex justify-between text-sm">
+                                                <span className="text-gray-500">End Date:</span>
+                                                <span className="text-gray-700 dark:text-gray-300">{new Date(entry.endDate).toLocaleDateString()}</span>
+                                              </div>
+                                            )}
+                                            {entry.hoursWorked && (
+                                              <div className="flex justify-between text-sm">
+                                                <span className="text-gray-500">Hours Worked:</span>
+                                                <span className="text-gray-700 dark:text-gray-300">{entry.hoursWorked}h</span>
+                                              </div>
+                                            )}
+                                          </div>
+                                        </div>
+                                        
+                                        {/* Tags */}
+                                        {entry.tags && entry.tags.length > 0 && (
+                                          <div>
+                                            <h6 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Skills & Technologies</h6>
+                                            <div className="flex flex-wrap gap-2">
+                                              {entry.tags.map((tag: string, tagIndex: number) => (
+                                                <Badge key={tagIndex} variant="outline" className="text-xs bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-600">
+                                                  {tag}
+                                                </Badge>
+                                              ))}
+                                            </div>
                                           </div>
                                         )}
                                         
-                                        <div className="text-xs text-gray-500">
-                                          <span>Created: {new Date(entry.createdAt).toLocaleDateString()}</span>
+                                        {/* Company Verification & Rating */}
+                                        <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                                          <div className="flex items-center gap-2 mb-2">
+                                            <Shield className="h-5 w-5 text-green-600 dark:text-green-400" />
+                                            <h6 className="font-medium text-green-800 dark:text-green-200">Company Verification</h6>
+                                          </div>
+                                          <p className="text-sm text-green-700 dark:text-green-300 mb-2">
+                                            This work entry has been verified and approved by {entry.companyName}.
+                                          </p>
+                                          {entry.rating && (
+                                            <div className="mt-3">
+                                              <p className="text-sm font-medium text-green-800 dark:text-green-200">
+                                                Company Rating: {entry.rating}/5 stars
+                                              </p>
+                                              {entry.feedback && (
+                                                <div className="mt-2 p-2 bg-white/50 dark:bg-gray-800/50 rounded">
+                                                  <p className="text-sm text-green-700 dark:text-green-300 italic">"{entry.feedback}"</p>
+                                                </div>
+                                              )}
+                                            </div>
+                                          )}
                                         </div>
                                         
-                                        {entry.rating && (
-                                          <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded">
-                                            <p className="text-sm font-medium text-green-800 dark:text-green-200">
-                                              Company Rating: {entry.rating}/5 stars
-                                            </p>
-                                            {entry.feedback && (
-                                              <p className="text-sm text-green-700 dark:text-green-300 mt-1">{entry.feedback}</p>
-                                            )}
+                                        {/* Attachments */}
+                                        {entry.attachments && entry.attachments.length > 0 && (
+                                          <div>
+                                            <h6 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Attachments</h6>
+                                            <div className="space-y-1">
+                                              {entry.attachments.map((attachment: string, index: number) => (
+                                                <div key={index} className="flex items-center gap-2 text-sm">
+                                                  <ExternalLink className="h-3 w-3 text-gray-400" />
+                                                  <a 
+                                                    href={attachment} 
+                                                    target="_blank" 
+                                                    rel="noopener noreferrer"
+                                                    className="text-blue-600 dark:text-blue-400 hover:underline"
+                                                  >
+                                                    View attachment {index + 1}
+                                                  </a>
+                                                </div>
+                                              ))}
+                                            </div>
                                           </div>
                                         )}
                                       </div>
