@@ -844,80 +844,86 @@ export default function CompanyWorkEntries() {
 
       {/* Enhanced Approval Dialog with Rating System */}
       <Dialog open={showApprovalDialog} onOpenChange={setShowApprovalDialog}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto" data-testid="approval-dialog">
-          <DialogHeader>
+        <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col" data-testid="approval-dialog">
+          <DialogHeader className="flex-shrink-0">
             <DialogTitle>Review & Approve Work Entry</DialogTitle>
             <DialogDescription>
               Rate the quality of work and provide feedback to help the employee grow.
             </DialogDescription>
           </DialogHeader>
-          {selectedEntry && (
-            <div className="space-y-6 py-4">
-              {/* Work Entry Info */}
-              <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg">
-                <h4 className="font-semibold text-lg break-words">{selectedEntry.title}</h4>
-                <p className="text-sm text-muted-foreground">
-                  Submitted by: {getEmployeeName(selectedEntry)}
-                </p>
-                {selectedEntry.description && (
-                  <div className="mt-3">
-                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description:</p>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed break-words whitespace-pre-wrap">
-                      {selectedEntry.description}
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              {/* 5-Star Rating System */}
-              <div className="space-y-3">
-                <Label className="text-sm font-medium">Rate this work (optional)</Label>
-                <div className="flex items-center space-x-2 flex-wrap">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <button
-                      key={star}
-                      type="button"
-                      onClick={() => setRating(star)}
-                      onMouseEnter={() => setHoveredRating(star)}
-                      onMouseLeave={() => setHoveredRating(0)}
-                      className="focus:outline-none transition-transform hover:scale-110 p-1"
-                      data-testid={`star-${star}`}
-                    >
-                      <Star
-                        className={`h-8 w-8 transition-colors ${
-                          star <= (hoveredRating || rating)
-                            ? 'text-yellow-400 fill-yellow-400'
-                            : 'text-gray-300'
-                        }`}
-                      />
-                    </button>
-                  ))}
-                  {rating > 0 && (
-                    <span className="ml-3 text-sm text-gray-600 dark:text-gray-400">
-                      {rating} star{rating > 1 ? 's' : ''}
-                    </span>
+          
+          {/* Scrollable Content */}
+          <div className="flex-1 overflow-y-auto pr-2 -mr-2">
+            {selectedEntry && (
+              <div className="space-y-6 py-4">
+                {/* Work Entry Info */}
+                <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg">
+                  <h4 className="font-semibold text-lg break-words overflow-wrap-anywhere">{selectedEntry.title}</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Submitted by: {getEmployeeName(selectedEntry)}
+                  </p>
+                  {selectedEntry.description && (
+                    <div className="mt-3">
+                      <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description:</p>
+                      <div className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed break-words overflow-wrap-anywhere whitespace-pre-wrap max-w-full">
+                        {selectedEntry.description}
+                      </div>
+                    </div>
                   )}
                 </div>
-              </div>
 
-              {/* Feedback Section */}
-              <div className="space-y-3">
-                <Label htmlFor="approval-feedback" className="text-sm font-medium">
-                  Feedback for Employee (optional)
-                </Label>
-                <Textarea
-                  id="approval-feedback"
-                  placeholder="Great work! Here's some feedback to help you improve..."
-                  value={approvalFeedback}
-                  onChange={(e) => setApprovalFeedback(e.target.value)}
-                  rows={3}
-                  className="resize-none"
-                  data-testid="approval-feedback-textarea"
-                />
+                {/* 5-Star Rating System */}
+                <div className="space-y-3">
+                  <Label className="text-sm font-medium">Rate this work (optional)</Label>
+                  <div className="flex items-center space-x-2 flex-wrap">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        type="button"
+                        onClick={() => setRating(star)}
+                        onMouseEnter={() => setHoveredRating(star)}
+                        onMouseLeave={() => setHoveredRating(0)}
+                        className="focus:outline-none transition-transform hover:scale-110 p-1"
+                        data-testid={`star-${star}`}
+                      >
+                        <Star
+                          className={`h-8 w-8 transition-colors ${
+                            star <= (hoveredRating || rating)
+                              ? 'text-yellow-400 fill-yellow-400'
+                              : 'text-gray-300'
+                          }`}
+                        />
+                      </button>
+                    ))}
+                    {rating > 0 && (
+                      <span className="ml-3 text-sm text-gray-600 dark:text-gray-400">
+                        {rating} star{rating > 1 ? 's' : ''}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Feedback Section */}
+                <div className="space-y-3">
+                  <Label htmlFor="approval-feedback" className="text-sm font-medium">
+                    Feedback for Employee (optional)
+                  </Label>
+                  <Textarea
+                    id="approval-feedback"
+                    placeholder="Great work! Here's some feedback to help you improve..."
+                    value={approvalFeedback}
+                    onChange={(e) => setApprovalFeedback(e.target.value)}
+                    rows={3}
+                    className="resize-none"
+                    data-testid="approval-feedback-textarea"
+                  />
+                </div>
               </div>
-            </div>
-          )}
-          <DialogFooter className="flex flex-col sm:flex-row gap-3 pt-4 border-t">
+            )}
+          </div>
+          
+          {/* Fixed Footer */}
+          <DialogFooter className="flex-shrink-0 flex flex-col sm:flex-row gap-3 pt-4 border-t bg-white dark:bg-gray-950">
             <Button 
               variant="outline" 
               onClick={() => setShowApprovalDialog(false)} 
