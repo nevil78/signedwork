@@ -441,7 +441,7 @@ export default function CompanyRecruiterPage() {
                             className="text-xs"
                             data-testid={`button-view-profile-${application.id}`}
                           >
-                            <Link href={`/employee-profile/${application.employee.id}`}>
+                            <Link href={`/company-employee/${application.employee.id}`}>
                               <ExternalLink className="h-3 w-3 mr-1" />
                               View Profile
                             </Link>
