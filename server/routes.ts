@@ -23,6 +23,7 @@ import { setupGoogleAuth } from "./googleAuth";
 import { OTPEmailService } from "./otpEmailService";
 import { SignupVerificationService } from "./signupVerificationService";
 import { sendEmail } from "./sendgrid";
+import { aiJobService, type EmployeeProfile } from "./aiJobService";
 
 // Global variable to store the Socket.IO server instance for real-time updates
 let io: SocketIOServer;
@@ -3017,21 +3018,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     try {
-      // Get employee profile for better matching
+      // Get employee profile for AI matching
       const employee = await storage.getEmployee(sessionUser.id);
       if (!employee) {
         return res.status(404).json({ message: "Employee profile not found" });
       }
-      
-      // For now, return jobs that match employee's skills or experience
-      // This could be enhanced with ML algorithms in the future
-      const filters = {
-        keywords: employee.skills?.join(' ') || '',
-        experienceLevel: employee.experienceLevel ? [employee.experienceLevel] : undefined
+
+      // Get work history for better matching
+      const workHistory = await storage.getWorkEntries(sessionUser.id);
+
+      // Build employee profile for AI analysis
+      const employeeProfile: EmployeeProfile = {
+        id: employee.id,
+        firstName: employee.firstName || '',
+        lastName: employee.lastName || '',
+        email: employee.email || '',
+        skills: employee.skills || [],
+        experience: employee.experience || '',
+        education: employee.education || '',
+        certifications: employee.certifications || [],
+        workHistory: workHistory.map(w => ({
+          companyName: w.companyName || 'Unknown Company',
+          position: w.position || '',
+          description: w.description || '',
+          skills: w.skills || []
+        })),
+        professionalSummary: employee.professionalSummary || '',
+        location: employee.location || '',
+        preferredJobTypes: employee.preferredJobTypes || [],
+        salaryExpectation: employee.salaryExpectation || ''
       };
+
+      // Get all available jobs
+      const allJobs = await storage.searchJobs({});
       
-      const jobs = await storage.searchJobs(filters);
-      res.json(jobs.slice(0, 5)); // Return top 5 matches
+      // Use AI service to get recommendations
+      const recommendations = await aiJobService.getJobRecommendations(employeeProfile, allJobs);
+      
+      // Return perfect matches only
+      res.json(recommendations.perfectMatches.slice(0, 5));
     } catch (error) {
       console.error("Perfect matches error:", error);
       res.status(500).json({ message: "Failed to get perfect matches" });
@@ -3067,6 +3092,179 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Get saved jobs error:", error);
       res.status(500).json({ message: "Failed to get saved jobs" });
+    }
+  });
+
+  // === AI JOB DISCOVERY ROUTES (must come before /:jobId route) ===
+  
+  // Get AI-powered job recommendations
+  app.get("/api/jobs/ai-recommendations", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    if (!sessionUser || sessionUser.type !== "employee") {
+      return res.status(401).json({ message: "Not authenticated as employee" });
+    }
+    
+    try {
+      // Get employee profile for AI matching
+      const employee = await storage.getEmployee(sessionUser.id);
+      if (!employee) {
+        return res.status(404).json({ message: "Employee profile not found" });
+      }
+
+      // Get work history for better matching
+      const workHistory = await storage.getWorkEntries(sessionUser.id);
+
+      // Build employee profile for AI analysis
+      const employeeProfile: EmployeeProfile = {
+        id: employee.id,
+        firstName: employee.firstName || '',
+        lastName: employee.lastName || '',
+        email: employee.email || '',
+        skills: employee.skills || [],
+        experience: employee.experience || '',
+        education: employee.education || '',
+        certifications: employee.certifications || [],
+        workHistory: workHistory.map(w => ({
+          companyName: w.companyName || 'Unknown Company',
+          position: w.position || '',
+          description: w.description || '',
+          skills: w.skills || []
+        })),
+        professionalSummary: employee.professionalSummary || '',
+        location: employee.location || '',
+        preferredJobTypes: employee.preferredJobTypes || [],
+        salaryExpectation: employee.salaryExpectation || ''
+      };
+
+      // Get all available jobs
+      const allJobs = await storage.searchJobs({});
+      
+      // Use AI service to get comprehensive recommendations
+      const recommendations = await aiJobService.getJobRecommendations(employeeProfile, allJobs);
+      
+      res.json(recommendations);
+    } catch (error) {
+      console.error("AI recommendations error:", error);
+      res.status(500).json({ message: "Failed to get AI recommendations" });
+    }
+  });
+
+  // Get smart search suggestions for employee
+  app.get("/api/jobs/smart-search-suggestions", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    if (!sessionUser || sessionUser.type !== "employee") {
+      return res.status(401).json({ message: "Not authenticated as employee" });
+    }
+    
+    try {
+      // Get employee profile
+      const employee = await storage.getEmployee(sessionUser.id);
+      if (!employee) {
+        return res.status(404).json({ message: "Employee profile not found" });
+      }
+
+      // Get work history for better suggestions
+      const workHistory = await storage.getWorkEntries(sessionUser.id);
+
+      // Build employee profile for AI analysis
+      const employeeProfile: EmployeeProfile = {
+        id: employee.id,
+        firstName: employee.firstName || '',
+        lastName: employee.lastName || '',
+        email: employee.email || '',
+        skills: employee.skills || [],
+        experience: employee.experience || '',
+        education: employee.education || '',
+        certifications: employee.certifications || [],
+        workHistory: workHistory.map(w => ({
+          companyName: w.companyName || 'Unknown Company',
+          position: w.position || '',
+          description: w.description || '',
+          skills: w.skills || []
+        })),
+        professionalSummary: employee.professionalSummary || '',
+        location: employee.location || '',
+        preferredJobTypes: employee.preferredJobTypes || [],
+        salaryExpectation: employee.salaryExpectation || ''
+      };
+      
+      // Use AI service to generate smart search suggestions
+      const suggestions = await aiJobService.generateSmartSearchSuggestions(employeeProfile);
+      
+      res.json({ suggestions });
+    } catch (error) {
+      console.error("Smart search suggestions error:", error);
+      res.status(500).json({ message: "Failed to get search suggestions" });
+    }
+  });
+
+  // Analyze specific job match for employee
+  app.get("/api/jobs/:jobId/ai-analysis", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    if (!sessionUser || sessionUser.type !== "employee") {
+      return res.status(401).json({ message: "Not authenticated as employee" });
+    }
+    
+    try {
+      // Get employee profile
+      const employee = await storage.getEmployee(sessionUser.id);
+      if (!employee) {
+        return res.status(404).json({ message: "Employee profile not found" });
+      }
+
+      // Get job details
+      const job = await storage.getJobById(req.params.jobId);
+      if (!job) {
+        return res.status(404).json({ message: "Job not found" });
+      }
+
+      // Get work history for better matching
+      const workHistory = await storage.getWorkEntries(sessionUser.id);
+
+      // Build employee profile for AI analysis
+      const employeeProfile: EmployeeProfile = {
+        id: employee.id,
+        firstName: employee.firstName || '',
+        lastName: employee.lastName || '',
+        email: employee.email || '',
+        skills: employee.skills || [],
+        experience: employee.experience || '',
+        education: employee.education || '',
+        certifications: employee.certifications || [],
+        workHistory: workHistory.map(w => ({
+          companyName: w.companyName || 'Unknown Company',
+          position: w.position || '',
+          description: w.description || '',
+          skills: w.skills || []
+        })),
+        professionalSummary: employee.professionalSummary || '',
+        location: employee.location || '',
+        preferredJobTypes: employee.preferredJobTypes || [],
+        salaryExpectation: employee.salaryExpectation || ''
+      };
+
+      // Build job listing for analysis
+      const jobListing = {
+        id: job.id,
+        title: job.title,
+        description: job.description,
+        requirements: job.requirements,
+        companyName: job.companyName || 'Unknown Company',
+        location: job.location,
+        employmentType: job.employmentType,
+        experienceLevel: job.experienceLevel,
+        skills: job.requiredSkills || [],
+        salaryRange: job.salaryRange || '',
+        benefits: job.benefits || []
+      };
+      
+      // Use AI service to analyze the match
+      const analysis = await aiJobService.analyzeJobMatch(employeeProfile, jobListing);
+      
+      res.json(analysis);
+    } catch (error) {
+      console.error("AI job analysis error:", error);
+      res.status(500).json({ message: "Failed to analyze job match" });
     }
   });
   
@@ -3303,6 +3501,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to delete job alert" });
     }
   });
+
+
 
   // Object storage routes for file uploads
   app.post("/api/objects/upload", async (req, res) => {

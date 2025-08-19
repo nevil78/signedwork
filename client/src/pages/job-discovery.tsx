@@ -110,6 +110,24 @@ export default function JobDiscoveryPage() {
     refetchOnReconnect: true,
   });
 
+  // AI recommendations query
+  const { data: aiRecommendations } = useQuery({
+    queryKey: ['/api/jobs/ai-recommendations'],
+    enabled: selectedTab === 'discover',
+    refetchInterval: 5 * 60 * 1000, // Auto-refresh every 5 minutes for AI recommendations
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+  });
+
+  // Smart search suggestions query
+  const { data: smartSuggestions } = useQuery({
+    queryKey: ['/api/jobs/smart-search-suggestions'],
+    enabled: selectedTab === 'discover',
+    refetchInterval: 15 * 60 * 1000, // Auto-refresh every 15 minutes for search suggestions
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+  });
+
   // Trending skills query
   const { data: trendingSkills = [] } = useQuery({
     queryKey: ['/api/skills/trending', { personalized: true }],
@@ -704,15 +722,46 @@ export default function JobDiscoveryPage() {
         {/* Advanced Search and Filter Section */}
         <div className="space-y-4 bg-card rounded-lg p-6 border">
           <div className="flex flex-col lg:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-              <Input
-                placeholder="Search jobs by title, skills, or company..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 pr-4 py-3 text-lg border-2 focus:border-blue-500"
-                data-testid="input-job-search"
-              />
+            <div className="flex-1 space-y-2">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                <Input
+                  placeholder="Search jobs by title, skills, or company..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      setFilters(prev => ({ ...prev, keywords: searchTerm }));
+                    }
+                  }}
+                  className="pl-10 pr-4 py-3 text-lg border-2 focus:border-blue-500"
+                  data-testid="input-job-search"
+                />
+              </div>
+              
+              {/* AI-Powered Smart Search Suggestions */}
+              {smartSuggestions?.suggestions && smartSuggestions.suggestions.length > 0 && (
+                <div className="flex flex-wrap gap-1 items-center">
+                  <span className="text-xs text-muted-foreground mr-2 py-1 flex items-center gap-1">
+                    <Brain className="h-3 w-3" />
+                    AI suggests:
+                  </span>
+                  {smartSuggestions.suggestions.slice(0, 4).map((suggestion: string, index: number) => (
+                    <Badge 
+                      key={index}
+                      variant="outline" 
+                      className="cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20 text-xs transition-colors"
+                      onClick={() => {
+                        setSearchTerm(suggestion);
+                        setFilters(prev => ({ ...prev, keywords: suggestion }));
+                      }}
+                      data-testid={`ai-suggestion-${index}`}
+                    >
+                      {suggestion}
+                    </Badge>
+                  ))}
+                </div>
+              )}
             </div>
             {/* Desktop Filters Button */}
             <Button
