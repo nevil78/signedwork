@@ -531,7 +531,6 @@ export default function CompanySharedDocumentsPage() {
                                         )}
                                       </div>
                                       <div className="flex gap-2 flex-shrink-0">
-                                        <Badge variant="outline">{entry.status}</Badge>
                                         <Badge variant="secondary">{entry.priority}</Badge>
                                       </div>
                                     </div>
@@ -569,14 +568,6 @@ export default function CompanySharedDocumentsPage() {
                                         {/* Work Details Grid */}
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                           <div className="space-y-2">
-                                            <div className="flex justify-between text-sm">
-                                              <span className="text-gray-500">Status:</span>
-                                              <Badge variant="outline">{entry.status}</Badge>
-                                            </div>
-                                            <div className="flex justify-between text-sm">
-                                              <span className="text-gray-500">Priority:</span>
-                                              <Badge variant="secondary">{entry.priority}</Badge>
-                                            </div>
                                             <div className="flex justify-between text-sm">
                                               <span className="text-gray-500">Created:</span>
                                               <span className="text-gray-700 dark:text-gray-300">{new Date(entry.createdAt).toLocaleDateString()}</span>
