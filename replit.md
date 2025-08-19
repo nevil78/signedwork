@@ -98,6 +98,8 @@ This project is a LinkedIn-like professional networking platform built with Expr
   * Replaced "View Profile" button with "View Attachments" button in recruiter dashboard for clarity
   * Proper access control ensuring companies only see shared documents from their own job applications
   * Work diary entries organized by company with clear grouping and entry count badges for better readability
+  * Individual work entry expansion functionality with chevron arrows and smooth transitions
+  * **VERIFIED ENTRIES ONLY**: Recruiters can only view work entries that have been verified/approved by companies for enhanced credibility
 
 # User Preferences
 

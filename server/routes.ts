@@ -3643,9 +3643,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (application.includeWorkDiary) {
         const workEntries = await storage.getWorkEntries(application.employeeId);
         
-        // Add company names to each work entry
+        // Filter only verified entries for recruiter viewing
+        const verifiedEntries = workEntries.filter((entry: any) => entry.isApproved === true);
+        
+        // Add company names to each verified work entry
         const workEntriesWithCompanyNames = await Promise.all(
-          workEntries.map(async (entry: any) => {
+          verifiedEntries.map(async (entry: any) => {
             const company = await storage.getCompany(entry.companyId);
             return {
               ...entry,
