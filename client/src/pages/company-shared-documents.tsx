@@ -467,45 +467,74 @@ export default function CompanySharedDocumentsPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    {docs.sharedWorkDiary.map((entry, index) => (
-                      <div key={entry.id} className={index > 0 ? "border-t pt-4" : ""}>
-                        <div className="flex justify-between items-start mb-2">
-                          <h4 className="font-medium text-gray-900 dark:text-gray-100">{entry.title}</h4>
-                          <div className="flex gap-2">
-                            <Badge variant="outline">{entry.status}</Badge>
-                            <Badge variant="secondary">{entry.priority}</Badge>
+                  {(() => {
+                    // Group work entries by company
+                    const entriesByCompany = docs.sharedWorkDiary.reduce((acc: any, entry: any) => {
+                      const companyName = entry.companyName || 'Unknown Company';
+                      if (!acc[companyName]) {
+                        acc[companyName] = [];
+                      }
+                      acc[companyName].push(entry);
+                      return acc;
+                    }, {});
+
+                    return (
+                      <div className="space-y-6">
+                        {Object.entries(entriesByCompany).map(([companyName, entries]: [string, any]) => (
+                          <div key={companyName} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                            <div className="flex items-center gap-2 mb-4">
+                              <Building className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                                {companyName}
+                              </h3>
+                              <Badge variant="secondary" className="ml-auto">
+                                {entries.length} {entries.length === 1 ? 'entry' : 'entries'}
+                              </Badge>
+                            </div>
+                            
+                            <div className="space-y-4">
+                              {entries.map((entry: any, index: number) => (
+                                <div key={entry.id} className={index > 0 ? "border-t border-gray-100 dark:border-gray-800 pt-4" : ""}>
+                                  <div className="flex justify-between items-start mb-2">
+                                    <h4 className="font-medium text-gray-900 dark:text-gray-100">{entry.title}</h4>
+                                    <div className="flex gap-2">
+                                      <Badge variant="outline">{entry.status}</Badge>
+                                      <Badge variant="secondary">{entry.priority}</Badge>
+                                    </div>
+                                  </div>
+                                  
+                                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">{entry.description}</p>
+                                  
+                                  {entry.tags.length > 0 && (
+                                    <div className="flex flex-wrap gap-1 mb-3">
+                                      {entry.tags.map((tag: string, tagIndex: number) => (
+                                        <Badge key={tagIndex} variant="outline" className="text-xs">{tag}</Badge>
+                                      ))}
+                                    </div>
+                                  )}
+                                  
+                                  <div className="flex justify-between items-center text-xs text-gray-500 mb-2">
+                                    <span>{new Date(entry.createdAt).toLocaleDateString()}</span>
+                                  </div>
+                                  
+                                  {entry.rating && (
+                                    <div className="p-2 bg-green-50 dark:bg-green-900/20 rounded">
+                                      <p className="text-sm font-medium text-green-800 dark:text-green-200">
+                                        Company Rating: {entry.rating}/5 stars
+                                      </p>
+                                      {entry.feedback && (
+                                        <p className="text-sm text-green-700 dark:text-green-300">{entry.feedback}</p>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
                           </div>
-                        </div>
-                        
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">{entry.description}</p>
-                        
-                        {entry.tags.length > 0 && (
-                          <div className="flex flex-wrap gap-1 mb-3">
-                            {entry.tags.map((tag, tagIndex) => (
-                              <Badge key={tagIndex} variant="outline" className="text-xs">{tag}</Badge>
-                            ))}
-                          </div>
-                        )}
-                        
-                        <div className="flex justify-between items-center text-xs text-gray-500">
-                          <span>{new Date(entry.createdAt).toLocaleDateString()}</span>
-                          {entry.companyName && <span>@ {entry.companyName}</span>}
-                        </div>
-                        
-                        {entry.rating && (
-                          <div className="mt-2 p-2 bg-green-50 dark:bg-green-900/20 rounded">
-                            <p className="text-sm font-medium text-green-800 dark:text-green-200">
-                              Company Rating: {entry.rating}/5 stars
-                            </p>
-                            {entry.feedback && (
-                              <p className="text-sm text-green-700 dark:text-green-300">{entry.feedback}</p>
-                            )}
-                          </div>
-                        )}
+                        ))}
                       </div>
-                    ))}
-                  </div>
+                    );
+                  })()}
                 </CardContent>
               </Card>
             </div>

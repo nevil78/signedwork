@@ -97,6 +97,7 @@ This project is a LinkedIn-like professional networking platform built with Expr
   * Comprehensive document viewer with employee profile data, work experience, education, certifications, and work diary entries
   * Replaced "View Profile" button with "View Attachments" button in recruiter dashboard for clarity
   * Proper access control ensuring companies only see shared documents from their own job applications
+  * Work diary entries organized by company with clear grouping and entry count badges for better readability
 
 # User Preferences
 
