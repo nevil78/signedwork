@@ -3629,7 +3629,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             portfolioUrl: employee.portfolioUrl,
             githubUrl: employee.githubUrl,
             linkedinUrl: employee.linkedinUrl,
-            profilePhoto: employee.profilePhoto
+            profilePhoto: employee.profilePhoto,
+            // Basic Details
+            phone: employee.phone,
+            dateOfBirth: employee.dateOfBirth,
+            gender: employee.gender
           };
           
           // Get additional profile sections

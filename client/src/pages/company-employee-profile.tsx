@@ -39,17 +39,17 @@ export default function CompanyEmployeeProfile() {
   });
 
   // Get employee experience, education, and certifications
-  const { data: experiences = [] } = useQuery({
+  const { data: experiences = [] } = useQuery<any[]>({
     queryKey: ['/api/company/employee-experience', employeeId],
     enabled: !!employeeId
   });
 
-  const { data: educations = [] } = useQuery({
+  const { data: educations = [] } = useQuery<any[]>({
     queryKey: ['/api/company/employee-education', employeeId],
     enabled: !!employeeId
   });
 
-  const { data: certifications = [] } = useQuery({
+  const { data: certifications = [] } = useQuery<any[]>({
     queryKey: ['/api/company/employee-certifications', employeeId],
     enabled: !!employeeId
   });
@@ -173,6 +173,9 @@ export default function CompanyEmployeeProfile() {
                   {/* Contact Info (Professional Only) */}
                   <div className="text-sm text-muted-foreground">
                     <p data-testid="text-employee-email">{employee.email}</p>
+                    {employee.phone && (
+                      <p data-testid="text-employee-phone">{employee.phone}</p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -258,6 +261,42 @@ export default function CompanyEmployeeProfile() {
                     </li>
                   ))}
                 </ul>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Basic Details */}
+          {(employee.phone || employee.dateOfBirth || employee.gender) && (
+            <Card className="md:col-span-2">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <User className="h-5 w-5" />
+                  Basic Details
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {employee.phone && (
+                    <div>
+                      <span className="text-xs font-medium text-gray-500">Mobile Number</span>
+                      <p className="text-gray-900 dark:text-gray-100">{employee.phone}</p>
+                    </div>
+                  )}
+                  
+                  {employee.dateOfBirth && (
+                    <div>
+                      <span className="text-xs font-medium text-gray-500">Date of Birth</span>
+                      <p className="text-gray-900 dark:text-gray-100">{new Date(employee.dateOfBirth).toLocaleDateString()}</p>
+                    </div>
+                  )}
+                  
+                  {employee.gender && (
+                    <div>
+                      <span className="text-xs font-medium text-gray-500">Gender</span>
+                      <p className="text-gray-900 dark:text-gray-100 capitalize">{employee.gender.replace('_', ' ')}</p>
+                    </div>
+                  )}
+                </div>
               </CardContent>
             </Card>
           )}

@@ -44,6 +44,10 @@ interface SharedProfile {
   githubUrl?: string;
   linkedinUrl?: string;
   profilePhoto?: string;
+  // Basic Details
+  phone?: string;
+  dateOfBirth?: string;
+  gender?: string;
 }
 
 interface SharedExperience {
@@ -325,6 +329,35 @@ export default function CompanySharedDocumentsPage() {
                         {docs.sharedProfile?.languages?.map((language, index) => (
                           <Badge key={index} variant="outline">{language}</Badge>
                         ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Basic Details */}
+                  {(docs.sharedProfile?.phone || docs.sharedProfile?.dateOfBirth || docs.sharedProfile?.gender) && (
+                    <div className="border-t pt-4">
+                      <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-3">Basic Details</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {docs.sharedProfile?.phone && (
+                          <div>
+                            <span className="text-xs font-medium text-gray-500">Mobile Number</span>
+                            <p className="text-gray-900 dark:text-gray-100">{docs.sharedProfile.phone}</p>
+                          </div>
+                        )}
+                        
+                        {docs.sharedProfile?.dateOfBirth && (
+                          <div>
+                            <span className="text-xs font-medium text-gray-500">Date of Birth</span>
+                            <p className="text-gray-900 dark:text-gray-100">{new Date(docs.sharedProfile.dateOfBirth).toLocaleDateString()}</p>
+                          </div>
+                        )}
+                        
+                        {docs.sharedProfile?.gender && (
+                          <div>
+                            <span className="text-xs font-medium text-gray-500">Gender</span>
+                            <p className="text-gray-900 dark:text-gray-100 capitalize">{docs.sharedProfile.gender.replace('_', ' ')}</p>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
