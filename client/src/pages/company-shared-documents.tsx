@@ -544,28 +544,25 @@ export default function CompanySharedDocumentsPage() {
                                           <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed break-words overflow-wrap-anywhere whitespace-pre-wrap">{entry.description}</p>
                                         </div>
 
-                                        {/* Challenges and Learnings */}
-                                        {(entry.challenges || entry.learnings) && (
-                                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                                            {entry.challenges && (
-                                              <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-4 border border-orange-200 dark:border-orange-800">
-                                                <h5 className="font-medium text-orange-900 dark:text-orange-200 mb-2 flex items-center gap-2">
-                                                  <AlertTriangle className="h-4 w-4" />
-                                                  Challenges Faced
-                                                </h5>
-                                                <p className="text-sm text-orange-800 dark:text-orange-300 leading-relaxed break-words overflow-wrap-anywhere whitespace-pre-wrap">{entry.challenges}</p>
-                                              </div>
-                                            )}
-                                            
-                                            {entry.learnings && (
-                                              <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
-                                                <h5 className="font-medium text-blue-900 dark:text-blue-200 mb-2 flex items-center gap-2">
-                                                  <BookOpen className="h-4 w-4" />
-                                                  Key Learnings
-                                                </h5>
-                                                <p className="text-sm text-blue-800 dark:text-blue-300 leading-relaxed break-words overflow-wrap-anywhere whitespace-pre-wrap">{entry.learnings}</p>
-                                              </div>
-                                            )}
+                                        {/* Challenges Faced */}
+                                        {entry.challenges && (
+                                          <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-4 border border-orange-200 dark:border-orange-800">
+                                            <h5 className="font-medium text-orange-900 dark:text-orange-200 mb-2 flex items-center gap-2">
+                                              <AlertTriangle className="h-4 w-4" />
+                                              Challenges Faced
+                                            </h5>
+                                            <p className="text-sm text-orange-800 dark:text-orange-300 leading-relaxed break-words overflow-wrap-anywhere whitespace-pre-wrap">{entry.challenges}</p>
+                                          </div>
+                                        )}
+                                        
+                                        {/* Key Learnings */}
+                                        {entry.learnings && (
+                                          <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
+                                            <h5 className="font-medium text-blue-900 dark:text-blue-200 mb-2 flex items-center gap-2">
+                                              <BookOpen className="h-4 w-4" />
+                                              Key Learnings
+                                            </h5>
+                                            <p className="text-sm text-blue-800 dark:text-blue-300 leading-relaxed break-words overflow-wrap-anywhere whitespace-pre-wrap">{entry.learnings}</p>
                                           </div>
                                         )}
                                         
