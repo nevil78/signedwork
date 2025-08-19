@@ -3100,33 +3100,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const jobId = req.params.jobId;
       const employeeId = sessionUser.id;
       
-      // Check for existing applications by this employee for this job
-      const existingApplications = await storage.getJobApplicationsByEmployeeAndJob(employeeId, jobId);
+      // Check for existing applications by this employee for ANY job at this company
+      const job = await storage.getJobById(jobId);
+      if (!job) {
+        return res.status(404).json({ message: "Job not found" });
+      }
       
-      if (existingApplications.length > 0) {
-        // Check if there's any pending application (not approved or rejected)
-        const pendingApplications = existingApplications.filter(app => 
-          app.status !== 'approved' && app.status !== 'rejected'
+      const existingCompanyApplications = await storage.getEmployeeApplicationsToCompany(employeeId, job.companyId);
+      
+      if (existingCompanyApplications.length > 0) {
+        // Check if there's any non-rejected application
+        const nonRejectedApplications = existingCompanyApplications.filter(app => 
+          app.status !== 'rejected'
         );
         
-        if (pendingApplications.length > 0) {
-          // Get the latest pending application
-          const latestApplication = pendingApplications.sort((a, b) => 
+        if (nonRejectedApplications.length > 0) {
+          // Get the latest non-rejected application
+          const latestApplication = nonRejectedApplications.sort((a, b) => 
             new Date(b.appliedAt).getTime() - new Date(a.appliedAt).getTime()
           )[0];
           
+          let message = "You have already applied to this company. ";
+          
+          if (latestApplication.status === 'applied' || latestApplication.status === 'viewed' || latestApplication.status === 'shortlisted') {
+            message += "Please wait for the recruiter to review your application.";
+          } else if (latestApplication.status === 'interviewed') {
+            message += "Your application is under interview process.";
+          } else if (latestApplication.status === 'offered') {
+            message += "You have a pending job offer from this company.";
+          } else if (latestApplication.status === 'hired') {
+            message += "You are already hired by this company.";
+          } else {
+            message += "Please wait for the current application process to complete.";
+          }
+          
           return res.status(400).json({ 
-            message: "You have already applied for this job. Please wait for the recruiter to review your application.",
+            message,
             existingApplication: {
               id: latestApplication.id,
               status: latestApplication.status,
-              appliedAt: latestApplication.appliedAt
+              appliedAt: latestApplication.appliedAt,
+              jobTitle: latestApplication.job?.title || 'Unknown Position'
             }
           });
         }
         
-        // If all previous applications were approved/rejected, allow new application
-        // This handles cases where someone might reapply for the same role later
+        // All previous applications were rejected, allow new application
       }
       
       const applicationData = insertJobApplicationSchema.parse({

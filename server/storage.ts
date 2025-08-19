@@ -1492,6 +1492,11 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(jobListings).where(eq(jobListings.companyId, companyId));
   }
 
+  async getJobById(jobId: string): Promise<JobListing | null> {
+    const [job] = await db.select().from(jobListings).where(eq(jobListings.id, jobId));
+    return job || null;
+  }
+
   // Job application operations
   async getJobApplications(employeeId: string): Promise<JobApplication[]> {
     return await db.select().from(jobApplications).where(eq(jobApplications.employeeId, employeeId));
@@ -1745,6 +1750,28 @@ export class DatabaseStorage implements IStorage {
       .limit(1);
     
     return !!application;
+  }
+
+  async getEmployeeApplicationsToCompany(employeeId: string, companyId: string): Promise<JobApplication[]> {
+    const applications = await db
+      .select({
+        application: jobApplications,
+        job: jobListings
+      })
+      .from(jobApplications)
+      .innerJoin(jobListings, eq(jobApplications.jobId, jobListings.id))
+      .where(
+        and(
+          eq(jobApplications.employeeId, employeeId),
+          eq(jobListings.companyId, companyId)
+        )
+      )
+      .orderBy(desc(jobApplications.appliedAt));
+    
+    return applications.map(({ application, job }) => ({
+      ...application,
+      job
+    })) as any;
   }
 
   async updateEmployeeCompanyStatus(employeeId: string, companyId: string, isCurrent: boolean): Promise<CompanyEmployee> {

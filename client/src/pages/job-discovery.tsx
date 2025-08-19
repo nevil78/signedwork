@@ -194,8 +194,11 @@ export default function JobDiscoveryPage() {
       let title = "Failed to submit application";
       let description = error.message;
       
-      // Handle duplicate application error specifically
-      if (error.message.includes("already applied")) {
+      // Handle company application restriction error specifically
+      if (error.message.includes("already applied to this company")) {
+        title = "Application to Company Restricted";
+        description = error.message; // Use the specific message from the server
+      } else if (error.message.includes("already applied")) {
         title = "Application Already Submitted";
         description = "You have already applied for this job. Please wait for the recruiter to review your application.";
       }
