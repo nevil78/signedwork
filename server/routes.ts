@@ -3494,9 +3494,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     try {
-      // Verify the employee is associated with this company
+      // Verify the employee is associated with this company (including job applications)
       const employeeCompany = await storage.getEmployeeCompanyRelation(req.params.employeeId, sessionUser.id);
-      if (!employeeCompany) {
+      const hasJobApplication = await storage.hasEmployeeAppliedToCompany(req.params.employeeId, sessionUser.id);
+      
+      if (!employeeCompany && !hasJobApplication) {
         return res.status(403).json({ message: "Employee not associated with your company" });
       }
       

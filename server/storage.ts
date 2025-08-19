@@ -1648,6 +1648,22 @@ export class DatabaseStorage implements IStorage {
     return relation || null;
   }
 
+  async hasEmployeeAppliedToCompany(employeeId: string, companyId: string): Promise<boolean> {
+    const [application] = await db
+      .select()
+      .from(jobApplications)
+      .innerJoin(jobListings, eq(jobApplications.jobId, jobListings.id))
+      .where(
+        and(
+          eq(jobApplications.employeeId, employeeId),
+          eq(jobListings.companyId, companyId)
+        )
+      )
+      .limit(1);
+    
+    return !!application;
+  }
+
   async updateEmployeeCompanyStatus(employeeId: string, companyId: string, isCurrent: boolean): Promise<CompanyEmployee> {
     const [updatedRelation] = await db
       .update(companyEmployees)
