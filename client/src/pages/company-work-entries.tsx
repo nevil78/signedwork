@@ -352,7 +352,7 @@ export default function CompanyWorkEntries() {
                 Work Description
               </h4>
               <div className="text-sm bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800" data-testid={`work-entry-description-${entry.id}`}>
-                <div className="whitespace-pre-wrap text-blue-900 dark:text-blue-100 leading-relaxed">
+                <div className="whitespace-pre-wrap text-blue-900 dark:text-blue-100 leading-relaxed break-words overflow-wrap-anywhere">
                   {entry.description}
                 </div>
               </div>
@@ -844,7 +844,7 @@ export default function CompanyWorkEntries() {
 
       {/* Enhanced Approval Dialog with Rating System */}
       <Dialog open={showApprovalDialog} onOpenChange={setShowApprovalDialog}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" data-testid="approval-dialog">
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto" data-testid="approval-dialog">
           <DialogHeader>
             <DialogTitle>Review & Approve Work Entry</DialogTitle>
             <DialogDescription>
