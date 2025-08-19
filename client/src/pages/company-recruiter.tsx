@@ -433,17 +433,17 @@ export default function CompanyRecruiterPage() {
                             </div>
                           )}
 
-                          {/* View Profile Link */}
+                          {/* View Shared Documents Link */}
                           <Button
                             size="sm"
                             variant="ghost"
                             asChild
                             className="text-xs"
-                            data-testid={`button-view-profile-${application.id}`}
+                            data-testid={`button-view-shared-docs-${application.id}`}
                           >
-                            <Link href={`/company-employee/${application.employee.id}`}>
-                              <ExternalLink className="h-3 w-3 mr-1" />
-                              View Profile
+                            <Link href={`/company-shared-documents/${application.id}`}>
+                              <FileText className="h-3 w-3 mr-1" />
+                              View Attachments
                             </Link>
                           </Button>
 

@@ -3571,7 +3571,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Get employee profile for recruiter view (with application data)
+  // Get employee shared documents for a specific job application
+  app.get("/api/company/applications/:applicationId/shared-documents", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    if (!sessionUser || sessionUser.type !== "company") {
+      return res.status(401).json({ message: "Not authenticated as company" });
+    }
+    
+    try {
+      // First get the job application to verify ownership and check sharing preferences
+      const application = await storage.getJobApplicationWithEmployee(req.params.applicationId);
+      if (!application) {
+        return res.status(404).json({ message: "Application not found" });
+      }
+      
+      // Verify this application belongs to a job from this company
+      const job = await storage.getJobListing(application.jobId);
+      if (!job || job.companyId !== sessionUser.id) {
+        return res.status(403).json({ message: "Unauthorized access to application" });
+      }
+      
+      const sharedDocuments: any = {
+        applicationId: application.id,
+        employeeId: application.employeeId,
+        employee: application.employee,
+        coverLetter: application.coverLetter,
+        attachmentUrl: application.attachmentUrl,
+        attachmentName: application.attachmentName,
+        salaryExpectation: application.salaryExpectation,
+        sharedProfile: null,
+        sharedWorkDiary: null,
+        sharedExperience: null,
+        sharedEducation: null,
+        sharedCertifications: null
+      };
+      
+      // Get shared profile data if employee opted to share it
+      if (application.includeProfile) {
+        const employee = await storage.getEmployee(application.employeeId);
+        if (employee) {
+          // Return safe profile data (excluding sensitive information)
+          sharedDocuments.sharedProfile = {
+            id: employee.id,
+            employeeId: employee.employeeId,
+            firstName: employee.firstName,
+            lastName: employee.lastName,
+            email: employee.email,
+            headline: employee.headline,
+            summary: employee.summary,
+            currentPosition: employee.currentPosition,
+            currentCompany: employee.currentCompany,
+            industry: employee.industry,
+            skills: employee.skills,
+            languages: employee.languages,
+            achievements: employee.achievements,
+            website: employee.website,
+            portfolioUrl: employee.portfolioUrl,
+            githubUrl: employee.githubUrl,
+            linkedinUrl: employee.linkedinUrl,
+            profilePhoto: employee.profilePhoto
+          };
+          
+          // Get additional profile sections
+          sharedDocuments.sharedExperience = await storage.getEmployeeExperiences(application.employeeId);
+          sharedDocuments.sharedEducation = await storage.getEmployeeEducations(application.employeeId);
+          sharedDocuments.sharedCertifications = await storage.getEmployeeCertifications(application.employeeId);
+        }
+      }
+        
+      // Get shared work diary data if employee opted to share it  
+      if (application.includeWorkDiary) {
+        sharedDocuments.sharedWorkDiary = await storage.getWorkEntries(application.employeeId);
+      }
+      
+      res.json(sharedDocuments);
+    } catch (error) {
+      console.error("Get shared documents error:", error);
+      res.status(500).json({ message: "Failed to get shared documents" });
+    }
+  });
+
+  // Legacy endpoint for backward compatibility
   app.get("/api/company/applications/:applicationId/employee", async (req, res) => {
     const sessionUser = (req.session as any).user;
     if (!sessionUser || sessionUser.type !== "company") {

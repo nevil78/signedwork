@@ -89,6 +89,14 @@ This project is a LinkedIn-like professional networking platform built with Expr
   * Smart display showing all work entries when expanded vs. limited preview (3 items)
   * Secondary navigation to Work Diary for comprehensive work management
   * Helpful creation button for users with no work entries yet
+- **SHARED DOCUMENTS SYSTEM**: Implemented proper shared document viewing for job applications:
+  * Fixed authorization issues - companies can now access profiles of employees who applied to their jobs
+  * Added /api/company/applications/:applicationId/shared-documents endpoint for secure access to shared content
+  * Created dedicated shared documents page (/company-shared-documents/:applicationId) instead of general profile redirect
+  * Companies view only what employees specifically chose to share: "include my profile page as a CV" and "include my work diary as experience"
+  * Comprehensive document viewer with employee profile data, work experience, education, certifications, and work diary entries
+  * Replaced "View Profile" button with "View Attachments" button in recruiter dashboard for clarity
+  * Proper access control ensuring companies only see shared documents from their own job applications
 
 # User Preferences
 
