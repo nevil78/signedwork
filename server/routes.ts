@@ -3644,7 +3644,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const workEntries = await storage.getWorkEntries(application.employeeId);
         
         // Filter only verified entries for recruiter viewing
-        const verifiedEntries = workEntries.filter((entry: any) => entry.isApproved === true);
+        const verifiedEntries = workEntries.filter((entry: any) => entry.approvalStatus === "approved");
         
         // Add company names to each verified work entry
         const workEntriesWithCompanyNames = await Promise.all(
