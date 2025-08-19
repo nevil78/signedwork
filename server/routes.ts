@@ -2860,11 +2860,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     try {
-      // Check if this employee is associated with the company
-      const employees = await storage.getCompanyEmployees(sessionUser.id);
-      const hasAccess = employees.some(emp => emp.employeeId === req.params.employeeId);
+      // Check if this employee is associated with the company (including job applications)
+      const employeeCompany = await storage.getEmployeeCompanyRelation(req.params.employeeId, sessionUser.id);
+      const hasJobApplication = await storage.hasEmployeeAppliedToCompany(req.params.employeeId, sessionUser.id);
       
-      if (!hasAccess) {
+      if (!employeeCompany && !hasJobApplication) {
         return res.status(403).json({ message: "No access to this employee's profile" });
       }
       
@@ -2890,11 +2890,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     try {
-      // Check if this employee is associated with the company
-      const employees = await storage.getCompanyEmployees(sessionUser.id);
-      const hasAccess = employees.some(emp => emp.employeeId === req.params.employeeId);
+      // Check if this employee is associated with the company (including job applications)
+      const employeeCompany = await storage.getEmployeeCompanyRelation(req.params.employeeId, sessionUser.id);
+      const hasJobApplication = await storage.hasEmployeeAppliedToCompany(req.params.employeeId, sessionUser.id);
       
-      if (!hasAccess) {
+      if (!employeeCompany && !hasJobApplication) {
         return res.status(403).json({ message: "No access to this employee's profile" });
       }
       
@@ -2915,11 +2915,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     try {
-      // Check if this employee is associated with the company
-      const employees = await storage.getCompanyEmployees(sessionUser.id);
-      const hasAccess = employees.some(emp => emp.employeeId === req.params.employeeId);
+      // Check if this employee is associated with the company (including job applications)
+      const employeeCompany = await storage.getEmployeeCompanyRelation(req.params.employeeId, sessionUser.id);
+      const hasJobApplication = await storage.hasEmployeeAppliedToCompany(req.params.employeeId, sessionUser.id);
       
-      if (!hasAccess) {
+      if (!employeeCompany && !hasJobApplication) {
         return res.status(403).json({ message: "No access to this employee's profile" });
       }
       
@@ -2940,11 +2940,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     try {
-      // Check if this employee is associated with the company
-      const employees = await storage.getCompanyEmployees(sessionUser.id);
-      const hasAccess = employees.some(emp => emp.employeeId === req.params.employeeId);
+      // Check if this employee is associated with the company (including job applications)
+      const employeeCompany = await storage.getEmployeeCompanyRelation(req.params.employeeId, sessionUser.id);
+      const hasJobApplication = await storage.hasEmployeeAppliedToCompany(req.params.employeeId, sessionUser.id);
       
-      if (!hasAccess) {
+      if (!employeeCompany && !hasJobApplication) {
         return res.status(403).json({ message: "No access to this employee's profile" });
       }
       
@@ -2965,11 +2965,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     try {
-      // Check if this employee is associated with the company
-      const employees = await storage.getCompanyEmployees(sessionUser.id);
-      const hasAccess = employees.some(emp => emp.employeeId === req.params.employeeId);
+      // Check if this employee is associated with the company (including job applications)
+      const employeeCompany = await storage.getEmployeeCompanyRelation(req.params.employeeId, sessionUser.id);
+      const hasJobApplication = await storage.hasEmployeeAppliedToCompany(req.params.employeeId, sessionUser.id);
       
-      if (!hasAccess) {
+      if (!employeeCompany && !hasJobApplication) {
         return res.status(403).json({ message: "No access to this employee's profile" });
       }
       
@@ -3498,6 +3498,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const employeeCompany = await storage.getEmployeeCompanyRelation(req.params.employeeId, sessionUser.id);
       const hasJobApplication = await storage.hasEmployeeAppliedToCompany(req.params.employeeId, sessionUser.id);
       
+
+      
       if (!employeeCompany && !hasJobApplication) {
         return res.status(403).json({ message: "Employee not associated with your company" });
       }
@@ -3544,9 +3546,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     try {
-      // Verify the employee is associated with this company
+      // Verify the employee is associated with this company (including job applications)
       const employeeCompany = await storage.getEmployeeCompanyRelation(req.params.employeeId, sessionUser.id);
-      if (!employeeCompany) {
+      const hasJobApplication = await storage.hasEmployeeAppliedToCompany(req.params.employeeId, sessionUser.id);
+      
+      if (!employeeCompany && !hasJobApplication) {
         return res.status(403).json({ message: "Employee not associated with your company" });
       }
       
