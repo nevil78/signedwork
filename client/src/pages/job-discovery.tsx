@@ -328,6 +328,28 @@ export default function JobDiscoveryPage() {
     return colors[status as keyof typeof colors] || 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300';
   };
 
+  const getTimeAgo = (dateString: string) => {
+    const now = new Date();
+    const postDate = new Date(dateString);
+    const diffInSeconds = Math.floor((now.getTime() - postDate.getTime()) / 1000);
+    
+    if (diffInSeconds < 60) {
+      return 'Just now';
+    } else if (diffInSeconds < 3600) {
+      const minutes = Math.floor(diffInSeconds / 60);
+      return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+    } else if (diffInSeconds < 86400) {
+      const hours = Math.floor(diffInSeconds / 3600);
+      return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+    } else if (diffInSeconds < 2592000) {
+      const days = Math.floor(diffInSeconds / 86400);
+      return `${days} day${days > 1 ? 's' : ''} ago`;
+    } else {
+      const months = Math.floor(diffInSeconds / 2592000);
+      return `${months} month${months > 1 ? 's' : ''} ago`;
+    }
+  };
+
   const JobCard = ({ job }: { job: JobListing }) => {
     const saved = isJobSaved(job.id);
     const applied = hasApplied(job.id);
@@ -390,15 +412,7 @@ export default function JobDiscoveryPage() {
               <div className="flex items-center gap-4 text-sm text-muted-foreground">
                 <div className="flex items-center gap-1">
                   <Clock className="h-4 w-4" />
-                  <span>2 days ago</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Eye className="h-4 w-4" />
-                  <span>{job.views || 0} views</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Users className="h-4 w-4" />
-                  <span>{job.applicationsCount || 0} applicants</span>
+                  <span>{getTimeAgo(job.createdAt)}</span>
                 </div>
               </div>
               
