@@ -176,7 +176,17 @@ export default function CompanyRecruiterPage() {
 
   const handleStatusChange = (application: ApplicationWithDetails, newStatusValue: ApplicationStatus) => {
     setSelectedApplication(application);
+    // When changing to a specific status (from action buttons), use that status
     setNewStatus(newStatusValue);
+    setNotes(application.companyNotes || '');
+    setRejectionReason('');
+    setShowStatusDialog(true);
+  };
+
+  const handleManualStatusChange = (application: ApplicationWithDetails) => {
+    setSelectedApplication(application);
+    // For manual status updates, start with current status
+    setNewStatus(application.status as ApplicationStatus);
     setNotes(application.companyNotes || '');
     setRejectionReason('');
     setShowStatusDialog(true);
@@ -430,6 +440,18 @@ export default function CompanyRecruiterPage() {
                                   {action.label}
                                 </Button>
                               ))}
+                              
+                              {/* Manual Status Update Button */}
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleManualStatusChange(application)}
+                                className="text-xs whitespace-nowrap"
+                                data-testid={`button-update-status-${application.id}`}
+                              >
+                                <AlertCircle className="h-3 w-3 mr-1" />
+                                Update Status
+                              </Button>
                             </div>
                           )}
 
