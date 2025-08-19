@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useParams, Link } from 'wouter';
 import { 
@@ -20,7 +20,7 @@ import {
   ArrowLeft, FileText, User, Briefcase, GraduationCap, 
   Award, Mail, Phone, MapPin, Globe, Github, Linkedin,
   Calendar, Building, MapPin as LocationIcon, 
-  Download, ExternalLink, ClipboardList
+  Download, ExternalLink, ClipboardList, ChevronDown, ChevronRight
 } from 'lucide-react';
 import CompanyNavHeader from '@/components/company-nav-header';
 
@@ -115,11 +115,22 @@ interface SharedDocuments {
 
 export default function CompanySharedDocumentsPage() {
   const { applicationId } = useParams<{ applicationId: string }>();
+  const [expandedEntries, setExpandedEntries] = useState<Set<string>>(new Set());
 
   const { data: sharedDocs, isLoading, error } = useQuery({
     queryKey: ['/api/company/applications', applicationId, 'shared-documents'],
     enabled: !!applicationId,
   });
+
+  const toggleEntry = (entryId: string) => {
+    const newExpanded = new Set(expandedEntries);
+    if (newExpanded.has(entryId)) {
+      newExpanded.delete(entryId);
+    } else {
+      newExpanded.add(entryId);
+    }
+    setExpandedEntries(newExpanded);
+  };
 
   if (isLoading) {
     return (
@@ -493,42 +504,59 @@ export default function CompanySharedDocumentsPage() {
                             </div>
                             
                             <div className="space-y-4">
-                              {entries.map((entry: any, index: number) => (
-                                <div key={entry.id} className={index > 0 ? "border-t border-gray-100 dark:border-gray-800 pt-4" : ""}>
-                                  <div className="flex justify-between items-start mb-2">
-                                    <h4 className="font-medium text-gray-900 dark:text-gray-100">{entry.title}</h4>
-                                    <div className="flex gap-2">
-                                      <Badge variant="outline">{entry.status}</Badge>
-                                      <Badge variant="secondary">{entry.priority}</Badge>
+                              {entries.map((entry: any, index: number) => {
+                                const isExpanded = expandedEntries.has(entry.id);
+                                return (
+                                  <div key={entry.id} className={index > 0 ? "border-t border-gray-100 dark:border-gray-800 pt-4" : ""}>
+                                    <div 
+                                      className="flex justify-between items-start mb-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 p-2 rounded transition-colors"
+                                      onClick={() => toggleEntry(entry.id)}
+                                    >
+                                      <div className="flex items-center gap-2">
+                                        {isExpanded ? (
+                                          <ChevronDown className="h-4 w-4 text-gray-500" />
+                                        ) : (
+                                          <ChevronRight className="h-4 w-4 text-gray-500" />
+                                        )}
+                                        <h4 className="font-medium text-gray-900 dark:text-gray-100">{entry.title}</h4>
+                                      </div>
+                                      <div className="flex gap-2">
+                                        <Badge variant="outline">{entry.status}</Badge>
+                                        <Badge variant="secondary">{entry.priority}</Badge>
+                                      </div>
                                     </div>
+                                    
+                                    {isExpanded && (
+                                      <div className="ml-6 mt-2 space-y-3">
+                                        <p className="text-sm text-gray-600 dark:text-gray-400">{entry.description}</p>
+                                        
+                                        {entry.tags.length > 0 && (
+                                          <div className="flex flex-wrap gap-1">
+                                            {entry.tags.map((tag: string, tagIndex: number) => (
+                                              <Badge key={tagIndex} variant="outline" className="text-xs">{tag}</Badge>
+                                            ))}
+                                          </div>
+                                        )}
+                                        
+                                        <div className="text-xs text-gray-500">
+                                          <span>Created: {new Date(entry.createdAt).toLocaleDateString()}</span>
+                                        </div>
+                                        
+                                        {entry.rating && (
+                                          <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded">
+                                            <p className="text-sm font-medium text-green-800 dark:text-green-200">
+                                              Company Rating: {entry.rating}/5 stars
+                                            </p>
+                                            {entry.feedback && (
+                                              <p className="text-sm text-green-700 dark:text-green-300 mt-1">{entry.feedback}</p>
+                                            )}
+                                          </div>
+                                        )}
+                                      </div>
+                                    )}
                                   </div>
-                                  
-                                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">{entry.description}</p>
-                                  
-                                  {entry.tags.length > 0 && (
-                                    <div className="flex flex-wrap gap-1 mb-3">
-                                      {entry.tags.map((tag: string, tagIndex: number) => (
-                                        <Badge key={tagIndex} variant="outline" className="text-xs">{tag}</Badge>
-                                      ))}
-                                    </div>
-                                  )}
-                                  
-                                  <div className="flex justify-between items-center text-xs text-gray-500 mb-2">
-                                    <span>{new Date(entry.createdAt).toLocaleDateString()}</span>
-                                  </div>
-                                  
-                                  {entry.rating && (
-                                    <div className="p-2 bg-green-50 dark:bg-green-900/20 rounded">
-                                      <p className="text-sm font-medium text-green-800 dark:text-green-200">
-                                        Company Rating: {entry.rating}/5 stars
-                                      </p>
-                                      {entry.feedback && (
-                                        <p className="text-sm text-green-700 dark:text-green-300">{entry.feedback}</p>
-                                      )}
-                                    </div>
-                                  )}
-                                </div>
-                              ))}
+                                );
+                              })}
                             </div>
                           </div>
                         ))}

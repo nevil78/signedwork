@@ -3641,7 +3641,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
       // Get shared work diary data if employee opted to share it  
       if (application.includeWorkDiary) {
-        sharedDocuments.sharedWorkDiary = await storage.getWorkEntries(application.employeeId);
+        const workEntries = await storage.getWorkEntries(application.employeeId);
+        
+        // Add company names to each work entry
+        const workEntriesWithCompanyNames = await Promise.all(
+          workEntries.map(async (entry: any) => {
+            const company = await storage.getCompany(entry.companyId);
+            return {
+              ...entry,
+              companyName: company?.name || 'Unknown Company'
+            };
+          })
+        );
+        
+        sharedDocuments.sharedWorkDiary = workEntriesWithCompanyNames;
       }
       
       res.json(sharedDocuments);
