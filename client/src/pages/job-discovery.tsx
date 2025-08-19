@@ -191,9 +191,18 @@ export default function JobDiscoveryPage() {
       setAttachment(null);
     },
     onError: (error: Error) => {
+      let title = "Failed to submit application";
+      let description = error.message;
+      
+      // Handle duplicate application error specifically
+      if (error.message.includes("already applied")) {
+        title = "Application Already Submitted";
+        description = "You have already applied for this job. Please wait for the recruiter to review your application.";
+      }
+      
       toast({ 
-        title: "Failed to submit application", 
-        description: error.message,
+        title, 
+        description,
         variant: "destructive" 
       });
     }
@@ -297,6 +306,11 @@ export default function JobDiscoveryPage() {
   const hasApplied = (jobId: string) => {
     return myApplications.some((app: JobApplication) => app.jobId === jobId);
   };
+  
+  const getApplicationStatus = (jobId: string) => {
+    const application = myApplications.find((app: JobApplication) => app.jobId === jobId);
+    return application?.status || null;
+  };
 
   const getStatusBadgeColor = (status: string) => {
     const colors = {
@@ -396,10 +410,15 @@ export default function JobDiscoveryPage() {
                 </Button>
                 
                 {applied ? (
-                  <Button variant="outline" size="sm" disabled>
-                    <CheckCircle className="h-4 w-4 mr-2" />
-                    Applied
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Badge className={getStatusBadgeColor(getApplicationStatus(job.id) || 'applied')}>
+                      {(getApplicationStatus(job.id) || 'applied').charAt(0).toUpperCase() + (getApplicationStatus(job.id) || 'applied').slice(1)}
+                    </Badge>
+                    <Button variant="outline" size="sm" disabled>
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      Applied
+                    </Button>
+                  </div>
                 ) : (
                   <Button 
                     size="sm"

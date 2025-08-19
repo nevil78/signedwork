@@ -3097,10 +3097,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     try {
+      const jobId = req.params.jobId;
+      const employeeId = sessionUser.id;
+      
+      // Check for existing applications by this employee for this job
+      const existingApplications = await storage.getJobApplicationsByEmployeeAndJob(employeeId, jobId);
+      
+      if (existingApplications.length > 0) {
+        // Check if there's any pending application (not approved or rejected)
+        const pendingApplications = existingApplications.filter(app => 
+          app.status !== 'approved' && app.status !== 'rejected'
+        );
+        
+        if (pendingApplications.length > 0) {
+          // Get the latest pending application
+          const latestApplication = pendingApplications.sort((a, b) => 
+            new Date(b.appliedAt).getTime() - new Date(a.appliedAt).getTime()
+          )[0];
+          
+          return res.status(400).json({ 
+            message: "You have already applied for this job. Please wait for the recruiter to review your application.",
+            existingApplication: {
+              id: latestApplication.id,
+              status: latestApplication.status,
+              appliedAt: latestApplication.appliedAt
+            }
+          });
+        }
+        
+        // If all previous applications were approved/rejected, allow new application
+        // This handles cases where someone might reapply for the same role later
+      }
+      
       const applicationData = insertJobApplicationSchema.parse({
         ...req.body,
-        jobId: req.params.jobId,
-        employeeId: sessionUser.id
+        jobId,
+        employeeId
       });
       
       const application = await storage.createJobApplication(applicationData);
@@ -3117,7 +3149,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Handle duplicate application
+      // Handle duplicate application (database constraint)
       if (error.message?.includes('duplicate') || error.code === '23505') {
         return res.status(400).json({ message: "You have already applied for this job" });
       }

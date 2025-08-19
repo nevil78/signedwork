@@ -1497,6 +1497,19 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(jobApplications).where(eq(jobApplications.employeeId, employeeId));
   }
 
+  async getJobApplicationsByEmployeeAndJob(employeeId: string, jobId: string): Promise<JobApplication[]> {
+    return await db
+      .select()
+      .from(jobApplications)
+      .where(
+        and(
+          eq(jobApplications.employeeId, employeeId),
+          eq(jobApplications.jobId, jobId)
+        )
+      )
+      .orderBy(desc(jobApplications.appliedAt));
+  }
+
   async getJobApplicationsForJob(jobId: string): Promise<JobApplication[]> {
     return await db.select().from(jobApplications).where(eq(jobApplications.jobId, jobId));
   }
