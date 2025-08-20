@@ -1382,7 +1382,18 @@ export default function AuthPage() {
         </header>
 
         <main className="flex-1 py-12 px-4 sm:px-6 lg:px-8">
-          <div className="max-w-md mx-auto">
+          <div className="max-w-md mx-auto space-y-6">
+            
+            {/* Error Messages - Outside the box, displayed above */}
+            {loginError && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
+                <p className="text-red-600 text-sm font-medium">
+                  Invalid credentials. Please check your email and password.
+                </p>
+              </div>
+            )}
+            
+            {/* Main Sign In Box - Fixed size container */}
             <Card className="rounded-2xl shadow-xl">
               <CardContent className="p-8">
                 <div className="text-center mb-6">
@@ -1392,6 +1403,8 @@ export default function AuthPage() {
                 
                 <Form {...loginForm}>
                   <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-6">
+                    
+                    {/* Account Type - Inside the box */}
                     <FormField
                       control={loginForm.control}
                       name="accountType"
@@ -1421,6 +1434,7 @@ export default function AuthPage() {
                       )}
                     />
                     
+                    {/* Email - Inside the box */}
                     <FormField
                       control={loginForm.control}
                       name="email"
@@ -1432,7 +1446,13 @@ export default function AuthPage() {
                               type="email" 
                               placeholder="your@email.com" 
                               {...field}
-                              className={`${fieldState.error ? 'border-red-500 border-2 animate-error-blink focus:border-red-600' : ''}`}
+                              className={getFieldErrorClass("email", fieldState)}
+                              onChange={(e) => {
+                                field.onChange(e);
+                                if (e.target.value.trim()) {
+                                  setLoginError(false);
+                                }
+                              }}
                               data-testid="login-email-input"
                             />
                           </FormControl>
@@ -1441,6 +1461,7 @@ export default function AuthPage() {
                       )}
                     />
                     
+                    {/* Password - Inside the box */}
                     <FormField
                       control={loginForm.control}
                       name="password"
@@ -1451,7 +1472,13 @@ export default function AuthPage() {
                             <PasswordInput 
                               field={field} 
                               placeholder="••••••••"
-                              className={`${fieldState.error ? 'border-red-500 border-2 animate-error-blink focus:border-red-600' : ''}`}
+                              className={getFieldErrorClass("password", fieldState)}
+                              onChange={(e) => {
+                                field.onChange(e);
+                                if (e.target.value.trim()) {
+                                  setLoginError(false);
+                                }
+                              }}
                               data-testid="login-password-input"
                             />
                           </FormControl>
@@ -1460,6 +1487,7 @@ export default function AuthPage() {
                       )}
                     />
                     
+                    {/* Remember me & Forgot password - Inside the box */}
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-2">
                         <Checkbox id="remember" />
@@ -1470,14 +1498,17 @@ export default function AuthPage() {
                       </Link>
                     </div>
                     
+                    {/* Sign In Button - Inside the box */}
                     <Button 
                       type="submit" 
                       className="w-full" 
                       disabled={login.isPending}
+                      data-testid="button-sign-in"
                     >
                       {login.isPending ? "Signing In..." : "Sign In"}
                     </Button>
 
+                    {/* Google Sign In - Only for employees, inside the box */}
                     {loginForm.watch("accountType") === "employee" && (
                       <>
                         <div className="relative">
@@ -1507,20 +1538,24 @@ export default function AuthPage() {
                       </>
                     )}
                     
-                    <div className="text-center text-sm text-slate-600">
-                      Don't have an account?{" "}
-                      <Button 
-                        variant="link" 
-                        className="p-0 h-auto text-primary hover:text-primary-dark font-medium"
-                        onClick={() => setCurrentView("selection")}
-                      >
-                        Sign up
-                      </Button>
-                    </div>
                   </form>
                 </Form>
               </CardContent>
             </Card>
+            
+            {/* Sign Up Link - Outside the box, displayed below */}
+            <div className="text-center text-sm text-slate-600">
+              Don't have an account?{" "}
+              <Button 
+                variant="link" 
+                className="p-0 h-auto text-primary hover:text-primary-dark font-medium"
+                onClick={() => setCurrentView("selection")}
+                data-testid="link-sign-up"
+              >
+                Sign up
+              </Button>
+            </div>
+            
           </div>
         </main>
       </div>
