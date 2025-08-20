@@ -8,7 +8,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Mail, Send, CheckCircle } from "lucide-react";
 import signedworkLogo from "@assets/Signed-Logo_1755167773532.png";
@@ -24,6 +24,12 @@ type ContactFormData = z.infer<typeof contactSchema>;
 export default function ContactPage() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const { toast } = useToast();
+
+  // Check if user is authenticated
+  const { data: authUser } = useQuery({
+    queryKey: ["/api/auth/user"],
+    retry: false,
+  });
 
   const form = useForm<ContactFormData>({
     resolver: zodResolver(contactSchema),
@@ -59,12 +65,22 @@ export default function ContactPage() {
     contactMutation.mutate(data);
   };
 
+  // Smart navigation: redirect to appropriate page based on auth status
+  const getHomeUrl = () => {
+    if (authUser) {
+      // User is logged in, redirect to appropriate dashboard
+      return authUser.type === "company" ? "/company-dashboard" : "/dashboard";
+    }
+    // User is not logged in, redirect to main sign-in page
+    return "/";
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
       <header className="bg-white shadow-sm border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <a href="/" className="flex items-center hover:opacity-80 transition-opacity cursor-pointer">
+            <a href={getHomeUrl()} className="flex items-center hover:opacity-80 transition-opacity cursor-pointer">
               <img src={signedworkLogo} alt="Signedwork" className="h-8 w-8 mr-3" />
               <span className="text-xl font-bold text-slate-800">Signedwork</span>
             </a>
@@ -207,7 +223,7 @@ export default function ContactPage() {
                     Send Another Message
                   </Button>
                   <Button
-                    onClick={() => window.location.href = "/"}
+                    onClick={() => window.location.href = getHomeUrl()}
                     data-testid="button-back-home"
                   >
                     Back to Home
