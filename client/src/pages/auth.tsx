@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { insertEmployeeSchema, insertCompanySchema, loginSchema, type InsertEmployee, type InsertCompany, type LoginData } from "@shared/schema";
 import { Link } from "wouter";
 
@@ -203,14 +203,19 @@ export default function AuthPage() {
       });
     },
     onSuccess: (response: any) => {
+      // Invalidate auth queries to refresh authentication state
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/session-status"] });
+      
       toast({
         title: "Account Created!",
         description: response.message || "Your account has been created successfully. Redirecting to dashboard...",
       });
+      
       // Direct redirect to employee dashboard after successful signup
       setTimeout(() => {
         window.location.href = "/summary";
-      }, 1500);
+      }, 1000);
     },
     onError: (error: any) => {
       toast({

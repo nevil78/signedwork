@@ -404,14 +404,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Clean up pending user data
       await storage.deletePendingEmployeeByEmail(email);
 
+      // Automatically log in the user by creating a session
+      const sessionUser = {
+        id: employee.id,
+        email: employee.email,
+        firstName: employee.firstName,
+        lastName: employee.lastName,
+        userType: "employee" as const
+      };
+
+      // Store user in session
+      (req.session as any).user = sessionUser;
+      
+      // Debug logging for session storage
+      console.log("Session user stored:", sessionUser);
+      console.log("Session after storage:", (req.session as any).user);
+
       // Remove password from response
       const { password: _, ...employeeResponse } = employee;
 
       res.status(201).json({
-        message: "Account created successfully! You can now login.",
+        message: "Account created successfully! Redirecting to dashboard...",
         user: employeeResponse,
         userType: "employee",
-        verified: true
+        verified: true,
+        authenticated: true
       });
     } catch (error: any) {
       console.error("Employee OTP verification error:", error);
