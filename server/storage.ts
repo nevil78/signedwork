@@ -103,17 +103,21 @@ function generateAdminId(): string {
 export interface IStorage {
   // Employee operations
   getEmployee(id: string): Promise<Employee | undefined>;
+  getEmployeeById(id: string): Promise<Employee | undefined>;
   getEmployeeByEmail(email: string): Promise<Employee | undefined>;
   createEmployee(employee: InsertEmployee): Promise<Employee>;
   createEmployeeWithHashedPassword(employee: InsertEmployee): Promise<Employee>;
   updateEmployee(id: string, data: Partial<Employee>): Promise<Employee>;
+  deleteEmployee(id: string): Promise<void>;
   
   // Company operations
   getCompany(id: string): Promise<Company | undefined>;
+  getCompanyById(id: string): Promise<Company | undefined>;
   getCompanyByEmail(email: string): Promise<Company | undefined>;
   createCompany(company: InsertCompany): Promise<Company>;
   createCompanyWithHashedPassword(company: InsertCompany): Promise<Company>;
   updateCompany(id: string, data: Partial<Company>): Promise<Company>;
+  deleteCompany(id: string): Promise<void>;
   
   // Authentication
   authenticateEmployee(email: string, password: string): Promise<Employee | null>;
@@ -610,6 +614,54 @@ export class DatabaseStorage implements IStorage {
       .where(eq(companies.id, id))
       .returning();
     return company;
+  }
+
+  async getEmployeeById(id: string): Promise<Employee | undefined> {
+    const [employee] = await db.select().from(employees).where(eq(employees.id, id));
+    return employee;
+  }
+
+  async getCompanyById(id: string): Promise<Company | undefined> {
+    const [company] = await db.select().from(companies).where(eq(companies.id, id));
+    return company;
+  }
+
+  async deleteEmployee(id: string): Promise<void> {
+    await db.transaction(async (tx) => {
+      // Delete related data first due to foreign key constraints
+      await tx.delete(experiences).where(eq(experiences.employeeId, id));
+      await tx.delete(educations).where(eq(educations.employeeId, id));
+      await tx.delete(certifications).where(eq(certifications.employeeId, id));
+      await tx.delete(projects).where(eq(projects.employeeId, id));
+      await tx.delete(endorsements).where(eq(endorsements.employeeId, id));
+      await tx.delete(workEntries).where(eq(workEntries.employeeId, id));
+      await tx.delete(companyEmployees).where(eq(companyEmployees.employeeId, id));
+      await tx.delete(employeeCompanies).where(eq(employeeCompanies.employeeId, id));
+      await tx.delete(jobApplications).where(eq(jobApplications.employeeId, id));
+      await tx.delete(savedJobs).where(eq(savedJobs.employeeId, id));
+      await tx.delete(jobAlerts).where(eq(jobAlerts.employeeId, id));
+      await tx.delete(profileViews).where(eq(profileViews.viewedEmployeeId, id));
+      await tx.delete(feedbacks).where(eq(feedbacks.employeeId, id));
+      
+      // Finally delete the employee
+      await tx.delete(employees).where(eq(employees.id, id));
+    });
+  }
+
+  async deleteCompany(id: string): Promise<void> {
+    await db.transaction(async (tx) => {
+      // Delete related data first due to foreign key constraints
+      await tx.delete(workEntries).where(eq(workEntries.companyId, id));
+      await tx.delete(companyEmployees).where(eq(companyEmployees.companyId, id));
+      await tx.delete(employeeCompanies).where(eq(employeeCompanies.companyId, id));
+      await tx.delete(companyInvitationCodes).where(eq(companyInvitationCodes.companyId, id));
+      await tx.delete(jobListings).where(eq(jobListings.companyId, id));
+      await tx.delete(profileViews).where(eq(profileViews.viewerCompanyId, id));
+      await tx.delete(feedbacks).where(eq(feedbacks.companyId, id));
+      
+      // Finally delete the company
+      await tx.delete(companies).where(eq(companies.id, id));
+    });
   }
 
   async authenticateEmployee(email: string, password: string): Promise<Employee | null> {

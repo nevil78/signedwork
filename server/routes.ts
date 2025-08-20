@@ -1243,6 +1243,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Delete employee (admin only)
+  app.delete("/api/admin/employees/:id", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    if (!sessionUser || sessionUser.type !== "admin") {
+      return res.status(401).json({ message: "Not authenticated as admin" });
+    }
+    
+    try {
+      const { id } = req.params;
+      
+      // Get employee details for logging
+      const employee = await storage.getEmployeeById(id);
+      if (!employee) {
+        return res.status(404).json({ message: "Employee not found" });
+      }
+      
+      // Delete employee and all related data
+      await storage.deleteEmployee(id);
+      
+      console.log(`Admin ${sessionUser.id} deleted employee ${employee.employeeId} (${employee.email})`);
+      
+      res.json({ 
+        message: `Employee ${employee.firstName} ${employee.lastName} deleted successfully` 
+      });
+    } catch (error) {
+      console.error("Delete employee error:", error);
+      res.status(500).json({ message: "Failed to delete employee" });
+    }
+  });
+
   // Toggle company status (admin only)
   app.patch("/api/admin/companies/:id/toggle-status", async (req, res) => {
     const sessionUser = (req.session as any).user;
@@ -1267,6 +1298,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Toggle company status error:", error);
       res.status(500).json({ message: "Failed to update company status" });
+    }
+  });
+
+  // Delete company (admin only)
+  app.delete("/api/admin/companies/:id", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    if (!sessionUser || sessionUser.type !== "admin") {
+      return res.status(401).json({ message: "Not authenticated as admin" });
+    }
+    
+    try {
+      const { id } = req.params;
+      
+      // Get company details for logging
+      const company = await storage.getCompanyById(id);
+      if (!company) {
+        return res.status(404).json({ message: "Company not found" });
+      }
+      
+      // Delete company and all related data
+      await storage.deleteCompany(id);
+      
+      console.log(`Admin ${sessionUser.id} deleted company ${company.companyId} (${company.email})`);
+      
+      res.json({ 
+        message: `Company ${company.name} deleted successfully` 
+      });
+    } catch (error) {
+      console.error("Delete company error:", error);
+      res.status(500).json({ message: "Failed to delete company" });
     }
   });
 

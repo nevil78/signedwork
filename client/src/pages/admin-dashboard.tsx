@@ -11,12 +11,13 @@ import CompanyManagement from "@/components/CompanyManagement";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Users, Building, Briefcase, TrendingUp, LogOut, 
-  ShieldCheck, UserCheck, UserX, Calendar, Mail, Search, Shield, MessageSquare, Menu
+  ShieldCheck, UserCheck, UserX, Calendar, Mail, Search, Shield, MessageSquare, Menu, Trash2
 } from "lucide-react";
 import signedworkLogo from "@assets/Signed-work-Logo (1)_1755168042120.png";
 import { format } from "date-fns";
@@ -111,6 +112,36 @@ export default function AdminDashboard() {
       toast({
         title: "Status updated",
         description: "Company status has been updated successfully",
+      });
+    },
+  });
+
+  // Delete employee
+  const deleteEmployeeMutation = useMutation({
+    mutationFn: (id: string) =>
+      apiRequest("DELETE", `/api/admin/employees/${id}`, {}),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/employees"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
+      toast({
+        title: "Employee deleted",
+        description: "Employee has been permanently deleted",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Delete company
+  const deleteCompanyMutation = useMutation({
+    mutationFn: (id: string) =>
+      apiRequest("DELETE", `/api/admin/companies/${id}`, {}),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/companies"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
+      toast({
+        title: "Company deleted",
+        description: "Company has been permanently deleted",
+        variant: "destructive",
       });
     },
   });
@@ -401,6 +432,37 @@ export default function AdminDashboard() {
                               <span className="text-sm text-muted-foreground">
                                 {employee.isActive ? "Deactivate" : "Activate"}
                               </span>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm" 
+                                    data-testid={`button-delete-employee-${employee.id}`}
+                                    className="ml-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Delete Employee</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Are you sure you want to permanently delete <strong>{employee.firstName} {employee.lastName}</strong>? 
+                                      This action cannot be undone and will remove all associated data including work entries, applications, and profile information.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={() => deleteEmployeeMutation.mutate(employee.id)}
+                                      className="bg-red-600 hover:bg-red-700 text-white"
+                                      disabled={deleteEmployeeMutation.isPending}
+                                    >
+                                      {deleteEmployeeMutation.isPending ? "Deleting..." : "Delete Employee"}
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
                             </div>
                           </TableCell>
                         </TableRow>
@@ -492,6 +554,37 @@ export default function AdminDashboard() {
                               <span className="text-sm text-muted-foreground">
                                 {company.isActive ? "Deactivate" : "Activate"}
                               </span>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm" 
+                                    data-testid={`button-delete-company-${company.id}`}
+                                    className="ml-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Delete Company</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Are you sure you want to permanently delete <strong>{company.name}</strong>? 
+                                      This action cannot be undone and will remove all associated data including employees, work entries, job listings, and company information.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={() => deleteCompanyMutation.mutate(company.id)}
+                                      className="bg-red-600 hover:bg-red-700 text-white"
+                                      disabled={deleteCompanyMutation.isPending}
+                                    >
+                                      {deleteCompanyMutation.isPending ? "Deleting..." : "Delete Company"}
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
                             </div>
                           </TableCell>
                         </TableRow>
