@@ -110,6 +110,7 @@ export function ChangePasswordForm() {
                 placeholder="Enter your current password"
                 {...form.register("currentPassword")}
                 className={form.formState.errors.currentPassword ? "border-red-500" : ""}
+                maxLength={12}
                 data-testid="input-current-password"
               />
               <Button
@@ -140,6 +141,7 @@ export function ChangePasswordForm() {
                 placeholder="Enter your new password"
                 {...form.register("newPassword")}
                 className={form.formState.errors.newPassword ? "border-red-500" : ""}
+                maxLength={12}
                 data-testid="input-new-password"
               />
               <Button
@@ -173,6 +175,7 @@ export function ChangePasswordForm() {
                 placeholder="Confirm your new password"
                 {...form.register("confirmPassword")}
                 className={form.formState.errors.confirmPassword ? "border-red-500" : ""}
+                maxLength={12}
                 data-testid="input-confirm-password"
               />
               <Button

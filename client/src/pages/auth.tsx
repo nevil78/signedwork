@@ -71,6 +71,7 @@ const PasswordInput = memo(({ field, placeholder, className = "" }: { field: any
         type={showPassword ? "text" : "password"}
         placeholder={placeholder}
         className={`pr-12 ${className}`}
+        maxLength={12}
         data-testid="input-password"
       />
       <Button

@@ -250,6 +250,7 @@ export function ForgotPasswordForm({ onBack }: { onBack: () => void }) {
                 placeholder="Enter your new password"
                 {...resetForm.register("newPassword")}
                 className={resetForm.formState.errors.newPassword ? "border-red-500" : ""}
+                maxLength={12}
                 data-testid="input-new-password"
               />
               <Button
@@ -280,6 +281,7 @@ export function ForgotPasswordForm({ onBack }: { onBack: () => void }) {
                 placeholder="Confirm your new password"
                 {...resetForm.register("confirmPassword")}
                 className={resetForm.formState.errors.confirmPassword ? "border-red-500" : ""}
+                maxLength={12}
                 data-testid="input-confirm-password"
               />
               <Button
