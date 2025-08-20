@@ -259,6 +259,19 @@ export default function AuthPage() {
     }
   }, [currentView, companyForm]);
 
+  // Reset login form and clear errors when switching to login view
+  useEffect(() => {
+    if (currentView === "login") {
+      loginForm.reset({
+        email: "",
+        password: "",
+        accountType: "employee",
+      });
+      setLoginError(false); // Clear login error state
+      setFieldErrors({});
+    }
+  }, [currentView, loginForm]);
+
   const employeeRegistration = useMutation({
     mutationFn: async (data: InsertEmployee) => {
       return await apiRequest("POST", "/api/auth/signup/employee", {
