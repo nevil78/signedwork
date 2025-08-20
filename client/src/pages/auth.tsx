@@ -320,8 +320,7 @@ export default function AuthPage() {
               <nav className="hidden md:flex space-x-8">
                 <a href="#" className="text-slate-600 hover:text-primary transition-colors">About</a>
                 <a href="#" className="text-slate-600 hover:text-primary transition-colors">Support</a>
-                <a href="#" className="text-slate-600 hover:text-primary transition-colors">Contact</a>
-
+                <a href="/contact" className="text-slate-600 hover:text-primary transition-colors">Contact</a>
               </nav>
             </div>
           </div>
@@ -1025,7 +1024,7 @@ export default function AuthPage() {
               <nav className="hidden md:flex space-x-8">
                 <a href="#" className="text-slate-600 hover:text-primary transition-colors">About</a>
                 <a href="#" className="text-slate-600 hover:text-primary transition-colors">Support</a>
-                <a href="#" className="text-slate-600 hover:text-primary transition-colors">Contact</a>
+                <a href="/contact" className="text-slate-600 hover:text-primary transition-colors">Contact</a>
               </nav>
             </div>
           </div>

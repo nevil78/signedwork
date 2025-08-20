@@ -14,7 +14,7 @@ import {
   insertEmployeeCompanySchema, insertJobListingSchema, insertJobApplicationSchema,
   insertSavedJobSchema, insertJobAlertSchema, insertAdminSchema,
   requestPasswordResetSchema, verifyOTPSchema, resetPasswordSchema, changePasswordSchema,
-  insertFeedbackSchema, feedbackResponseSchema
+  insertFeedbackSchema, feedbackResponseSchema, contactFormSchema
 } from "@shared/schema";
 import { sendOTPEmail, generateOTPCode, isOTPExpired } from "./emailService";
 import { sendPasswordResetOTP } from "./sendgrid";
@@ -4890,7 +4890,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Contact form submission endpoint
+  app.post("/api/contact", async (req, res) => {
+    try {
+      const validatedData = contactFormSchema.parse(req.body);
+      const { name, email, message } = validatedData;
 
+      // Prepare email content
+      const emailSubject = `Contact Form Submission from ${name}`;
+      const emailContent = `
+New contact form submission from Signedwork:
+
+Name: ${name}
+Email: ${email}
+
+Message:
+${message}
+
+---
+This message was sent through the Signedwork contact form.
+      `.trim();
+
+      // Send email to support
+      const emailResult = await sendEmail(
+        process.env.SENDGRID_API_KEY!,
+        {
+          to: "support@signedwork.com",
+          from: "noreply@signedwork.com",
+          subject: emailSubject,
+          text: emailContent,
+        }
+      );
+
+      if (emailResult) {
+        res.json({ message: "Message sent successfully" });
+      } else {
+        res.status(500).json({ message: "Failed to send message" });
+      }
+    } catch (error) {
+      console.error("Contact form submission error:", error);
+      res.status(500).json({ message: "Failed to send message" });
+    }
+  });
 
   return httpServer;
 }
