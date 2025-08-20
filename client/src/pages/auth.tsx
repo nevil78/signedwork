@@ -577,11 +577,11 @@ export default function AuthPage() {
                       <label htmlFor="terms" className="text-sm text-slate-600">
                         I agree to the{" "}
                         <Link href="/terms">
-                          <a className="text-primary hover:text-primary-dark" target="_blank" rel="noopener noreferrer">Terms of Service</a>
+                          <a className="text-primary hover:text-primary-dark">Terms of Service</a>
                         </Link>{" "}
                         and{" "}
                         <Link href="/privacy">
-                          <a className="text-primary hover:text-primary-dark" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
+                          <a className="text-primary hover:text-primary-dark">Privacy Policy</a>
                         </Link>
                       </label>
                     </div>
@@ -1048,11 +1048,11 @@ export default function AuthPage() {
                       <label htmlFor="company-terms" className="text-sm text-slate-600">
                         I agree to the{" "}
                         <Link href="/terms">
-                          <a className="text-primary hover:text-primary-dark" target="_blank" rel="noopener noreferrer">Terms of Service</a>
+                          <a className="text-primary hover:text-primary-dark">Terms of Service</a>
                         </Link>{" "}
                         and{" "}
                         <Link href="/privacy">
-                          <a className="text-primary hover:text-primary-dark" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
+                          <a className="text-primary hover:text-primary-dark">Privacy Policy</a>
                         </Link>
                       </label>
                     </div>

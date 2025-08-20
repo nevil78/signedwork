@@ -10,7 +10,7 @@ export default function TermsOfService() {
             <button 
               className="flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors"
               onClick={() => {
-                if (window.history.length > 1) {
+                if (document.referrer && document.referrer.includes(window.location.origin)) {
                   window.history.back();
                 } else {
                   window.location.href = "/";
