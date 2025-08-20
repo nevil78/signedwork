@@ -1384,6 +1384,12 @@ export default function AuthPage() {
         <main className="flex-1 py-12 px-4 sm:px-6 lg:px-8">
           <div className="max-w-md mx-auto space-y-6">
             
+            {/* Header - Outside the box */}
+            <div className="text-center">
+              <h2 className="text-2xl font-bold text-slate-900">Sign In</h2>
+              <p className="text-sm text-slate-600 mt-2">Welcome back! Please sign in to your account</p>
+            </div>
+            
             {/* Error Messages - Outside the box, displayed above */}
             {loginError && (
               <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
@@ -1393,13 +1399,9 @@ export default function AuthPage() {
               </div>
             )}
             
-            {/* Main Sign In Box - Fixed size container */}
+            {/* Main Sign In Box - Fixed size container - CORE FORM ONLY */}
             <Card className="rounded-2xl shadow-xl">
               <CardContent className="p-8">
-                <div className="text-center mb-6">
-                  <h2 className="text-2xl font-bold text-slate-900">Sign In</h2>
-                  <p className="text-sm text-slate-600">Welcome back! Please sign in to your account</p>
-                </div>
                 
                 <Form {...loginForm}>
                   <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-6">
