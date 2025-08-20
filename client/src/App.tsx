@@ -35,6 +35,7 @@ import AdminVerifications from "@/pages/admin-verifications";
 import AdminFeedback from "@/pages/admin-feedback";
 import FeedbackPage from "@/pages/feedback";
 import ContactPage from "@/pages/contact";
+import AboutPage from "@/pages/about";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -73,6 +74,7 @@ function Router() {
       <Route path="/admin/setup" component={AdminSetup} />
       <Route path="/feedback" component={FeedbackPage} />
       <Route path="/contact" component={ContactPage} />
+      <Route path="/about" component={AboutPage} />
       <Route component={NotFound} />
     </Switch>
   );
