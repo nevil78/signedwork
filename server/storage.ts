@@ -109,6 +109,7 @@ export interface IStorage {
   createEmployeeWithHashedPassword(employee: InsertEmployee): Promise<Employee>;
   updateEmployee(id: string, data: Partial<Employee>): Promise<Employee>;
   deleteEmployee(id: string): Promise<void>;
+  getEmployeeBackupData(id: string): Promise<any>;
   
   // Company operations
   getCompany(id: string): Promise<Company | undefined>;
@@ -118,6 +119,7 @@ export interface IStorage {
   createCompanyWithHashedPassword(company: InsertCompany): Promise<Company>;
   updateCompany(id: string, data: Partial<Company>): Promise<Company>;
   deleteCompany(id: string): Promise<void>;
+  getCompanyBackupData(id: string): Promise<any>;
   
   // Authentication
   authenticateEmployee(email: string, password: string): Promise<Employee | null>;
@@ -641,7 +643,7 @@ export class DatabaseStorage implements IStorage {
       await tx.delete(savedJobs).where(eq(savedJobs.employeeId, id));
       await tx.delete(jobAlerts).where(eq(jobAlerts.employeeId, id));
       await tx.delete(profileViews).where(eq(profileViews.viewedEmployeeId, id));
-      await tx.delete(feedbacks).where(eq(feedbacks.employeeId, id));
+      await tx.delete(userFeedback).where(eq(userFeedback.userId, id));
       
       // Finally delete the employee
       await tx.delete(employees).where(eq(employees.id, id));
@@ -657,11 +659,101 @@ export class DatabaseStorage implements IStorage {
       await tx.delete(companyInvitationCodes).where(eq(companyInvitationCodes.companyId, id));
       await tx.delete(jobListings).where(eq(jobListings.companyId, id));
       await tx.delete(profileViews).where(eq(profileViews.viewerCompanyId, id));
-      await tx.delete(feedbacks).where(eq(feedbacks.companyId, id));
+      await tx.delete(userFeedback).where(eq(userFeedback.userId, id));
       
       // Finally delete the company
       await tx.delete(companies).where(eq(companies.id, id));
     });
+  }
+
+  async getEmployeeBackupData(id: string): Promise<any> {
+    const employee = await this.getEmployeeById(id);
+    if (!employee) return null;
+
+    const [
+      employeeExperiences,
+      employeeEducations,
+      employeeCertifications,
+      employeeProjects,
+      employeeEndorsements,
+      employeeWorkEntries,
+      employeeCompanyRelations,
+      employeeJobApplications,
+      employeeSavedJobs,
+      employeeJobAlerts,
+      employeeProfileViews,
+      employeeFeedback
+    ] = await Promise.all([
+      db.select().from(experiences).where(eq(experiences.employeeId, id)),
+      db.select().from(educations).where(eq(educations.employeeId, id)),
+      db.select().from(certifications).where(eq(certifications.employeeId, id)),
+      db.select().from(projects).where(eq(projects.employeeId, id)),
+      db.select().from(endorsements).where(eq(endorsements.employeeId, id)),
+      db.select().from(workEntries).where(eq(workEntries.employeeId, id)),
+      db.select().from(employeeCompanies).where(eq(employeeCompanies.employeeId, id)),
+      db.select().from(jobApplications).where(eq(jobApplications.employeeId, id)),
+      db.select().from(savedJobs).where(eq(savedJobs.employeeId, id)),
+      db.select().from(jobAlerts).where(eq(jobAlerts.employeeId, id)),
+      db.select().from(profileViews).where(eq(profileViews.viewedEmployeeId, id)),
+      db.select().from(userFeedback).where(eq(userFeedback.userId, id))
+    ]);
+
+    // Remove password from employee data
+    const { password, ...employeeData } = employee;
+
+    return {
+      employee: employeeData,
+      experiences: employeeExperiences,
+      educations: employeeEducations,
+      certifications: employeeCertifications,
+      projects: employeeProjects,
+      endorsements: employeeEndorsements,
+      workEntries: employeeWorkEntries,
+      companyRelations: employeeCompanyRelations,
+      jobApplications: employeeJobApplications,
+      savedJobs: employeeSavedJobs,
+      jobAlerts: employeeJobAlerts,
+      profileViews: employeeProfileViews,
+      feedback: employeeFeedback,
+      backupDate: new Date().toISOString(),
+      backupType: 'employee_full_backup'
+    };
+  }
+
+  async getCompanyBackupData(id: string): Promise<any> {
+    const company = await this.getCompanyById(id);
+    if (!company) return null;
+
+    const [
+      companyWorkEntries,
+      companyEmployeeRelations,
+      companyJobListings,
+      companyInvitations,
+      companyProfileViews,
+      companyFeedback
+    ] = await Promise.all([
+      db.select().from(workEntries).where(eq(workEntries.companyId, id)),
+      db.select().from(companyEmployees).where(eq(companyEmployees.companyId, id)),
+      db.select().from(jobListings).where(eq(jobListings.companyId, id)),
+      db.select().from(companyInvitationCodes).where(eq(companyInvitationCodes.companyId, id)),
+      db.select().from(profileViews).where(eq(profileViews.viewerCompanyId, id)),
+      db.select().from(userFeedback).where(eq(userFeedback.userId, id))
+    ]);
+
+    // Remove password from company data
+    const { password, ...companyData } = company;
+
+    return {
+      company: companyData,
+      workEntries: companyWorkEntries,
+      employeeRelations: companyEmployeeRelations,
+      jobListings: companyJobListings,
+      invitationCodes: companyInvitations,
+      profileViews: companyProfileViews,
+      feedback: companyFeedback,
+      backupDate: new Date().toISOString(),
+      backupType: 'company_full_backup'
+    };
   }
 
   async authenticateEmployee(email: string, password: string): Promise<Employee | null> {

@@ -1243,6 +1243,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get employee backup data (admin only)
+  app.get("/api/admin/employees/:id/backup", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    if (!sessionUser || sessionUser.type !== "admin") {
+      return res.status(401).json({ message: "Not authenticated as admin" });
+    }
+    
+    try {
+      const { id } = req.params;
+      const backupData = await storage.getEmployeeBackupData(id);
+      
+      if (!backupData) {
+        return res.status(404).json({ message: "Employee not found" });
+      }
+      
+      const fileName = `employee_backup_${backupData.employee.employeeId}_${new Date().toISOString().split('T')[0]}.json`;
+      
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+      res.json(backupData);
+    } catch (error) {
+      console.error("Employee backup error:", error);
+      res.status(500).json({ message: "Failed to generate employee backup" });
+    }
+  });
+
   // Delete employee (admin only)
   app.delete("/api/admin/employees/:id", async (req, res) => {
     const sessionUser = (req.session as any).user;
@@ -1298,6 +1325,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Toggle company status error:", error);
       res.status(500).json({ message: "Failed to update company status" });
+    }
+  });
+
+  // Get company backup data (admin only)
+  app.get("/api/admin/companies/:id/backup", async (req, res) => {
+    const sessionUser = (req.session as any).user;
+    
+    if (!sessionUser || sessionUser.type !== "admin") {
+      return res.status(401).json({ message: "Not authenticated as admin" });
+    }
+    
+    try {
+      const { id } = req.params;
+      const backupData = await storage.getCompanyBackupData(id);
+      
+      if (!backupData) {
+        return res.status(404).json({ message: "Company not found" });
+      }
+      
+      const fileName = `company_backup_${backupData.company.name.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().split('T')[0]}.json`;
+      
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+      res.json(backupData);
+    } catch (error) {
+      console.error("Company backup error:", error);
+      res.status(500).json({ message: "Failed to generate company backup" });
     }
   });
 

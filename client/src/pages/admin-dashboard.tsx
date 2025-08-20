@@ -17,7 +17,7 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Users, Building, Briefcase, TrendingUp, LogOut, 
-  ShieldCheck, UserCheck, UserX, Calendar, Mail, Search, Shield, MessageSquare, Menu, Trash2
+  ShieldCheck, UserCheck, UserX, Calendar, Mail, Search, Shield, MessageSquare, Menu, Trash2, Download
 } from "lucide-react";
 import signedworkLogo from "@assets/Signed-work-Logo (1)_1755168042120.png";
 import { format } from "date-fns";
@@ -145,6 +145,64 @@ export default function AdminDashboard() {
       });
     },
   });
+
+  // Download employee backup
+  const downloadEmployeeBackup = async (employeeId: string, employeeName: string) => {
+    try {
+      const response = await fetch(`/api/admin/employees/${employeeId}/backup`);
+      if (!response.ok) throw new Error('Failed to download backup');
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `employee_backup_${employeeName.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast({
+        title: "Backup downloaded",
+        description: `Employee backup for ${employeeName} downloaded successfully`,
+      });
+    } catch (error) {
+      toast({
+        title: "Download failed",
+        description: "Failed to download employee backup",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Download company backup
+  const downloadCompanyBackup = async (companyId: string, companyName: string) => {
+    try {
+      const response = await fetch(`/api/admin/companies/${companyId}/backup`);
+      if (!response.ok) throw new Error('Failed to download backup');
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `company_backup_${companyName.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast({
+        title: "Backup downloaded",
+        description: `Company backup for ${companyName} downloaded successfully`,
+      });
+    } catch (error) {
+      toast({
+        title: "Download failed",
+        description: "Failed to download company backup",
+        variant: "destructive",
+      });
+    }
+  };
 
   // Fetch companies pending CIN verification
   const { data: pendingCinCompanies } = useQuery<Company[]>({
@@ -432,23 +490,50 @@ export default function AdminDashboard() {
                               <span className="text-sm text-muted-foreground">
                                 {employee.isActive ? "Deactivate" : "Activate"}
                               </span>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                data-testid={`button-download-employee-${employee.id}`}
+                                onClick={() => downloadEmployeeBackup(employee.id, `${employee.firstName} ${employee.lastName}`)}
+                                className="ml-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                title="Download Backup"
+                              >
+                                <Download className="h-4 w-4" />
+                              </Button>
                               <AlertDialog>
                                 <AlertDialogTrigger asChild>
                                   <Button 
                                     variant="outline" 
                                     size="sm" 
                                     data-testid={`button-delete-employee-${employee.id}`}
-                                    className="ml-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                    title="Delete Employee"
                                   >
                                     <Trash2 className="h-4 w-4" />
                                   </Button>
                                 </AlertDialogTrigger>
                                 <AlertDialogContent>
                                   <AlertDialogHeader>
-                                    <AlertDialogTitle>Delete Employee</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                      Are you sure you want to permanently delete <strong>{employee.firstName} {employee.lastName}</strong>? 
-                                      This action cannot be undone and will remove all associated data including work entries, applications, and profile information.
+                                    <AlertDialogTitle>Delete Employee - Confirmation Required</AlertDialogTitle>
+                                    <AlertDialogDescription className="space-y-3">
+                                      <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+                                        <p className="font-semibold text-red-800">⚠️ PERMANENT DELETION WARNING</p>
+                                        <p className="text-red-700">You are about to permanently delete <strong>{employee.firstName} {employee.lastName}</strong> and ALL associated data.</p>
+                                      </div>
+                                      <div className="space-y-2">
+                                        <p className="font-medium">This will remove:</p>
+                                        <ul className="list-disc pl-5 space-y-1 text-sm">
+                                          <li>Employee profile and personal information</li>
+                                          <li>Work entries and employment history</li>
+                                          <li>Job applications and saved jobs</li>
+                                          <li>Education, certifications, and projects</li>
+                                          <li>All feedback and skill preferences</li>
+                                        </ul>
+                                      </div>
+                                      <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
+                                        <p className="font-medium text-blue-800">💡 Recommendation</p>
+                                        <p className="text-blue-700">Download a backup first using the blue download button to preserve the data locally.</p>
+                                      </div>
                                     </AlertDialogDescription>
                                   </AlertDialogHeader>
                                   <AlertDialogFooter>
@@ -458,7 +543,7 @@ export default function AdminDashboard() {
                                       className="bg-red-600 hover:bg-red-700 text-white"
                                       disabled={deleteEmployeeMutation.isPending}
                                     >
-                                      {deleteEmployeeMutation.isPending ? "Deleting..." : "Delete Employee"}
+                                      {deleteEmployeeMutation.isPending ? "Deleting..." : "I Understand - Delete Permanently"}
                                     </AlertDialogAction>
                                   </AlertDialogFooter>
                                 </AlertDialogContent>
@@ -554,23 +639,50 @@ export default function AdminDashboard() {
                               <span className="text-sm text-muted-foreground">
                                 {company.isActive ? "Deactivate" : "Activate"}
                               </span>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                data-testid={`button-download-company-${company.id}`}
+                                onClick={() => downloadCompanyBackup(company.id, company.name)}
+                                className="ml-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                title="Download Backup"
+                              >
+                                <Download className="h-4 w-4" />
+                              </Button>
                               <AlertDialog>
                                 <AlertDialogTrigger asChild>
                                   <Button 
                                     variant="outline" 
                                     size="sm" 
                                     data-testid={`button-delete-company-${company.id}`}
-                                    className="ml-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                    title="Delete Company"
                                   >
                                     <Trash2 className="h-4 w-4" />
                                   </Button>
                                 </AlertDialogTrigger>
                                 <AlertDialogContent>
                                   <AlertDialogHeader>
-                                    <AlertDialogTitle>Delete Company</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                      Are you sure you want to permanently delete <strong>{company.name}</strong>? 
-                                      This action cannot be undone and will remove all associated data including employees, work entries, job listings, and company information.
+                                    <AlertDialogTitle>Delete Company - Confirmation Required</AlertDialogTitle>
+                                    <AlertDialogDescription className="space-y-3">
+                                      <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+                                        <p className="font-semibold text-red-800">⚠️ PERMANENT DELETION WARNING</p>
+                                        <p className="text-red-700">You are about to permanently delete <strong>{company.name}</strong> and ALL associated data.</p>
+                                      </div>
+                                      <div className="space-y-2">
+                                        <p className="font-medium">This will remove:</p>
+                                        <ul className="list-disc pl-5 space-y-1 text-sm">
+                                          <li>Company profile and business information</li>
+                                          <li>All employee relationships and work entries</li>
+                                          <li>Job listings and applications</li>
+                                          <li>Invitation codes and access permissions</li>
+                                          <li>All company feedback and analytics</li>
+                                        </ul>
+                                      </div>
+                                      <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
+                                        <p className="font-medium text-blue-800">💡 Recommendation</p>
+                                        <p className="text-blue-700">Download a backup first using the blue download button to preserve the data locally.</p>
+                                      </div>
                                     </AlertDialogDescription>
                                   </AlertDialogHeader>
                                   <AlertDialogFooter>
@@ -580,7 +692,7 @@ export default function AdminDashboard() {
                                       className="bg-red-600 hover:bg-red-700 text-white"
                                       disabled={deleteCompanyMutation.isPending}
                                     >
-                                      {deleteCompanyMutation.isPending ? "Deleting..." : "Delete Company"}
+                                      {deleteCompanyMutation.isPending ? "Deleting..." : "I Understand - Delete Permanently"}
                                     </AlertDialogAction>
                                   </AlertDialogFooter>
                                 </AlertDialogContent>
