@@ -71,6 +71,7 @@ const PasswordInput = memo(({ field, placeholder, className = "" }: { field: any
         type={showPassword ? "text" : "password"}
         placeholder={placeholder}
         className={`pr-12 ${className}`}
+        data-testid="input-password"
       />
       <Button
         type="button"
@@ -97,6 +98,7 @@ export default function AuthPage() {
   const [verificationEmail, setVerificationEmail] = useState<string>("");
   const [otp, setOTP] = useState("");
   const [countdown, setCountdown] = useState(60); // 1 minute
+  const [fieldErrors, setFieldErrors] = useState<Record<string, boolean>>({});
   const { toast } = useToast();
 
   // Handle URL view parameters dynamically
@@ -161,6 +163,7 @@ export default function AuthPage() {
 
   const employeeForm = useForm<InsertEmployee>({
     resolver: zodResolver(insertEmployeeSchema),
+    mode: "onChange", // Enable real-time validation
     defaultValues: {
       firstName: "",
       lastName: "",
@@ -170,6 +173,31 @@ export default function AuthPage() {
       password: "",
     },
   });
+
+  // Helper function to check if field has error and should blink
+  const getFieldErrorClass = (fieldName: string, fieldState: any) => {
+    const hasError = fieldState.error || fieldErrors[fieldName];
+    const isEmpty = !employeeForm.getValues(fieldName as any);
+    
+    if (hasError && isEmpty) {
+      return "animate-error-blink";
+    } else if (hasError) {
+      return "field-error";
+    }
+    return "";
+  };
+
+  // Handle field blur validation
+  const handleFieldBlur = (fieldName: string) => {
+    const value = employeeForm.getValues(fieldName as any);
+    if (!value || value.toString().trim() === "") {
+      setFieldErrors(prev => ({ ...prev, [fieldName]: true }));
+      // Trigger form validation
+      employeeForm.trigger(fieldName as any);
+    } else {
+      setFieldErrors(prev => ({ ...prev, [fieldName]: false }));
+    }
+  };
 
   const companyForm = useForm<InsertCompany>({
     resolver: zodResolver(insertCompanySchema),
@@ -330,6 +358,34 @@ export default function AuthPage() {
   });
 
   const onEmployeeSubmit = (data: InsertEmployee) => {
+    // Validate all required fields before submit
+    const requiredFields = ['firstName', 'lastName', 'email', 'phone', 'password'];
+    let hasEmptyFields = false;
+    
+    requiredFields.forEach(field => {
+      const value = data[field as keyof InsertEmployee];
+      if (!value || value.toString().trim() === "") {
+        setFieldErrors(prev => ({ ...prev, [field]: true }));
+        hasEmptyFields = true;
+      }
+    });
+    
+    // Check terms checkbox
+    const termsCheckbox = document.getElementById('terms') as HTMLInputElement;
+    if (!termsCheckbox?.checked) {
+      setFieldErrors(prev => ({ ...prev, terms: true }));
+      hasEmptyFields = true;
+    }
+    
+    if (hasEmptyFields) {
+      toast({
+        title: "Validation Error",
+        description: "Please fill in all required fields and accept the terms",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     employeeRegistration.mutate(data);
   };
 
@@ -460,20 +516,27 @@ export default function AuthPage() {
                       <FormField
                         control={employeeForm.control}
                         name="firstName"
-                        render={({ field }) => (
+                        render={({ field, fieldState }) => (
                           <FormItem>
-                            <FormLabel>First Name</FormLabel>
+                            <FormLabel>First Name *</FormLabel>
                             <FormControl>
                               <Input 
                                 placeholder="John" 
                                 {...field}
+                                className={getFieldErrorClass("firstName", fieldState)}
                                 onChange={(e) => {
                                   // Auto-capitalize first letter
                                   const value = e.target.value;
                                   const capitalized = value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
                                   field.onChange(capitalized);
+                                  // Clear error on change
+                                  if (value.trim()) {
+                                    setFieldErrors(prev => ({ ...prev, firstName: false }));
+                                  }
                                 }}
+                                onBlur={() => handleFieldBlur("firstName")}
                                 style={{ textTransform: 'capitalize' }}
+                                data-testid="input-firstName"
                               />
                             </FormControl>
                             <FormMessage />
@@ -483,20 +546,27 @@ export default function AuthPage() {
                       <FormField
                         control={employeeForm.control}
                         name="lastName"
-                        render={({ field }) => (
+                        render={({ field, fieldState }) => (
                           <FormItem>
-                            <FormLabel>Last Name</FormLabel>
+                            <FormLabel>Last Name *</FormLabel>
                             <FormControl>
                               <Input 
                                 placeholder="Doe" 
                                 {...field}
+                                className={getFieldErrorClass("lastName", fieldState)}
                                 onChange={(e) => {
                                   // Auto-capitalize first letter
                                   const value = e.target.value;
                                   const capitalized = value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
                                   field.onChange(capitalized);
+                                  // Clear error on change
+                                  if (value.trim()) {
+                                    setFieldErrors(prev => ({ ...prev, lastName: false }));
+                                  }
                                 }}
+                                onBlur={() => handleFieldBlur("lastName")}
                                 style={{ textTransform: 'capitalize' }}
+                                data-testid="input-lastName"
                               />
                             </FormControl>
                             <FormMessage />
@@ -508,11 +578,25 @@ export default function AuthPage() {
                     <FormField
                       control={employeeForm.control}
                       name="email"
-                      render={({ field }) => (
+                      render={({ field, fieldState }) => (
                         <FormItem>
-                          <FormLabel>Email Address</FormLabel>
+                          <FormLabel>Email Address *</FormLabel>
                           <FormControl>
-                            <Input type="email" placeholder="john.doe@example.com" {...field} />
+                            <Input 
+                              type="email" 
+                              placeholder="john.doe@example.com" 
+                              {...field}
+                              className={getFieldErrorClass("email", fieldState)}
+                              onChange={(e) => {
+                                field.onChange(e);
+                                // Clear error on change
+                                if (e.target.value.trim()) {
+                                  setFieldErrors(prev => ({ ...prev, email: false }));
+                                }
+                              }}
+                              onBlur={() => handleFieldBlur("email")}
+                              data-testid="input-email"
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -522,7 +606,7 @@ export default function AuthPage() {
                     <FormField
                       control={employeeForm.control}
                       name="phone"
-                      render={({ field }) => {
+                      render={({ field, fieldState }) => {
                         const countryCode = employeeForm.watch("countryCode");
                         const getPlaceholder = (code: string) => {
                           switch (code) {
@@ -546,7 +630,7 @@ export default function AuthPage() {
 
                         return (
                           <FormItem>
-                            <FormLabel>Phone Number</FormLabel>
+                            <FormLabel>Phone Number *</FormLabel>
                             <FormControl>
                               <div className="flex">
                                 <FormField
@@ -569,14 +653,20 @@ export default function AuthPage() {
                                 <Input
                                   type="tel"
                                   placeholder={getPlaceholder(countryCode || "+1")}
-                                  className="rounded-l-none border-l-0"
+                                  className={`rounded-l-none border-l-0 ${getFieldErrorClass("phone", fieldState)}`}
                                   maxLength={getMaxLength(countryCode || "+1")}
                                   {...field}
                                   onChange={(e) => {
                                     // Allow only digits
                                     const value = e.target.value.replace(/\D/g, '');
                                     field.onChange(value);
+                                    // Clear error on change
+                                    if (value.trim()) {
+                                      setFieldErrors(prev => ({ ...prev, phone: false }));
+                                    }
                                   }}
+                                  onBlur={() => handleFieldBlur("phone")}
+                                  data-testid="input-phone"
                                 />
                               </div>
                             </FormControl>
@@ -589,11 +679,25 @@ export default function AuthPage() {
                     <FormField
                       control={employeeForm.control}
                       name="password"
-                      render={({ field }) => (
+                      render={({ field, fieldState }) => (
                         <FormItem>
-                          <FormLabel>Password</FormLabel>
+                          <FormLabel>Password *</FormLabel>
                           <FormControl>
-                            <PasswordInput field={field} placeholder="••••••••" />
+                            <PasswordInput 
+                              field={{
+                                ...field,
+                                onChange: (e: any) => {
+                                  field.onChange(e);
+                                  // Clear error on change
+                                  if (e.target.value.trim()) {
+                                    setFieldErrors(prev => ({ ...prev, password: false }));
+                                  }
+                                },
+                                onBlur: () => handleFieldBlur("password")
+                              }} 
+                              placeholder="••••••••" 
+                              className={getFieldErrorClass("password", fieldState)}
+                            />
                           </FormControl>
                           <PasswordStrengthIndicator password={field.value || ""} />
                           <FormMessage />
@@ -602,7 +706,17 @@ export default function AuthPage() {
                     />
                     
                     <div className="flex items-center space-x-2">
-                      <Checkbox id="terms" required />
+                      <Checkbox 
+                        id="terms" 
+                        required 
+                        className={fieldErrors.terms ? "animate-error-blink" : ""}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setFieldErrors(prev => ({ ...prev, terms: false }));
+                          }
+                        }}
+                        data-testid="checkbox-terms"
+                      />
                       <label htmlFor="terms" className="text-sm text-slate-600">
                         I agree to the{" "}
                         <PrefetchLink href="/terms?from=employee-registration" className="text-primary hover:text-primary-dark">

@@ -2,14 +2,26 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Login Error Animation */
-@keyframes error-blink {
-  0%, 50%, 100% { border-color: #ef4444; }
-  25%, 75% { border-color: #dc2626; }
+/* Error Animation for Fields */
+@keyframes field-error-blink {
+  0%, 50%, 100% { 
+    border-color: #ef4444; 
+    box-shadow: 0 0 0 1px #ef4444;
+  }
+  25%, 75% { 
+    border-color: #dc2626; 
+    box-shadow: 0 0 0 2px #dc2626;
+  }
 }
 
 .animate-error-blink {
-  animation: error-blink 1s ease-in-out 3;
+  animation: field-error-blink 0.8s ease-in-out infinite;
+  border-color: #ef4444 !important;
+}
+
+.field-error {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 1px #ef4444;
 }
 
 :root {
