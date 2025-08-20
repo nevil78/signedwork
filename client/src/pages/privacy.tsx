@@ -1,25 +1,35 @@
 import { ArrowLeft } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useLocation } from "wouter";
 
 export default function PrivacyPolicy() {
-  const [backUrl, setBackUrl] = useState("/");
+  const [, setLocation] = useLocation();
+  const [from, setFrom] = useState<string | null>(null);
 
   useEffect(() => {
     // Check query parameters for the 'from' parameter
     const urlParams = new URLSearchParams(window.location.search);
-    const from = urlParams.get('from');
-    
-    if (from === 'employee-registration') {
-      setBackUrl("/?view=employee-register");
-    } else if (from === 'company-registration') {
-      setBackUrl("/?view=company-register");
-    } else {
-      setBackUrl("/");
+    const fromParam = urlParams.get('from');
+    setFrom(fromParam);
+
+    // Prefetch the registration page for instant navigation
+    if (fromParam === 'employee-registration' || fromParam === 'company-registration') {
+      // Preload the auth page for instant navigation
+      import('@/pages/auth').catch(() => {
+        // Silently fail if prefetch doesn't work
+      });
     }
   }, []);
 
   const handleBack = () => {
-    window.location.href = backUrl;
+    // Use instant client-side navigation
+    if (from === 'employee-registration') {
+      setLocation('/?view=employee-register');
+    } else if (from === 'company-registration') {
+      setLocation('/?view=company-register');
+    } else {
+      setLocation('/');
+    }
   };
 
   return (

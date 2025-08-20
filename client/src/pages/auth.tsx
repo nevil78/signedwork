@@ -99,6 +99,14 @@ export default function AuthPage() {
   const [countdown, setCountdown] = useState(60); // 1 minute
   const { toast } = useToast();
 
+  // Handle OAuth error redirects and URL view parameters
+  useEffect(() => {
+    // Also check for view parameter changes and update currentView accordingly
+    if (viewParam && viewParam !== currentView) {
+      setCurrentView(viewParam);
+    }
+  }, [viewParam, currentView]);
+
   // Handle OAuth error redirects
   useEffect(() => {
     const error = urlParams.get('error');
