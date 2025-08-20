@@ -37,8 +37,19 @@ import FeedbackPage from "@/pages/feedback";
 import ContactPage from "@/pages/contact";
 import AboutPage from "@/pages/about";
 import SupportPage from "@/pages/support";
-import TermsOfService from "@/pages/terms";
-import PrivacyPolicy from "@/pages/privacy";
+// Lazy load legal pages for better performance
+import { lazy, Suspense } from "react";
+const TermsOfService = lazy(() => import("@/pages/terms"));
+const PrivacyPolicy = lazy(() => import("@/pages/privacy"));
+
+// Loading component for lazy-loaded pages
+function PageLoader() {
+  return (
+    <div className="min-h-screen bg-white flex items-center justify-center">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+    </div>
+  );
+}
 
 import NotFound from "@/pages/not-found";
 
@@ -80,8 +91,8 @@ function Router() {
       <Route path="/contact" component={ContactPage} />
       <Route path="/about" component={AboutPage} />
       <Route path="/support" component={SupportPage} />
-      <Route path="/terms" component={TermsOfService} />
-      <Route path="/privacy" component={PrivacyPolicy} />
+      <Route path="/terms" component={() => <Suspense fallback={<PageLoader />}><TermsOfService /></Suspense>} />
+      <Route path="/privacy" component={() => <Suspense fallback={<PageLoader />}><PrivacyPolicy /></Suspense>} />
 
       <Route component={NotFound} />
     </Switch>

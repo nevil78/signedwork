@@ -5,30 +5,21 @@ export default function TermsOfService() {
   const [backUrl, setBackUrl] = useState("/");
 
   useEffect(() => {
-    // Determine where to go back based on referrer
-    const referrer = document.referrer;
-    if (referrer) {
-      const referrerUrl = new URL(referrer);
-      // If user came from the same origin, use history.back()
-      if (referrerUrl.origin === window.location.origin) {
-        // Check if they came from auth page (which includes registration)
-        if (referrerUrl.pathname === "/" || referrerUrl.pathname === "/auth") {
-          setBackUrl("/");
-        } else {
-          setBackUrl("HISTORY_BACK");
-        }
-      } else {
-        setBackUrl("/");
-      }
+    // Check query parameters for the 'from' parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    const from = urlParams.get('from');
+    
+    if (from === 'employee-registration') {
+      setBackUrl("/?view=employee-register");
+    } else if (from === 'company-registration') {
+      setBackUrl("/?view=company-register");
+    } else {
+      setBackUrl("/");
     }
   }, []);
 
   const handleBack = () => {
-    if (backUrl === "HISTORY_BACK") {
-      window.history.back();
-    } else {
-      window.location.href = backUrl;
-    }
+    window.location.href = backUrl;
   };
 
   return (

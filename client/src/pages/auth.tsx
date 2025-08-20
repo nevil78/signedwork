@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, memo, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { insertEmployeeSchema, insertCompanySchema, loginSchema, type InsertEmployee, type InsertCompany, type LoginData } from "@shared/schema";
 import { Link } from "wouter";
+import { PrefetchLink } from "@/components/PrefetchLink";
 
 type AuthView = "selection" | "employee" | "company" | "login" | "success" | "otp-verification" | "verification-pending" | "registration-success";
 
@@ -32,7 +33,7 @@ const passwordRequirements: PasswordRequirement[] = [
   { id: "number", label: "One number", regex: /\d/ },
 ];
 
-function PasswordStrengthIndicator({ password }: { password: string }) {
+const PasswordStrengthIndicator = memo(({ password }: { password: string }) => {
   return (
     <div className="mt-2 space-y-1">
       {passwordRequirements.map((req) => {
@@ -52,10 +53,16 @@ function PasswordStrengthIndicator({ password }: { password: string }) {
       })}
     </div>
   );
-}
+});
 
-function PasswordInput({ field, placeholder, className = "" }: { field: any; placeholder: string; className?: string }) {
+PasswordStrengthIndicator.displayName = "PasswordStrengthIndicator";
+
+const PasswordInput = memo(({ field, placeholder, className = "" }: { field: any; placeholder: string; className?: string }) => {
   const [showPassword, setShowPassword] = useState(false);
+  
+  const togglePassword = useCallback(() => {
+    setShowPassword(prev => !prev);
+  }, []);
   
   return (
     <div className="relative">
@@ -70,16 +77,22 @@ function PasswordInput({ field, placeholder, className = "" }: { field: any; pla
         variant="ghost"
         size="icon"
         className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
-        onClick={() => setShowPassword(!showPassword)}
+        onClick={togglePassword}
       >
         {showPassword ? <EyeOff className="w-4 h-4 text-slate-400" /> : <Eye className="w-4 h-4 text-slate-400" />}
       </Button>
     </div>
   );
-}
+});
+
+PasswordInput.displayName = "PasswordInput";
 
 export default function AuthPage() {
-  const [currentView, setCurrentView] = useState<AuthView>("login");
+  // Check URL parameters for initial view
+  const urlParams = new URLSearchParams(window.location.search);
+  const viewParam = urlParams.get('view') as AuthView | null;
+  
+  const [currentView, setCurrentView] = useState<AuthView>(viewParam || "login");
   const [loginError, setLoginError] = useState<boolean>(false);
   const [verificationEmail, setVerificationEmail] = useState<string>("");
   const [otp, setOTP] = useState("");
@@ -88,7 +101,6 @@ export default function AuthPage() {
 
   // Handle OAuth error redirects
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
     const error = urlParams.get('error');
     
     if (error) {
@@ -576,13 +588,13 @@ export default function AuthPage() {
                       <Checkbox id="terms" required />
                       <label htmlFor="terms" className="text-sm text-slate-600">
                         I agree to the{" "}
-                        <Link href="/terms">
-                          <a className="text-primary hover:text-primary-dark">Terms of Service</a>
-                        </Link>{" "}
+                        <PrefetchLink href="/terms?from=employee-registration" className="text-primary hover:text-primary-dark">
+                          Terms of Service
+                        </PrefetchLink>{" "}
                         and{" "}
-                        <Link href="/privacy">
-                          <a className="text-primary hover:text-primary-dark">Privacy Policy</a>
-                        </Link>
+                        <PrefetchLink href="/privacy?from=employee-registration" className="text-primary hover:text-primary-dark">
+                          Privacy Policy
+                        </PrefetchLink>
                       </label>
                     </div>
                     
@@ -1047,13 +1059,13 @@ export default function AuthPage() {
                       <Checkbox id="company-terms" required />
                       <label htmlFor="company-terms" className="text-sm text-slate-600">
                         I agree to the{" "}
-                        <Link href="/terms">
-                          <a className="text-primary hover:text-primary-dark">Terms of Service</a>
-                        </Link>{" "}
+                        <PrefetchLink href="/terms?from=company-registration" className="text-primary hover:text-primary-dark">
+                          Terms of Service
+                        </PrefetchLink>{" "}
                         and{" "}
-                        <Link href="/privacy">
-                          <a className="text-primary hover:text-primary-dark">Privacy Policy</a>
-                        </Link>
+                        <PrefetchLink href="/privacy?from=company-registration" className="text-primary hover:text-primary-dark">
+                          Privacy Policy
+                        </PrefetchLink>
                       </label>
                     </div>
                     

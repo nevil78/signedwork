@@ -56,6 +56,7 @@ Preferred communication style: Simple, everyday language.
 - **Trending Skills Module**: Advanced skills discovery and personalization system with market insights and analytics.
 - **Email Verification System**: OTP-based email verification for employee sign-up and profile updates.
 - **Legal Documentation**: Professional Terms of Service and Privacy Policy pages with comprehensive coverage of platform usage, data handling, user rights, and legal compliance.
+- **Performance Optimizations**: Lazy loading for legal pages, React.memo optimizations, prefetch on hover, query parameter-based navigation, and optimized form components for faster interactions.
 
 # External Dependencies
 - **Database Provider**: Neon PostgreSQL
