@@ -18,7 +18,7 @@ import { insertEmployeeSchema, insertCompanySchema, loginSchema, type InsertEmpl
 import { Link } from "wouter";
 import { PrefetchLink } from "@/components/PrefetchLink";
 
-type AuthView = "selection" | "employee" | "company" | "login" | "success" | "otp-verification" | "verification-pending" | "registration-success";
+type AuthView = "selection" | "employee" | "company" | "login" | "success" | "otp-verification" | "verification-pending" | "registration-success" | "employee-register" | "company-register";
 
 interface PasswordRequirement {
   id: string;
@@ -99,13 +99,22 @@ export default function AuthPage() {
   const [countdown, setCountdown] = useState(60); // 1 minute
   const { toast } = useToast();
 
-  // Handle OAuth error redirects and URL view parameters
+  // Handle URL view parameters dynamically
   useEffect(() => {
-    // Also check for view parameter changes and update currentView accordingly
-    if (viewParam && viewParam !== currentView) {
-      setCurrentView(viewParam);
+    const urlParams = new URLSearchParams(window.location.search);
+    const currentViewParam = urlParams.get('view') as AuthView | null;
+    
+    if (currentViewParam) {
+      // Map legacy view names to current view names
+      if (currentViewParam === 'employee-register') {
+        setCurrentView('employee');
+      } else if (currentViewParam === 'company-register') {
+        setCurrentView('company');
+      } else if (currentViewParam as AuthView) {
+        setCurrentView(currentViewParam as AuthView);
+      }
     }
-  }, [viewParam, currentView]);
+  }, []);
 
   // Handle OAuth error redirects
   useEffect(() => {
@@ -1609,5 +1618,20 @@ export default function AuthPage() {
     );
   }
 
-  return null;
+  // Fallback for any unhandled currentView values - redirect to login
+  console.log('Unhandled currentView:', currentView);
+  
+  // Immediately redirect to login for unhandled views
+  useEffect(() => {
+    setCurrentView('login');
+  }, []);
+  
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
+      <div className="text-center">
+        <p className="text-slate-600 mb-4">Loading...</p>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+      </div>
+    </div>
+  );
 }
