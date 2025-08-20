@@ -176,7 +176,7 @@ export default function AuthPage() {
 
   // Helper function to check if field has error and should show red border
   const getFieldErrorClass = (fieldName: string, fieldState: any) => {
-    const hasError = fieldState.error || fieldErrors[fieldName];
+    const hasError = fieldState?.error || fieldErrors[fieldName];
     
     if (hasError) {
       return "field-error";
@@ -401,7 +401,7 @@ export default function AuthPage() {
   // Function to validate all required company fields and show errors immediately
   const validateCompanyForm = () => {
     const data = companyForm.getValues();
-    const requiredFields = ['name', 'industry', 'size', 'establishmentYear', 'email', 'password'];
+    const requiredFields = ['name', 'industry', 'size', 'establishmentYear', 'address', 'email', 'password'];
     let hasEmptyFields = false;
     const newErrors: Record<string, boolean> = {};
     
@@ -1152,15 +1152,23 @@ export default function AuthPage() {
                       <FormField
                         control={companyForm.control}
                         name="address"
-                        render={({ field }) => (
+                        render={({ field, fieldState }) => (
                           <FormItem>
                             <FormLabel>Business Address *</FormLabel>
                             <FormControl>
                               <Textarea 
                                 placeholder="Building Name, Street Address, Area" 
                                 rows={3}
-                                className="resize-none"
-                                {...field} 
+                                className={`resize-none ${getFieldErrorClass("address", fieldState)}`}
+                                {...field}
+                                onChange={(e) => {
+                                  field.onChange(e);
+                                  if (e.target.value.trim()) {
+                                    setFieldErrors(prev => ({ ...prev, address: false }));
+                                  }
+                                }}
+                                onBlur={() => handleFieldBlur("address")}
+                                data-testid="input-business-address"
                               />
                             </FormControl>
                             <FormMessage />
