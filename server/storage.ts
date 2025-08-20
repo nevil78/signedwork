@@ -651,19 +651,48 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteCompany(id: string): Promise<void> {
-    await db.transaction(async (tx) => {
-      // Delete related data first due to foreign key constraints
-      await tx.delete(workEntries).where(eq(workEntries.companyId, id));
-      await tx.delete(companyEmployees).where(eq(companyEmployees.companyId, id));
-      await tx.delete(employeeCompanies).where(eq(employeeCompanies.companyId, id));
-      await tx.delete(companyInvitationCodes).where(eq(companyInvitationCodes.companyId, id));
-      await tx.delete(jobListings).where(eq(jobListings.companyId, id));
-      await tx.delete(profileViews).where(eq(profileViews.viewerCompanyId, id));
-      await tx.delete(userFeedback).where(eq(userFeedback.userId, id));
-      
-      // Finally delete the company
-      await tx.delete(companies).where(eq(companies.id, id));
-    });
+    try {
+      await db.transaction(async (tx) => {
+        // Delete related data first due to foreign key constraints
+        
+        // Step 1: Delete work entries
+        await tx.delete(workEntries).where(eq(workEntries.companyId, id));
+        
+        // Step 2: Delete company employees relationship
+        await tx.delete(companyEmployees).where(eq(companyEmployees.companyId, id));
+        
+        // Step 3: Delete employee-company relationships 
+        await tx.delete(employeeCompanies).where(eq(employeeCompanies.companyId, id));
+        
+        // Step 4: Delete invitation codes
+        await tx.delete(companyInvitationCodes).where(eq(companyInvitationCodes.companyId, id));
+        
+        // Step 5: Get job listings to delete applications first
+        const companyJobListings = await tx.select().from(jobListings).where(eq(jobListings.companyId, id));
+        
+        // Step 6: Delete job applications and related data for each job
+        for (const job of companyJobListings) {
+          await tx.delete(jobApplications).where(eq(jobApplications.jobId, job.id));
+          await tx.delete(savedJobs).where(eq(savedJobs.jobId, job.id));
+          await tx.delete(jobAlerts).where(eq(jobAlerts.jobId, job.id));
+        }
+        
+        // Step 7: Delete job listings
+        await tx.delete(jobListings).where(eq(jobListings.companyId, id));
+        
+        // Step 8: Delete profile views
+        await tx.delete(profileViews).where(eq(profileViews.viewerCompanyId, id));
+        
+        // Step 9: Delete user feedback (note: userId should be the company id for company feedback)
+        await tx.delete(userFeedback).where(eq(userFeedback.userId, id));
+        
+        // Step 10: Finally delete the company
+        await tx.delete(companies).where(eq(companies.id, id));
+      });
+    } catch (error) {
+      console.error("Error deleting company:", error);
+      throw error;
+    }
   }
 
   async getEmployeeBackupData(id: string): Promise<any> {
