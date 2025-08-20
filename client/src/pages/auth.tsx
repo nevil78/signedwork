@@ -174,14 +174,11 @@ export default function AuthPage() {
     },
   });
 
-  // Helper function to check if field has error and should blink
+  // Helper function to check if field has error and should show red border
   const getFieldErrorClass = (fieldName: string, fieldState: any) => {
     const hasError = fieldState.error || fieldErrors[fieldName];
-    const isEmpty = !employeeForm.getValues(fieldName as any);
     
-    if (hasError && isEmpty) {
-      return "animate-error-blink";
-    } else if (hasError) {
+    if (hasError) {
       return "field-error";
     }
     return "";
@@ -738,7 +735,7 @@ export default function AuthPage() {
                       <Checkbox 
                         id="terms" 
                         required 
-                        className={fieldErrors.terms ? "animate-error-blink" : ""}
+                        className={fieldErrors.terms ? "field-error" : ""}
                         onCheckedChange={(checked) => {
                           if (checked) {
                             setFieldErrors(prev => ({ ...prev, terms: false }));
@@ -1277,7 +1274,7 @@ export default function AuthPage() {
                       <Checkbox 
                         id="company-terms" 
                         required 
-                        className={fieldErrors.companyTerms ? "animate-error-blink" : ""}
+                        className={fieldErrors.companyTerms ? "field-error" : ""}
                         onCheckedChange={(checked) => {
                           if (checked) {
                             setFieldErrors(prev => ({ ...prev, companyTerms: false }));
