@@ -79,7 +79,7 @@ function PasswordInput({ field, placeholder, className = "" }: { field: any; pla
 }
 
 export default function AuthPage() {
-  const [currentView, setCurrentView] = useState<AuthView>("selection");
+  const [currentView, setCurrentView] = useState<AuthView>("login");
   const [loginError, setLoginError] = useState<boolean>(false);
   const [verificationEmail, setVerificationEmail] = useState<string>("");
   const [otp, setOTP] = useState("");
@@ -1169,7 +1169,7 @@ export default function AuthPage() {
                         className="p-0 h-auto text-primary hover:text-primary-dark font-medium"
                         onClick={() => setCurrentView("selection")}
                       >
-                        Create account
+                        Sign up
                       </Button>
                     </div>
                   </form>
