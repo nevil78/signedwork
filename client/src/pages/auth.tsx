@@ -355,27 +355,38 @@ export default function AuthPage() {
     },
   });
 
-  const onEmployeeSubmit = (data: InsertEmployee) => {
-    // Validate all required fields before submit
+  // Function to validate all required fields and show errors immediately
+  const validateEmployeeForm = () => {
+    const data = employeeForm.getValues();
     const requiredFields = ['firstName', 'lastName', 'email', 'phone', 'password'];
     let hasEmptyFields = false;
+    const newErrors: Record<string, boolean> = {};
     
     requiredFields.forEach(field => {
       const value = data[field as keyof InsertEmployee];
       if (!value || value.toString().trim() === "") {
-        setFieldErrors(prev => ({ ...prev, [field]: true }));
+        newErrors[field] = true;
         hasEmptyFields = true;
+      } else {
+        newErrors[field] = false;
       }
     });
     
     // Check terms checkbox
     const termsCheckbox = document.getElementById('terms') as HTMLInputElement;
     if (!termsCheckbox?.checked) {
-      setFieldErrors(prev => ({ ...prev, terms: true }));
+      newErrors.terms = true;
       hasEmptyFields = true;
+    } else {
+      newErrors.terms = false;
     }
     
-    if (hasEmptyFields) {
+    setFieldErrors(prev => ({ ...prev, ...newErrors }));
+    return !hasEmptyFields;
+  };
+
+  const onEmployeeSubmit = (data: InsertEmployee) => {
+    if (!validateEmployeeForm()) {
       toast({
         title: "Validation Error",
         description: "Please fill in all required fields and accept the terms",
@@ -387,27 +398,38 @@ export default function AuthPage() {
     employeeRegistration.mutate(data);
   };
 
-  const onCompanySubmit = (data: InsertCompany) => {
-    // Validate all required fields before submit
+  // Function to validate all required company fields and show errors immediately
+  const validateCompanyForm = () => {
+    const data = companyForm.getValues();
     const requiredFields = ['name', 'industry', 'size', 'establishmentYear', 'email', 'password'];
     let hasEmptyFields = false;
+    const newErrors: Record<string, boolean> = {};
     
     requiredFields.forEach(field => {
       const value = data[field as keyof InsertCompany];
       if (!value || value.toString().trim() === "") {
-        setFieldErrors(prev => ({ ...prev, [field]: true }));
+        newErrors[field] = true;
         hasEmptyFields = true;
+      } else {
+        newErrors[field] = false;
       }
     });
     
     // Check company terms checkbox
     const companyTermsCheckbox = document.getElementById('company-terms') as HTMLInputElement;
     if (!companyTermsCheckbox?.checked) {
-      setFieldErrors(prev => ({ ...prev, companyTerms: true }));
+      newErrors.companyTerms = true;
       hasEmptyFields = true;
+    } else {
+      newErrors.companyTerms = false;
     }
     
-    if (hasEmptyFields) {
+    setFieldErrors(prev => ({ ...prev, ...newErrors }));
+    return !hasEmptyFields;
+  };
+
+  const onCompanySubmit = (data: InsertCompany) => {
+    if (!validateCompanyForm()) {
       toast({
         title: "Validation Error",
         description: "Please fill in all required fields and accept the terms",
@@ -759,6 +781,11 @@ export default function AuthPage() {
                       type="submit" 
                       className="w-full" 
                       disabled={employeeRegistration.isPending}
+                      onClick={(e) => {
+                        // Validate immediately when button is clicked to show red borders
+                        validateEmployeeForm();
+                      }}
+                      data-testid="button-create-employee-account"
                     >
                       {employeeRegistration.isPending ? "Creating Account..." : "Create Employee Account"}
                     </Button>
@@ -1298,6 +1325,11 @@ export default function AuthPage() {
                       type="submit" 
                       className="w-full py-3" 
                       disabled={companyRegistration.isPending}
+                      onClick={(e) => {
+                        // Validate immediately when button is clicked to show red borders
+                        validateCompanyForm();
+                      }}
+                      data-testid="button-create-company-account"
                     >
                       {companyRegistration.isPending ? "Creating Account..." : "Create Company Account"}
                     </Button>
