@@ -201,6 +201,7 @@ export default function AuthPage() {
 
   const companyForm = useForm<InsertCompany>({
     resolver: zodResolver(insertCompanySchema),
+    mode: "onChange", // Enable real-time validation
     defaultValues: {
       name: "",
       address: "",
@@ -390,6 +391,34 @@ export default function AuthPage() {
   };
 
   const onCompanySubmit = (data: InsertCompany) => {
+    // Validate all required fields before submit
+    const requiredFields = ['name', 'industry', 'size', 'establishmentYear', 'email', 'password'];
+    let hasEmptyFields = false;
+    
+    requiredFields.forEach(field => {
+      const value = data[field as keyof InsertCompany];
+      if (!value || value.toString().trim() === "") {
+        setFieldErrors(prev => ({ ...prev, [field]: true }));
+        hasEmptyFields = true;
+      }
+    });
+    
+    // Check company terms checkbox
+    const companyTermsCheckbox = document.getElementById('company-terms') as HTMLInputElement;
+    if (!companyTermsCheckbox?.checked) {
+      setFieldErrors(prev => ({ ...prev, companyTerms: true }));
+      hasEmptyFields = true;
+    }
+    
+    if (hasEmptyFields) {
+      toast({
+        title: "Validation Error",
+        description: "Please fill in all required fields and accept the terms",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     companyRegistration.mutate(data);
   };
 
@@ -855,11 +884,23 @@ export default function AuthPage() {
                       <FormField
                         control={companyForm.control}
                         name="name"
-                        render={({ field }) => (
+                        render={({ field, fieldState }) => (
                           <FormItem>
                             <FormLabel>Organization Name *</FormLabel>
                             <FormControl>
-                              <Input placeholder="Acme Corporation Pvt Ltd" {...field} />
+                              <Input 
+                                placeholder="Acme Corporation Pvt Ltd" 
+                                {...field}
+                                className={getFieldErrorClass("name", fieldState)}
+                                onChange={(e) => {
+                                  field.onChange(e);
+                                  if (e.target.value.trim()) {
+                                    setFieldErrors(prev => ({ ...prev, name: false }));
+                                  }
+                                }}
+                                onBlur={() => handleFieldBlur("name")}
+                                data-testid="input-company-name"
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -890,12 +931,17 @@ export default function AuthPage() {
                         <FormField
                           control={companyForm.control}
                           name="industry"
-                          render={({ field }) => (
+                          render={({ field, fieldState }) => (
                             <FormItem>
                               <FormLabel>Industry Sector *</FormLabel>
-                              <Select onValueChange={field.onChange} value={field.value}>
+                              <Select onValueChange={(value) => {
+                                field.onChange(value);
+                                if (value) {
+                                  setFieldErrors(prev => ({ ...prev, industry: false }));
+                                }
+                              }} value={field.value}>
                                 <FormControl>
-                                  <SelectTrigger>
+                                  <SelectTrigger className={getFieldErrorClass("industry", fieldState)}>
                                     <SelectValue placeholder="Select industry" />
                                   </SelectTrigger>
                                 </FormControl>
@@ -915,12 +961,17 @@ export default function AuthPage() {
                         <FormField
                           control={companyForm.control}
                           name="size"
-                          render={({ field }) => (
+                          render={({ field, fieldState }) => (
                             <FormItem>
                               <FormLabel>Company Size *</FormLabel>
-                              <Select onValueChange={field.onChange} value={field.value}>
+                              <Select onValueChange={(value) => {
+                                field.onChange(value);
+                                if (value) {
+                                  setFieldErrors(prev => ({ ...prev, size: false }));
+                                }
+                              }} value={field.value}>
                                 <FormControl>
-                                  <SelectTrigger>
+                                  <SelectTrigger className={getFieldErrorClass("size", fieldState)}>
                                     <SelectValue placeholder="Select size" />
                                   </SelectTrigger>
                                 </FormControl>
@@ -942,7 +993,7 @@ export default function AuthPage() {
                       <FormField
                         control={companyForm.control}
                         name="establishmentYear"
-                        render={({ field }) => (
+                        render={({ field, fieldState }) => (
                           <FormItem>
                             <FormLabel>Establishment Year *</FormLabel>
                             <FormControl>
@@ -952,7 +1003,16 @@ export default function AuthPage() {
                                 min={1800} 
                                 max={new Date().getFullYear()}
                                 {...field}
-                                onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                                className={getFieldErrorClass("establishmentYear", fieldState)}
+                                onChange={(e) => {
+                                  const value = parseInt(e.target.value) || 0;
+                                  field.onChange(value);
+                                  if (value > 0) {
+                                    setFieldErrors(prev => ({ ...prev, establishmentYear: false }));
+                                  }
+                                }}
+                                onBlur={() => handleFieldBlur("establishmentYear")}
+                                data-testid="input-establishment-year"
                               />
                             </FormControl>
                             <FormMessage />
@@ -1159,11 +1219,24 @@ export default function AuthPage() {
                       <FormField
                         control={companyForm.control}
                         name="email"
-                        render={({ field }) => (
+                        render={({ field, fieldState }) => (
                           <FormItem>
                             <FormLabel>Company Email *</FormLabel>
                             <FormControl>
-                              <Input type="email" placeholder="contact@acmecorp.com" {...field} />
+                              <Input 
+                                type="email" 
+                                placeholder="contact@acmecorp.com" 
+                                {...field}
+                                className={getFieldErrorClass("email", fieldState)}
+                                onChange={(e) => {
+                                  field.onChange(e);
+                                  if (e.target.value.trim()) {
+                                    setFieldErrors(prev => ({ ...prev, email: false }));
+                                  }
+                                }}
+                                onBlur={() => handleFieldBlur("email")}
+                                data-testid="input-company-email"
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -1173,11 +1246,25 @@ export default function AuthPage() {
                       <FormField
                         control={companyForm.control}
                         name="password"
-                        render={({ field }) => (
+                        render={({ field, fieldState }) => (
                           <FormItem>
                             <FormLabel>Password *</FormLabel>
                             <FormControl>
-                              <PasswordInput field={field} placeholder="••••••••" />
+                              <PasswordInput 
+                                field={{
+                                  ...field,
+                                  onChange: (e: any) => {
+                                    field.onChange(e);
+                                    // Clear error on change
+                                    if (e.target.value.trim()) {
+                                      setFieldErrors(prev => ({ ...prev, password: false }));
+                                    }
+                                  },
+                                  onBlur: () => handleFieldBlur("password")
+                                }} 
+                                placeholder="••••••••" 
+                                className={getFieldErrorClass("password", fieldState)}
+                              />
                             </FormControl>
                             <PasswordStrengthIndicator password={field.value || ""} />
                             <FormMessage />
@@ -1187,7 +1274,17 @@ export default function AuthPage() {
                     </div>
                     
                     <div className="flex items-center space-x-2">
-                      <Checkbox id="company-terms" required />
+                      <Checkbox 
+                        id="company-terms" 
+                        required 
+                        className={fieldErrors.companyTerms ? "animate-error-blink" : ""}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setFieldErrors(prev => ({ ...prev, companyTerms: false }));
+                          }
+                        }}
+                        data-testid="checkbox-company-terms"
+                      />
                       <label htmlFor="company-terms" className="text-sm text-slate-600">
                         I agree to the{" "}
                         <PrefetchLink href="/terms?from=company-registration" className="text-primary hover:text-primary-dark">
