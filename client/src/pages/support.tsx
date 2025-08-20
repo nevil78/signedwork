@@ -7,6 +7,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Link } from "wouter";
 import signedworkLogo from "@assets/Signed-Logo_1755167773532.png";
 
 export default function SupportPage() {
@@ -364,21 +365,21 @@ export default function SupportPage() {
               <span className="text-slate-600">© 2025 Signedwork. Building trust through verification.</span>
             </div>
             <nav className="flex flex-wrap justify-center gap-6">
-              <a href="/about" className="text-slate-600 hover:text-slate-900 transition-colors" data-testid="link-about">
+              <Link href="/about" className="text-slate-600 hover:text-slate-900 transition-colors" data-testid="link-about">
                 About
-              </a>
-              <a href="/support" className="text-slate-600 hover:text-slate-900 transition-colors" data-testid="link-support">
+              </Link>
+              <Link href="/support" className="text-slate-600 hover:text-slate-900 transition-colors" data-testid="link-support">
                 Support
-              </a>
-              <a href="/contact" className="text-slate-600 hover:text-slate-900 transition-colors" data-testid="link-contact">
+              </Link>
+              <Link href="/contact" className="text-slate-600 hover:text-slate-900 transition-colors" data-testid="link-contact">
                 Contact
-              </a>
-              <a href="/terms" className="text-slate-600 hover:text-slate-900 transition-colors" data-testid="link-terms">
+              </Link>
+              <Link href="/terms" className="text-slate-600 hover:text-slate-900 transition-colors" data-testid="link-terms">
                 Terms of Service
-              </a>
-              <a href="/privacy" className="text-slate-600 hover:text-slate-900 transition-colors" data-testid="link-privacy">
+              </Link>
+              <Link href="/privacy" className="text-slate-600 hover:text-slate-900 transition-colors" data-testid="link-privacy">
                 Privacy Policy
-              </a>
+              </Link>
             </nav>
           </div>
         </div>
