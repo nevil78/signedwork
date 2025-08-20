@@ -1030,19 +1030,9 @@ export default function AuthPage() {
           <div className="max-w-md mx-auto">
             <Card className="rounded-2xl shadow-xl">
               <CardContent className="p-8">
-                <div className="flex items-center mb-6">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="text-slate-400 hover:text-slate-600 mr-3"
-                    onClick={() => setCurrentView("selection")}
-                  >
-                    <ArrowLeft className="text-lg" />
-                  </Button>
-                  <div>
-                    <h2 className="text-2xl font-bold text-slate-900">Sign In</h2>
-                    <p className="text-sm text-slate-600">Welcome back! Please sign in to your account</p>
-                  </div>
+                <div className="text-center mb-6">
+                  <h2 className="text-2xl font-bold text-slate-900">Sign In</h2>
+                  <p className="text-sm text-slate-600">Welcome back! Please sign in to your account</p>
                 </div>
                 
                 <Form {...loginForm}>

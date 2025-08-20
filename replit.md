@@ -102,6 +102,12 @@ This project is a LinkedIn-like professional networking platform built with Expr
   * **VERIFIED ENTRIES ONLY**: Recruiters can only view work entries that have been verified/approved by companies for enhanced credibility
   * **COMPREHENSIVE WORK DETAILS**: Expanded work entry view showing complete information including work description, challenges faced, key learnings, timeline, hours worked, skills/technologies, company verification with ratings, and attachments
   * **VERIFICATION BADGES**: Added visual verification indicators with shield icons and "Verified" badges for approved work entries
+- **AUTHENTICATION FLOW RESTRUCTURED**: Changed authentication landing page from sign-up to sign-in for improved user experience:
+  * Login page is now the main/default page when users first visit the platform
+  * Removed back button from login page to establish it as the primary entry point
+  * Updated navigation text: login page shows "Don't have an account? Sign up" 
+  * Signup pages maintain "Already have an account? Sign in" for proper flow
+  * Follows industry standard pattern where existing users see login first
 
 # User Preferences
 
