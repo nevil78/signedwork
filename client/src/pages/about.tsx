@@ -205,15 +205,21 @@ export default function AboutPage() {
               <img src={signedworkLogo} alt="Signedwork" className="h-6 w-6 mr-2" />
               <span className="text-slate-600">© 2025 Signedwork. Building trust through verification.</span>
             </div>
-            <nav className="flex space-x-6">
-              <a href="/about" className="text-slate-600 hover:text-slate-900 transition-colors">
+            <nav className="flex flex-wrap justify-center gap-6">
+              <a href="/about" className="text-slate-600 hover:text-slate-900 transition-colors" data-testid="link-about">
                 About
               </a>
-              <a href="/support" className="text-slate-600 hover:text-slate-900 transition-colors">
+              <a href="/support" className="text-slate-600 hover:text-slate-900 transition-colors" data-testid="link-support">
                 Support
               </a>
-              <a href="/contact" className="text-slate-600 hover:text-slate-900 transition-colors">
+              <a href="/contact" className="text-slate-600 hover:text-slate-900 transition-colors" data-testid="link-contact">
                 Contact
+              </a>
+              <a href="/terms" className="text-slate-600 hover:text-slate-900 transition-colors" data-testid="link-terms">
+                Terms of Service
+              </a>
+              <a href="/privacy" className="text-slate-600 hover:text-slate-900 transition-colors" data-testid="link-privacy">
+                Privacy Policy
               </a>
             </nav>
           </div>

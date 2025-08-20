@@ -55,6 +55,7 @@ Preferred communication style: Simple, everyday language.
 - **Job Discovery Page**: Comprehensive job discovery platform with AI-powered search, advanced filtering, and application management.
 - **Trending Skills Module**: Advanced skills discovery and personalization system with market insights and analytics.
 - **Email Verification System**: OTP-based email verification for employee sign-up and profile updates.
+- **Legal Documentation**: Professional Terms of Service and Privacy Policy pages with comprehensive coverage of platform usage, data handling, user rights, and legal compliance.
 
 # External Dependencies
 - **Database Provider**: Neon PostgreSQL

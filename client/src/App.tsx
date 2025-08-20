@@ -37,6 +37,8 @@ import FeedbackPage from "@/pages/feedback";
 import ContactPage from "@/pages/contact";
 import AboutPage from "@/pages/about";
 import SupportPage from "@/pages/support";
+import TermsOfService from "@/pages/terms";
+import PrivacyPolicy from "@/pages/privacy";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -77,6 +79,8 @@ function Router() {
       <Route path="/contact" component={ContactPage} />
       <Route path="/about" component={AboutPage} />
       <Route path="/support" component={SupportPage} />
+      <Route path="/terms" component={TermsOfService} />
+      <Route path="/privacy" component={PrivacyPolicy} />
       <Route component={NotFound} />
     </Switch>
   );

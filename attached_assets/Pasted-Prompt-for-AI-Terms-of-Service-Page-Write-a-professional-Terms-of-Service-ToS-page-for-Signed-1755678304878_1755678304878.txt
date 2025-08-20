@@ -1,0 +1,90 @@
+Prompt for AI (Terms of Service Page):
+
+"Write a professional Terms of Service (ToS) page for Signedwork (signedwork.com), an employee work verification and recruitment platform.
+
+Key sections to include:
+
+Introduction – State that by using Signedwork, users agree to these terms.
+
+Eligibility – Users must be of legal working age (18+).
+
+Accounts & Responsibilities – Users must provide accurate information when creating employee/company accounts. Users are responsible for safeguarding their login credentials.
+
+Employee Work Verification – Signedwork only facilitates verification between employees and companies. Signedwork is not responsible for disputes over the accuracy of submitted or verified work.
+
+Job Applications & Hiring – Companies posting jobs are responsible for accuracy and fairness of listings. Signedwork is not liable for hiring decisions.
+
+Prohibited Activities – No fake profiles, fraudulent claims, spam, or misuse of the platform.
+
+Intellectual Property – Content on Signedwork (except user-submitted work) is owned by Signedwork. Users grant Signedwork permission to display and process their submitted content for verification.
+
+Termination – Signedwork reserves the right to suspend or terminate accounts that violate policies.
+
+Limitation of Liability – Signedwork is not responsible for losses resulting from use of the platform.
+
+Changes to Terms – Terms may be updated, and users will be notified.
+
+Keep the tone legal, but simple enough for regular users to understand."
+
+Prompt for AI (Privacy Policy Page):
+
+"Write a professional Privacy Policy page for Signedwork (signedwork.com).
+
+Key sections to include:
+
+Information We Collect
+
+Personal details (name, email, phone, CV, work diaries)
+
+Company details (name, job postings, verification actions)
+
+Usage data (logins, activity history)
+
+How We Use Information
+
+To verify employee work and projects
+
+To connect employees with companies
+
+To send important account notifications (never spam)
+
+To improve platform functionality
+
+Data Sharing
+
+Work verification details are shared only between employees and their companies
+
+We never sell user data to third parties
+
+May share limited data with legal authorities if required by law
+
+Data Security
+
+Signedwork uses encryption and secure storage methods to protect data
+
+Users are responsible for maintaining strong passwords
+
+Cookies & Tracking
+
+Cookies may be used for login sessions and analytics
+
+Users can manage cookies through their browser settings
+
+User Rights
+
+User Rights (Revised for Signedwork)
+
+Users may request account deletion or data removal by sending an email to support@signedwork.com.
+
+Requests must include the registered email address and a clear reason for deletion.
+
+Account deletion is not automatic – the Signedwork admin team will review the request and proceed only if the reason is valid.
+
+Users may update or correct their personal information (like name, email, or profile details) through their account settings.
+
+Data related to verified work diaries may be retained as part of company verification records, even after account deletion, if required by compliance or audit purposes.
+Changes to Policy
+
+Privacy Policy may be updated, with notifications sent to users
+
+Keep the language clear, trustworthy, and compliant with standard online privacy practices (like GDPR basics)."

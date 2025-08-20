@@ -69,7 +69,7 @@ export default function ContactPage() {
   const getHomeUrl = () => {
     if (authUser) {
       // User is logged in, redirect to appropriate dashboard
-      return authUser.type === "company" ? "/company-dashboard" : "/dashboard";
+      return (authUser as any).type === "company" ? "/company-dashboard" : "/dashboard";
     }
     // User is not logged in, redirect to main sign-in page
     return "/";
@@ -234,6 +234,35 @@ export default function ContactPage() {
           )}
         </div>
       </main>
+
+      {/* Footer */}
+      <footer className="bg-white border-t border-slate-200 mt-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex flex-col md:flex-row justify-between items-center">
+            <div className="flex items-center mb-4 md:mb-0">
+              <img src={signedworkLogo} alt="Signedwork" className="h-6 w-6 mr-2" />
+              <span className="text-slate-600">© 2025 Signedwork. Building trust through verification.</span>
+            </div>
+            <nav className="flex flex-wrap justify-center gap-6">
+              <a href="/about" className="text-slate-600 hover:text-slate-900 transition-colors" data-testid="link-about">
+                About
+              </a>
+              <a href="/support" className="text-slate-600 hover:text-slate-900 transition-colors" data-testid="link-support">
+                Support
+              </a>
+              <a href="/contact" className="text-slate-600 hover:text-slate-900 transition-colors" data-testid="link-contact">
+                Contact
+              </a>
+              <a href="/terms" className="text-slate-600 hover:text-slate-900 transition-colors" data-testid="link-terms">
+                Terms of Service
+              </a>
+              <a href="/privacy" className="text-slate-600 hover:text-slate-900 transition-colors" data-testid="link-privacy">
+                Privacy Policy
+              </a>
+            </nav>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
