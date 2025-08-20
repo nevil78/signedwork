@@ -1,6 +1,36 @@
 import { ArrowLeft } from "lucide-react";
+import { useEffect, useState } from "react";
 
 export default function PrivacyPolicy() {
+  const [backUrl, setBackUrl] = useState("/");
+
+  useEffect(() => {
+    // Determine where to go back based on referrer
+    const referrer = document.referrer;
+    if (referrer) {
+      const referrerUrl = new URL(referrer);
+      // If user came from the same origin, use history.back()
+      if (referrerUrl.origin === window.location.origin) {
+        // Check if they came from auth page (which includes registration)
+        if (referrerUrl.pathname === "/" || referrerUrl.pathname === "/auth") {
+          setBackUrl("/");
+        } else {
+          setBackUrl("HISTORY_BACK");
+        }
+      } else {
+        setBackUrl("/");
+      }
+    }
+  }, []);
+
+  const handleBack = () => {
+    if (backUrl === "HISTORY_BACK") {
+      window.history.back();
+    } else {
+      window.location.href = backUrl;
+    }
+  };
+
   return (
     <div className="min-h-screen bg-white">
       {/* Header */}
@@ -9,13 +39,7 @@ export default function PrivacyPolicy() {
           <div className="flex items-center gap-4">
             <button 
               className="flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors"
-              onClick={() => {
-                if (document.referrer && document.referrer.includes(window.location.origin)) {
-                  window.history.back();
-                } else {
-                  window.location.href = "/";
-                }
-              }}
+              onClick={handleBack}
               data-testid="button-back-home"
             >
               <ArrowLeft className="w-5 h-5" />
