@@ -206,7 +206,7 @@ export const companies = pgTable("companies", {
   industry: text("industry").notNull(),
   email: text("email").notNull().unique(),
   size: text("size").notNull(),
-  establishmentYear: integer("establishment_year").notNull(),
+  establishmentYear: text("establishment_year").notNull(),
   password: text("password").notNull(),
   emailVerified: boolean("email_verified").default(false),
   // PAN/CIN Verification fields
@@ -606,9 +606,12 @@ export const insertCompanySchema = createInsertSchema(companies).omit({
   registrationType: z.enum(["CIN", "PAN"]).optional(),
   registrationNumber: z.string().optional(),
   industry: z.string().min(1, "Please select an industry"),
-  establishmentYear: z.number()
-    .min(1800, "Invalid establishment year")
-    .max(new Date().getFullYear(), "Invalid establishment year"),
+  establishmentYear: z.string()
+    .min(1, "Establishment year is required")
+    .refine((val) => {
+      const year = parseInt(val);
+      return !isNaN(year) && year >= 1800 && year <= new Date().getFullYear();
+    }, "Invalid establishment year"),
   cin: z.string()
     .optional()
     .refine((val) => !val || val.length === 21, "CIN must be exactly 21 characters")

@@ -211,7 +211,7 @@ export default function AuthPage() {
       panNumber: "",
       email: "",
       size: "",
-      establishmentYear: new Date().getFullYear(),
+      establishmentYear: "",
       password: "",
     },
   });
@@ -252,7 +252,7 @@ export default function AuthPage() {
         panNumber: "",
         email: "",
         size: "",
-        establishmentYear: new Date().getFullYear(),
+        establishmentYear: "",
         password: "",
       });
       setFieldErrors({});
@@ -328,6 +328,7 @@ export default function AuthPage() {
         location: data.address,
         email: data.email,
         password: data.password,
+        establishmentYear: parseInt(data.establishmentYear), // Convert string to number for API
         cin: data.cin,
         panNumber: data.panNumber
       });
@@ -1063,16 +1064,17 @@ export default function AuthPage() {
                             <FormLabel>Establishment Year *</FormLabel>
                             <FormControl>
                               <Input 
-                                type="number" 
+                                type="text" 
+                                inputMode="numeric"
                                 placeholder="2020" 
-                                min={1800} 
-                                max={new Date().getFullYear()}
                                 {...field}
                                 className={getFieldErrorClass("establishmentYear", fieldState)}
+                                autoComplete="off"
                                 onChange={(e) => {
-                                  const value = parseInt(e.target.value) || 0;
+                                  // Allow only digits and empty string
+                                  const value = e.target.value.replace(/\D/g, '');
                                   field.onChange(value);
-                                  if (value > 0) {
+                                  if (value.trim()) {
                                     setFieldErrors(prev => ({ ...prev, establishmentYear: false }));
                                   }
                                 }}
