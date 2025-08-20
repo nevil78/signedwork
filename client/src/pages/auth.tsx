@@ -576,9 +576,13 @@ export default function AuthPage() {
                       <Checkbox id="terms" required />
                       <label htmlFor="terms" className="text-sm text-slate-600">
                         I agree to the{" "}
-                        <a href="#" className="text-primary hover:text-primary-dark">Terms of Service</a>{" "}
+                        <Link href="/terms">
+                          <a className="text-primary hover:text-primary-dark" target="_blank" rel="noopener noreferrer">Terms of Service</a>
+                        </Link>{" "}
                         and{" "}
-                        <a href="#" className="text-primary hover:text-primary-dark">Privacy Policy</a>
+                        <Link href="/privacy">
+                          <a className="text-primary hover:text-primary-dark" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
+                        </Link>
                       </label>
                     </div>
                     
@@ -1043,9 +1047,13 @@ export default function AuthPage() {
                       <Checkbox id="company-terms" required />
                       <label htmlFor="company-terms" className="text-sm text-slate-600">
                         I agree to the{" "}
-                        <a href="#" className="text-primary hover:text-primary-dark">Terms of Service</a>{" "}
+                        <Link href="/terms">
+                          <a className="text-primary hover:text-primary-dark" target="_blank" rel="noopener noreferrer">Terms of Service</a>
+                        </Link>{" "}
                         and{" "}
-                        <a href="#" className="text-primary hover:text-primary-dark">Privacy Policy</a>
+                        <Link href="/privacy">
+                          <a className="text-primary hover:text-primary-dark" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
+                        </Link>
                       </label>
                     </div>
                     
