@@ -1022,6 +1022,11 @@ export default function AuthPage() {
                 <img src={signedworkLogo} alt="Signedwork" className="h-8 w-8 mr-3" />
                 <span className="text-xl font-bold text-slate-800">Signedwork</span>
               </div>
+              <nav className="hidden md:flex space-x-8">
+                <a href="#" className="text-slate-600 hover:text-primary transition-colors">About</a>
+                <a href="#" className="text-slate-600 hover:text-primary transition-colors">Support</a>
+                <a href="#" className="text-slate-600 hover:text-primary transition-colors">Contact</a>
+              </nav>
             </div>
           </div>
         </header>
