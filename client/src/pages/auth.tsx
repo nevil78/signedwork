@@ -1067,12 +1067,13 @@ export default function AuthPage() {
                                 type="text" 
                                 inputMode="numeric"
                                 placeholder="2020" 
+                                maxLength={4}
                                 {...field}
                                 className={getFieldErrorClass("establishmentYear", fieldState)}
                                 autoComplete="off"
                                 onChange={(e) => {
-                                  // Allow only digits and empty string
-                                  const value = e.target.value.replace(/\D/g, '');
+                                  // Allow only digits and empty string, max 4 characters
+                                  const value = e.target.value.replace(/\D/g, '').slice(0, 4);
                                   field.onChange(value);
                                   if (value.trim()) {
                                     setFieldErrors(prev => ({ ...prev, establishmentYear: false }));
