@@ -24,7 +24,7 @@ export default function AboutPage() {
               <a href="/about" className="text-slate-900 font-medium">
                 About
               </a>
-              <a href="#" className="text-slate-600 hover:text-slate-900 transition-colors">
+              <a href="/support" className="text-slate-600 hover:text-slate-900 transition-colors">
                 Support
               </a>
               <a href="/contact" className="text-slate-600 hover:text-slate-900 transition-colors">
