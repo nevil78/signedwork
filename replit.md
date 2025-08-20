@@ -50,7 +50,7 @@ Preferred communication style: Simple, everyday language.
 - **Employee Profiles**: LinkedIn-like profiles with sections for experience, education, certifications, and comprehensive CV fields. Includes profile picture upload.
 - **Work Diary**: Company-based work tracking system with task creation, status, priority, time tracking, tagging, and CRUD operations. Features company invitation system and approval workflows with rating and feedback. Includes shared documents system for job applications, allowing companies to view verified work entries and shared profile data.
 - **Company Management**: Company registration with detailed business info, invitation code generation, and employee management (employment status tracking).
-- **Admin Panel**: Role-based access for managing users (employees and companies), platform statistics, and comprehensive data deletion with backup and confirmation safeguards.
+- **Admin Panel**: Role-based access for managing users (employees and companies), platform statistics, and comprehensive data deletion with backup and confirmation safeguards. Uses direct SQL execution via Drizzle's sql template literals to ensure reliable deletion operations.
 - **Enhanced Security**: Secure password reset flow (OTP-based), immutable protection for approved work entries.
 - **Job Discovery Page**: Comprehensive job discovery platform with AI-powered search, advanced filtering, and application management.
 - **Trending Skills Module**: Advanced skills discovery and personalization system with market insights and analytics.

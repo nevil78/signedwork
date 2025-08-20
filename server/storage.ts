@@ -650,45 +650,34 @@ export class DatabaseStorage implements IStorage {
     });
   }
 
-  async deleteCompany(id: string): Promise<void> {
+  async deleteCompany(companyId: string): Promise<void> {
     try {
-      await db.transaction(async (tx) => {
-        // Delete related data first due to foreign key constraints
-        
-        // Step 1: Delete work entries
-        await tx.delete(workEntries).where(eq(workEntries.companyId, id));
-        
-        // Step 2: Delete company employees relationship
-        await tx.delete(companyEmployees).where(eq(companyEmployees.companyId, id));
-        
-        // Step 3: Delete employee-company relationships 
-        await tx.delete(employeeCompanies).where(eq(employeeCompanies.companyId, id));
-        
-        // Step 4: Delete invitation codes
-        await tx.delete(companyInvitationCodes).where(eq(companyInvitationCodes.companyId, id));
-        
-        // Step 5: Get job listings to delete applications first
-        const companyJobListings = await tx.select().from(jobListings).where(eq(jobListings.companyId, id));
-        
-        // Step 6: Delete job applications and related data for each job
-        for (const job of companyJobListings) {
-          await tx.delete(jobApplications).where(eq(jobApplications.jobId, job.id));
-          await tx.delete(savedJobs).where(eq(savedJobs.jobId, job.id));
-          await tx.delete(jobAlerts).where(eq(jobAlerts.jobId, job.id));
-        }
-        
-        // Step 7: Delete job listings
-        await tx.delete(jobListings).where(eq(jobListings.companyId, id));
-        
-        // Step 8: Delete profile views
-        await tx.delete(profileViews).where(eq(profileViews.viewerCompanyId, id));
-        
-        // Step 9: Delete user feedback (note: userId should be the company id for company feedback)
-        await tx.delete(userFeedback).where(eq(userFeedback.userId, id));
-        
-        // Step 10: Finally delete the company
-        await tx.delete(companies).where(eq(companies.id, id));
-      });
+      // Use individual SQL statements to avoid batch issues
+      await db.execute(sql`DELETE FROM work_entries WHERE company_id = ${companyId}`);
+      await db.execute(sql`DELETE FROM company_employees WHERE company_id = ${companyId}`);
+      await db.execute(sql`DELETE FROM company_invitation_codes WHERE company_id = ${companyId}`);
+      
+      // Handle job-related cascading deletes
+      const jobIds = await db.execute(sql`SELECT id FROM job_listings WHERE company_id = ${companyId}`);
+      if (jobIds.rows.length > 0) {
+        await db.execute(sql`DELETE FROM job_applications WHERE job_id IN (SELECT id FROM job_listings WHERE company_id = ${companyId})`);
+        await db.execute(sql`DELETE FROM saved_jobs WHERE job_id IN (SELECT id FROM job_listings WHERE company_id = ${companyId})`);
+      }
+      
+      await db.execute(sql`DELETE FROM job_listings WHERE company_id = ${companyId}`);
+      await db.execute(sql`DELETE FROM profile_views WHERE viewer_company_id = ${companyId}`);
+      await db.execute(sql`DELETE FROM user_feedback WHERE user_id = ${companyId}`);
+      
+      // Handle employee companies by name
+      const companyName = await db.execute(sql`SELECT name FROM companies WHERE id = ${companyId}`);
+      if (companyName.rows.length > 0) {
+        const name = (companyName.rows[0] as any).name;
+        await db.execute(sql`DELETE FROM employee_companies WHERE company_name = ${name}`);
+      }
+      
+      // Finally delete the company
+      await db.execute(sql`DELETE FROM companies WHERE id = ${companyId}`);
+      
     } catch (error) {
       console.error("Error deleting company:", error);
       throw error;
