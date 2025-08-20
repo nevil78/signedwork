@@ -1,4 +1,3 @@
-import { Link } from "wouter";
 import { ArrowLeft } from "lucide-react";
 
 export default function TermsOfService() {
@@ -8,15 +7,20 @@ export default function TermsOfService() {
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-4xl mx-auto px-4 py-6">
           <div className="flex items-center gap-4">
-            <Link href="/">
-              <button 
-                className="flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors"
-                data-testid="button-back-home"
-              >
-                <ArrowLeft className="w-5 h-5" />
-                Back to Home
-              </button>
-            </Link>
+            <button 
+              className="flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors"
+              onClick={() => {
+                if (window.history.length > 1) {
+                  window.history.back();
+                } else {
+                  window.location.href = "/";
+                }
+              }}
+              data-testid="button-back-home"
+            >
+              <ArrowLeft className="w-5 h-5" />
+              Back
+            </button>
           </div>
           <h1 className="text-3xl font-bold text-gray-900 mt-4" data-testid="heading-terms-title">
             Terms of Service
