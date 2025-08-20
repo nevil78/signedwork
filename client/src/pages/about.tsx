@@ -21,20 +21,18 @@ export default function AboutPage() {
               <span className="text-xl font-bold text-slate-800">Signedwork</span>
             </a>
             <nav className="hidden md:flex space-x-8">
-              <a href="/" className="text-slate-600 hover:text-slate-900 transition-colors">
-                Home
-              </a>
               <a href="/about" className="text-slate-900 font-medium">
                 About
+              </a>
+              <a href="#" className="text-slate-600 hover:text-slate-900 transition-colors">
+                Support
               </a>
               <a href="/contact" className="text-slate-600 hover:text-slate-900 transition-colors">
                 Contact
               </a>
             </nav>
             <div className="md:hidden">
-              <a href="/" className="text-slate-600 hover:text-slate-900">
-                Back
-              </a>
+              {/* Mobile navigation - clean header */}
             </div>
           </div>
         </div>
