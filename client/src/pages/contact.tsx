@@ -80,7 +80,7 @@ export default function ContactPage() {
       <header className="bg-white shadow-sm border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <a href={getHomeUrl()} className="flex items-center hover:opacity-80 transition-opacity cursor-pointer">
+            <a href="/" className="flex items-center hover:opacity-80 transition-opacity cursor-pointer">
               <img src={signedworkLogo} alt="Signedwork" className="h-8 w-8 mr-3" />
               <span className="text-xl font-bold text-slate-800">Signedwork</span>
             </a>
