@@ -1618,13 +1618,13 @@ export default function AuthPage() {
     );
   }
 
-  // Fallback for any unhandled currentView values - redirect to login
-  console.log('Unhandled currentView:', currentView);
+  // Fallback for any unhandled currentView values
+  console.log('Unhandled currentView:', currentView, 'redirecting to login');
   
-  // Immediately redirect to login for unhandled views
-  useEffect(() => {
+  // Use setTimeout instead of useEffect to avoid hooks violation
+  setTimeout(() => {
     setCurrentView('login');
-  }, []);
+  }, 0);
   
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
