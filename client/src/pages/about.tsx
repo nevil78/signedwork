@@ -206,11 +206,11 @@ export default function AboutPage() {
               <span className="text-slate-600">© 2025 Signedwork. Building trust through verification.</span>
             </div>
             <nav className="flex space-x-6">
-              <a href="/" className="text-slate-600 hover:text-slate-900 transition-colors">
-                Home
-              </a>
               <a href="/about" className="text-slate-600 hover:text-slate-900 transition-colors">
                 About
+              </a>
+              <a href="/support" className="text-slate-600 hover:text-slate-900 transition-colors">
+                Support
               </a>
               <a href="/contact" className="text-slate-600 hover:text-slate-900 transition-colors">
                 Contact
