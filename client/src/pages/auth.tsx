@@ -427,7 +427,17 @@ export default function AuthPage() {
                           <FormItem>
                             <FormLabel>First Name</FormLabel>
                             <FormControl>
-                              <Input placeholder="John" {...field} />
+                              <Input 
+                                placeholder="John" 
+                                {...field}
+                                onChange={(e) => {
+                                  // Auto-capitalize first letter
+                                  const value = e.target.value;
+                                  const capitalized = value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
+                                  field.onChange(capitalized);
+                                }}
+                                style={{ textTransform: 'capitalize' }}
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -440,7 +450,17 @@ export default function AuthPage() {
                           <FormItem>
                             <FormLabel>Last Name</FormLabel>
                             <FormControl>
-                              <Input placeholder="Doe" {...field} />
+                              <Input 
+                                placeholder="Doe" 
+                                {...field}
+                                onChange={(e) => {
+                                  // Auto-capitalize first letter
+                                  const value = e.target.value;
+                                  const capitalized = value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
+                                  field.onChange(capitalized);
+                                }}
+                                style={{ textTransform: 'capitalize' }}
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -465,39 +485,68 @@ export default function AuthPage() {
                     <FormField
                       control={employeeForm.control}
                       name="phone"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Phone Number</FormLabel>
-                          <FormControl>
-                            <div className="flex">
-                              <FormField
-                                control={employeeForm.control}
-                                name="countryCode"
-                                render={({ field: countryField }) => (
-                                  <Select onValueChange={countryField.onChange} defaultValue={countryField.value}>
-                                    <SelectTrigger className="w-20 rounded-r-none">
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="+1">+1</SelectItem>
-                                      <SelectItem value="+91">+91</SelectItem>
-                                      <SelectItem value="+44">+44</SelectItem>
-                                      <SelectItem value="+49">+49</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                )}
-                              />
-                              <Input
-                                type="tel"
-                                placeholder="1234567890"
-                                className="rounded-l-none border-l-0"
-                                {...field}
-                              />
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
+                      render={({ field }) => {
+                        const countryCode = employeeForm.watch("countryCode");
+                        const getPlaceholder = (code: string) => {
+                          switch (code) {
+                            case '+91': return "9876543210";
+                            case '+1': return "2345678901";
+                            case '+44': return "2012345678";
+                            case '+49': return "3012345678";
+                            default: return "1234567890";
+                          }
+                        };
+                        
+                        const getMaxLength = (code: string) => {
+                          switch (code) {
+                            case '+91': return 10;
+                            case '+1': return 10;
+                            case '+44': return 11;
+                            case '+49': return 12;
+                            default: return 15;
+                          }
+                        };
+
+                        return (
+                          <FormItem>
+                            <FormLabel>Phone Number</FormLabel>
+                            <FormControl>
+                              <div className="flex">
+                                <FormField
+                                  control={employeeForm.control}
+                                  name="countryCode"
+                                  render={({ field: countryField }) => (
+                                    <Select onValueChange={countryField.onChange} defaultValue={countryField.value}>
+                                      <SelectTrigger className="w-20 rounded-r-none">
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="+1">+1</SelectItem>
+                                        <SelectItem value="+91">+91</SelectItem>
+                                        <SelectItem value="+44">+44</SelectItem>
+                                        <SelectItem value="+49">+49</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  )}
+                                />
+                                <Input
+                                  type="tel"
+                                  placeholder={getPlaceholder(countryCode)}
+                                  className="rounded-l-none border-l-0"
+                                  maxLength={getMaxLength(countryCode)}
+                                  {...field}
+                                  onChange={(e) => {
+                                    // Allow only digits
+                                    const value = e.target.value.replace(/\D/g, '');
+                                    field.onChange(value);
+                                  }}
+                                />
+                              </div>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        );
+                      }}
                     />
                     
                     <FormField
@@ -888,7 +937,16 @@ export default function AuthPage() {
                             <FormItem>
                               <FormLabel>City *</FormLabel>
                               <FormControl>
-                                <Input placeholder="Mumbai" {...field} />
+                                <Input 
+                                  placeholder="Mumbai" 
+                                  {...field}
+                                  onChange={(e) => {
+                                    // Auto-capitalize first letter of each word
+                                    const value = e.target.value;
+                                    const capitalized = value.replace(/\b\w/g, l => l.toUpperCase());
+                                    field.onChange(capitalized);
+                                  }}
+                                />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
