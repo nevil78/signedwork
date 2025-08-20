@@ -174,10 +174,51 @@ export function ForgotPasswordForm({ onBack }: { onBack: () => void }) {
       </CardHeader>
       <CardContent>
         <form onSubmit={resetForm.handleSubmit(onResetSubmit)} className="space-y-4">
-          {/* Email Display */}
-          <div className="bg-gray-50 p-3 rounded-md">
-            <p className="text-sm text-gray-600">Code sent to:</p>
-            <p className="font-medium" data-testid="text-reset-email">{email}</p>
+          {/* Email Display with Edit Option */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-blue-700">Verification code sent to:</p>
+                <p className="font-medium text-blue-800" data-testid="text-reset-email">{email}</p>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  const newEmail = prompt("Enter new email address:", email);
+                  if (newEmail && newEmail !== email) {
+                    setEmail(newEmail);
+                    resetForm.setValue("email", newEmail);
+                    // Reset the step to allow requesting new code
+                    setStep("request");
+                    requestForm.setValue("email", newEmail);
+                  }
+                }}
+                className="text-blue-600 hover:text-blue-700 p-1"
+                data-testid="edit-reset-email-btn"
+              >
+                Edit
+              </Button>
+            </div>
+          </div>
+
+          {/* Resend Option */}
+          <div className="text-center">
+            <p className="text-sm text-slate-600 mb-2">Didn't receive the code?</p>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                requestResetMutation.mutate({ email, userType: accountType });
+              }}
+              disabled={requestResetMutation.isPending}
+              className="text-sm"
+              data-testid="resend-reset-code-btn"
+            >
+              {requestResetMutation.isPending ? "Sending..." : "Resend Code"}
+            </Button>
           </div>
 
           {/* OTP Input */}

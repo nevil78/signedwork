@@ -203,11 +203,14 @@ export default function AuthPage() {
       });
     },
     onSuccess: (response: any) => {
-      setCurrentView("registration-success");
       toast({
         title: "Account Created!",
-        description: response.message || "Your account has been created successfully. You can now login.",
+        description: response.message || "Your account has been created successfully. Redirecting to dashboard...",
       });
+      // Direct redirect to employee dashboard after successful signup
+      setTimeout(() => {
+        window.location.href = "/summary";
+      }, 1500);
     },
     onError: (error: any) => {
       toast({
@@ -531,9 +534,9 @@ export default function AuthPage() {
                                 />
                                 <Input
                                   type="tel"
-                                  placeholder={getPlaceholder(countryCode)}
+                                  placeholder={getPlaceholder(countryCode || "+1")}
                                   className="rounded-l-none border-l-0"
-                                  maxLength={getMaxLength(countryCode)}
+                                  maxLength={getMaxLength(countryCode || "+1")}
                                   {...field}
                                   onChange={(e) => {
                                     // Allow only digits
@@ -1308,14 +1311,44 @@ export default function AuthPage() {
             <Card className="rounded-2xl shadow-xl">
               <CardContent className="p-8">
                 <div className="text-center mb-8">
-                  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Mail className="text-green-600 text-2xl" />
+                  <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Mail className="text-blue-600 text-2xl" />
                   </div>
                   <h2 className="text-2xl font-bold text-slate-900 mb-2">Verify Your Email</h2>
-                  <p className="text-slate-600">
-                    Enter the 6-digit code sent to<br />
-                    <span className="font-medium text-slate-800">{verificationEmail}</span>
+                  <p className="text-slate-600 mb-4">
+                    Enter the 6-digit code sent to
                   </p>
+                  <div className="flex items-center justify-center space-x-2 mb-4">
+                    <span className="font-medium text-slate-800 bg-slate-100 px-3 py-1 rounded-md">
+                      {verificationEmail}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        // Allow user to edit email without going back
+                        const newEmail = prompt("Enter new email address:", verificationEmail);
+                        if (newEmail && newEmail !== verificationEmail) {
+                          setVerificationEmail(newEmail);
+                          employeeForm.setValue("email", newEmail);
+                          toast({
+                            title: "Email Updated",
+                            description: "Email address updated. Please request a new verification code.",
+                          });
+                        }
+                      }}
+                      className="text-blue-600 hover:text-blue-700 p-1"
+                      data-testid="edit-email-btn"
+                    >
+                      Edit
+                    </Button>
+                  </div>
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-700">
+                    <div className="flex items-center justify-center space-x-1">
+                      <AlertCircle className="w-4 h-4" />
+                      <span>Code expires in {formatTime(countdown)}</span>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="space-y-6">
@@ -1344,30 +1377,53 @@ export default function AuthPage() {
                     {verifyOTP.isPending ? "Verifying..." : "Verify & Create Account"}
                   </Button>
 
-                  <div className="text-center space-y-2">
-                    {countdown > 0 ? (
+                  <div className="text-center space-y-3">
+                    <div className="space-y-2">
                       <p className="text-sm text-slate-600">
-                        Resend code in {formatTime(countdown)}
+                        Didn't receive the code?
                       </p>
-                    ) : (
-                      <Button
-                        variant="link"
-                        onClick={handleResendOTP}
-                        className="text-primary hover:text-primary-dark"
-                        data-testid="button-resend-otp"
-                      >
-                        Resend verification code
-                      </Button>
-                    )}
+                      {countdown > 0 ? (
+                        <p className="text-sm text-slate-500">
+                          Resend available in {formatTime(countdown)}
+                        </p>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleResendOTP}
+                          disabled={employeeRegistration.isPending}
+                          className="text-sm"
+                          data-testid="button-resend-otp"
+                        >
+                          {employeeRegistration.isPending ? "Sending..." : "Resend Code"}
+                        </Button>
+                      )}
+                    </div>
                     
-                    <div>
-                      <Button
-                        variant="link"
-                        onClick={() => setCurrentView("selection")}
-                        className="text-slate-600 hover:text-slate-800"
-                      >
-                        Back to account selection
-                      </Button>
+                    <div className="pt-3 border-t border-slate-200 space-y-2">
+                      <p className="text-sm text-slate-600">
+                        Need to change your details?
+                      </p>
+                      <div className="flex flex-col space-y-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setCurrentView("employee")}
+                          className="text-sm text-blue-600 hover:text-blue-700"
+                          data-testid="back-edit-details-btn"
+                        >
+                          Edit Registration Details
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setCurrentView("selection")}
+                          className="text-sm text-slate-600 hover:text-slate-800"
+                          data-testid="back-selection-btn"
+                        >
+                          Back to Account Type
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </div>
