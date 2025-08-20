@@ -318,7 +318,7 @@ export default function AuthPage() {
                 <span className="text-xl font-bold text-slate-800">Signedwork</span>
               </div>
               <nav className="hidden md:flex space-x-8">
-                <a href="#" className="text-slate-600 hover:text-primary transition-colors">About</a>
+                <a href="/about" className="text-slate-600 hover:text-primary transition-colors">About</a>
                 <a href="#" className="text-slate-600 hover:text-primary transition-colors">Support</a>
                 <a href="/contact" className="text-slate-600 hover:text-primary transition-colors">Contact</a>
               </nav>
@@ -1022,7 +1022,7 @@ export default function AuthPage() {
                 <span className="text-xl font-bold text-slate-800">Signedwork</span>
               </div>
               <nav className="hidden md:flex space-x-8">
-                <a href="#" className="text-slate-600 hover:text-primary transition-colors">About</a>
+                <a href="/about" className="text-slate-600 hover:text-primary transition-colors">About</a>
                 <a href="#" className="text-slate-600 hover:text-primary transition-colors">Support</a>
                 <a href="/contact" className="text-slate-600 hover:text-primary transition-colors">Contact</a>
               </nav>
