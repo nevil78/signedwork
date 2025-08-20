@@ -529,6 +529,7 @@ export const insertEmployeeSchema = createInsertSchema(employees).omit({
   email: z.string().email("Invalid email format"),
   password: z.string()
     .min(8, "Password must be at least 8 characters")
+    .max(12)
     .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
     .regex(/\d/, "Password must contain at least one number"),
   phone: z.string()
@@ -598,6 +599,7 @@ export const insertCompanySchema = createInsertSchema(companies).omit({
   email: z.string().email("Invalid email format"),
   password: z.string()
     .min(8, "Password must be at least 8 characters")
+    .max(12)
     .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
     .regex(/\d/, "Password must contain at least one number"),
   pincode: z.string().min(5, "Pincode must be at least 5 digits"),
@@ -666,6 +668,7 @@ export const insertAdminSchema = createInsertSchema(admins).omit({
   email: z.string().email("Invalid email format"),
   password: z.string()
     .min(8, "Password must be at least 8 characters")
+    .max(12)
     .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
     .regex(/\d/, "Password must contain at least one number"),
   username: z.string().min(3, "Username must be at least 3 characters"),
@@ -732,6 +735,7 @@ export const resetPasswordSchema = z.object({
   otpCode: z.string().length(6, "OTP code must be 6 digits"),
   newPassword: z.string()
     .min(8, "Password must be at least 8 characters")
+    .max(12)
     .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
     .regex(/\d/, "Password must contain at least one number"),
   confirmPassword: z.string().min(1, "Please confirm your password"),
@@ -750,6 +754,7 @@ export const changePasswordSchema = z.object({
   currentPassword: z.string().min(1, "Current password is required"),
   newPassword: z.string()
     .min(8, "Password must be at least 8 characters")
+    .max(12)
     .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
     .regex(/\d/, "Password must contain at least one number"),
   confirmPassword: z.string().min(1, "Please confirm your password"),
