@@ -162,6 +162,8 @@ export default function AuthPage() {
     }
   }, [currentView, countdown]);
 
+
+
   const employeeForm = useForm<InsertEmployee>({
     resolver: zodResolver(insertEmployeeSchema),
     mode: "onChange", // Enable real-time validation
@@ -222,6 +224,40 @@ export default function AuthPage() {
       accountType: "employee",
     },
   });
+
+  // Reset employee form on page load/view change to employee view
+  useEffect(() => {
+    if (currentView === "employee") {
+      employeeForm.reset({
+        firstName: "",
+        lastName: "",
+        email: "",
+        phone: "",
+        countryCode: "+1",
+        password: "",
+      });
+      setFieldErrors({});
+    }
+  }, [currentView, employeeForm]);
+
+  // Reset company form on page load/view change to company view
+  useEffect(() => {
+    if (currentView === "company") {
+      companyForm.reset({
+        name: "",
+        address: "",
+        pincode: "",
+        registrationNumber: "",
+        cin: "",
+        panNumber: "",
+        email: "",
+        size: "",
+        establishmentYear: new Date().getFullYear(),
+        password: "",
+      });
+      setFieldErrors({});
+    }
+  }, [currentView, companyForm]);
 
   const employeeRegistration = useMutation({
     mutationFn: async (data: InsertEmployee) => {
@@ -560,7 +596,7 @@ export default function AuthPage() {
                 </div>
                 
                 <Form {...employeeForm}>
-                  <form onSubmit={employeeForm.handleSubmit(onEmployeeSubmit)} className="space-y-6">
+                  <form onSubmit={employeeForm.handleSubmit(onEmployeeSubmit)} className="space-y-6" autoComplete="off">
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                       <FormField
                         control={employeeForm.control}
@@ -573,6 +609,7 @@ export default function AuthPage() {
                                 placeholder="John" 
                                 {...field}
                                 className={getFieldErrorClass("firstName", fieldState)}
+                                autoComplete="off"
                                 onChange={(e) => {
                                   // Auto-capitalize first letter
                                   const value = e.target.value;
@@ -603,6 +640,7 @@ export default function AuthPage() {
                                 placeholder="Doe" 
                                 {...field}
                                 className={getFieldErrorClass("lastName", fieldState)}
+                                autoComplete="off"
                                 onChange={(e) => {
                                   // Auto-capitalize first letter
                                   const value = e.target.value;
@@ -636,6 +674,7 @@ export default function AuthPage() {
                               placeholder="john.doe@example.com" 
                               {...field}
                               className={getFieldErrorClass("email", fieldState)}
+                              autoComplete="off"
                               onChange={(e) => {
                                 field.onChange(e);
                                 // Clear error on change
@@ -704,6 +743,7 @@ export default function AuthPage() {
                                   placeholder={getPlaceholder(countryCode || "+1")}
                                   className={`rounded-l-none border-l-0 ${getFieldErrorClass("phone", fieldState)}`}
                                   maxLength={getMaxLength(countryCode || "+1")}
+                                  autoComplete="off"
                                   {...field}
                                   onChange={(e) => {
                                     // Allow only digits
