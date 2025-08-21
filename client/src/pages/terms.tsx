@@ -22,12 +22,11 @@ export default function TermsOfService() {
   }, []);
 
   const handleBack = () => {
-    // Use instant client-side navigation
-    if (from === 'employee-registration') {
-      setLocation('/?view=employee-register');
-    } else if (from === 'company-registration') {
-      setLocation('/?view=company-register');
+    // Use browser's back navigation for proper history handling
+    if (window.history.length > 1) {
+      window.history.back();
     } else {
+      // Fallback if no history (direct navigation to this page)
       setLocation('/');
     }
   };
