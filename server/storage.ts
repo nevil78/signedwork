@@ -12,11 +12,9 @@ import {
   type Admin, type InsertAdmin, type LoginSession, type InsertLoginSession,
   type Skill, type SkillTrend, type UserSkillPreference, type SkillAnalytic,
   type InsertSkill, type InsertSkillTrend, type InsertUserSkillPreference, type InsertSkillAnalytic,
-  type PendingUser, type InsertPendingUser
+  type PendingUser, type InsertPendingUser,
+  type UserFeedback, type InsertFeedback
 } from "@shared/schema";
-
-type UserFeedback = typeof userFeedback.$inferSelect;
-type InsertUserFeedback = typeof userFeedback.$inferInsert;
 
 type EmailVerification = typeof emailVerifications.$inferSelect;
 type InsertEmailVerification = typeof emailVerifications.$inferInsert;
@@ -374,7 +372,7 @@ export interface IStorage {
   }): Promise<Company>;
   
   // User feedback operations
-  createFeedback(feedback: InsertUserFeedback): Promise<UserFeedback>;
+  createFeedback(feedback: InsertFeedback): Promise<UserFeedback>;
   getAllFeedback(): Promise<UserFeedback[]>;
   getFeedbackById(id: string): Promise<UserFeedback | undefined>;
   updateFeedbackStatus(id: string, status: string, adminResponse?: string, respondedBy?: string): Promise<UserFeedback>;
@@ -2668,7 +2666,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   // User feedback operations
-  async createFeedback(feedback: InsertUserFeedback): Promise<UserFeedback> {
+  async createFeedback(feedback: InsertFeedback): Promise<UserFeedback> {
     const [newFeedback] = await db.insert(userFeedback).values(feedback).returning();
     return newFeedback;
   }
