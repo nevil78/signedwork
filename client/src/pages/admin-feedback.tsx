@@ -110,7 +110,7 @@ export default function AdminFeedback() {
   // Update feedback status/response mutation
   const updateFeedbackMutation = useMutation({
     mutationFn: async (data: { id: string; status: string; adminResponse: string }) => {
-      await apiRequest(`/api/admin/feedback/${data.id}`, "PATCH", {
+      await apiRequest("PATCH", `/api/admin/feedback/${data.id}`, {
         status: data.status,
         adminResponse: data.adminResponse,
       });
