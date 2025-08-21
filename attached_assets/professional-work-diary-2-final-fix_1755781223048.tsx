@@ -196,7 +196,7 @@ export default function ProfessionalWorkDiary() {
       achievements: [],
       challenges: "",
       learnings: "",
-      companyId: "",
+      companyId: selectedCompany,
     },
   });
 
@@ -228,97 +228,19 @@ export default function ProfessionalWorkDiary() {
     },
   });
 
-  // FIXED: Form submission handler with proper validation and debugging
-  const onSubmit = (data: WorkEntryFormData) => {
-    console.log('=== FORM SUBMISSION HANDLER ===');
-    console.log('Raw form data:', data);
-    console.log('Form state:', workEntryForm.formState);
-    console.log('Form errors:', workEntryForm.formState.errors);
-    console.log('Is form valid:', workEntryForm.formState.isValid);
-    console.log('Selected company:', selectedCompany);
-    
-    // Validate company ID first
-    const finalCompanyId = data.companyId || selectedCompany;
-    if (!finalCompanyId) {
-      console.error('Missing company ID');
-      toast({
-        title: "Error",
-        description: "Company ID is missing. Please select a company.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    // Validate required fields manually since form validation might not catch all cases
-    if (!data.title?.trim()) {
-      console.error('Title is missing or empty');
-      toast({
-        title: "Validation Error",
-        description: "Work title is required",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    if (!data.startDate?.trim()) {
-      console.error('Start date is missing');
-      toast({
-        title: "Validation Error",
-        description: "Start date is required",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    // Ensure all required data is properly set
-    const submissionData = {
-      ...data,
-      companyId: finalCompanyId,
-      // Ensure numbers are properly set
-      estimatedHours: data.estimatedHours || 0,
-      actualHours: data.actualHours || 0,
-      billableRate: data.billableRate || 0,
-      // Ensure arrays are properly set
-      tags: data.tags || [],
-      achievements: data.achievements || [],
-    };
-    
-    console.log('Final submission data:', submissionData);
-    console.log('Calling workEntryMutation.mutate...');
-    
-    workEntryMutation.mutate(submissionData);
-    console.log('=== END FORM SUBMISSION ===');
-  };
-
-  // FIXED: Create/Update work entry mutation with comprehensive error handling
+  // Fix 2: Improved Create/Update work entry with better validation and error handling
   const workEntryMutation = useMutation({
     mutationFn: async (data: WorkEntryFormData) => {
-      console.log('=== MUTATION FUNCTION ===');
-      console.log('Mutation called with data:', data);
+      console.log('Submitting work entry:', data);
 
-      // Final validation before API call
+      // Validate required fields before submission
       if (!data.companyId) {
-        console.error('CompanyId missing in mutation');
         throw new Error('Company ID is required');
       }
 
-      if (!data.title?.trim()) {
-        console.error('Title missing in mutation');
-        throw new Error('Work title is required');
-      }
-
-      if (!data.startDate?.trim()) {
-        console.error('Start date missing in mutation');
-        throw new Error('Start date is required');
-      }
-
-      console.log('Making API request...');
-      
       if (editingEntry) {
-        console.log('Updating existing entry:', editingEntry.id);
         return await apiRequest("PUT", `/api/work-entries/${editingEntry.id}`, data);
       } else {
-        console.log('Creating new entry');
         return await apiRequest("POST", "/api/work-entries", data);
       }
     },
@@ -347,7 +269,7 @@ export default function ProfessionalWorkDiary() {
         achievements: [],
         challenges: "",
         learnings: "",
-        companyId: "",
+        companyId: selectedCompany, // Reset with current company
       });
       toast({
         title: editingEntry ? "Work entry updated" : "Work entry created",
@@ -443,6 +365,79 @@ export default function ProfessionalWorkDiary() {
     }
   };
 
+  // ENHANCED: Form submission handler with extensive debugging
+  const handleFormSubmit = (data: WorkEntryFormData) => {
+    console.log('=== ENHANCED FORM SUBMISSION HANDLER ===');
+    console.log('Form data received:', data);
+    console.log('Selected company:', selectedCompany);
+    console.log('Form validation state:', workEntryForm.formState);
+    console.log('Form errors:', workEntryForm.formState.errors);
+    console.log('Form values:', workEntryForm.getValues());
+    console.log('Is form valid:', workEntryForm.formState.isValid);
+    console.log('Is form dirty:', workEntryForm.formState.isDirty);
+    
+    // Ensure companyId is set
+    const dataWithCompanyId = {
+      ...data,
+      companyId: selectedCompany || data.companyId
+    };
+    
+    console.log('Final data to submit:', dataWithCompanyId);
+    
+    // Enhanced validation with detailed logging
+    const validationErrors = [];
+    
+    if (!dataWithCompanyId.title?.trim()) {
+      validationErrors.push('Title is required');
+    }
+    
+    if (!dataWithCompanyId.startDate?.trim()) {
+      validationErrors.push('Start date is required');
+    }
+    
+    if (!dataWithCompanyId.companyId) {
+      validationErrors.push('Company ID is missing');
+    }
+    
+    if (validationErrors.length > 0) {
+      console.log('Validation errors found:', validationErrors);
+      toast({
+        title: "Validation Error",
+        description: validationErrors.join(', '),
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    console.log('All validations passed, submitting...');
+    
+    // Submit the form
+    workEntryMutation.mutate(dataWithCompanyId);
+  };
+
+  // ENHANCED: Form validation error handler
+  const handleFormError = (errors: any) => {
+    console.log('=== FORM VALIDATION ERRORS ===');
+    console.log('Validation errors:', errors);
+    console.log('Current form values:', workEntryForm.getValues());
+    console.log('Form state:', {
+      isDirty: workEntryForm.formState.isDirty,
+      isValid: workEntryForm.formState.isValid,
+      isSubmitting: workEntryForm.formState.isSubmitting,
+      isLoading: workEntryForm.formState.isLoading
+    });
+    
+    const errorMessages = Object.keys(errors).map(key => {
+      return `${key}: ${errors[key]?.message || 'Invalid'}`;
+    });
+    
+    toast({
+      title: "Form Validation Failed",
+      description: errorMessages.join(', ') || "Please check the form fields and try again",
+      variant: "destructive",
+    });
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
       <EmployeeNavHeader />
@@ -516,143 +511,137 @@ export default function ProfessionalWorkDiary() {
           </div>
         ) : (
           <div>
-            {/* Company Header with Analytics */}
-            <div className="mb-8">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center space-x-4">
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => setSelectedCompany("")}
-                    data-testid="button-back-to-companies"
-                  >
-                    ← Back to Companies
-                  </Button>
-                  <div>
-                    <div className="flex items-center gap-3">
-                      <h1 className="text-2xl font-bold text-gray-900">
-                        {companies?.find(c => c.id === selectedCompany)?.companyName} - Work Diary
-                      </h1>
-                      {(() => {
-                        const currentCompany = companies?.find(c => c.id === selectedCompany);
-                        return currentCompany?.isActive === false ? (
-                          <Badge variant="secondary">Ex-Employee</Badge>
-                        ) : (
-                          <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">Active</Badge>
-                        );
-                      })()}
-                    </div>
-                    {(() => {
-                      const currentCompany = companies?.find(c => c.id === selectedCompany);
-                      return currentCompany?.position && (
-                        <p className="text-sm text-gray-600 mt-1">{currentCompany.position}</p>
-                      );
-                    })()}
-                  </div>
-                </div>
-                {(() => {
-                  const currentCompany = companies?.find(c => c.id === selectedCompany);
-                  const isActiveEmployee = currentCompany?.isActive !== false;
-                  
-                  if (!isActiveEmployee) {
-                    return (
-                      <div className="flex items-center gap-2">
-                        <Button disabled className="opacity-50">
-                          <Plus className="h-4 w-4 mr-2" />
-                          Add Work Entry
-                        </Button>
-                        <p className="text-sm text-red-600">Ex-employees cannot add work entries</p>
-                      </div>
-                    );
-                  }
-                  
+            {/* Header with company info and add button */}
+            <div className="flex justify-between items-center mb-6">
+              <div>
+                <Button
+                  variant="ghost"
+                  onClick={() => setSelectedCompany("")}
+                  className="mb-2"
+                >
+                  ← Back to Companies
+                </Button>
+                <h1 className="text-3xl font-bold text-gray-900">
+                  {companies?.find(c => c.id === selectedCompany)?.companyName || "Work Diary"}
+                </h1>
+                <p className="text-gray-600">Track and manage your professional activities</p>
+              </div>
+
+              {/* Add Work Entry Button - FIXED: Proper form initialization */}
+              {(() => {
+                const currentCompany = companies?.find(c => c.id === selectedCompany);
+                const isActiveEmployee = currentCompany?.isActive !== false;
+                
+                if (!isActiveEmployee) {
                   return (
                     <Button 
-                      onClick={() => {
-                        // Fix 3: Proper handleAddEntry function with form reset
-                        setEditingEntry(null);
-                        workEntryForm.reset({
-                          title: "",
-                          description: "",
-                          workType: "task",
-                          category: "",
-                          project: "",
-                          client: "",
-                          priority: "medium",
-                          status: "pending",
-                          startDate: "",
-                          endDate: "",
-                          estimatedHours: 0,
-                          actualHours: 0,
-                          billable: false,
-                          billableRate: 0,
-                          tags: [],
-                          achievements: [],
-                          challenges: "",
-                          learnings: "",
-                          companyId: "",
-                        });
-                        setIsAddDialogOpen(true);
-                      }}
-                      data-testid="button-add-work-entry"
+                      disabled
+                      className="opacity-50 cursor-not-allowed"
+                      title="Ex-employees cannot add new work entries"
                     >
                       <Plus className="h-4 w-4 mr-2" />
                       Add Work Entry
                     </Button>
                   );
-                })()}
-              </div>
+                }
+                
+                return (
+                  <Button
+                    onClick={() => {
+                      console.log('=== ADD WORK ENTRY BUTTON CLICKED ===');
+                      console.log('Selected company:', selectedCompany);
+                      
+                      setEditingEntry(null);
+                      // ENHANCED: Better form initialization with debugging
+                      const initialValues = {
+                        title: "",
+                        description: "",
+                        workType: "task" as const,
+                        category: "",
+                        project: "",
+                        client: "",
+                        priority: "medium" as const,
+                        status: "pending" as const,
+                        startDate: "",
+                        endDate: "",
+                        estimatedHours: 0,
+                        actualHours: 0,
+                        billable: false,
+                        billableRate: 0,
+                        tags: [],
+                        achievements: [],
+                        challenges: "",
+                        learnings: "",
+                        companyId: selectedCompany, // Ensure company ID is set
+                      };
+                      
+                      console.log('Resetting form with values:', initialValues);
+                      workEntryForm.reset(initialValues);
+                      
+                      // Force set companyId to ensure it's there
+                      workEntryForm.setValue('companyId', selectedCompany);
+                      
+                      console.log('Form values after reset:', workEntryForm.getValues());
+                      setIsAddDialogOpen(true);
+                    }}
+                    data-testid="button-add-work-entry"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Work Entry
+                  </Button>
+                );
+              })()}
+            </div>
 
-              {/* Analytics Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-                <Card>
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm text-gray-600">Total Entries</p>
-                        <p className="text-2xl font-bold">{(analytics as any)?.totalEntries || workEntries?.length || 0}</p>
-                      </div>
-                      <FileText className="h-8 w-8 text-blue-500" />
+            {/* Analytics Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-600">Total Entries</p>
+                      <p className="text-2xl font-bold">{(analytics as any)?.totalEntries || workEntries?.length || 0}</p>
                     </div>
-                  </CardContent>
-                </Card>
+                    <FileText className="h-8 w-8 text-blue-500" />
+                  </div>
+                </CardContent>
+              </Card>
 
-                <Card>
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm text-gray-600">Hours Logged</p>
-                        <p className="text-2xl font-bold">{(analytics as any)?.totalHours || 0}h</p>
-                      </div>
-                      <Timer className="h-8 w-8 text-green-500" />
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-600">Hours Logged</p>
+                      <p className="text-2xl font-bold">{(analytics as any)?.totalHours || 0}h</p>
                     </div>
-                  </CardContent>
-                </Card>
+                    <Timer className="h-8 w-8 text-green-500" />
+                  </div>
+                </CardContent>
+              </Card>
 
-                <Card>
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm text-gray-600">Billable Hours</p>
-                        <p className="text-2xl font-bold">{(analytics as any)?.billableHours || 0}h</p>
-                      </div>
-                      <DollarSign className="h-8 w-8 text-yellow-500" />
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-600">Billable Hours</p>
+                      <p className="text-2xl font-bold">{(analytics as any)?.billableHours || 0}h</p>
                     </div>
-                  </CardContent>
-                </Card>
+                    <DollarSign className="h-8 w-8 text-yellow-500" />
+                  </div>
+                </CardContent>
+              </Card>
 
-                <Card>
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm text-gray-600">Completion Rate</p>
-                        <p className="text-2xl font-bold">{(analytics as any)?.completionRate || 0}%</p>
-                      </div>
-                      <Target className="h-8 w-8 text-purple-500" />
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-600">Completion Rate</p>
+                      <p className="text-2xl font-bold">{(analytics as any)?.completionRate || 0}%</p>
                     </div>
-                  </CardContent>
-                </Card>
-              </div>
+                    <Target className="h-8 w-8 text-purple-500" />
+                  </div>
+                </CardContent>
+              </Card>
             </div>
 
             {/* Filters and Search */}
@@ -884,7 +873,7 @@ export default function ProfessionalWorkDiary() {
                                       achievements: entry.achievements || [],
                                       challenges: entry.challenges || "",
                                       learnings: entry.learnings || "",
-                                      companyId: selectedCompany
+                                      companyId: selectedCompany, // Ensure company ID is set when editing
                                     });
                                     setIsAddDialogOpen(true);
                                   }}
@@ -901,42 +890,20 @@ export default function ProfessionalWorkDiary() {
                   );
                 })
               ) : (
-                <Card>
-                  <CardContent className="p-12 text-center">
-                    <FileText className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                <Card className="border-dashed">
+                  <CardContent className="flex flex-col items-center justify-center py-16">
+                    <div className="rounded-full bg-muted p-4 mb-4">
+                      <FileText className="h-8 w-8 text-muted-foreground" />
+                    </div>
+                    <h3 className="text-lg font-semibold mb-2">No work entries found</h3>
+                    <p className="text-muted-foreground text-center mb-4">
                       {searchTerm || statusFilter !== "all" || workTypeFilter !== "all" 
-                        ? "No matching entries found" 
-                        : "No work entries yet"
-                      }
-                    </h3>
-                    <p className="text-gray-600 mb-6">
-                      {searchTerm || statusFilter !== "all" || workTypeFilter !== "all"
-                        ? "Try adjusting your filters or search term"
-                        : "Start documenting your professional work journey"
-                      }
+                        ? "Try adjusting your search or filters" 
+                        : "Start by adding your first work entry"}
                     </p>
-                    {(() => {
-                      const currentCompany = companies?.find(c => c.id === selectedCompany);
-                      const isActiveEmployee = currentCompany?.isActive !== false;
-                      
-                      if (!isActiveEmployee) {
-                        return (
-                          <Button 
-                            disabled
-                            className="opacity-50 cursor-not-allowed"
-                            data-testid="button-add-entry-ex-employee"
-                            title="Ex-employees cannot add work entries"
-                          >
-                            <Plus className="h-4 w-4 mr-2" />
-                            Add Your First Entry
-                          </Button>
-                        );
-                      }
-                      
-                      return (
-                        <Button onClick={() => {
-                          // Fix 3: Proper handleAddEntry function with form reset
+                    {(!searchTerm && statusFilter === "all" && workTypeFilter === "all") && (
+                      <Button
+                        onClick={() => {
                           setEditingEntry(null);
                           workEntryForm.reset({
                             title: "",
@@ -957,15 +924,15 @@ export default function ProfessionalWorkDiary() {
                             achievements: [],
                             challenges: "",
                             learnings: "",
-                            companyId: selectedCompany, // Ensure company ID is set
+                            companyId: selectedCompany,
                           });
                           setIsAddDialogOpen(true);
-                        }}>
-                          <Plus className="h-4 w-4 mr-2" />
-                          Add Your First Entry
-                        </Button>
-                      );
-                    })()}
+                        }}
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Your First Entry
+                      </Button>
+                    )}
                   </CardContent>
                 </Card>
               )}
@@ -974,26 +941,42 @@ export default function ProfessionalWorkDiary() {
         )}
       </div>
 
-      {/* Add/Edit Work Entry Dialog */}
+      {/* Add/Edit Work Entry Dialog - ENHANCED: Better form handling and debugging */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>
-              {editingEntry ? "Edit Work Entry" : "Add New Work Entry"}
-            </DialogTitle>
+            <DialogTitle>{editingEntry ? "Edit Work Entry" : "Add Work Entry"}</DialogTitle>
+            <DialogDescription>
+              {editingEntry ? "Update your work entry details" : "Create a new work diary entry"}
+            </DialogDescription>
           </DialogHeader>
           
+          {/* DEBUG INFO - Remove in production */}
+          <div className="bg-gray-100 p-2 rounded text-xs">
+            <strong>Debug Info:</strong><br/>
+            Company ID: {selectedCompany}<br/>
+            Form Valid: {workEntryForm.formState.isValid ? 'Yes' : 'No'}<br/>
+            Form Errors: {JSON.stringify(workEntryForm.formState.errors)}<br/>
+            Current Values: {JSON.stringify(workEntryForm.getValues())}
+          </div>
+          
           <Form {...workEntryForm}>
-            <form onSubmit={workEntryForm.handleSubmit(onSubmit)} className="space-y-6">
+            {/* ENHANCED: Form with better error handling */}
+            <form onSubmit={workEntryForm.handleSubmit(handleFormSubmit, handleFormError)} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={workEntryForm.control}
                   name="title"
                   render={({ field }) => (
-                    <FormItem className="md:col-span-2">
-                      <FormLabel>Work Title *</FormLabel>
+                    <FormItem>
+                      <FormLabel>Title * <span className="text-red-500">(Required)</span></FormLabel>
                       <FormControl>
-                        <Input {...field} placeholder="e.g., Implemented user authentication system" />
+                        <Input 
+                          {...field} 
+                          value={field.value || ""} 
+                          placeholder="e.g., Weekly team meeting"
+                          className={workEntryForm.formState.errors.title ? "border-red-500" : ""}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -1005,11 +988,11 @@ export default function ProfessionalWorkDiary() {
                   name="workType"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Work Type *</FormLabel>
+                      <FormLabel>Work Type</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue />
+                            <SelectValue placeholder="Select work type" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
@@ -1031,11 +1014,11 @@ export default function ProfessionalWorkDiary() {
                   name="priority"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Priority *</FormLabel>
+                      <FormLabel>Priority</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue />
+                            <SelectValue placeholder="Select priority" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
@@ -1055,11 +1038,11 @@ export default function ProfessionalWorkDiary() {
                   name="status"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Status *</FormLabel>
+                      <FormLabel>Status</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue />
+                            <SelectValue placeholder="Select status" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
@@ -1122,7 +1105,7 @@ export default function ProfessionalWorkDiary() {
                   name="startDate"
                   render={({ field, fieldState }) => (
                     <FormItem className="flex flex-col">
-                      <FormLabel>Start Date *</FormLabel>
+                      <FormLabel>Start Date * <span className="text-red-500">(Required)</span></FormLabel>
                       <Popover>
                         <PopoverTrigger asChild>
                           <FormControl>
@@ -1384,18 +1367,18 @@ export default function ProfessionalWorkDiary() {
                 >
                   Cancel
                 </Button>
+                {/* ENHANCED: Submit button with better debugging */}
                 <Button 
                   type="submit" 
                   disabled={workEntryMutation.isPending}
                   data-testid="button-create-entry"
                   onClick={() => {
-                    console.log('=== BUTTON CLICKED ===');
-                    console.log('Button disabled?', workEntryMutation.isPending);
-                    console.log('Form valid?', workEntryForm.formState.isValid);
-                    console.log('Form errors:', workEntryForm.formState.errors);
+                    console.log('=== SUBMIT BUTTON CLICKED ===');
+                    console.log('Button type:', 'submit');
                     console.log('Form values:', workEntryForm.getValues());
-                    console.log('Selected company:', selectedCompany);
-                    console.log('=== END BUTTON DEBUG ===');
+                    console.log('Form errors:', workEntryForm.formState.errors);
+                    console.log('Is form valid:', workEntryForm.formState.isValid);
+                    console.log('Mutation pending:', workEntryMutation.isPending);
                   }}
                 >
                   {workEntryMutation.isPending 
@@ -1463,3 +1446,4 @@ export default function ProfessionalWorkDiary() {
     </div>
   );
 }
+
