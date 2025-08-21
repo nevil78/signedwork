@@ -1602,6 +1602,19 @@ export default function AuthPage() {
                     </svg>
                     Sign in with Google
                   </Button>
+
+                  {/* Employee: Sign Up Link below Google button */}
+                  <div className="text-center text-sm text-slate-600">
+                    Don't have an account?{" "}
+                    <Button 
+                      variant="link" 
+                      className="p-0 h-auto text-primary hover:text-primary-dark font-medium"
+                      onClick={() => setCurrentView("selection")}
+                      data-testid="link-sign-up"
+                    >
+                      Sign up
+                    </Button>
+                  </div>
                 </>
               ) : (
                 <>
@@ -1618,8 +1631,8 @@ export default function AuthPage() {
                     </Button>
                   </div>
                   
-                  {/* Company: Empty spacer to match Google button height */}
-                  <div className="h-[40px]"></div>
+                  {/* Company: Empty spacer to match Google button + Sign Up link height */}
+                  <div className="h-[68px]"></div>
                 </>
               )}
             </div>
