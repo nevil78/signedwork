@@ -1573,7 +1573,7 @@ export default function AuthPage() {
             </Card>
             
             {/* Google Sign In - Fixed height container to prevent position shifting */}
-            <div className="min-h-[100px] flex flex-col justify-center">
+            <div className="min-h-[60px] flex flex-col justify-center">
               {loginForm.watch("accountType") === "employee" && (
                 <div className="space-y-4">
                   <div className="relative">
