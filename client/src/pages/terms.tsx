@@ -22,13 +22,8 @@ export default function TermsOfService() {
   }, []);
 
   const handleBack = () => {
-    // Use browser's back navigation for proper history handling
-    if (window.history.length > 1) {
-      window.history.back();
-    } else {
-      // Fallback if no history (direct navigation to this page)
-      setLocation('/');
-    }
+    // Simply go back one step in browser history
+    window.history.back();
   };
 
   return (
