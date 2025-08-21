@@ -28,47 +28,9 @@ import { cn } from '@/lib/utils';
 import { z } from 'zod';
 import EmployeeNavHeader from '@/components/employee-nav-header';
 import { useSocket } from '@/hooks/useSocket';
+import { insertWorkEntrySchema } from '@shared/schema';
 
-const dateRegex = /^\d{2}\/\d{2}\/\d{4}$/;
-
-// Enhanced work entry schema with professional fields
-const workEntrySchema = z.object({
-  title: z.string().min(1, "Title is required"),
-  description: z.string().optional(),
-  workType: z.enum(["task", "meeting", "project", "research", "documentation", "training"]),
-  category: z.string().optional(),
-  project: z.string().optional(),
-  client: z.string().optional(),
-  priority: z.enum(["low", "medium", "high", "urgent"]),
-  status: z.enum(["pending", "in_progress", "completed", "on_hold", "cancelled"]),
-  startDate: z.string().refine(val => dateRegex.test(val), {
-    message: "Invalid date format, must be dd/mm/yyyy"
-  }),
-  endDate: z.string().optional().refine(val => !val || dateRegex.test(val), {
-    message: "Invalid date format, must be dd/mm/yyyy"
-  }),
-  estimatedHours: z.number().min(0).optional(),
-  actualHours: z.number().min(0).optional(),
-  billable: z.boolean().default(false),
-  billableRate: z.number().min(0).optional(),
-  tags: z.array(z.string()).default([]),
-  achievements: z.array(z.string()).default([]),
-  challenges: z.string().optional(),
-  learnings: z.string().optional(),
-  companyId: z.string().min(1, "Company is required"),
-}).refine((data) => {
-  if (!data.endDate) return true;
-  const [sd, sm, sy] = data.startDate.split("/").map(Number);
-  const [ed, em, ey] = data.endDate.split("/").map(Number);
-  const start = new Date(sy, sm - 1, sd);
-  const end = new Date(ey, em - 1, ed);
-  return start <= end;
-}, {
-  message: "Start Date must be earlier than End Date",
-  path: ["endDate"],
-});
-
-type WorkEntryFormData = z.infer<typeof workEntrySchema>;
+type WorkEntryFormData = z.infer<typeof insertWorkEntrySchema>;
 
 interface WorkEntry {
   id: string;
@@ -214,7 +176,7 @@ export default function ProfessionalWorkDiary() {
   });
 
   const workEntryForm = useForm<WorkEntryFormData>({
-    resolver: zodResolver(workEntrySchema),
+    resolver: zodResolver(insertWorkEntrySchema),
     defaultValues: {
       title: "",
       description: "",
@@ -224,7 +186,7 @@ export default function ProfessionalWorkDiary() {
       client: "",
       priority: "medium",
       status: "pending",
-      startDate: format(new Date(), 'yyyy-MM-dd'),
+      startDate: "",
       endDate: "",
       estimatedHours: 0,
       actualHours: 0,
@@ -297,7 +259,7 @@ export default function ProfessionalWorkDiary() {
         client: "",
         priority: "medium",
         status: "pending",
-        startDate: format(new Date(), 'yyyy-MM-dd'),
+        startDate: "",
         endDate: "",
         estimatedHours: 0,
         actualHours: 0,

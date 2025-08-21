@@ -572,10 +572,32 @@ export const insertEmployeeCompanySchema = createInsertSchema(employeeCompanies)
   updatedAt: true,
 });
 
+const dateRegex = /^\d{2}\/\d{2}\/\d{4}$/;
+
 export const insertWorkEntrySchema = createInsertSchema(workEntries).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+}).extend({
+  startDate: z.string().refine((val) => dateRegex.test(val), {
+    message: "Start date must be in dd/mm/yyyy format"
+  }),
+  endDate: z.string().optional().refine((val) => {
+    if (!val) return true;
+    return dateRegex.test(val);
+  }, {
+    message: "End date must be in dd/mm/yyyy format"
+  }),
+}).refine((data) => {
+  if (!data.endDate) return true;
+  const [sd, sm, sy] = data.startDate.split("/").map(Number);
+  const [ed, em, ey] = data.endDate.split("/").map(Number);
+  const start = new Date(sy, sm - 1, sd);
+  const end = new Date(ey, em - 1, ed);
+  return start <= end;
+}, {
+  message: "Start date must be earlier than end date",
+  path: ["endDate"],
 });
 
 export const insertCompanySchema = createInsertSchema(companies).omit({

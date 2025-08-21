@@ -69,35 +69,7 @@ const formatDateForDisplay = (dateStr: string) => {
 
 const dateRegex = /^\d{2}\/\d{2}\/\d{4}$/;
 
-const workEntryFormSchema = z.object({
-  title: z.string().min(1, "Title is required"),
-  description: z.string().optional(),
-  startDate: z.string().refine(val => dateRegex.test(val), {
-    message: "Invalid date format, must be dd/mm/yyyy"
-  }),
-  endDate: z.string().optional().refine(val => !val || dateRegex.test(val), {
-    message: "Invalid date format, must be dd/mm/yyyy"
-  }),
-  priority: z.enum(["low", "medium", "high"]).default("medium"),
-  status: z.enum(["pending", "approved", "needs_changes", "in_progress", "completed"]).default("pending"),
-  workType: z.enum(["task", "meeting", "project", "research", "documentation", "training"]).default("task"),
-  estimatedHours: z.number().optional(),
-  actualHours: z.number().optional(),
-  companyId: z.string().min(1, "Company ID is required"),
-  billable: z.boolean().default(false),
-}).refine((data) => {
-  if (!data.endDate) return true;
-  const [sd, sm, sy] = data.startDate.split("/").map(Number);
-  const [ed, em, ey] = data.endDate.split("/").map(Number);
-  const start = new Date(sy, sm - 1, sd);
-  const end = new Date(ey, em - 1, ed);
-  return start <= end;
-}, {
-  message: "Start Date must be earlier than End Date",
-  path: ["endDate"],
-});
-
-type WorkEntryFormData = z.infer<typeof workEntryFormSchema>;
+type WorkEntryFormData = z.infer<typeof insertWorkEntrySchema>;
 
 type WorkEntryStatus = "pending" | "approved" | "needs_changes";
 
@@ -146,7 +118,7 @@ export default function WorkDiaryCompany() {
   });
 
   const form = useForm<WorkEntryFormData>({
-    resolver: zodResolver(workEntryFormSchema),
+    resolver: zodResolver(insertWorkEntrySchema),
     defaultValues: {
       title: '',
       description: '',
