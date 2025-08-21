@@ -187,7 +187,19 @@ export default function WorkDiaryCompany() {
         description: "Work entry created successfully",
       });
       setIsDialogOpen(false);
-      form.reset();
+      form.reset({
+        title: '',
+        description: '',
+        startDate: '', // Empty start date with dd/mm/yyyy placeholder
+        endDate: '',
+        priority: 'medium',
+        status: 'pending',
+        workType: 'task',
+        estimatedHours: undefined,
+        actualHours: undefined,
+        companyId: actualCompanyId || '',
+        billable: false,
+      });
     },
     onError: (error: any) => {
       console.error('Work entry creation error:', error);
@@ -217,7 +229,19 @@ export default function WorkDiaryCompany() {
       });
       setIsDialogOpen(false);
       setEditingEntry(null);
-      form.reset();
+      form.reset({
+        title: '',
+        description: '',
+        startDate: '', // Empty start date with dd/mm/yyyy placeholder
+        endDate: '',
+        priority: 'medium',
+        status: 'pending',
+        workType: 'task',
+        estimatedHours: undefined,
+        actualHours: undefined,
+        companyId: actualCompanyId || '',
+        billable: false,
+      });
     },
     onError: (error: any) => {
       const errorMessage = error.message.includes("403") && error.message.includes("immutable") 
@@ -411,7 +435,19 @@ export default function WorkDiaryCompany() {
             </Button>
             <Button onClick={() => {
               setEditingEntry(null);
-              form.reset();
+              form.reset({
+                title: '',
+                description: '',
+                startDate: '', // Empty start date with dd/mm/yyyy placeholder
+                endDate: '',
+                priority: 'medium',
+                status: 'pending',
+                workType: 'task',
+                estimatedHours: undefined,
+                actualHours: undefined,
+                companyId: actualCompanyId || '',
+                billable: false,
+              });
               setIsDialogOpen(true);
             }}>
               <Plus className="mr-2 h-4 w-4" />
@@ -436,7 +472,19 @@ export default function WorkDiaryCompany() {
               </p>
               <Button onClick={() => {
                 setEditingEntry(null);
-                form.reset();
+                form.reset({
+                  title: '',
+                  description: '',
+                  startDate: '', // Empty start date with dd/mm/yyyy placeholder
+                  endDate: '',
+                  priority: 'medium',
+                  status: 'pending',
+                  workType: 'task',
+                  estimatedHours: undefined,
+                  actualHours: undefined,
+                  companyId: actualCompanyId || '',
+                  billable: false,
+                });
                 setIsDialogOpen(true);
               }}>
                 Add Your First Entry
@@ -530,7 +578,19 @@ export default function WorkDiaryCompany() {
           setIsDialogOpen(open);
           if (!open) {
             setEditingEntry(null);
-            form.reset();
+            form.reset({
+              title: '',
+              description: '',
+              startDate: '', // Empty start date with dd/mm/yyyy placeholder
+              endDate: '',
+              priority: 'medium',
+              status: 'pending',
+              workType: 'task',
+              estimatedHours: undefined,
+              actualHours: undefined,
+              companyId: actualCompanyId || '',
+              billable: false,
+            });
           }
         }}>
           <DialogContent className="sm:max-w-md">
