@@ -200,10 +200,9 @@ export default function ProfessionalWorkDiary() {
     },
   });
 
-  // Fix 1: Update form when selectedCompany changes
+  // Update form when selectedCompany changes
   useEffect(() => {
     if (selectedCompany) {
-      console.log('Updating companyId in form to:', selectedCompany);
       workEntryForm.setValue('companyId', selectedCompany);
     }
   }, [selectedCompany, workEntryForm]);
@@ -228,19 +227,11 @@ export default function ProfessionalWorkDiary() {
     },
   });
 
-  // FIXED: Form submission handler with proper validation and debugging
+  // Form submission handler with proper validation
   const onSubmit = (data: WorkEntryFormData) => {
-    console.log('=== FORM SUBMISSION HANDLER ===');
-    console.log('Raw form data:', data);
-    console.log('Form state:', workEntryForm.formState);
-    console.log('Form errors:', workEntryForm.formState.errors);
-    console.log('Is form valid:', workEntryForm.formState.isValid);
-    console.log('Selected company:', selectedCompany);
-    
     // Validate company ID first
     const finalCompanyId = data.companyId || selectedCompany;
     if (!finalCompanyId) {
-      console.error('Missing company ID');
       toast({
         title: "Error",
         description: "Company ID is missing. Please select a company.",
@@ -249,9 +240,8 @@ export default function ProfessionalWorkDiary() {
       return;
     }
     
-    // Validate required fields manually since form validation might not catch all cases
+    // Validate required fields
     if (!data.title?.trim()) {
-      console.error('Title is missing or empty');
       toast({
         title: "Validation Error",
         description: "Work title is required",
@@ -261,7 +251,6 @@ export default function ProfessionalWorkDiary() {
     }
     
     if (!data.startDate?.trim()) {
-      console.error('Start date is missing');
       toast({
         title: "Validation Error",
         description: "Start date is required",
@@ -283,11 +272,7 @@ export default function ProfessionalWorkDiary() {
       achievements: data.achievements || [],
     };
     
-    console.log('Final submission data:', submissionData);
-    console.log('Calling workEntryMutation.mutate...');
-    
     workEntryMutation.mutate(submissionData);
-    console.log('=== END FORM SUBMISSION ===');
   };
 
   // FIXED: Create/Update work entry mutation with comprehensive error handling
@@ -569,12 +554,7 @@ export default function ProfessionalWorkDiary() {
                   return (
                     <Button 
                       onClick={() => {
-                        console.log('=== MAIN ADD WORK ENTRY BUTTON CLICKED ===');
-                        console.log('Selected company:', selectedCompany);
-                        console.log('Current companies:', companies);
-                        console.log('Setting dialog open and resetting form...');
-                        
-                        // Fix 3: Proper handleAddEntry function with form reset
+                        // Proper handleAddEntry function with form reset
                         setEditingEntry(null);
                         workEntryForm.reset({
                           title: "",
@@ -598,8 +578,6 @@ export default function ProfessionalWorkDiary() {
                           companyId: selectedCompany, // Ensure company ID is set
                         });
                         setIsAddDialogOpen(true);
-                        console.log('Dialog should be open now, companyId set to:', selectedCompany);
-                        console.log('=== END MAIN ADD BUTTON DEBUG ===');
                       }}
                       data-testid="button-add-work-entry"
                     >
@@ -954,11 +932,7 @@ export default function ProfessionalWorkDiary() {
                       
                       return (
                         <Button onClick={() => {
-                          console.log('=== ADD WORK ENTRY BUTTON CLICKED ===');
-                          console.log('Selected company:', selectedCompany);
-                          console.log('Setting dialog open and resetting form...');
-                          
-                          // Fix 3: Proper handleAddEntry function with form reset
+                          // Proper handleAddEntry function with form reset
                           setEditingEntry(null);
                           workEntryForm.reset({
                             title: "",
@@ -982,8 +956,6 @@ export default function ProfessionalWorkDiary() {
                             companyId: selectedCompany, // Ensure company ID is set
                           });
                           setIsAddDialogOpen(true);
-                          console.log('Dialog should be open now, companyId set to:', selectedCompany);
-                          console.log('=== END ADD BUTTON DEBUG ===');
                         }}>
                           <Plus className="h-4 w-4 mr-2" />
                           Add Your First Entry
@@ -999,10 +971,7 @@ export default function ProfessionalWorkDiary() {
       </div>
 
       {/* Add/Edit Work Entry Dialog */}
-      <Dialog open={isAddDialogOpen} onOpenChange={(open) => {
-        console.log('Dialog open state changed:', open);
-        setIsAddDialogOpen(open);
-      }}>
+      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
@@ -1035,10 +1004,8 @@ export default function ProfessionalWorkDiary() {
                           onChange={(e) => {
                             // Clean up the input value - remove consecutive spaces
                             const cleaned = e.target.value.replace(/\s{2,}/g, ' ');
-                            console.log('Title input changed:', cleaned);
                             field.onChange(cleaned);
                           }}
-                          onFocus={() => console.log('Title input focused')}
                         />
                       </FormControl>
                       <div className="flex justify-between items-center">
@@ -1439,50 +1406,12 @@ export default function ProfessionalWorkDiary() {
                   Cancel
                 </Button>
                 
-                {/* Emergency Test Button */}
-                <Button 
-                  type="button" 
-                  variant="secondary"
-                  disabled={workEntryMutation.isPending}
-                  onClick={() => {
-                    console.log('=== EMERGENCY TEST BUTTON ===');
-                    workEntryMutation.mutate({
-                      title: "Quick Test Entry",
-                      workType: "task",
-                      priority: "medium",
-                      status: "in-progress",
-                      startDate: "21/08/2025",
-                      companyId: selectedCompany || "150d4c2e-ba26-477a-ad84-543e94a7ae4d",
-                      description: "Emergency test",
-                      estimatedHours: 1,
-                      actualHours: 0,
-                      billableRate: 0,
-                      billable: false,
-                      tags: [],
-                      achievements: [],
-                      challenges: "",
-                      learnings: "",
-                      category: "",
-                      project: "",
-                      client: "",
-                      endDate: "",
-                    });
-                    console.log('=== END EMERGENCY TEST ===');
-                  }}
-                >
-                  🚨 Test
-                </Button>
-                
                 <Button 
                   type="button" 
                   disabled={workEntryMutation.isPending}
                   data-testid="button-create-entry"
                   onClick={(e) => {
-                    console.log('=== BUTTON CLICKED - DIRECT SUBMIT ===');
                     e.preventDefault();
-                    console.log('Button disabled?', workEntryMutation.isPending);
-                    console.log('Form values:', workEntryForm.getValues());
-                    console.log('Selected company:', selectedCompany);
                     
                     // Get form data directly
                     const formData = workEntryForm.getValues();
@@ -1493,9 +1422,7 @@ export default function ProfessionalWorkDiary() {
                       workEntryForm.setValue('companyId', selectedCompany);
                     }
                     
-                    console.log('Calling onSubmit directly...');
                     onSubmit(formData);
-                    console.log('=== END DIRECT SUBMIT DEBUG ===');
                   }}
                 >
                   {workEntryMutation.isPending 
