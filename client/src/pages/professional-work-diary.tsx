@@ -29,6 +29,8 @@ import { z } from 'zod';
 import EmployeeNavHeader from '@/components/employee-nav-header';
 import { useSocket } from '@/hooks/useSocket';
 
+const dateRegex = /^\d{2}\/\d{2}\/\d{4}$/;
+
 // Enhanced work entry schema with professional fields
 const workEntrySchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -39,8 +41,12 @@ const workEntrySchema = z.object({
   client: z.string().optional(),
   priority: z.enum(["low", "medium", "high", "urgent"]),
   status: z.enum(["pending", "in_progress", "completed", "on_hold", "cancelled"]),
-  startDate: z.string().min(1, "Start date is required"),
-  endDate: z.string().optional(),
+  startDate: z.string().refine(val => dateRegex.test(val), {
+    message: "Invalid date format, must be dd/mm/yyyy"
+  }),
+  endDate: z.string().optional().refine(val => !val || dateRegex.test(val), {
+    message: "Invalid date format, must be dd/mm/yyyy"
+  }),
   estimatedHours: z.number().min(0).optional(),
   actualHours: z.number().min(0).optional(),
   billable: z.boolean().default(false),
@@ -50,6 +56,16 @@ const workEntrySchema = z.object({
   challenges: z.string().optional(),
   learnings: z.string().optional(),
   companyId: z.string().min(1, "Company is required"),
+}).refine((data) => {
+  if (!data.endDate) return true;
+  const [sd, sm, sy] = data.startDate.split("/").map(Number);
+  const [ed, em, ey] = data.endDate.split("/").map(Number);
+  const start = new Date(sy, sm - 1, sd);
+  const end = new Date(ey, em - 1, ed);
+  return start <= end;
+}, {
+  message: "Start Date must be earlier than End Date",
+  path: ["endDate"],
 });
 
 type WorkEntryFormData = z.infer<typeof workEntrySchema>;
@@ -524,7 +540,7 @@ export default function ProfessionalWorkDiary() {
                           client: "",
                           priority: "medium",
                           status: "pending",
-                          startDate: format(new Date(), 'yyyy-MM-dd'),
+                          startDate: "",
                           endDate: "",
                           estimatedHours: 0,
                           actualHours: 0,
@@ -891,7 +907,7 @@ export default function ProfessionalWorkDiary() {
                             client: "",
                             priority: "medium",
                             status: "pending",
-                            startDate: format(new Date(), 'yyyy-MM-dd'),
+                            startDate: "",
                             endDate: "",
                             estimatedHours: 0,
                             actualHours: 0,
@@ -1079,11 +1095,19 @@ export default function ProfessionalWorkDiary() {
                 <FormField
                   control={workEntryForm.control}
                   name="startDate"
-                  render={({ field }) => (
+                  render={({ field, fieldState }) => (
                     <FormItem>
                       <FormLabel>Start Date *</FormLabel>
                       <FormControl>
-                        <Input {...field} type="date" />
+                        <Input
+                          {...field}
+                          type="text"
+                          placeholder="dd/mm/yyyy"
+                          value={field.value || ""}
+                          onChange={(e) => field.onChange(e.target.value)}
+                          className={fieldState.error ? "border-red-500 focus:border-red-500" : ""}
+                          data-testid="input-start-date"
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -1093,11 +1117,19 @@ export default function ProfessionalWorkDiary() {
                 <FormField
                   control={workEntryForm.control}
                   name="endDate"
-                  render={({ field }) => (
+                  render={({ field, fieldState }) => (
                     <FormItem>
                       <FormLabel>End Date</FormLabel>
                       <FormControl>
-                        <Input {...field} type="date" />
+                        <Input
+                          {...field}
+                          type="text"
+                          placeholder="dd/mm/yyyy"
+                          value={field.value || ""}
+                          onChange={(e) => field.onChange(e.target.value)}
+                          className={fieldState.error ? "border-red-500 focus:border-red-500" : ""}
+                          data-testid="input-end-date"
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

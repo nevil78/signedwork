@@ -67,18 +67,17 @@ const formatDateForDisplay = (dateStr: string) => {
   return dateStr;
 };
 
-// Create work entry form schema with proper date validation
+const dateRegex = /^\d{2}\/\d{2}\/\d{4}$/;
+
 const workEntryFormSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().optional(),
-  startDate: z.string().refine(
-    (val) => /^\d{2}\/\d{2}\/\d{4}$/.test(val),
-    { message: "Invalid date format, must be dd/mm/yyyy" }
-  ),
-  endDate: z.string().optional().refine(
-    (val) => !val || /^\d{2}\/\d{2}\/\d{4}$/.test(val),
-    { message: "Invalid date format, must be dd/mm/yyyy" }
-  ),
+  startDate: z.string().refine(val => dateRegex.test(val), {
+    message: "Invalid date format, must be dd/mm/yyyy"
+  }),
+  endDate: z.string().optional().refine(val => !val || dateRegex.test(val), {
+    message: "Invalid date format, must be dd/mm/yyyy"
+  }),
   priority: z.enum(["low", "medium", "high"]).default("medium"),
   status: z.enum(["pending", "approved", "needs_changes", "in_progress", "completed"]).default("pending"),
   workType: z.enum(["task", "meeting", "project", "research", "documentation", "training"]).default("task"),
@@ -86,17 +85,17 @@ const workEntryFormSchema = z.object({
   actualHours: z.number().optional(),
   companyId: z.string().min(1, "Company ID is required"),
   billable: z.boolean().default(false),
-}).refine(
-  (data) => {
-    if (!data.endDate) return true; // Skip validation if end date is empty
-    const [sd, sm, sy] = data.startDate.split("/").map(Number);
-    const [ed, em, ey] = data.endDate.split("/").map(Number);
-    const start = new Date(sy, sm - 1, sd);
-    const end = new Date(ey, em - 1, ed);
-    return start <= end;
-  },
-  { message: "Start Date must be earlier than End Date", path: ["endDate"] }
-);
+}).refine((data) => {
+  if (!data.endDate) return true;
+  const [sd, sm, sy] = data.startDate.split("/").map(Number);
+  const [ed, em, ey] = data.endDate.split("/").map(Number);
+  const start = new Date(sy, sm - 1, sd);
+  const end = new Date(ey, em - 1, ed);
+  return start <= end;
+}, {
+  message: "Start Date must be earlier than End Date",
+  path: ["endDate"],
+});
 
 type WorkEntryFormData = z.infer<typeof workEntryFormSchema>;
 
@@ -646,10 +645,11 @@ export default function WorkDiaryCompany() {
                       <FormItem>
                         <FormLabel>Start Date *</FormLabel>
                         <FormControl>
-                          <Input 
-                            placeholder="dd/mm/yyyy" 
-                            {...field} 
-                            value={field.value || ""} 
+                          <Input
+                            {...field}
+                            type="text"
+                            placeholder="dd/mm/yyyy"
+                            value={field.value || ""}
                             onChange={(e) => field.onChange(e.target.value)}
                             className={fieldState.error ? "border-red-500 focus:border-red-500" : ""}
                             data-testid="input-start-date"
@@ -667,10 +667,11 @@ export default function WorkDiaryCompany() {
                       <FormItem>
                         <FormLabel>End Date</FormLabel>
                         <FormControl>
-                          <Input 
-                            placeholder="dd/mm/yyyy" 
-                            {...field} 
-                            value={field.value || ""} 
+                          <Input
+                            {...field}
+                            type="text"
+                            placeholder="dd/mm/yyyy"
+                            value={field.value || ""}
                             onChange={(e) => field.onChange(e.target.value)}
                             className={fieldState.error ? "border-red-500 focus:border-red-500" : ""}
                             data-testid="input-end-date"
