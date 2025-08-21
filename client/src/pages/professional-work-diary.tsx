@@ -569,6 +569,11 @@ export default function ProfessionalWorkDiary() {
                   return (
                     <Button 
                       onClick={() => {
+                        console.log('=== MAIN ADD WORK ENTRY BUTTON CLICKED ===');
+                        console.log('Selected company:', selectedCompany);
+                        console.log('Current companies:', companies);
+                        console.log('Setting dialog open and resetting form...');
+                        
                         // Fix 3: Proper handleAddEntry function with form reset
                         setEditingEntry(null);
                         workEntryForm.reset({
@@ -590,9 +595,11 @@ export default function ProfessionalWorkDiary() {
                           achievements: [],
                           challenges: "",
                           learnings: "",
-                          companyId: "",
+                          companyId: selectedCompany, // Ensure company ID is set
                         });
                         setIsAddDialogOpen(true);
+                        console.log('Dialog should be open now, companyId set to:', selectedCompany);
+                        console.log('=== END MAIN ADD BUTTON DEBUG ===');
                       }}
                       data-testid="button-add-work-entry"
                     >
@@ -936,6 +943,10 @@ export default function ProfessionalWorkDiary() {
                       
                       return (
                         <Button onClick={() => {
+                          console.log('=== ADD WORK ENTRY BUTTON CLICKED ===');
+                          console.log('Selected company:', selectedCompany);
+                          console.log('Setting dialog open and resetting form...');
+                          
                           // Fix 3: Proper handleAddEntry function with form reset
                           setEditingEntry(null);
                           workEntryForm.reset({
@@ -960,6 +971,8 @@ export default function ProfessionalWorkDiary() {
                             companyId: selectedCompany, // Ensure company ID is set
                           });
                           setIsAddDialogOpen(true);
+                          console.log('Dialog should be open now, companyId set to:', selectedCompany);
+                          console.log('=== END ADD BUTTON DEBUG ===');
                         }}>
                           <Plus className="h-4 w-4 mr-2" />
                           Add Your First Entry
@@ -1406,14 +1419,28 @@ export default function ProfessionalWorkDiary() {
                   type="submit" 
                   disabled={workEntryMutation.isPending}
                   data-testid="button-create-entry"
-                  onClick={() => {
-                    console.log('=== BUTTON CLICKED ===');
+                  onClick={(e) => {
+                    console.log('=== BUTTON CLICKED EVENT ===');
+                    console.log('Event:', e);
                     console.log('Button disabled?', workEntryMutation.isPending);
                     console.log('Form valid?', workEntryForm.formState.isValid);
                     console.log('Form errors:', workEntryForm.formState.errors);
                     console.log('Form values:', workEntryForm.getValues());
                     console.log('Selected company:', selectedCompany);
+                    console.log('Form state:', workEntryForm.formState);
                     console.log('=== END BUTTON DEBUG ===');
+                    
+                    // Check if form submission will work
+                    const formData = workEntryForm.getValues();
+                    if (!formData.title?.trim()) {
+                      console.log('WARNING: Title is empty');
+                    }
+                    if (!formData.startDate?.trim()) {
+                      console.log('WARNING: Start date is empty');
+                    }
+                    if (!selectedCompany) {
+                      console.log('WARNING: No company selected');
+                    }
                   }}
                 >
                   {workEntryMutation.isPending 
