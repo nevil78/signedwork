@@ -1617,7 +1617,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = insertExperienceSchema.parse({
         ...req.body,
-        employeeId: sessionUser.id
+        employeeId: req.user.id
       });
       
       const experience = await storage.createExperience(validatedData);
@@ -2517,6 +2517,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Enhanced work entry update with immutable protection - PROTECTED ROUTE
   app.patch("/api/work-entries/:id", requireEmployee, async (req: any, res) => {
+    const sessionUser = req.user;
     
     try {
       // First check if the work entry is approved (immutable)
