@@ -946,10 +946,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Remove password from response
       const { password, ...userResponse } = user;
       
-      console.log(`Session valid for user: ${sessionUser.id} (${sessionUser.type})`);
+      console.log(`Session valid for user: ${req.user.id} (${req.user.type})`);
       res.json({ 
         user: userResponse,
-        userType: sessionUser.type 
+        userType: req.user.type 
       });
     } catch (error) {
       console.error("Get user error:", error);
