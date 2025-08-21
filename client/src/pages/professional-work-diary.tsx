@@ -988,7 +988,10 @@ export default function ProfessionalWorkDiary() {
       </div>
 
       {/* Add/Edit Work Entry Dialog */}
-      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+      <Dialog open={isAddDialogOpen} onOpenChange={(open) => {
+        console.log('Dialog open state changed:', open);
+        setIsAddDialogOpen(open);
+      }}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
@@ -997,7 +1000,14 @@ export default function ProfessionalWorkDiary() {
           </DialogHeader>
           
           <Form {...workEntryForm}>
-            <form onSubmit={workEntryForm.handleSubmit(onSubmit)} className="space-y-6">
+            <form onSubmit={(e) => {
+              console.log('=== FORM ONSUBMIT EVENT ===');
+              console.log('Form submit event triggered:', e);
+              console.log('Form state before handleSubmit:', workEntryForm.formState);
+              console.log('Form values before handleSubmit:', workEntryForm.getValues());
+              console.log('Calling workEntryForm.handleSubmit(onSubmit)...');
+              workEntryForm.handleSubmit(onSubmit)(e);
+            }} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={workEntryForm.control}
@@ -1014,8 +1024,10 @@ export default function ProfessionalWorkDiary() {
                           onChange={(e) => {
                             // Clean up the input value - remove consecutive spaces
                             const cleaned = e.target.value.replace(/\s{2,}/g, ' ');
+                            console.log('Title input changed:', cleaned);
                             field.onChange(cleaned);
                           }}
+                          onFocus={() => console.log('Title input focused')}
                         />
                       </FormControl>
                       <div className="flex justify-between items-center">

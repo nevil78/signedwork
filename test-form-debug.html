@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Form Debug Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .debug { background: #f0f0f0; padding: 10px; margin: 10px 0; border-radius: 4px; }
+        button { background: #007bff; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; margin: 5px; }
+        input { padding: 8px; margin: 5px; border: 1px solid #ccc; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <h1>Work Entry Form Debug Test</h1>
+    
+    <div class="debug">
+        <h3>Test 1: Basic Button Click</h3>
+        <button onclick="console.log('Button clicked successfully!'); alert('Button works!');">
+            Test Button Click
+        </button>
+    </div>
+    
+    <div class="debug">
+        <h3>Test 2: Form Submission</h3>
+        <form onsubmit="console.log('Form submitted!'); alert('Form submission works!'); return false;">
+            <input type="text" placeholder="Enter test text" required>
+            <button type="submit">Test Form Submit</button>
+        </form>
+    </div>
+    
+    <div class="debug">
+        <h3>Test 3: API Test</h3>
+        <button onclick="testAPI()">Test API Call</button>
+        <div id="api-result"></div>
+    </div>
+    
+    <div class="debug">
+        <h3>Instructions</h3>
+        <ol>
+            <li>Open browser console (F12)</li>
+            <li>Test each button above</li>
+            <li>Check if console.log messages appear</li>
+            <li>If any test fails, there's a JavaScript/browser issue</li>
+        </ol>
+    </div>
+
+    <script>
+        console.log('Debug page loaded successfully');
+        
+        async function testAPI() {
+            console.log('Testing API call...');
+            try {
+                const response = await fetch('/api/work-entries', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        title: 'Debug Test Entry',
+                        workType: 'task',
+                        priority: 'medium',
+                        status: 'in-progress',
+                        startDate: '21/08/2025',
+                        companyId: '150d4c2e-ba26-477a-ad84-543e94a7ae4d',
+                        description: 'Testing from debug page',
+                        estimatedHours: 1,
+                        actualHours: 0,
+                        billableRate: 50,
+                        billable: false,
+                        tags: ['debug'],
+                        achievements: []
+                    })
+                });
+                
+                const result = await response.json();
+                console.log('API Response:', result);
+                document.getElementById('api-result').innerHTML = 
+                    response.ok ? 
+                    `<strong>Success!</strong> Created entry: ${result.id}` : 
+                    `<strong>Error!</strong> ${result.message || 'Failed to create entry'}`;
+                    
+            } catch (error) {
+                console.error('API Error:', error);
+                document.getElementById('api-result').innerHTML = `<strong>Network Error:</strong> ${error.message}`;
+            }
+        }
+    </script>
+</body>
+</html>
