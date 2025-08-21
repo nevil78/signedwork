@@ -1,4 +1,4 @@
-import { ArrowLeft } from "lucide-react";
+import { X } from "lucide-react";
 import { useLocation } from "wouter";
 import { useEffect, useState } from "react";
 
@@ -32,12 +32,11 @@ export default function TermsOfService() {
         <div className="max-w-4xl mx-auto px-4 py-6">
           <div className="flex items-center gap-4">
             <button 
-              className="flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors"
+              className="flex items-center justify-center w-8 h-8 text-gray-600 hover:text-red-600 hover:bg-gray-100 rounded-full transition-colors"
               onClick={handleBack}
-              data-testid="button-back-home"
+              data-testid="button-close-terms"
             >
-              <ArrowLeft className="w-5 h-5" />
-              Back
+              <X className="w-5 h-5" />
             </button>
           </div>
           <h1 className="text-3xl font-bold text-gray-900 mt-4" data-testid="heading-terms-title">
