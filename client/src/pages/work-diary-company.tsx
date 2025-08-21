@@ -67,12 +67,34 @@ const formatDateForDisplay = (dateStr: string) => {
   return dateStr;
 };
 
+// Helper function to validate dd/mm/yyyy format
+const isValidDateFormat = (dateStr: string) => {
+  if (!dateStr) return true; // Empty is valid (optional field)
+  const dateRegex = /^\d{2}\/\d{2}\/\d{4}$/;
+  if (!dateRegex.test(dateStr)) return false;
+  
+  const [day, month, year] = dateStr.split('/');
+  const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+  
+  return date.getDate() === parseInt(day) && 
+         date.getMonth() === parseInt(month) - 1 && 
+         date.getFullYear() === parseInt(year);
+};
+
 // Create a simplified form schema with date validation
 const workEntryFormSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().optional(),
-  startDate: z.string().min(1, "Start date is required"),
-  endDate: z.string().optional(),
+  startDate: z.string()
+    .min(1, "Start date is required")
+    .refine(isValidDateFormat, {
+      message: "Please enter date in dd/mm/yyyy format",
+    }),
+  endDate: z.string()
+    .optional()
+    .refine(isValidDateFormat, {
+      message: "Please enter date in dd/mm/yyyy format",
+    }),
   priority: z.enum(["low", "medium", "high"]).default("medium"),
   status: z.enum(["pending", "approved", "needs_changes", "in_progress", "completed"]).default("pending"),
   workType: z.enum(["task", "meeting", "project", "research", "documentation", "training"]).default("task"),
@@ -82,6 +104,9 @@ const workEntryFormSchema = z.object({
   billable: z.boolean().default(false),
 }).refine((data) => {
   if (!data.startDate || !data.endDate) return true; // Skip validation if either date is missing
+  
+  // Only validate if both dates are in correct format
+  if (!isValidDateFormat(data.startDate) || !isValidDateFormat(data.endDate)) return true;
   
   const startDate = new Date(formatDateForAPI(data.startDate));
   const endDate = new Date(formatDateForAPI(data.endDate));
@@ -636,7 +661,7 @@ export default function WorkDiaryCompany() {
                   <FormField
                     control={form.control}
                     name="startDate"
-                    render={({ field }) => (
+                    render={({ field, fieldState }) => (
                       <FormItem>
                         <FormLabel>Start Date *</FormLabel>
                         <FormControl>
@@ -644,7 +669,8 @@ export default function WorkDiaryCompany() {
                             placeholder="dd/mm/yyyy" 
                             {...field} 
                             value={field.value || ''} 
-                            className={form.formState.errors.startDate ? "border-red-500" : ""}
+                            className={fieldState.error ? "border-red-500 focus:border-red-500" : ""}
+                            data-testid="input-start-date"
                           />
                         </FormControl>
                         <FormMessage />
@@ -655,7 +681,7 @@ export default function WorkDiaryCompany() {
                   <FormField
                     control={form.control}
                     name="endDate"
-                    render={({ field }) => (
+                    render={({ field, fieldState }) => (
                       <FormItem>
                         <FormLabel>End Date</FormLabel>
                         <FormControl>
@@ -663,7 +689,8 @@ export default function WorkDiaryCompany() {
                             placeholder="dd/mm/yyyy" 
                             {...field} 
                             value={field.value || ''} 
-                            className={form.formState.errors.endDate ? "border-red-500" : ""}
+                            className={fieldState.error ? "border-red-500 focus:border-red-500" : ""}
+                            data-testid="input-end-date"
                           />
                         </FormControl>
                         <FormMessage />
@@ -861,10 +888,7 @@ export default function WorkDiaryCompany() {
                         };
                         console.log('Test data:', testData);
                         
-                        const response = await apiRequest('/api/work-entries', {
-                          method: 'POST',
-                          body: JSON.stringify(testData)
-                        });
+                        const response = await apiRequest('POST', '/api/work-entries', testData);
                         
                         console.log('API Response:', response);
                         toast({
@@ -875,7 +899,7 @@ export default function WorkDiaryCompany() {
                         console.error('API Test failed:', error);
                         toast({
                           title: "API Test Failed", 
-                          description: error.message,
+                          description: String(error),
                           variant: "destructive"
                         });
                       }
