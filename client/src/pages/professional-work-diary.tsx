@@ -1427,32 +1427,64 @@ export default function ProfessionalWorkDiary() {
                 >
                   Cancel
                 </Button>
+                
+                {/* Emergency Test Button */}
                 <Button 
-                  type="submit" 
+                  type="button" 
+                  variant="secondary"
+                  disabled={workEntryMutation.isPending}
+                  onClick={() => {
+                    console.log('=== EMERGENCY TEST BUTTON ===');
+                    workEntryMutation.mutate({
+                      title: "Quick Test Entry",
+                      workType: "task",
+                      priority: "medium",
+                      status: "in-progress",
+                      startDate: "21/08/2025",
+                      companyId: selectedCompany || "150d4c2e-ba26-477a-ad84-543e94a7ae4d",
+                      description: "Emergency test",
+                      estimatedHours: 1,
+                      actualHours: 0,
+                      billableRate: 0,
+                      billable: false,
+                      tags: [],
+                      achievements: [],
+                      challenges: "",
+                      learnings: "",
+                      category: "",
+                      project: "",
+                      client: "",
+                      endDate: "",
+                    });
+                    console.log('=== END EMERGENCY TEST ===');
+                  }}
+                >
+                  🚨 Test
+                </Button>
+                
+                <Button 
+                  type="button" 
                   disabled={workEntryMutation.isPending}
                   data-testid="button-create-entry"
                   onClick={(e) => {
-                    console.log('=== BUTTON CLICKED EVENT ===');
-                    console.log('Event:', e);
+                    console.log('=== BUTTON CLICKED - DIRECT SUBMIT ===');
+                    e.preventDefault();
                     console.log('Button disabled?', workEntryMutation.isPending);
-                    console.log('Form valid?', workEntryForm.formState.isValid);
-                    console.log('Form errors:', workEntryForm.formState.errors);
                     console.log('Form values:', workEntryForm.getValues());
                     console.log('Selected company:', selectedCompany);
-                    console.log('Form state:', workEntryForm.formState);
-                    console.log('=== END BUTTON DEBUG ===');
                     
-                    // Check if form submission will work
+                    // Get form data directly
                     const formData = workEntryForm.getValues();
-                    if (!formData.title?.trim()) {
-                      console.log('WARNING: Title is empty');
+                    
+                    // Set companyId if missing
+                    if (!formData.companyId && selectedCompany) {
+                      formData.companyId = selectedCompany;
+                      workEntryForm.setValue('companyId', selectedCompany);
                     }
-                    if (!formData.startDate?.trim()) {
-                      console.log('WARNING: Start date is empty');
-                    }
-                    if (!selectedCompany) {
-                      console.log('WARNING: No company selected');
-                    }
+                    
+                    console.log('Calling onSubmit directly...');
+                    onSubmit(formData);
+                    console.log('=== END DIRECT SUBMIT DEBUG ===');
                   }}
                 >
                   {workEntryMutation.isPending 
