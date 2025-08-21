@@ -1307,7 +1307,10 @@ export default function ProfessionalWorkDiary() {
                 <Button 
                   type="button" 
                   variant="outline" 
+                  
                   onClick={() => {
+                     console.log('=== SUBMIT BUTTON CLICKED ===26');
+
                     setIsAddDialogOpen(false);
                     setEditingEntry(null);
                     workEntryForm.reset();

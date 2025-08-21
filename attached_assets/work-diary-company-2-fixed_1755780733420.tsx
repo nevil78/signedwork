@@ -895,8 +895,12 @@ export default function WorkDiaryCompany() {
                   <Button 
                     type="button" 
                     variant="outline" 
-                    onClick={() => setIsDialogOpen(false)}
-                  >
+                    onClick={() => {
+                      console.log('=== SUBMIT BUTTON CLICKED ===25');
+                      console.log('Button type:', 'submit');
+
+                      setIsDialogOpen(false);
+                    }  >
                     Cancel
                   </Button>
                   {/* FIXED: Proper submit button */}
