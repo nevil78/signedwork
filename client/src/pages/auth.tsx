@@ -1572,10 +1572,11 @@ export default function AuthPage() {
               </CardContent>
             </Card>
             
-            {/* Google Sign In - Reserve exact space needed, invisible for company */}
-            <div className={loginForm.watch("accountType") === "employee" ? "space-y-4" : "h-[88px]"}>
-              {loginForm.watch("accountType") === "employee" && (
+            {/* Fixed height container - same space for both account types */}
+            <div className="space-y-4">
+              {loginForm.watch("accountType") === "employee" ? (
                 <>
+                  {/* Employee: OR separator */}
                   <div className="relative">
                     <div className="absolute inset-0 flex items-center">
                       <span className="w-full border-t" />
@@ -1585,6 +1586,7 @@ export default function AuthPage() {
                     </div>
                   </div>
 
+                  {/* Employee: Google Sign In Button */}
                   <Button 
                     type="button"
                     variant="outline"
@@ -1601,20 +1603,25 @@ export default function AuthPage() {
                     Sign in with Google
                   </Button>
                 </>
+              ) : (
+                <>
+                  {/* Company: Sign Up Link in place of OR */}
+                  <div className="text-center text-sm text-slate-600">
+                    Don't have an account?{" "}
+                    <Button 
+                      variant="link" 
+                      className="p-0 h-auto text-primary hover:text-primary-dark font-medium"
+                      onClick={() => setCurrentView("selection")}
+                      data-testid="link-sign-up"
+                    >
+                      Sign up
+                    </Button>
+                  </div>
+                  
+                  {/* Company: Empty spacer to match Google button height */}
+                  <div className="h-[40px]"></div>
+                </>
               )}
-            </div>
-            
-            {/* Sign Up Link - Outside the box, displayed below */}
-            <div className={`text-center text-sm text-slate-600 ${loginForm.watch("accountType") === "employee" ? "mt-4" : "mt-0"}`}>
-              Don't have an account?{" "}
-              <Button 
-                variant="link" 
-                className="p-0 h-auto text-primary hover:text-primary-dark font-medium"
-                onClick={() => setCurrentView("selection")}
-                data-testid="link-sign-up"
-              >
-                Sign up
-              </Button>
             </div>
             
           </div>
