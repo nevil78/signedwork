@@ -695,6 +695,7 @@ export const insertFeedbackSchema = createInsertSchema(userFeedback).omit({
   title: z.string().min(1, "Title is required").max(100, "Title too long"),
   description: z.string().min(10, "Description must be at least 10 characters").max(2000, "Description too long"),
   userEmail: z.string().email("Invalid email format").optional(),
+  userType: z.enum(["employee", "company", "admin", "anonymous"]).optional(),
   feedbackType: z.enum(["bug_report", "feature_request", "general", "complaint", "compliment"]),
   category: z.enum(["ui_ux", "performance", "functionality", "content", "security", "other"]),
   priority: z.enum(["low", "medium", "high", "urgent"]).optional(),
