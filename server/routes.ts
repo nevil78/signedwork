@@ -2515,8 +2515,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Enhanced work entry update with immutable protection - PROTECTED ROUTE
+  // Enhanced work entry update with immutable protection - PROTECTED ROUTE (PATCH)
   app.patch("/api/work-entries/:id", requireEmployee, async (req: any, res) => {
+    const sessionUser = req.user;
+    
+    try {
+      // First check if the work entry is approved (immutable)
+      const existingEntry = await storage.getWorkEntry(req.params.id);
+      if (!existingEntry) {
+        return res.status(404).json({ message: "Work entry not found" });
+      }
+      
+      if (existingEntry.status === 'approved') {
+        return res.status(403).json({ 
+          message: "Cannot edit approved work entry. Approved entries are immutable." 
+        });
+      }
+      
+      // Check if employee is still active in the company
+      const employeeCompanies = await storage.getEmployeeCompanyRelations(sessionUser.id);
+      const companyRelation = employeeCompanies.find(c => c.companyId === existingEntry.companyId);
+      
+      if (!companyRelation || !companyRelation.isActive) {
+        return res.status(403).json({ 
+          message: "Ex-employees cannot update work entries for this company" 
+        });
+      }
+      
+      // When updating a work entry, reset status to pending for re-review
+      const updateData = {
+        ...req.body,
+        status: 'pending', // Always reset to pending when employee updates
+        companyFeedback: null, // Clear any previous company feedback
+        companyRating: null, // Clear any previous company rating
+        updatedAt: new Date()
+      };
+      
+      const workEntry = await storage.updateWorkEntry(req.params.id, updateData);
+      res.json(workEntry);
+    } catch (error) {
+      console.error("Update work entry error:", error);
+      res.status(500).json({ message: "Failed to update work entry" });
+    }
+  });
+
+  // Enhanced work entry update with immutable protection - PROTECTED ROUTE (PUT for legacy compatibility)
+  app.put("/api/work-entries/:id", requireEmployee, async (req: any, res) => {
     const sessionUser = req.user;
     
     try {
