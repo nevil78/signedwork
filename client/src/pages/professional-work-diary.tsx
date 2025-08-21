@@ -1058,19 +1058,53 @@ export default function ProfessionalWorkDiary() {
                   control={workEntryForm.control}
                   name="startDate"
                   render={({ field, fieldState }) => (
-                    <FormItem>
+                    <FormItem className="flex flex-col">
                       <FormLabel>Start Date *</FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          type="text"
-                          placeholder="dd/mm/yyyy"
-                          value={field.value || ""}
-                          onChange={(e) => field.onChange(e.target.value)}
-                          className={fieldState.error ? "border-red-500 focus:border-red-500" : ""}
-                          data-testid="input-start-date"
-                        />
-                      </FormControl>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant={"outline"}
+                              className={cn(
+                                "w-full pl-3 text-left font-normal",
+                                !field.value && "text-muted-foreground",
+                                fieldState.error && "border-red-500"
+                              )}
+                              data-testid="button-start-date"
+                            >
+                              {field.value ? field.value : <span>dd/mm/yyyy</span>}
+                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={field.value ? (() => {
+                              try {
+                                const [day, month, year] = field.value.split('/');
+                                return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+                              } catch {
+                                return undefined;
+                              }
+                            })() : undefined}
+                            onSelect={(date) => {
+                              if (date) {
+                                const day = date.getDate().toString().padStart(2, '0');
+                                const month = (date.getMonth() + 1).toString().padStart(2, '0');
+                                const year = date.getFullYear().toString();
+                                field.onChange(`${day}/${month}/${year}`);
+                              } else {
+                                field.onChange("");
+                              }
+                            }}
+                            disabled={(date) =>
+                              date > new Date() || date < new Date("1900-01-01")
+                            }
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -1080,19 +1114,53 @@ export default function ProfessionalWorkDiary() {
                   control={workEntryForm.control}
                   name="endDate"
                   render={({ field, fieldState }) => (
-                    <FormItem>
+                    <FormItem className="flex flex-col">
                       <FormLabel>End Date</FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          type="text"
-                          placeholder="dd/mm/yyyy"
-                          value={field.value || ""}
-                          onChange={(e) => field.onChange(e.target.value)}
-                          className={fieldState.error ? "border-red-500 focus:border-red-500" : ""}
-                          data-testid="input-end-date"
-                        />
-                      </FormControl>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant={"outline"}
+                              className={cn(
+                                "w-full pl-3 text-left font-normal",
+                                !field.value && "text-muted-foreground",
+                                fieldState.error && "border-red-500"
+                              )}
+                              data-testid="button-end-date"
+                            >
+                              {field.value ? field.value : <span>dd/mm/yyyy</span>}
+                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={field.value ? (() => {
+                              try {
+                                const [day, month, year] = field.value.split('/');
+                                return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+                              } catch {
+                                return undefined;
+                              }
+                            })() : undefined}
+                            onSelect={(date) => {
+                              if (date) {
+                                const day = date.getDate().toString().padStart(2, '0');
+                                const month = (date.getMonth() + 1).toString().padStart(2, '0');
+                                const year = date.getFullYear().toString();
+                                field.onChange(`${day}/${month}/${year}`);
+                              } else {
+                                field.onChange("");
+                              }
+                            }}
+                            disabled={(date) =>
+                              date > new Date() || date < new Date("1900-01-01")
+                            }
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
                       <FormMessage />
                     </FormItem>
                   )}
