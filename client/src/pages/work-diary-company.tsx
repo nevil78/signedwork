@@ -45,7 +45,29 @@ import { z } from 'zod';
 
 type WorkEntryPriority = "low" | "medium" | "high";
 
-// Create a simplified form schema to avoid validation issues
+// Helper function to convert date from dd/mm/yyyy to yyyy-mm-dd for backend
+const formatDateForAPI = (dateStr: string) => {
+  if (!dateStr) return '';
+  const parts = dateStr.split('/');
+  if (parts.length === 3) {
+    const [day, month, year] = parts;
+    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+  }
+  return dateStr;
+};
+
+// Helper function to convert date from yyyy-mm-dd to dd/mm/yyyy for display
+const formatDateForDisplay = (dateStr: string) => {
+  if (!dateStr) return '';
+  const parts = dateStr.split('-');
+  if (parts.length === 3) {
+    const [year, month, day] = parts;
+    return `${day}/${month}/${year}`;
+  }
+  return dateStr;
+};
+
+// Create a simplified form schema with date validation
 const workEntryFormSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().optional(),
@@ -58,6 +80,16 @@ const workEntryFormSchema = z.object({
   actualHours: z.number().optional(),
   companyId: z.string().min(1, "Company ID is required"),
   billable: z.boolean().default(false),
+}).refine((data) => {
+  if (!data.startDate || !data.endDate) return true; // Skip validation if either date is missing
+  
+  const startDate = new Date(formatDateForAPI(data.startDate));
+  const endDate = new Date(formatDateForAPI(data.endDate));
+  
+  return startDate <= endDate;
+}, {
+  message: "Start date must be before or equal to end date",
+  path: ["endDate"], // Show error on end date field
 });
 
 type WorkEntryFormData = z.infer<typeof workEntryFormSchema>;
@@ -113,7 +145,7 @@ export default function WorkDiaryCompany() {
     defaultValues: {
       title: '',
       description: '',
-      startDate: new Date().toISOString().split('T')[0],
+      startDate: formatDateForDisplay(new Date().toISOString().split('T')[0]),
       endDate: '',
       priority: 'medium',
       status: 'pending',
@@ -128,7 +160,14 @@ export default function WorkDiaryCompany() {
   const createEntryMutation = useMutation({
     mutationFn: async (data: WorkEntryFormData) => {
       const finalCompanyId = actualCompanyId || companyId;
-      const payload = { ...data, companyId: finalCompanyId };
+      
+      // Convert dates from dd/mm/yyyy to yyyy-mm-dd for API
+      const payload = { 
+        ...data, 
+        companyId: finalCompanyId,
+        startDate: formatDateForAPI(data.startDate),
+        endDate: data.endDate ? formatDateForAPI(data.endDate) : ''
+      };
       console.log('Creating work entry with payload:', payload);
       console.log('finalCompanyId:', finalCompanyId);
       
@@ -162,7 +201,13 @@ export default function WorkDiaryCompany() {
 
   const updateEntryMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<WorkEntryFormData> }) => {
-      return apiRequest('PATCH', `/api/work-entries/${id}`, data);
+      // Convert dates from dd/mm/yyyy to yyyy-mm-dd for API
+      const payload = {
+        ...data,
+        startDate: data.startDate ? formatDateForAPI(data.startDate) : undefined,
+        endDate: data.endDate ? formatDateForAPI(data.endDate) : undefined
+      };
+      return apiRequest('PATCH', `/api/work-entries/${id}`, payload);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/work-entries', actualCompanyId] });
@@ -246,8 +291,8 @@ export default function WorkDiaryCompany() {
     form.reset({
       title: entry.title,
       description: entry.description || '',
-      startDate: entry.startDate,
-      endDate: entry.endDate || '',
+      startDate: formatDateForDisplay(entry.startDate), // Convert from API format to display format
+      endDate: entry.endDate ? formatDateForDisplay(entry.endDate) : '', // Convert from API format to display format
       priority: entry.priority as "low" | "medium" | "high",
       status: entry.status as "pending" | "approved" | "needs_changes" | "in_progress" | "completed",
       workType: (entry.workType || 'task') as "task" | "meeting" | "project" | "research" | "documentation" | "training",
@@ -535,7 +580,12 @@ export default function WorkDiaryCompany() {
                       <FormItem>
                         <FormLabel>Start Date *</FormLabel>
                         <FormControl>
-                          <Input type="date" {...field} value={field.value || ''} />
+                          <Input 
+                            placeholder="dd/mm/yyyy" 
+                            {...field} 
+                            value={field.value || ''} 
+                            className={form.formState.errors.startDate ? "border-red-500" : ""}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -549,7 +599,12 @@ export default function WorkDiaryCompany() {
                       <FormItem>
                         <FormLabel>End Date</FormLabel>
                         <FormControl>
-                          <Input type="date" {...field} value={field.value || ''} />
+                          <Input 
+                            placeholder="dd/mm/yyyy" 
+                            {...field} 
+                            value={field.value || ''} 
+                            className={form.formState.errors.endDate ? "border-red-500" : ""}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
