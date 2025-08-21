@@ -774,7 +774,18 @@ export default function ProfessionalWorkDiary() {
                               )}
                               <div>
                                 <span className="text-gray-500">Start Date:</span>
-                                <p className="font-medium">{format(new Date(entry.startDate), 'PP')}</p>
+                                <p className="font-medium">
+                                  {entry.startDate ? (
+                                    (() => {
+                                      try {
+                                        const date = new Date(entry.startDate);
+                                        return isNaN(date.getTime()) ? entry.startDate : format(date, 'PP');
+                                      } catch (e) {
+                                        return entry.startDate;
+                                      }
+                                    })()
+                                  ) : 'No date'}
+                                </p>
                               </div>
                               {entry.actualHours && (
                                 <div>
