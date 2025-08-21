@@ -44,7 +44,7 @@ export default function AdminVerifications() {
   // Update verification status mutation
   const updateVerificationMutation = useMutation({
     mutationFn: async (action: VerificationAction) => {
-      await apiRequest(`/api/admin/companies/${action.companyId}/verification`, 'PATCH', {
+      await apiRequest('PATCH', `/api/admin/companies/${action.companyId}/verification`, {
         status: action.status,
         notes: action.notes,
         rejectionReason: action.rejectionReason,
