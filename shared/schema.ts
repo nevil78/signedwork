@@ -708,7 +708,7 @@ export const adminLoginSchema = z.object({
 });
 
 export const feedbackResponseSchema = z.object({
-  adminResponse: z.string().min(1, "Response is required"),
+  adminResponse: z.string().optional(),
   status: z.enum(["in_review", "in_progress", "resolved", "closed", "rejected"]),
 });
 

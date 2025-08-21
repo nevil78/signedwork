@@ -109,11 +109,12 @@ export default function AdminFeedback() {
 
   // Update feedback status/response mutation
   const updateFeedbackMutation = useMutation({
-    mutationFn: async (data: { id: string; status: string; adminResponse: string }) => {
-      await apiRequest("PATCH", `/api/admin/feedback/${data.id}`, {
-        status: data.status,
-        adminResponse: data.adminResponse,
-      });
+    mutationFn: async (data: { id: string; status: string; adminResponse?: string }) => {
+      const payload: any = { status: data.status };
+      if (data.adminResponse && data.adminResponse.trim()) {
+        payload.adminResponse = data.adminResponse;
+      }
+      await apiRequest("PATCH", `/api/admin/feedback/${data.id}`, payload);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/feedback"] });
