@@ -655,6 +655,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
           type: "employee",
         };
 
+        // Record login session for tracking
+        try {
+          await storage.createLoginSession({
+            sessionId: req.sessionID,
+            userId: employee.id,
+            userType: 'employee',
+            loginAt: new Date(),
+            ipAddress: req.ip || 'unknown',
+            userAgent: req.get('User-Agent') || 'unknown',
+            deviceType: req.get('User-Agent')?.includes('Mobile') ? 'Mobile' : 'Desktop',
+            location: 'Unknown' // Could be enhanced with IP geolocation later
+          });
+        } catch (sessionError) {
+          console.error("Failed to record Google OAuth login session:", sessionError);
+          // Don't fail the login if session recording fails
+        }
+
         console.log(`Google OAuth successful for ${employee.email}, isNew: ${isNew}`);
         
         // Redirect to summary dashboard for employees
