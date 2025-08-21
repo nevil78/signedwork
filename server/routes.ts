@@ -2516,7 +2516,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Enhanced work entry update with immutable protection - PROTECTED ROUTE
-  app.put("/api/work-entries/:id", requireEmployee, async (req: any, res) => {
+  app.patch("/api/work-entries/:id", requireEmployee, async (req: any, res) => {
     
     try {
       // First check if the work entry is approved (immutable)
