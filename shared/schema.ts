@@ -579,6 +579,18 @@ export const insertWorkEntrySchema = createInsertSchema(workEntries).omit({
   createdAt: true,
   updatedAt: true,
 }).extend({
+  title: z.string()
+    .min(3, "Work title must be at least 3 characters long")
+    .max(150, "Work title must not exceed 150 characters")
+    .refine((val) => val.trim().length >= 3, {
+      message: "Work title cannot be empty or contain only spaces"
+    })
+    .refine((val) => /^[a-zA-Z0-9\s\-_.,!?()&:]+$/.test(val), {
+      message: "Work title contains invalid characters. Use only letters, numbers, spaces, and basic punctuation"
+    })
+    .refine((val) => !val.includes("  "), {
+      message: "Work title cannot contain consecutive spaces"
+    }),
   startDate: z.string().refine((val) => dateRegex.test(val), {
     message: "Start date must be in dd/mm/yyyy format"
   }),

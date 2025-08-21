@@ -993,9 +993,27 @@ export default function ProfessionalWorkDiary() {
                     <FormItem className="md:col-span-2">
                       <FormLabel>Work Title *</FormLabel>
                       <FormControl>
-                        <Input {...field} placeholder="e.g., Implemented user authentication system" />
+                        <Input 
+                          {...field} 
+                          placeholder="e.g., Implemented user authentication system"
+                          data-testid="input-work-title"
+                          maxLength={150}
+                          onChange={(e) => {
+                            // Clean up the input value - remove consecutive spaces
+                            const cleaned = e.target.value.replace(/\s{2,}/g, ' ');
+                            field.onChange(cleaned);
+                          }}
+                        />
                       </FormControl>
-                      <FormMessage />
+                      <div className="flex justify-between items-center">
+                        <FormMessage />
+                        <span className="text-xs text-muted-foreground">
+                          {field.value?.length || 0}/150 characters
+                        </span>
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        Describe your work clearly and professionally. Use letters, numbers, and basic punctuation only.
+                      </div>
                     </FormItem>
                   )}
                 />
