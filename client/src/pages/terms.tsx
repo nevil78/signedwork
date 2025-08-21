@@ -1,9 +1,28 @@
 import { ArrowLeft } from "lucide-react";
+import { useLocation } from "wouter";
+import { useEffect, useState } from "react";
 
 export default function TermsOfService() {
+  const [, setLocation] = useLocation();
+  const [from, setFrom] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Get the 'from' parameter to know where to navigate back
+    const urlParams = new URLSearchParams(window.location.search);
+    const fromParam = urlParams.get('from');
+    setFrom(fromParam);
+  }, []);
+
   const handleBack = () => {
-    // Simply go back one step in browser history
-    window.history.back();
+    // Navigate back to the specific registration form based on 'from' parameter
+    if (from === 'employee-registration') {
+      setLocation('/?view=employee-register');
+    } else if (from === 'company-registration') {
+      setLocation('/?view=company-register');
+    } else {
+      // If no 'from' parameter, just go back in history
+      window.history.back();
+    }
   };
 
   return (
