@@ -145,7 +145,7 @@ export default function WorkDiaryCompany() {
     defaultValues: {
       title: '',
       description: '',
-      startDate: formatDateForDisplay(new Date().toISOString().split('T')[0]),
+      startDate: '', // Empty start date with dd/mm/yyyy placeholder
       endDate: '',
       priority: 'medium',
       status: 'pending',
