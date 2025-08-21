@@ -41,6 +41,56 @@ function emitRealTimeUpdate(eventName: string, data: any, rooms?: string[]) {
   }
 }
 
+// Authentication middleware
+function requireAuth(req: any, res: any, next: any) {
+  console.log("Session debug:", {
+    sessionId: req.sessionID,
+    hasSession: !!req.session,
+    sessionUser: req.session?.user,
+    sessionCookie: req.headers.cookie
+  });
+  
+  const sessionUser = req.session?.user;
+  if (!sessionUser) {
+    console.log("No session user found, returning 401");
+    return res.status(401).json({ message: "Not authenticated" });
+  }
+  
+  console.log(`Session valid for user: ${sessionUser.id} (${sessionUser.type})`);
+  req.user = sessionUser;
+  next();
+}
+
+// Employee-specific authentication middleware
+function requireEmployee(req: any, res: any, next: any) {
+  requireAuth(req, res, () => {
+    if (req.user.type !== 'employee') {
+      return res.status(403).json({ message: "Employee access required" });
+    }
+    next();
+  });
+}
+
+// Company-specific authentication middleware 
+function requireCompany(req: any, res: any, next: any) {
+  requireAuth(req, res, () => {
+    if (req.user.type !== 'company') {
+      return res.status(403).json({ message: "Company access required" });
+    }
+    next();
+  });
+}
+
+// Admin-specific authentication middleware
+function requireAdmin(req: any, res: any, next: any) {
+  requireAuth(req, res, () => {
+    if (req.user.type !== 'admin') {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+    next();
+  });
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Session configuration
   // Create database session store
@@ -67,12 +117,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     name: 'sessionId', // Custom session name
   }));
 
-  // Session heartbeat endpoint to keep sessions alive
-  app.post("/api/auth/heartbeat", (req, res) => {
-    const sessionUser = (req.session as any).user;
-    if (!sessionUser) {
-      return res.status(401).json({ message: "Not authenticated" });
-    }
+  // Session heartbeat endpoint to keep sessions alive - PROTECTED ROUTE
+  app.post("/api/auth/heartbeat", requireAuth, (req: any, res) => {
     
     // Calculate session expiry time
     const sessionExpiresAt = new Date(Date.now() + (24 * 60 * 60 * 1000)); // 24 hours from now
@@ -80,22 +126,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Session will be automatically saved due to rolling: true
     res.json({ 
       message: "Session renewed",
-      userId: sessionUser.id,
-      userType: sessionUser.type,
+      userId: req.user.id,
+      userType: req.user.type,
       expiresAt: sessionExpiresAt.toISOString(),
       remainingTime: "24 hours"
     });
   });
 
-  // Session status endpoint to check session validity and remaining time
-  app.get("/api/auth/session-status", (req, res) => {
-    const sessionUser = (req.session as any).user;
-    if (!sessionUser) {
-      return res.status(401).json({ 
-        message: "Not authenticated",
-        authenticated: false
-      });
-    }
+  // Session status endpoint to check session validity and remaining time - PROTECTED ROUTE
+  app.get("/api/auth/session-status", requireAuth, (req: any, res) => {
     
     // Calculate remaining session time based on rolling sessions
     const sessionExpiresAt = new Date(Date.now() + (24 * 60 * 60 * 1000)); // 24 hours from now due to rolling
@@ -105,8 +144,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     res.json({
       authenticated: true,
-      userId: sessionUser.id,
-      userType: sessionUser.type,
+      userId: req.user.id,
+      userType: req.user.type,
       expiresAt: sessionExpiresAt.toISOString(),
       remainingTime: `${remainingHours}h ${remainingMinutes}m`,
       cycleLength: "24 hours"
@@ -638,21 +677,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  // Send email verification (for profile page)
-  app.post("/api/auth/send-email-verification", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser) {
-      return res.status(401).json({ message: "Not authenticated" });
-    }
+  // Send email verification (for profile page) - PROTECTED ROUTE
+  app.post("/api/auth/send-email-verification", requireAuth, async (req: any, res) => {
 
     try {
       // Get user details
       let user = null;
-      if (sessionUser.type === 'employee') {
-        user = await storage.getEmployee(sessionUser.id);
+      if (req.user.type === 'employee') {
+        user = await storage.getEmployee(req.user.id);
       } else {
-        user = await storage.getCompany(sessionUser.id);
+        user = await storage.getCompany(req.user.id);
       }
 
       if (!user) {
@@ -672,13 +706,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         email: user.email,
         otpCode,
         purpose: "email_verification",
-        userType: sessionUser.type,
+        userType: req.user.type,
         userId: user.id,
         expiresAt,
       });
 
       // Send OTP email
-      const firstName = sessionUser.type === 'employee' ? (user as any).firstName : (user as any).name;
+      const firstName = req.user.type === 'employee' ? (user as any).firstName : (user as any).name;
       const emailSent = await sendOTPEmail({
         to: user.email,
         firstName,
@@ -700,22 +734,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Employee-specific user endpoint for compatibility
-  app.get("/api/employee/me", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser || sessionUser.type !== "employee") {
-      return res.status(401).json({ message: "Not authenticated as employee" });
-    }
+  // Employee-specific user endpoint for compatibility - PROTECTED ROUTE
+  app.get("/api/employee/me", requireEmployee, async (req: any, res) => {
     
     try {
-      const employee = await storage.getEmployee(sessionUser.id);
+      const employee = await storage.getEmployee(req.user.id);
       if (!employee) {
         return res.status(404).json({ message: "Employee not found" });
       }
       
       // Allow both active and inactive employees to access their profile
-      console.log(`Employee ${sessionUser.id} accessing profile - Active: ${employee.isActive}`);
+      console.log(`Employee ${req.user.id} accessing profile - Active: ${employee.isActive}`);
       
       const { password, ...employeeResponse } = employee;
       res.json(employeeResponse);
@@ -725,13 +754,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Update employee email (with verification reset)
-  app.patch("/api/employee/email", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser || sessionUser.type !== "employee") {
-      return res.status(401).json({ message: "Not authenticated as employee" });
-    }
+  // Update employee email (with verification reset) - PROTECTED ROUTE
+  app.patch("/api/employee/email", requireEmployee, async (req: any, res) => {
 
     try {
       const { email } = req.body;
@@ -747,7 +771,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Get current employee data
-      const employee = await storage.getEmployee(sessionUser.id);
+      const employee = await storage.getEmployee(req.user.id);
       if (!employee) {
         return res.status(404).json({ message: "Employee not found" });
       }
@@ -761,12 +785,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Check if email is already in use
       const existingEmployee = await storage.getEmployeeByEmail(email);
-      if (existingEmployee && existingEmployee.id !== sessionUser.id) {
+      if (existingEmployee && existingEmployee.id !== req.user.id) {
         return res.status(409).json({ message: "Email is already in use by another account" });
       }
 
       // Update email and reset verification status
-      const updatedEmployee = await storage.updateEmployee(sessionUser.id, { 
+      const updatedEmployee = await storage.updateEmployee(req.user.id, { 
         email, 
         emailVerified: false // Reset verification when email changes
       });
@@ -782,16 +806,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Send email verification for employee (specific endpoint)
-  app.post("/api/employee/send-verification-email", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser || sessionUser.type !== "employee") {
-      return res.status(401).json({ message: "Not authenticated as employee" });
-    }
+  // Send email verification for employee (specific endpoint) - PROTECTED ROUTE
+  app.post("/api/employee/send-verification-email", requireEmployee, async (req: any, res) => {
 
     try {
-      const employee = await storage.getEmployee(sessionUser.id);
+      const employee = await storage.getEmployee(req.user.id);
       if (!employee) {
         return res.status(404).json({ message: "Employee not found" });
       }
@@ -893,44 +912,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get current user
-  app.get("/api/auth/user", async (req, res) => {
-    // Debug session information
-    console.log("Session debug:", {
-      sessionId: req.sessionID,
-      hasSession: !!req.session,
-      sessionUser: (req.session as any)?.user,
-      sessionCookie: req.headers.cookie
-    });
-    
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser) {
-      console.log("No session user found, returning 401");
-      return res.status(401).json({ message: "Not authenticated" });
-    }
+  // Get current user - PROTECTED ROUTE
+  app.get("/api/auth/user", requireAuth, async (req: any, res) => {
     
     try {
       let user = null;
       
-      if (sessionUser.type === "employee") {
-        user = await storage.getEmployee(sessionUser.id);
-      } else if (sessionUser.type === "company") {
-        user = await storage.getCompany(sessionUser.id);
-      } else if (sessionUser.type === "admin") {
-        user = await storage.getAdmin(sessionUser.id);
+      if (req.user.type === "employee") {
+        user = await storage.getEmployee(req.user.id);
+      } else if (req.user.type === "company") {
+        user = await storage.getCompany(req.user.id);
+      } else if (req.user.type === "admin") {
+        user = await storage.getAdmin(req.user.id);
       }
       
       if (!user) {
-        console.log(`User not found in database for ID: ${sessionUser.id}, type: ${sessionUser.type}`);
+        console.log(`User not found in database for ID: ${req.user.id}, type: ${req.user.type}`);
         // Clear invalid session
         req.session.destroy(() => {});
         return res.status(401).json({ message: "Session invalid - user not found" });
       }
       
       // For companies, check if they are still active
-      if (sessionUser.type === "company" && 'isActive' in user && user.isActive === false) {
-        console.log(`Company account deactivated for ID: ${sessionUser.id}`);
+      if (req.user.type === "company" && 'isActive' in user && user.isActive === false) {
+        console.log(`Company account deactivated for ID: ${req.user.id}`);
         req.session.destroy(() => {});
         return res.status(401).json({ message: "Account deactivated" });
       }
@@ -1024,19 +1029,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Company verification update route (before approval)
-  app.patch("/api/company/verification-details", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser || sessionUser.type !== "company") {
-      return res.status(401).json({ message: "Not authenticated as company" });
-    }
+  // Company verification update route (before approval) - PROTECTED ROUTE
+  app.patch("/api/company/verification-details", requireCompany, async (req: any, res) => {
     
     try {
       const { cin, panNumber } = req.body;
       
       // Get current company details
-      const company = await storage.getCompany(sessionUser.id);
+      const company = await storage.getCompany(req.user.id);
       if (!company) {
         return res.status(404).json({ message: "Company not found" });
       }
@@ -1084,7 +1084,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Update company details
-      const updatedCompany = await storage.updateCompany(sessionUser.id, updateData);
+      const updatedCompany = await storage.updateCompany(req.user.id, updateData);
       
       // Emit real-time updates for admin panel
       if (updateData.cin) {
@@ -1115,13 +1115,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Admin dashboard stats
-  app.get("/api/admin/stats", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser || sessionUser.type !== "admin") {
-      return res.status(401).json({ message: "Not authenticated as admin" });
-    }
+  // Admin dashboard stats - PROTECTED ROUTE
+  app.get("/api/admin/stats", requireAdmin, async (req: any, res) => {
     
     try {
       const [
@@ -1148,13 +1143,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get all employees (admin only) with search support
-  app.get("/api/admin/employees", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser || sessionUser.type !== "admin") {
-      return res.status(401).json({ message: "Not authenticated as admin" });
-    }
+  // Get all employees (admin only) with search support - PROTECTED ROUTE
+  app.get("/api/admin/employees", requireAdmin, async (req: any, res) => {
     
     try {
       const { search } = req.query;
@@ -1183,13 +1173,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get all companies (admin only) with search support
-  app.get("/api/admin/companies", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser || sessionUser.type !== "admin") {
-      return res.status(401).json({ message: "Not authenticated as admin" });
-    }
+  // Get all companies (admin only) with search support - PROTECTED ROUTE
+  app.get("/api/admin/companies", requireAdmin, async (req: any, res) => {
     
     try {
       const { search } = req.query;
@@ -1216,13 +1201,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Toggle employee status (admin only)
-  app.patch("/api/admin/employees/:id/toggle-status", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser || sessionUser.type !== "admin") {
-      return res.status(401).json({ message: "Not authenticated as admin" });
-    }
+  // Toggle employee status (admin only) - PROTECTED ROUTE
+  app.patch("/api/admin/employees/:id/toggle-status", requireAdmin, async (req: any, res) => {
     
     try {
       const { id } = req.params;
@@ -1243,13 +1223,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get employee backup data (admin only)
-  app.get("/api/admin/employees/:id/backup", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser || sessionUser.type !== "admin") {
-      return res.status(401).json({ message: "Not authenticated as admin" });
-    }
+  // Get employee backup data (admin only) - PROTECTED ROUTE
+  app.get("/api/admin/employees/:id/backup", requireAdmin, async (req: any, res) => {
     
     try {
       const { id } = req.params;
@@ -1270,13 +1245,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Delete employee (admin only)
-  app.delete("/api/admin/employees/:id", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser || sessionUser.type !== "admin") {
-      return res.status(401).json({ message: "Not authenticated as admin" });
-    }
+  // Delete employee (admin only) - PROTECTED ROUTE
+  app.delete("/api/admin/employees/:id", requireAdmin, async (req: any, res) => {
     
     try {
       const { id } = req.params;
@@ -1290,7 +1260,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Delete employee and all related data
       await storage.deleteEmployee(id);
       
-      console.log(`Admin ${sessionUser.id} deleted employee ${employee.employeeId} (${employee.email})`);
+      console.log(`Admin ${req.user.id} deleted employee ${employee.employeeId} (${employee.email})`);
       
       res.json({ 
         message: `Employee ${employee.firstName} ${employee.lastName} deleted successfully` 
@@ -1301,13 +1271,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Toggle company status (admin only)
-  app.patch("/api/admin/companies/:id/toggle-status", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser || sessionUser.type !== "admin") {
-      return res.status(401).json({ message: "Not authenticated as admin" });
-    }
+  // Toggle company status (admin only) - PROTECTED ROUTE
+  app.patch("/api/admin/companies/:id/toggle-status", requireAdmin, async (req: any, res) => {
     
     try {
       const { id } = req.params;
@@ -1328,13 +1293,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get company backup data (admin only)
-  app.get("/api/admin/companies/:id/backup", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser || sessionUser.type !== "admin") {
-      return res.status(401).json({ message: "Not authenticated as admin" });
-    }
+  // Get company backup data (admin only) - PROTECTED ROUTE
+  app.get("/api/admin/companies/:id/backup", requireAdmin, async (req: any, res) => {
     
     try {
       const { id } = req.params;
@@ -1355,13 +1315,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Delete company (admin only)
-  app.delete("/api/admin/companies/:id", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser || sessionUser.type !== "admin") {
-      return res.status(401).json({ message: "Not authenticated as admin" });
-    }
+  // Delete company (admin only) - PROTECTED ROUTE
+  app.delete("/api/admin/companies/:id", requireAdmin, async (req: any, res) => {
     
     try {
       const { id } = req.params;
@@ -1375,7 +1330,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Delete company and all related data
       await storage.deleteCompany(id);
       
-      console.log(`Admin ${sessionUser.id} deleted company ${company.companyId} (${company.email})`);
+      console.log(`Admin ${req.user.id} deleted company ${company.companyId} (${company.email})`);
       
       res.json({ 
         message: `Company ${company.name} deleted successfully` 
@@ -1386,13 +1341,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Admin endpoint to reactivate account by email (for support requests)
-  app.post("/api/admin/reactivate", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser || sessionUser.type !== "admin") {
-      return res.status(401).json({ message: "Not authenticated as admin" });
-    }
+  // Admin endpoint to reactivate account by email (for support requests) - PROTECTED ROUTE
+  app.post("/api/admin/reactivate", requireAdmin, async (req: any, res) => {
     
     try {
       const { email, accountType } = req.body;
@@ -1418,13 +1368,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get pending verifications (admin only)
-  app.get("/api/admin/pending-verifications", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser || sessionUser.type !== "admin") {
-      return res.status(401).json({ message: "Not authenticated as admin" });
-    }
+  // Get pending verifications (admin only) - PROTECTED ROUTE
+  app.get("/api/admin/pending-verifications", requireAdmin, async (req: any, res) => {
     
     try {
       const companies = await storage.getPendingVerifications();
@@ -1435,13 +1380,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Update verification status (admin only)
-  app.patch("/api/admin/companies/:id/verification", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser || sessionUser.type !== "admin") {
-      return res.status(401).json({ message: "Not authenticated as admin" });
-    }
+  // Update verification status (admin only) - PROTECTED ROUTE
+  app.patch("/api/admin/companies/:id/verification", requireAdmin, async (req: any, res) => {
     
     try {
       const { id } = req.params;
@@ -1458,13 +1398,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // CIN verification endpoints
-  app.get("/api/admin/companies/pending-cin-verification", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser || sessionUser.type !== "admin") {
-      return res.status(401).json({ message: "Not authenticated as admin" });
-    }
+  // CIN verification endpoints - PROTECTED ROUTE
+  app.get("/api/admin/companies/pending-cin-verification", requireAdmin, async (req: any, res) => {
     
     try {
       const pendingCompanies = await storage.getCompaniesByCINVerificationStatus("pending");
@@ -1475,12 +1410,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/admin/companies/:id/cin-verification", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser || sessionUser.type !== "admin") {
-      return res.status(401).json({ message: "Not authenticated as admin" });
-    }
+  app.patch("/api/admin/companies/:id/cin-verification", requireAdmin, async (req: any, res) => {
     
     try {
       const { id } = req.params;
@@ -1493,7 +1423,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updatedCompany = await storage.updateCompanyCINVerification(id, {
         cinVerificationStatus: status,
         cinVerifiedAt: new Date(),
-        cinVerifiedBy: sessionUser.id,
+        cinVerifiedBy: req.user.id,
         isBasicDetailsLocked: status === "verified",
         verificationNotes: notes
       });
@@ -1515,13 +1445,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Update employee email
-  app.post("/api/employee/update-email", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser || sessionUser.type !== "employee") {
-      return res.status(401).json({ message: "Not authenticated as employee" });
-    }
+  // Update employee email - PROTECTED ROUTE
+  app.post("/api/employee/update-email", requireEmployee, async (req: any, res) => {
 
     try {
       const { email } = req.body;
@@ -1538,8 +1463,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Check if email is already verified (lock if verified)
       const currentStatus = await OTPEmailService.getEmailVerificationStatus(
-        sessionUser.id,
-        sessionUser.email || ""
+        req.user.id,
+        req.user.email || ""
       );
 
       if (currentStatus.isVerified) {
@@ -1552,12 +1477,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const existingEmployee = await storage.getEmployeeByEmail(email);
       const existingCompany = await storage.getCompanyByEmail(email);
       
-      if ((existingEmployee && existingEmployee.id !== sessionUser.id) || existingCompany) {
+      if ((existingEmployee && existingEmployee.id !== req.user.id) || existingCompany) {
         return res.status(400).json({ message: "Email already in use" });
       }
 
       // Update email
-      const updatedEmployee = await storage.updateEmployee(sessionUser.id, { email });
+      const updatedEmployee = await storage.updateEmployee(req.user.id, { email });
       
       // Update session email
       (req.session as any).user.email = email;
@@ -1577,13 +1502,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Update company email
-  app.post("/api/company/update-email", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser || sessionUser.type !== "company") {
-      return res.status(401).json({ message: "Not authenticated as company" });
-    }
+  // Update company email - PROTECTED ROUTE
+  app.post("/api/company/update-email", requireCompany, async (req: any, res) => {
 
     try {
       const { email } = req.body;
@@ -1600,8 +1520,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Check if email is already verified (lock if verified)
       const currentStatus = await OTPEmailService.getEmailVerificationStatus(
-        sessionUser.id,
-        sessionUser.email || ""
+        req.user.id,
+        req.user.email || ""
       );
 
       if (currentStatus.isVerified) {
@@ -1614,12 +1534,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const existingEmployee = await storage.getEmployeeByEmail(email);
       const existingCompany = await storage.getCompanyByEmail(email);
       
-      if (existingEmployee || (existingCompany && existingCompany.id !== sessionUser.id)) {
+      if (existingEmployee || (existingCompany && existingCompany.id !== req.user.id)) {
         return res.status(400).json({ message: "Email already in use" });
       }
 
       // Update email
-      const updatedCompany = await storage.updateCompany(sessionUser.id, { email });
+      const updatedCompany = await storage.updateCompany(req.user.id, { email });
       
       // Update session email
       (req.session as any).user.email = email;
@@ -1641,7 +1561,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Employee Profile Routes
   
-  // Get employee profile data
+  // Get employee profile data - PUBLIC ROUTE (for company viewing)
   app.get("/api/employee/profile/:id", async (req, res) => {
     try {
       const profileData = await storage.getEmployeeProfile(req.params.id);
@@ -1652,16 +1572,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Update employee profile
-  app.patch("/api/employee/profile", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser || sessionUser.type !== "employee") {
-      return res.status(401).json({ message: "Not authenticated as employee" });
-    }
-    
+  // Update employee profile - PROTECTED ROUTE
+  app.patch("/api/employee/profile", requireEmployee, async (req: any, res) => {
     try {
-      const updatedEmployee = await storage.updateEmployee(sessionUser.id, req.body);
+      const updatedEmployee = await storage.updateEmployee(req.user.id, req.body);
       const { password, ...employeeResponse } = updatedEmployee;
       res.json(employeeResponse);
     } catch (error) {
@@ -1670,16 +1584,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Employee Summary Dashboard
-  app.get("/api/employee/summary-dashboard", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser || sessionUser.type !== "employee") {
-      return res.status(401).json({ message: "Not authenticated as employee" });
-    }
-    
+  // Employee Summary Dashboard - PROTECTED ROUTE
+  app.get("/api/employee/summary-dashboard", requireEmployee, async (req: any, res) => {
     try {
-      const dashboardData = await storage.getEmployeeSummaryDashboard(sessionUser.id);
+      const dashboardData = await storage.getEmployeeSummaryDashboard(req.user.id);
       res.json(dashboardData);
     } catch (error) {
       console.error("Get employee summary dashboard error:", error);
@@ -1687,14 +1595,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Experience Routes
-  app.post("/api/employee/experience", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser || sessionUser.type !== "employee") {
-      return res.status(401).json({ message: "Not authenticated as employee" });
-    }
-    
+  // Experience Routes - PROTECTED ROUTE
+  app.post("/api/employee/experience", requireEmployee, async (req: any, res) => {
     try {
       const validatedData = insertExperienceSchema.parse({
         ...req.body,
@@ -1737,18 +1639,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Education Routes
-  app.post("/api/employee/education", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser || sessionUser.type !== "employee") {
-      return res.status(401).json({ message: "Not authenticated as employee" });
-    }
+  // Education Routes - PROTECTED ROUTE
+  app.post("/api/employee/education", requireEmployee, async (req: any, res) => {
     
     try {
       const validatedData = insertEducationSchema.parse({
         ...req.body,
-        employeeId: sessionUser.id
+        employeeId: req.user.id
       });
       
       const education = await storage.createEducation(validatedData);
@@ -1787,18 +1684,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Certification Routes
-  app.post("/api/employee/certification", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser || sessionUser.type !== "employee") {
-      return res.status(401).json({ message: "Not authenticated as employee" });
-    }
+  // Certification Routes - PROTECTED ROUTE
+  app.post("/api/employee/certification", requireEmployee, async (req: any, res) => {
     
     try {
       const validatedData = insertCertificationSchema.parse({
         ...req.body,
-        employeeId: sessionUser.id
+        employeeId: req.user.id
       });
       
       const certification = await storage.createCertification(validatedData);
@@ -1837,18 +1729,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Project Routes
-  app.post("/api/employee/project", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser || sessionUser.type !== "employee") {
-      return res.status(401).json({ message: "Not authenticated as employee" });
-    }
+  // Project Routes - PROTECTED ROUTE
+  app.post("/api/employee/project", requireEmployee, async (req: any, res) => {
     
     try {
       const validatedData = insertProjectSchema.parse({
         ...req.body,
-        employeeId: sessionUser.id
+        employeeId: req.user.id
       });
       
       const project = await storage.createProject(validatedData);
@@ -1887,18 +1774,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Endorsement Routes
-  app.post("/api/employee/endorsement", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser || sessionUser.type !== "employee") {
-      return res.status(401).json({ message: "Not authenticated as employee" });
-    }
+  // Endorsement Routes - PROTECTED ROUTE
+  app.post("/api/employee/endorsement", requireEmployee, async (req: any, res) => {
     
     try {
       const validatedData = insertEndorsementSchema.parse({
         ...req.body,
-        employeeId: sessionUser.id
+        employeeId: req.user.id
       });
       
       const endorsement = await storage.createEndorsement(validatedData);
@@ -1927,16 +1809,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Company Invitation Routes
-  app.post("/api/company/invitation-code", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser || sessionUser.type !== "company") {
-      return res.status(401).json({ message: "Not authenticated as company" });
-    }
+  // Company Invitation Routes - PROTECTED ROUTE
+  app.post("/api/company/invitation-code", requireCompany, async (req: any, res) => {
     
     try {
-      const invitationCode = await storage.generateInvitationCode(sessionUser.id);
+      const invitationCode = await storage.generateInvitationCode(req.user.id);
       res.json({
         code: invitationCode.code,
         expiresAt: invitationCode.expiresAt,
@@ -1948,12 +1825,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/employee/join-company", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser || sessionUser.type !== "employee") {
-      return res.status(401).json({ message: "Not authenticated as employee" });
-    }
+  app.post("/api/employee/join-company", requireEmployee, async (req: any, res) => {
     
     try {
       const { code } = req.body;
@@ -1962,7 +1834,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invitation code is required" });
       }
       
-      const companyEmployee = await storage.useInvitationCode(code, sessionUser.id);
+      const companyEmployee = await storage.useInvitationCode(code, req.user.id);
       res.json({
         message: "Successfully joined the company",
         companyEmployee
@@ -1976,16 +1848,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get company employees (legacy - simple list)
-  app.get("/api/company/employees", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser || sessionUser.type !== "company") {
-      return res.status(401).json({ message: "Not authenticated as company" });
-    }
-    
+  // Get company employees (legacy - simple list) - PROTECTED ROUTE
+  app.get("/api/company/employees", requireCompany, async (req: any, res) => {
     try {
-      const employees = await storage.getCompanyEmployees(sessionUser.id);
+      const employees = await storage.getCompanyEmployees(req.user.id);
       res.json(employees);
     } catch (error) {
       console.error("Get company employees error:", error);
@@ -1993,13 +1859,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get company employees with pagination, filtering, and sorting
-  app.get("/api/company/employees/paginated", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser || sessionUser.type !== "company") {
-      return res.status(401).json({ message: "Not authenticated as company" });
-    }
+  // Get company employees with pagination, filtering, and sorting - PROTECTED ROUTE
+  app.get("/api/company/employees/paginated", requireCompany, async (req: any, res) => {
     
     try {
       const {
@@ -2013,7 +1874,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         tab = 'all'
       } = req.query;
 
-      const result = await storage.getCompanyEmployeesPaginated(sessionUser.id, {
+      const result = await storage.getCompanyEmployeesPaginated(req.user.id, {
         page: parseInt(page as string),
         limit: parseInt(limit as string),
         search: search as string,
@@ -2031,20 +1892,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Update employee status (Active/Ex-Employee)
-  app.patch("/api/company/employees/:employeeId/status", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser || sessionUser.type !== "company") {
-      return res.status(401).json({ message: "Not authenticated as company" });
-    }
+  // Update employee status (Active/Ex-Employee) - PROTECTED ROUTE
+  app.patch("/api/company/employees/:employeeId/status", requireCompany, async (req: any, res) => {
     
     try {
       const { employeeId } = req.params;
       const { isCurrent } = req.body;
       
       // Verify the employee is associated with this company
-      const employeeCompany = await storage.getEmployeeCompanyRelation(employeeId, sessionUser.id);
+      const employeeCompany = await storage.getEmployeeCompanyRelation(employeeId, req.user.id);
       if (!employeeCompany) {
         return res.status(403).json({ message: "Employee not associated with your company" });
       }
@@ -2052,19 +1908,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Update the employee status
       const updatedRelation = await storage.updateEmployeeCompanyStatus(
         employeeId, 
-        sessionUser.id, 
+        req.user.id, 
         isCurrent
       );
       
       // Emit real-time update to employee
       emitRealTimeUpdate('employee-status-updated', {
         employeeId,
-        companyId: sessionUser.id,
+        companyId: req.user.id,
         status: isCurrent ? 'active' : 'ex-employee',
         updatedRelation
       }, [
         `user-${employeeId}`,
-        `company-${sessionUser.id}`
+        `company-${req.user.id}`
       ]);
       
       res.json({
@@ -2077,16 +1933,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Company Work Entry Verification Routes
-  app.get("/api/company/work-entries", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser || sessionUser.type !== "company") {
-      return res.status(401).json({ message: "Not authenticated as company" });
-    }
+  // Company Work Entry Verification Routes - PROTECTED ROUTE
+  app.get("/api/company/work-entries", requireCompany, async (req: any, res) => {
     
     try {
-      const workEntries = await storage.getWorkEntriesForCompany(sessionUser.id);
+      const workEntries = await storage.getWorkEntriesForCompany(req.user.id);
       res.json(workEntries);
     } catch (error) {
       console.error("Get company work entries error:", error);
@@ -2094,15 +1945,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/company/work-entries/pending", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser || sessionUser.type !== "company") {
-      return res.status(401).json({ message: "Not authenticated as company" });
-    }
+  app.get("/api/company/work-entries/pending", requireCompany, async (req: any, res) => {
     
     try {
-      const pendingEntries = await storage.getPendingWorkEntriesForCompany(sessionUser.id);
+      const pendingEntries = await storage.getPendingWorkEntriesForCompany(req.user.id);
       res.json(pendingEntries);
     } catch (error) {
       console.error("Get pending work entries error:", error);
@@ -2110,12 +1956,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/company/work-entries/:id/approve", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser || sessionUser.type !== "company") {
-      return res.status(401).json({ message: "Not authenticated as company" });
-    }
+  app.post("/api/company/work-entries/:id/approve", requireCompany, async (req: any, res) => {
     
     try {
       const { id } = req.params;
@@ -2130,13 +1971,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Emit real-time update to employee
       emitRealTimeUpdate('work-entry-approved', {
         workEntry,
-        companyId: sessionUser.id,
+        companyId: req.user.id,
         employeeId: workEntry.employeeId,
         rating,
         feedback
       }, [
         `user-${workEntry.employeeId}`,
-        `company-${sessionUser.id}`
+        `company-${req.user.id}`
       ]);
       
       res.json(workEntry);
@@ -2146,12 +1987,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/company/work-entries/:id/request-changes", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser || sessionUser.type !== "company") {
-      return res.status(401).json({ message: "Not authenticated as company" });
-    }
+  app.post("/api/company/work-entries/:id/request-changes", requireCompany, async (req: any, res) => {
     
     try {
       const { id } = req.params;
@@ -2166,12 +2002,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Emit real-time update to employee
       emitRealTimeUpdate('work-entry-changes-requested', {
         workEntry,
-        companyId: sessionUser.id,
+        companyId: req.user.id,
         employeeId: workEntry.employeeId,
         feedback
       }, [
         `user-${workEntry.employeeId}`,
-        `company-${sessionUser.id}`
+        `company-${req.user.id}`
       ]);
       
       res.json(workEntry);
@@ -2181,13 +2017,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // PAN verification admin routes
-  app.get("/api/admin/companies/pending-pan-verification", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser || sessionUser.type !== "admin") {
-      return res.status(401).json({ message: "Not authenticated as admin" });
-    }
+  // PAN verification admin routes - PROTECTED ROUTE
+  app.get("/api/admin/companies/pending-pan-verification", requireAdmin, async (req: any, res) => {
     
     try {
       const pendingCompanies = await storage.getCompaniesByPANVerificationStatus("pending");
@@ -2198,12 +2029,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/admin/companies/:id/pan-verification", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser || sessionUser.type !== "admin") {
-      return res.status(401).json({ message: "Not authenticated as admin" });
-    }
+  app.patch("/api/admin/companies/:id/pan-verification", requireAdmin, async (req: any, res) => {
     
     try {
       const { id } = req.params;
@@ -2216,7 +2042,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updatedCompany = await storage.updateCompanyPANVerification(id, {
         panVerificationStatus: status,
         panVerifiedAt: new Date(),
-        panVerifiedBy: sessionUser.id,
+        panVerifiedBy: req.user.id,
         isBasicDetailsLocked: status === "verified",
         verificationNotes: notes
       });
@@ -2242,13 +2068,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ENHANCED ADMIN EMPLOYEE-COMPANY MANAGEMENT ROUTES
   // =====================================================
   
-  // Get employees with current company details
-  app.get("/api/admin/employees-with-companies", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser || sessionUser.type !== "admin") {
-      return res.status(401).json({ message: "Not authenticated as admin" });
-    }
+  // Get employees with current company details - PROTECTED ROUTE
+  app.get("/api/admin/employees-with-companies", requireAdmin, async (req: any, res) => {
     
     try {
       const { search, sortBy = 'createdAt', sortOrder = 'desc' } = req.query;
@@ -2309,13 +2130,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Get companies with employee counts
-  app.get("/api/admin/companies-with-counts", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser || sessionUser.type !== "admin") {
-      return res.status(401).json({ message: "Not authenticated as admin" });
-    }
+  // Get companies with employee counts - PROTECTED ROUTE
+  app.get("/api/admin/companies-with-counts", requireAdmin, async (req: any, res) => {
     
     try {
       const { search, sortBy = 'createdAt', sortOrder = 'desc' } = req.query;
@@ -2372,13 +2188,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Get employee with complete work history
-  app.get("/api/admin/employees/:id/history", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser || sessionUser.type !== "admin") {
-      return res.status(401).json({ message: "Not authenticated as admin" });
-    }
+  // Get employee with complete work history - PROTECTED ROUTE
+  app.get("/api/admin/employees/:id/history", requireAdmin, async (req: any, res) => {
     
     try {
       const { id } = req.params;
@@ -2390,13 +2201,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Get company with complete employee history  
-  app.get("/api/admin/companies/:id/employee-history", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser || sessionUser.type !== "admin") {
-      return res.status(401).json({ message: "Not authenticated as admin" });
-    }
+  // Get company with complete employee history - PROTECTED ROUTE
+  app.get("/api/admin/companies/:id/employee-history", requireAdmin, async (req: any, res) => {
     
     try {
       const { id } = req.params;
@@ -2408,13 +2214,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Transfer employee between companies
-  app.post("/api/admin/employees/:employeeId/transfer", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser || sessionUser.type !== "admin") {
-      return res.status(401).json({ message: "Not authenticated as admin" });
-    }
+  // Transfer employee between companies - PROTECTED ROUTE
+  app.post("/api/admin/employees/:employeeId/transfer", requireAdmin, async (req: any, res) => {
     
     try {
       const { employeeId } = req.params;
@@ -2441,7 +2242,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         fromCompanyId,
         toCompanyId,
         newPosition,
-        transferredBy: sessionUser.id,
+        transferredBy: req.user.id,
         transferredAt: new Date()
       });
       
@@ -2452,13 +2253,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Update employee-company relationship
-  app.patch("/api/admin/employee-company-relationships/:relationshipId", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser || sessionUser.type !== "admin") {
-      return res.status(401).json({ message: "Not authenticated as admin" });
-    }
+  // Update employee-company relationship - PROTECTED ROUTE
+  app.patch("/api/admin/employee-company-relationships/:relationshipId", requireAdmin, async (req: any, res) => {
     
     try {
       const { relationshipId } = req.params;
@@ -2479,13 +2275,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Get employee career report
-  app.get("/api/admin/employees/:id/career-report", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser || sessionUser.type !== "admin") {
-      return res.status(401).json({ message: "Not authenticated as admin" });
-    }
+  // Get employee career report - PROTECTED ROUTE
+  app.get("/api/admin/employees/:id/career-report", requireAdmin, async (req: any, res) => {
     
     try {
       const { id } = req.params;
@@ -2497,13 +2288,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Get company employee report
-  app.get("/api/admin/companies/:id/employee-report", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser || sessionUser.type !== "admin") {
-      return res.status(401).json({ message: "Not authenticated as admin" });
-    }
+  // Get company employee report - PROTECTED ROUTE
+  app.get("/api/admin/companies/:id/employee-report", requireAdmin, async (req: any, res) => {
     
     try {
       const { id } = req.params;
@@ -2515,28 +2301,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Employee Company Routes  
-  app.get("/api/employee-companies", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser || sessionUser.type !== "employee") {
-      return res.status(401).json({ message: "Not authenticated as employee" });
-    }
+  // Employee Company Routes - PROTECTED ROUTE
+  app.get("/api/employee-companies", requireEmployee, async (req: any, res) => {
     
     try {
       // Check if employee exists and get their current status
-      const employee = await storage.getEmployee(sessionUser.id);
+      const employee = await storage.getEmployee(req.user.id);
       if (!employee) {
         return res.status(404).json({ message: "Employee not found" });
       }
       
       // Allow both active and inactive employees to view their company relations
       // This ensures ex-employees can still see their historical data
-      console.log(`Employee ${sessionUser.id} accessing companies - Active: ${employee.isActive}`);
+      console.log(`Employee ${req.user.id} accessing companies - Active: ${employee.isActive}`);
       
       // Get companies from both old and new tables
-      const oldCompanies = await storage.getEmployeeCompanies(sessionUser.id);
-      const newCompanyRelations = await storage.getEmployeeCompanyRelations(sessionUser.id);
+      const oldCompanies = await storage.getEmployeeCompanies(req.user.id);
+      const newCompanyRelations = await storage.getEmployeeCompanyRelations(req.user.id);
       
       // Merge and return all companies
       const allCompanies = [...oldCompanies, ...newCompanyRelations];
@@ -2547,17 +2328,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/employee-companies", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser || sessionUser.type !== "employee") {
-      return res.status(401).json({ message: "Not authenticated as employee" });
-    }
+  app.post("/api/employee-companies", requireEmployee, async (req: any, res) => {
     
     try {
       const validatedData = insertEmployeeCompanySchema.parse({
         ...req.body,
-        employeeId: sessionUser.id
+        employeeId: req.user.id
       });
       
       const company = await storage.createEmployeeCompany(validatedData);
@@ -2576,12 +2352,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/employee-companies/:id", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser || sessionUser.type !== "employee") {
-      return res.status(401).json({ message: "Not authenticated as employee" });
-    }
+  app.patch("/api/employee-companies/:id", requireEmployee, async (req: any, res) => {
     
     try {
       const company = await storage.updateEmployeeCompany(req.params.id, req.body);
@@ -2592,13 +2363,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Leave company endpoint - updates status instead of deleting
-  app.post("/api/employee/leave-company/:relationId", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser || sessionUser.type !== "employee") {
-      return res.status(401).json({ message: "Not authenticated as employee" });
-    }
+  // Leave company endpoint - updates status instead of deleting - PROTECTED ROUTE
+  app.post("/api/employee/leave-company/:relationId", requireEmployee, async (req: any, res) => {
     
     try {
       // First check if this is from the new companyEmployees table
@@ -2606,7 +2372,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (companyRelation) {
         // Handle new table structure
-        const updatedRelation = await storage.leaveCompany(sessionUser.id, companyRelation.companyId);
+        const updatedRelation = await storage.leaveCompany(req.user.id, companyRelation.companyId);
         res.json({ message: "Successfully left the company", relation: updatedRelation });
       } else {
         // Handle old table - just mark as inactive
@@ -2619,25 +2385,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Work Diary Routes - Enhanced Professional Version
-  app.get("/api/work-entries", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser || sessionUser.type !== "employee") {
-      return res.status(401).json({ message: "Not authenticated as employee" });
-    }
+  // Work Diary Routes - Enhanced Professional Version - PROTECTED ROUTE
+  app.get("/api/work-entries", requireEmployee, async (req: any, res) => {
     
     try {
       // Check if employee exists (allow both active and inactive employees to view their data)
-      const employee = await storage.getEmployee(sessionUser.id);
+      const employee = await storage.getEmployee(req.user.id);
       if (!employee) {
         return res.status(404).json({ message: "Employee not found" });
       }
       
-      console.log(`Employee ${sessionUser.id} accessing work entries - Active: ${employee.isActive}`);
+      console.log(`Employee ${req.user.id} accessing work entries - Active: ${employee.isActive}`);
       
       const { companyId } = req.query;
-      const workEntries = await storage.getWorkEntries(sessionUser.id, companyId as string);
+      const workEntries = await storage.getWorkEntries(req.user.id, companyId as string);
       res.json(workEntries);
     } catch (error) {
       console.error("Get work entries error:", error);
@@ -2645,25 +2406,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Legacy work diary route for compatibility
-  app.get("/api/work-diary", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser || sessionUser.type !== "employee") {
-      return res.status(401).json({ message: "Not authenticated as employee" });
-    }
+  // Legacy work diary route for compatibility - PROTECTED ROUTE
+  app.get("/api/work-diary", requireEmployee, async (req: any, res) => {
     
     try {
       // Check if employee exists (allow both active and inactive employees to view their data)
-      const employee = await storage.getEmployee(sessionUser.id);
+      const employee = await storage.getEmployee(req.user.id);
       if (!employee) {
         return res.status(404).json({ message: "Employee not found" });
       }
       
-      console.log(`Employee ${sessionUser.id} accessing legacy work diary - Active: ${employee.isActive}`);
+      console.log(`Employee ${req.user.id} accessing legacy work diary - Active: ${employee.isActive}`);
       
       const { companyId } = req.query;
-      const workEntries = await storage.getWorkEntries(sessionUser.id, companyId as string);
+      const workEntries = await storage.getWorkEntries(req.user.id, companyId as string);
       res.json(workEntries);
     } catch (error) {
       console.error("Get work entries error:", error);
@@ -2671,22 +2427,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Enhanced work entry creation
-  app.post("/api/work-entries", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser || sessionUser.type !== "employee") {
-      return res.status(401).json({ message: "Not authenticated as employee" });
-    }
+  // Enhanced work entry creation - PROTECTED ROUTE
+  app.post("/api/work-entries", requireEmployee, async (req: any, res) => {
     
     try {
       const validatedData = insertWorkEntrySchema.parse({
         ...req.body,
-        employeeId: sessionUser.id
+        employeeId: req.user.id
       });
       
       // Check if employee is still active in the company
-      const employeeCompanies = await storage.getEmployeeCompanyRelations(sessionUser.id);
+      const employeeCompanies = await storage.getEmployeeCompanyRelations(req.user.id);
       const companyRelation = employeeCompanies.find(c => c.companyId === validatedData.companyId);
       
       if (!companyRelation || !companyRelation.isActive) {
@@ -2700,11 +2451,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Emit real-time update to company dashboard
       emitRealTimeUpdate('work-entry-created', {
         workEntry,
-        employeeId: sessionUser.id,
+        employeeId: req.user.id,
         companyId: validatedData.companyId
       }, [
         `company-${validatedData.companyId}`,
-        `user-${sessionUser.id}`
+        `user-${req.user.id}`
       ]);
       
       res.status(201).json(workEntry);
@@ -2722,18 +2473,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Legacy work diary creation for compatibility
-  app.post("/api/work-diary", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser || sessionUser.type !== "employee") {
-      return res.status(401).json({ message: "Not authenticated as employee" });
-    }
+  // Legacy work diary creation for compatibility - PROTECTED ROUTE
+  app.post("/api/work-diary", requireEmployee, async (req: any, res) => {
     
     try {
       const validatedData = insertWorkEntrySchema.parse({
         ...req.body,
-        employeeId: sessionUser.id
+        employeeId: req.user.id
       });
       
       const workEntry = await storage.createWorkEntry(validatedData);
@@ -2752,13 +2498,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Enhanced work entry update with immutable protection
-  app.put("/api/work-entries/:id", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser || sessionUser.type !== "employee") {
-      return res.status(401).json({ message: "Not authenticated as employee" });
-    }
+  // Enhanced work entry update with immutable protection - PROTECTED ROUTE
+  app.put("/api/work-entries/:id", requireEmployee, async (req: any, res) => {
     
     try {
       // First check if the work entry is approved (immutable)
@@ -2800,13 +2541,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Legacy work diary update for compatibility
-  app.patch("/api/work-diary/:id", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser || sessionUser.type !== "employee") {
-      return res.status(401).json({ message: "Not authenticated as employee" });
-    }
+  // Legacy work diary update for compatibility - PROTECTED ROUTE
+  app.patch("/api/work-diary/:id", requireEmployee, async (req: any, res) => {
     
     try {
       // First check if the work entry is approved (immutable)
@@ -2837,12 +2573,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/work-diary/:id", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser || sessionUser.type !== "employee") {
-      return res.status(401).json({ message: "Not authenticated as employee" });
-    }
+  app.delete("/api/work-diary/:id", requireEmployee, async (req: any, res) => {
     
     try {
       // First check if the work entry is approved (immutable)
@@ -2865,15 +2596,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Employee Analytics Routes
-  app.get("/api/employee/analytics/:employeeId?", async (req, res) => {
-    const sessionUser = (req.session as any).user;
+  // Employee Analytics Routes - PROTECTED ROUTE
+  app.get("/api/employee/analytics/:employeeId?", requireEmployee, async (req: any, res) => {
     
-    if (!sessionUser || sessionUser.type !== "employee") {
-      return res.status(401).json({ message: "Not authenticated as employee" });
-    }
-    
-    const employeeId = req.params.employeeId || sessionUser.id;
+    const employeeId = req.params.employeeId || req.user.id;
     
     try {
       const analytics = await storage.getEmployeeAnalytics(employeeId);
@@ -2884,25 +2610,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Work Entry Analytics Routes
-  app.get("/api/work-entries/analytics/:companyId?", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser || sessionUser.type !== "employee") {
-      return res.status(401).json({ message: "Not authenticated as employee" });
-    }
+  // Work Entry Analytics Routes - PROTECTED ROUTE
+  app.get("/api/work-entries/analytics/:companyId?", requireEmployee, async (req: any, res) => {
     
     try {
       // Check if employee exists (allow both active and inactive employees to view their analytics)
-      const employee = await storage.getEmployee(sessionUser.id);
+      const employee = await storage.getEmployee(req.user.id);
       if (!employee) {
         return res.status(404).json({ message: "Employee not found" });
       }
       
-      console.log(`Employee ${sessionUser.id} accessing work analytics - Active: ${employee.isActive}`);
+      console.log(`Employee ${req.user.id} accessing work analytics - Active: ${employee.isActive}`);
       
       const companyId = req.params.companyId;
-      const analytics = await storage.getWorkEntryAnalytics(sessionUser.id, companyId);
+      const analytics = await storage.getWorkEntryAnalytics(req.user.id, companyId);
       res.json(analytics);
     } catch (error) {
       console.error("Get work entry analytics error:", error);
@@ -2910,18 +2631,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Employee Companies Route
-  app.get("/api/employee/companies", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser || sessionUser.type !== "employee") {
-      return res.status(401).json({ message: "Not authenticated as employee" });
-    }
+  // Employee Companies Route - PROTECTED ROUTE
+  app.get("/api/employee/companies", requireEmployee, async (req: any, res) => {
     
     try {
       // Get companies from both old and new tables
-      const oldCompanies = await storage.getEmployeeCompanies(sessionUser.id);
-      const newCompanyRelations = await storage.getEmployeeCompanyRelations(sessionUser.id);
+      const oldCompanies = await storage.getEmployeeCompanies(req.user.id);
+      const newCompanyRelations = await storage.getEmployeeCompanyRelations(req.user.id);
       
       // Merge and return all companies
       const allCompanies = [...oldCompanies, ...newCompanyRelations];
@@ -2932,13 +2648,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Object Storage Routes
-  app.post("/api/objects/upload", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser) {
-      return res.status(401).json({ message: "Not authenticated" });
-    }
+  // Object Storage Routes - PROTECTED ROUTE
+  app.post("/api/objects/upload", requireAuth, async (req: any, res) => {
     
     try {
       const objectStorageService = new ObjectStorageService();
@@ -2950,13 +2661,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Profile picture update
-  app.put("/api/employee/profile-picture", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser || sessionUser.type !== "employee") {
-      return res.status(401).json({ message: "Not authenticated as employee" });
-    }
+  // Profile picture update - PROTECTED ROUTE
+  app.put("/api/employee/profile-picture", requireEmployee, async (req: any, res) => {
     
     if (!req.body.profilePictureURL) {
       return res.status(400).json({ error: "profilePictureURL is required" });
@@ -2969,7 +2675,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
 
       // Update employee profile picture
-      const updatedEmployee = await storage.updateEmployee(sessionUser.id, {
+      const updatedEmployee = await storage.updateEmployee(req.user.id, {
         profilePhoto: objectPath
       });
       
@@ -2985,18 +2691,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Company employee profile viewing routes
-  app.get("/api/company/employee/:employeeId", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser || sessionUser.type !== "company") {
-      return res.status(401).json({ message: "Not authenticated as company" });
-    }
+  // Company employee profile viewing routes - PROTECTED ROUTE
+  app.get("/api/company/employee/:employeeId", requireCompany, async (req: any, res) => {
     
     try {
       // Check if this employee is associated with the company (including job applications)
-      const employeeCompany = await storage.getEmployeeCompanyRelation(req.params.employeeId, sessionUser.id);
-      const hasJobApplication = await storage.hasEmployeeAppliedToCompany(req.params.employeeId, sessionUser.id);
+      const employeeCompany = await storage.getEmployeeCompanyRelation(req.params.employeeId, req.user.id);
+      const hasJobApplication = await storage.hasEmployeeAppliedToCompany(req.params.employeeId, req.user.id);
       
       if (!employeeCompany && !hasJobApplication) {
         return res.status(403).json({ message: "No access to this employee's profile" });
@@ -3016,17 +2717,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/company/employee/:employeeId/profile", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser || sessionUser.type !== "company") {
-      return res.status(401).json({ message: "Not authenticated as company" });
-    }
+  app.get("/api/company/employee/:employeeId/profile", requireCompany, async (req: any, res) => {
     
     try {
       // Check if this employee is associated with the company (including job applications)
-      const employeeCompany = await storage.getEmployeeCompanyRelation(req.params.employeeId, sessionUser.id);
-      const hasJobApplication = await storage.hasEmployeeAppliedToCompany(req.params.employeeId, sessionUser.id);
+      const employeeCompany = await storage.getEmployeeCompanyRelation(req.params.employeeId, req.user.id);
+      const hasJobApplication = await storage.hasEmployeeAppliedToCompany(req.params.employeeId, req.user.id);
       
       if (!employeeCompany && !hasJobApplication) {
         return res.status(403).json({ message: "No access to this employee's profile" });
@@ -3040,18 +2736,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Company employee experience routes
-  app.get("/api/company/employee-experience/:employeeId", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser || sessionUser.type !== "company") {
-      return res.status(401).json({ message: "Not authenticated as company" });
-    }
+  // Company employee experience routes - PROTECTED ROUTE
+  app.get("/api/company/employee-experience/:employeeId", requireCompany, async (req: any, res) => {
     
     try {
       // Check if this employee is associated with the company (including job applications)
-      const employeeCompany = await storage.getEmployeeCompanyRelation(req.params.employeeId, sessionUser.id);
-      const hasJobApplication = await storage.hasEmployeeAppliedToCompany(req.params.employeeId, sessionUser.id);
+      const employeeCompany = await storage.getEmployeeCompanyRelation(req.params.employeeId, req.user.id);
+      const hasJobApplication = await storage.hasEmployeeAppliedToCompany(req.params.employeeId, req.user.id);
       
       if (!employeeCompany && !hasJobApplication) {
         return res.status(403).json({ message: "No access to this employee's profile" });
@@ -3065,18 +2756,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Company employee education routes
-  app.get("/api/company/employee-education/:employeeId", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser || sessionUser.type !== "company") {
-      return res.status(401).json({ message: "Not authenticated as company" });
-    }
+  // Company employee education routes - PROTECTED ROUTE
+  app.get("/api/company/employee-education/:employeeId", requireCompany, async (req: any, res) => {
     
     try {
       // Check if this employee is associated with the company (including job applications)
-      const employeeCompany = await storage.getEmployeeCompanyRelation(req.params.employeeId, sessionUser.id);
-      const hasJobApplication = await storage.hasEmployeeAppliedToCompany(req.params.employeeId, sessionUser.id);
+      const employeeCompany = await storage.getEmployeeCompanyRelation(req.params.employeeId, req.user.id);
+      const hasJobApplication = await storage.hasEmployeeAppliedToCompany(req.params.employeeId, req.user.id);
       
       if (!employeeCompany && !hasJobApplication) {
         return res.status(403).json({ message: "No access to this employee's profile" });
@@ -3090,18 +2776,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Company employee certifications routes
-  app.get("/api/company/employee-certifications/:employeeId", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser || sessionUser.type !== "company") {
-      return res.status(401).json({ message: "Not authenticated as company" });
-    }
+  // Company employee certifications routes - PROTECTED ROUTE
+  app.get("/api/company/employee-certifications/:employeeId", requireCompany, async (req: any, res) => {
     
     try {
       // Check if this employee is associated with the company (including job applications)
-      const employeeCompany = await storage.getEmployeeCompanyRelation(req.params.employeeId, sessionUser.id);
-      const hasJobApplication = await storage.hasEmployeeAppliedToCompany(req.params.employeeId, sessionUser.id);
+      const employeeCompany = await storage.getEmployeeCompanyRelation(req.params.employeeId, req.user.id);
+      const hasJobApplication = await storage.hasEmployeeAppliedToCompany(req.params.employeeId, req.user.id);
       
       if (!employeeCompany && !hasJobApplication) {
         return res.status(403).json({ message: "No access to this employee's profile" });
@@ -3117,12 +2798,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // === JOB DISCOVERY ROUTES ===
   
-  // Search jobs with filters
-  app.get("/api/jobs/search", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    if (!sessionUser || sessionUser.type !== "employee") {
-      return res.status(401).json({ message: "Not authenticated as employee" });
-    }
+  // Search jobs with filters - PROTECTED ROUTE
+  app.get("/api/jobs/search", requireEmployee, async (req: any, res) => {
     
     try {
       const filters = {
@@ -3143,22 +2820,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Get perfect matches for employee (AI-powered recommendations)
-  app.get("/api/jobs/perfect-matches", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    if (!sessionUser || sessionUser.type !== "employee") {
-      return res.status(401).json({ message: "Not authenticated as employee" });
-    }
+  // Get perfect matches for employee (AI-powered recommendations) - PROTECTED ROUTE
+  app.get("/api/jobs/perfect-matches", requireEmployee, async (req: any, res) => {
     
     try {
       // Get employee profile for AI matching
-      const employee = await storage.getEmployee(sessionUser.id);
+      const employee = await storage.getEmployee(req.user.id);
       if (!employee) {
         return res.status(404).json({ message: "Employee profile not found" });
       }
 
       // Get work history for better matching
-      const workHistory = await storage.getWorkEntries(sessionUser.id);
+      const workHistory = await storage.getWorkEntries(req.user.id);
 
       // Build employee profile for AI analysis
       const employeeProfile: EmployeeProfile = {
@@ -3196,15 +2869,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Get employee's job applications (must come before /:jobId route)
-  app.get("/api/jobs/my-applications", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    if (!sessionUser || sessionUser.type !== "employee") {
-      return res.status(401).json({ message: "Not authenticated as employee" });
-    }
+  // Get employee's job applications (must come before /:jobId route) - PROTECTED ROUTE
+  app.get("/api/jobs/my-applications", requireEmployee, async (req: any, res) => {
     
     try {
-      const applications = await storage.getJobApplications(sessionUser.id);
+      const applications = await storage.getJobApplications(req.user.id);
       res.json(applications);
     } catch (error) {
       console.error("Get applications error:", error);
@@ -3212,15 +2881,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Get saved jobs (must come before /:jobId route)
-  app.get("/api/jobs/saved", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    if (!sessionUser || sessionUser.type !== "employee") {
-      return res.status(401).json({ message: "Not authenticated as employee" });
-    }
+  // Get saved jobs (must come before /:jobId route) - PROTECTED ROUTE
+  app.get("/api/jobs/saved", requireEmployee, async (req: any, res) => {
     
     try {
-      const savedJobs = await storage.getSavedJobs(sessionUser.id);
+      const savedJobs = await storage.getSavedJobs(req.user.id);
       res.json(savedJobs);
     } catch (error) {
       console.error("Get saved jobs error:", error);
@@ -3230,22 +2895,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // === AI JOB DISCOVERY ROUTES (must come before /:jobId route) ===
   
-  // Get AI-powered job recommendations
-  app.get("/api/jobs/ai-recommendations", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    if (!sessionUser || sessionUser.type !== "employee") {
-      return res.status(401).json({ message: "Not authenticated as employee" });
-    }
+  // Get AI-powered job recommendations - PROTECTED ROUTE
+  app.get("/api/jobs/ai-recommendations", requireEmployee, async (req: any, res) => {
     
     try {
       // Get employee profile for AI matching
-      const employee = await storage.getEmployee(sessionUser.id);
+      const employee = await storage.getEmployee(req.user.id);
       if (!employee) {
         return res.status(404).json({ message: "Employee profile not found" });
       }
 
       // Get work history for better matching
-      const workHistory = await storage.getWorkEntries(sessionUser.id);
+      const workHistory = await storage.getWorkEntries(req.user.id);
 
       // Build employee profile for AI analysis
       const employeeProfile: EmployeeProfile = {
@@ -3282,22 +2943,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get smart search suggestions for employee
-  app.get("/api/jobs/smart-search-suggestions", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    if (!sessionUser || sessionUser.type !== "employee") {
-      return res.status(401).json({ message: "Not authenticated as employee" });
-    }
+  // Get smart search suggestions for employee - PROTECTED ROUTE
+  app.get("/api/jobs/smart-search-suggestions", requireEmployee, async (req: any, res) => {
     
     try {
       // Get employee profile
-      const employee = await storage.getEmployee(sessionUser.id);
+      const employee = await storage.getEmployee(req.user.id);
       if (!employee) {
         return res.status(404).json({ message: "Employee profile not found" });
       }
 
       // Get work history for better suggestions
-      const workHistory = await storage.getWorkEntries(sessionUser.id);
+      const workHistory = await storage.getWorkEntries(req.user.id);
 
       // Build employee profile for AI analysis
       const employeeProfile: EmployeeProfile = {
@@ -3331,16 +2988,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Analyze specific job match for employee
-  app.get("/api/jobs/:jobId/ai-analysis", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    if (!sessionUser || sessionUser.type !== "employee") {
-      return res.status(401).json({ message: "Not authenticated as employee" });
-    }
+  // Analyze specific job match for employee - PROTECTED ROUTE
+  app.get("/api/jobs/:jobId/ai-analysis", requireEmployee, async (req: any, res) => {
     
     try {
       // Get employee profile
-      const employee = await storage.getEmployee(sessionUser.id);
+      const employee = await storage.getEmployee(req.user.id);
       if (!employee) {
         return res.status(404).json({ message: "Employee profile not found" });
       }
@@ -3352,7 +3005,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Get work history for better matching
-      const workHistory = await storage.getWorkEntries(sessionUser.id);
+      const workHistory = await storage.getWorkEntries(req.user.id);
 
       // Build employee profile for AI analysis
       const employeeProfile: EmployeeProfile = {
@@ -3401,12 +3054,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Get job by ID
-  app.get("/api/jobs/:jobId", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    if (!sessionUser || sessionUser.type !== "employee") {
-      return res.status(401).json({ message: "Not authenticated as employee" });
-    }
+  // Get job by ID - PROTECTED ROUTE
+  app.get("/api/jobs/:jobId", requireEmployee, async (req: any, res) => {
     
     try {
       const job = await storage.getJobById(req.params.jobId);
@@ -3420,16 +3069,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Apply for a job
-  app.post("/api/jobs/:jobId/apply", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    if (!sessionUser || sessionUser.type !== "employee") {
-      return res.status(401).json({ message: "Not authenticated as employee" });
-    }
+  // Apply for a job - PROTECTED ROUTE
+  app.post("/api/jobs/:jobId/apply", requireEmployee, async (req: any, res) => {
     
     try {
       const jobId = req.params.jobId;
-      const employeeId = sessionUser.id;
+      const employeeId = req.user.id;
       
       // Check for existing applications by this employee for ANY job at this company
       const job = await storage.getJobById(jobId);
@@ -3509,17 +3154,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Save/unsave a job
-  app.post("/api/jobs/:jobId/save", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    if (!sessionUser || sessionUser.type !== "employee") {
-      return res.status(401).json({ message: "Not authenticated as employee" });
-    }
+  // Save/unsave a job - PROTECTED ROUTE
+  app.post("/api/jobs/:jobId/save", requireEmployee, async (req: any, res) => {
     
     try {
       const saveData = insertSavedJobSchema.parse({
         jobId: req.params.jobId,
-        employeeId: sessionUser.id,
+        employeeId: req.user.id,
         notes: req.body.notes
       });
       
@@ -3538,14 +3179,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.delete("/api/jobs/:jobId/save", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    if (!sessionUser || sessionUser.type !== "employee") {
-      return res.status(401).json({ message: "Not authenticated as employee" });
-    }
+  app.delete("/api/jobs/:jobId/save", requireEmployee, async (req: any, res) => {
     
     try {
-      await storage.unsaveJob(sessionUser.id, req.params.jobId);
+      await storage.unsaveJob(req.user.id, req.params.jobId);
       res.json({ message: "Job unsaved successfully" });
     } catch (error) {
       console.error("Unsave job error:", error);
@@ -3555,15 +3192,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
 
   
-  // Job alerts management
-  app.get("/api/job-alerts", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    if (!sessionUser || sessionUser.type !== "employee") {
-      return res.status(401).json({ message: "Not authenticated as employee" });
-    }
+  // Job alerts management - PROTECTED ROUTE
+  app.get("/api/job-alerts", requireEmployee, async (req: any, res) => {
     
     try {
-      const alerts = await storage.getJobAlerts(sessionUser.id);
+      const alerts = await storage.getJobAlerts(req.user.id);
       res.json(alerts);
     } catch (error) {
       console.error("Get job alerts error:", error);
@@ -3571,16 +3204,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.post("/api/job-alerts", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    if (!sessionUser || sessionUser.type !== "employee") {
-      return res.status(401).json({ message: "Not authenticated as employee" });
-    }
+  app.post("/api/job-alerts", requireEmployee, async (req: any, res) => {
     
     try {
       const alertData = insertJobAlertSchema.parse({
         ...req.body,
-        employeeId: sessionUser.id
+        employeeId: req.user.id
       });
       
       const alert = await storage.createJobAlert(alertData);
@@ -3602,11 +3231,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.put("/api/job-alerts/:alertId", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    if (!sessionUser || sessionUser.type !== "employee") {
-      return res.status(401).json({ message: "Not authenticated as employee" });
-    }
+  app.put("/api/job-alerts/:alertId", requireEmployee, async (req: any, res) => {
     
     try {
       const alert = await storage.updateJobAlert(req.params.alertId, req.body);
@@ -3620,11 +3245,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.delete("/api/job-alerts/:alertId", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    if (!sessionUser || sessionUser.type !== "employee") {
-      return res.status(401).json({ message: "Not authenticated as employee" });
-    }
+  app.delete("/api/job-alerts/:alertId", requireEmployee, async (req: any, res) => {
     
     try {
       await storage.deleteJobAlert(req.params.alertId);
@@ -3637,12 +3258,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 
 
-  // Object storage routes for file uploads
-  app.post("/api/objects/upload", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    if (!sessionUser || sessionUser.type !== "employee") {
-      return res.status(401).json({ message: "Not authenticated as employee" });
-    }
+  // Object storage routes for file uploads - PROTECTED ROUTE
+  app.post("/api/objects/upload", requireEmployee, async (req: any, res) => {
     
     try {
       const objectStorageService = new ObjectStorageService();
@@ -3656,12 +3273,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // === COMPANY JOB MANAGEMENT ROUTES ===
   
-  // Company creates job listing
-  app.post("/api/company/jobs", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    if (!sessionUser || sessionUser.type !== "company") {
-      return res.status(401).json({ message: "Not authenticated as company" });
-    }
+  // Company creates job listing - PROTECTED ROUTE
+  app.post("/api/company/jobs", requireCompany, async (req: any, res) => {
     
     try {
       console.log("Received job data:", req.body);
@@ -3669,7 +3282,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Convert applicationDeadline string to Date if present
       const dataToValidate = {
         ...req.body,
-        companyId: sessionUser.id,
+        companyId: req.user.id,
         applicationDeadline: req.body.applicationDeadline ? new Date(req.body.applicationDeadline) : null
       };
       
@@ -3698,15 +3311,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Company gets their job listings
-  app.get("/api/company/jobs", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    if (!sessionUser || sessionUser.type !== "company") {
-      return res.status(401).json({ message: "Not authenticated as company" });
-    }
+  // Company gets their job listings - PROTECTED ROUTE
+  app.get("/api/company/jobs", requireCompany, async (req: any, res) => {
     
     try {
-      const jobs = await storage.getCompanyJobs(sessionUser.id);
+      const jobs = await storage.getCompanyJobs(req.user.id);
       res.json(jobs);
     } catch (error) {
       console.error("Get company jobs error:", error);
@@ -3714,17 +3323,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Company updates job listing
-  app.put("/api/company/jobs/:jobId", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    if (!sessionUser || sessionUser.type !== "company") {
-      return res.status(401).json({ message: "Not authenticated as company" });
-    }
+  // Company updates job listing - PROTECTED ROUTE
+  app.put("/api/company/jobs/:jobId", requireCompany, async (req: any, res) => {
     
     try {
       // First verify this job belongs to the company
       const existingJob = await storage.getJobById(req.params.jobId);
-      if (!existingJob || existingJob.companyId !== sessionUser.id) {
+      if (!existingJob || existingJob.companyId !== req.user.id) {
         return res.status(403).json({ message: "Access denied to this job" });
       }
       
@@ -3745,17 +3350,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Company deletes job listing
-  app.delete("/api/company/jobs/:jobId", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    if (!sessionUser || sessionUser.type !== "company") {
-      return res.status(401).json({ message: "Not authenticated as company" });
-    }
+  // Company deletes job listing - PROTECTED ROUTE
+  app.delete("/api/company/jobs/:jobId", requireCompany, async (req: any, res) => {
     
     try {
       // First verify this job belongs to the company
       const existingJob = await storage.getJobById(req.params.jobId);
-      if (!existingJob || existingJob.companyId !== sessionUser.id) {
+      if (!existingJob || existingJob.companyId !== req.user.id) {
         return res.status(403).json({ message: "Access denied to this job" });
       }
       
@@ -3767,17 +3368,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Company gets applications for a specific job
-  app.get("/api/company/jobs/:jobId/applications", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    if (!sessionUser || sessionUser.type !== "company") {
-      return res.status(401).json({ message: "Not authenticated as company" });
-    }
+  // Company gets applications for a specific job - PROTECTED ROUTE
+  app.get("/api/company/jobs/:jobId/applications", requireCompany, async (req: any, res) => {
     
     try {
       // First verify this job belongs to the company
       const job = await storage.getJobById(req.params.jobId);
-      if (!job || job.companyId !== sessionUser.id) {
+      if (!job || job.companyId !== req.user.id) {
         return res.status(403).json({ message: "Access denied to this job" });
       }
       
@@ -3789,12 +3386,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Legacy route - keep for compatibility
-  app.put("/api/company/applications/:applicationId", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    if (!sessionUser || sessionUser.type !== "company") {
-      return res.status(401).json({ message: "Not authenticated as company" });
-    }
+  // Legacy route - keep for compatibility - PROTECTED ROUTE
+  app.put("/api/company/applications/:applicationId", requireCompany, async (req: any, res) => {
     
     try {
       const { status, notes, companyNotes, interviewNotes } = req.body;
@@ -3829,15 +3422,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // === COMPANY RECRUITER ROUTES ===
   
-  // Get all job applications for a company
-  app.get("/api/company/applications", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    if (!sessionUser || sessionUser.type !== "company") {
-      return res.status(401).json({ message: "Not authenticated as company" });
-    }
+  // Get all job applications for a company - PROTECTED ROUTE
+  app.get("/api/company/applications", requireCompany, async (req: any, res) => {
     
     try {
-      const applications = await storage.getCompanyJobApplications(sessionUser.id);
+      const applications = await storage.getCompanyJobApplications(req.user.id);
       res.json(applications);
     } catch (error) {
       console.error("Get company applications error:", error);
@@ -3845,12 +3434,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Update application status
-  app.put("/api/company/applications/:applicationId", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    if (!sessionUser || sessionUser.type !== "company") {
-      return res.status(401).json({ message: "Not authenticated as company" });
-    }
+  // Update application status - PROTECTED ROUTE
+  app.put("/api/company/applications/:applicationId", requireCompany, async (req: any, res) => {
     
     try {
       const { status, companyNotes, interviewNotes, rejectionReason } = req.body;
@@ -3869,18 +3454,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Company Employee Privacy Routes - Read-only access with proper authorization
-  app.get("/api/company/employee/:employeeId", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser || sessionUser.type !== "company") {
-      return res.status(401).json({ message: "Not authenticated as company" });
-    }
+  // Company Employee Privacy Routes - Read-only access with proper authorization - PROTECTED ROUTE
+  app.get("/api/company/employee/:employeeId", requireCompany, async (req: any, res) => {
     
     try {
       // Verify the employee is associated with this company (including job applications)
-      const employeeCompany = await storage.getEmployeeCompanyRelation(req.params.employeeId, sessionUser.id);
-      const hasJobApplication = await storage.hasEmployeeAppliedToCompany(req.params.employeeId, sessionUser.id);
+      const employeeCompany = await storage.getEmployeeCompanyRelation(req.params.employeeId, req.user.id);
+      const hasJobApplication = await storage.hasEmployeeAppliedToCompany(req.params.employeeId, req.user.id);
       
 
       
@@ -3922,27 +3502,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/company/employee-work-entries/:employeeId", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser || sessionUser.type !== "company") {
-      return res.status(401).json({ message: "Not authenticated as company" });
-    }
+  app.get("/api/company/employee-work-entries/:employeeId", requireCompany, async (req: any, res) => {
     
     try {
       // Verify the employee is associated with this company (including job applications)
-      const employeeCompany = await storage.getEmployeeCompanyRelation(req.params.employeeId, sessionUser.id);
-      const hasJobApplication = await storage.hasEmployeeAppliedToCompany(req.params.employeeId, sessionUser.id);
+      const employeeCompany = await storage.getEmployeeCompanyRelation(req.params.employeeId, req.user.id);
+      const hasJobApplication = await storage.hasEmployeeAppliedToCompany(req.params.employeeId, req.user.id);
       
       if (!employeeCompany && !hasJobApplication) {
         return res.status(403).json({ message: "Employee not associated with your company" });
       }
       
       // Get work entries for this employee for this company only
-      const workEntries = await storage.getWorkEntriesForEmployeeAndCompany(req.params.employeeId, sessionUser.id);
+      const workEntries = await storage.getWorkEntriesForEmployeeAndCompany(req.params.employeeId, req.user.id);
       
       // Add company name to each entry
-      const company = await storage.getCompany(sessionUser.id);
+      const company = await storage.getCompany(req.user.id);
       const entriesWithCompany = workEntries.map((entry: any) => ({
         ...entry,
         companyName: company?.name || 'Unknown Company'
@@ -3955,12 +3530,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Get employee shared documents for a specific job application
-  app.get("/api/company/applications/:applicationId/shared-documents", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    if (!sessionUser || sessionUser.type !== "company") {
-      return res.status(401).json({ message: "Not authenticated as company" });
-    }
+  // Get employee shared documents for a specific job application - PROTECTED ROUTE
+  app.get("/api/company/applications/:applicationId/shared-documents", requireCompany, async (req: any, res) => {
     
     try {
       // First get the job application to verify ownership and check sharing preferences
@@ -3971,7 +3542,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Verify this application belongs to a job from this company
       const job = await storage.getJobById(application.jobId);
-      if (!job || job.companyId !== sessionUser.id) {
+      if (!job || job.companyId !== req.user.id) {
         return res.status(403).json({ message: "Unauthorized access to application" });
       }
       
@@ -4055,12 +3626,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Legacy endpoint for backward compatibility
-  app.get("/api/company/applications/:applicationId/employee", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    if (!sessionUser || sessionUser.type !== "company") {
-      return res.status(401).json({ message: "Not authenticated as company" });
-    }
+  // Legacy endpoint for backward compatibility - PROTECTED ROUTE
+  app.get("/api/company/applications/:applicationId/employee", requireCompany, async (req: any, res) => {
     
     try {
       const application = await storage.getJobApplicationWithEmployee(req.params.applicationId);
@@ -4105,11 +3672,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/employee/profile-picture", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    if (!sessionUser || sessionUser.type !== "employee") {
-      return res.status(401).json({ message: "Not authenticated as employee" });
-    }
+  app.put("/api/employee/profile-picture", requireEmployee, async (req: any, res) => {
 
     if (!req.body.profilePictureURL) {
       return res.status(400).json({ message: "profilePictureURL is required" });
@@ -4119,19 +3682,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const objectStorageService = new ObjectStorageService();
       
       // Get current employee data to check for existing profile picture
-      const currentEmployee = await storage.getEmployee(sessionUser.id);
+      const currentEmployee = await storage.getEmployee(req.user.id);
       const oldProfilePicturePath = currentEmployee?.profilePhoto;
 
       const objectPath = await objectStorageService.trySetObjectEntityAclPolicy(
         req.body.profilePictureURL,
         {
-          owner: sessionUser.id,
+          owner: req.user.id,
           visibility: "public",
         }
       );
 
       // Update database with new profile picture
-      await storage.updateEmployeeProfilePicture(sessionUser.id, objectPath);
+      await storage.updateEmployeeProfilePicture(req.user.id, objectPath);
 
       // Delete old profile picture if it exists and is different from the new one
       if (oldProfilePicturePath && oldProfilePicturePath !== objectPath && oldProfilePicturePath.startsWith("/objects/")) {
@@ -4340,13 +3903,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Change password endpoint
-  app.post("/api/auth/change-password", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser) {
-      return res.status(401).json({ message: "Not authenticated" });
-    }
+  // Change password endpoint - PROTECTED ROUTE
+  app.post("/api/auth/change-password", requireAuth, async (req: any, res) => {
 
     try {
       const validatedData = changePasswordSchema.parse(req.body);
@@ -4354,10 +3912,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       let success = false;
       
-      if (sessionUser.type === "employee") {
-        success = await storage.changeEmployeePassword(sessionUser.id, currentPassword, newPassword);
-      } else if (sessionUser.type === "company") {
-        success = await storage.changeCompanyPassword(sessionUser.id, currentPassword, newPassword);
+      if (req.user.type === "employee") {
+        success = await storage.changeEmployeePassword(req.user.id, currentPassword, newPassword);
+      } else if (req.user.type === "company") {
+        success = await storage.changeCompanyPassword(req.user.id, currentPassword, newPassword);
       } else {
         return res.status(400).json({ message: "Invalid account type" });
       }
@@ -4377,14 +3935,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Company email verification endpoint
+  // Company email verification endpoint - PROTECTED ROUTE
   // Update company email (only if not verified)
-  app.patch("/api/company/email", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser || sessionUser.type !== 'company') {
-      return res.status(401).json({ message: "Not authenticated as company" });
-    }
+  app.patch("/api/company/email", requireCompany, async (req: any, res) => {
 
     try {
       const { email } = req.body;
@@ -4393,7 +3946,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Valid email is required" });
       }
 
-      const company = await storage.getCompany(sessionUser.id);
+      const company = await storage.getCompany(req.user.id);
       if (!company) {
         return res.status(404).json({ message: "Company not found" });
       }
@@ -4428,16 +3981,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/company/send-verification", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser || sessionUser.type !== "company") {
-      return res.status(401).json({ message: "Not authenticated as company" });
-    }
+  app.post("/api/company/send-verification", requireCompany, async (req: any, res) => {
     
     try {
       // Get company data
-      const company = await storage.getCompany(sessionUser.id);
+      const company = await storage.getCompany(req.user.id);
       if (!company) {
         return res.status(404).json({ message: "Company not found" });
       }
@@ -4483,15 +4031,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Company verification routes
-  app.get("/api/company/verification-status", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    if (!sessionUser || sessionUser.type !== "company") {
-      return res.status(401).json({ message: "Not authenticated as company" });
-    }
+  // Company verification routes - PROTECTED ROUTE
+  app.get("/api/company/verification-status", requireCompany, async (req: any, res) => {
 
     try {
-      const company = await storage.getCompany(sessionUser.id);
+      const company = await storage.getCompany(req.user.id);
       if (!company) {
         return res.status(404).json({ message: "Company not found" });
       }
@@ -4513,16 +4057,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/company/request-verification", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    if (!sessionUser || sessionUser.type !== "company") {
-      return res.status(401).json({ message: "Not authenticated as company" });
-    }
+  app.post("/api/company/request-verification", requireCompany, async (req: any, res) => {
 
     try {
       const { notes } = req.body;
 
-      const company = await storage.getCompany(sessionUser.id);
+      const company = await storage.getCompany(req.user.id);
       if (!company) {
         return res.status(404).json({ message: "Company not found" });
       }
@@ -4537,7 +4077,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Update company verification status to pending
-      await storage.updateCompanyVerificationStatus(sessionUser.id, {
+      await storage.updateCompanyVerificationStatus(req.user.id, {
         verificationStatus: "pending",
         verificationMethod: "manual",
         verificationNotes: notes || null,
@@ -4664,13 +4204,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get all feedback (admin only)
-  app.get("/api/admin/feedback", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser || sessionUser.type !== "admin") {
-      return res.status(401).json({ message: "Not authenticated as admin" });
-    }
+  // Get all feedback (admin only) - PROTECTED ROUTE
+  app.get("/api/admin/feedback", requireAdmin, async (req: any, res) => {
     
     try {
       const { status, type } = req.query;
@@ -4691,13 +4226,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get feedback stats (admin only)
-  app.get("/api/admin/feedback/stats", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser || sessionUser.type !== "admin") {
-      return res.status(401).json({ message: "Not authenticated as admin" });
-    }
+  // Get feedback stats (admin only) - PROTECTED ROUTE
+  app.get("/api/admin/feedback/stats", requireAdmin, async (req: any, res) => {
     
     try {
       const stats = await storage.getFeedbackStats();
@@ -4708,13 +4238,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Update feedback status/respond (admin only)
-  app.patch("/api/admin/feedback/:id", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser || sessionUser.type !== "admin") {
-      return res.status(401).json({ message: "Not authenticated as admin" });
-    }
+  // Update feedback status/respond (admin only) - PROTECTED ROUTE  
+  app.patch("/api/admin/feedback/:id", requireAdmin, async (req: any, res) => {
     
     try {
       const { id } = req.params;
@@ -4724,7 +4249,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         id, 
         validatedData.status, 
         validatedData.adminResponse,
-        sessionUser.username || sessionUser.id
+        req.user.username || req.user.id
       );
       
       res.json({ 
@@ -4760,19 +4285,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Skills API Routes
-  app.get("/api/skills/trending", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser || sessionUser.type !== "employee") {
-      return res.status(401).json({ message: "Not authenticated as employee" });
-    }
+  // Skills API Routes - PROTECTED ROUTE
+  app.get("/api/skills/trending", requireEmployee, async (req: any, res) => {
     
     try {
       const { limit, location, role, experience, personalized } = req.query;
       
       if (personalized === 'true') {
-        const skills = await storage.getPersonalizedTrendingSkills(sessionUser.id, {
+        const skills = await storage.getPersonalizedTrendingSkills(req.user.id, {
           limit: limit ? parseInt(limit as string) : 20,
           location: location as string,
           role: role as string,
@@ -4794,19 +4314,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/skills/:skillId/pin", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser || sessionUser.type !== "employee") {
-      return res.status(401).json({ message: "Not authenticated as employee" });
-    }
+  app.post("/api/skills/:skillId/pin", requireEmployee, async (req: any, res) => {
     
     try {
-      const preference = await storage.pinSkill(sessionUser.id, req.params.skillId);
+      const preference = await storage.pinSkill(req.user.id, req.params.skillId);
       
       // Log analytics
       await storage.logSkillAnalytics({
-        userId: sessionUser.id,
+        userId: req.user.id,
         skillId: req.params.skillId,
         eventType: 'pin',
         context: {}
@@ -4819,19 +4334,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/skills/:skillId/hide", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser || sessionUser.type !== "employee") {
-      return res.status(401).json({ message: "Not authenticated as employee" });
-    }
+  app.post("/api/skills/:skillId/hide", requireEmployee, async (req: any, res) => {
     
     try {
-      const preference = await storage.hideSkill(sessionUser.id, req.params.skillId);
+      const preference = await storage.hideSkill(req.user.id, req.params.skillId);
       
       // Log analytics
       await storage.logSkillAnalytics({
-        userId: sessionUser.id,
+        userId: req.user.id,
         skillId: req.params.skillId,
         eventType: 'hide',
         context: {}
@@ -4844,16 +4354,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/skills/:skillId/view", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser || sessionUser.type !== "employee") {
-      return res.status(401).json({ message: "Not authenticated as employee" });
-    }
+  app.post("/api/skills/:skillId/view", requireEmployee, async (req: any, res) => {
     
     try {
       await storage.logSkillAnalytics({
-        userId: sessionUser.id,
+        userId: req.user.id,
         skillId: req.params.skillId,
         eventType: 'view',
         context: req.body.context || {}
@@ -4866,12 +4371,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/skills/search", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser || sessionUser.type !== "employee") {
-      return res.status(401).json({ message: "Not authenticated as employee" });
-    }
+  app.get("/api/skills/search", requireEmployee, async (req: any, res) => {
     
     try {
       const { q, limit } = req.query;
@@ -4888,15 +4388,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/skills/preferences", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    
-    if (!sessionUser || sessionUser.type !== "employee") {
-      return res.status(401).json({ message: "Not authenticated as employee" });
-    }
+  app.get("/api/skills/preferences", requireEmployee, async (req: any, res) => {
     
     try {
-      const preferences = await storage.getUserSkillPreferences(sessionUser.id);
+      const preferences = await storage.getUserSkillPreferences(req.user.id);
       res.json(preferences);
     } catch (error) {
       console.error("Get skill preferences error:", error);
@@ -4907,11 +4402,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 
   // OTP Email Verification Routes
-  app.post("/api/email-verification/send-otp", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    if (!sessionUser) {
-      return res.status(401).json({ message: "Not authenticated" });
-    }
+  app.post("/api/email-verification/send-otp", requireAuth, async (req: any, res) => {
 
     try {
       const { email } = req.body;
@@ -4920,9 +4411,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const result = await OTPEmailService.sendEmailVerificationOTP(
-        sessionUser.id,
+        req.user.id,
         email,
-        sessionUser.type
+        req.user.type
       );
 
       if (result.success) {
@@ -4936,11 +4427,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/email-verification/verify-otp", async (req, res) => {
-    const sessionUser = (req.session as any).user;
-    if (!sessionUser) {
-      return res.status(401).json({ message: "Not authenticated" });
-    }
+  app.post("/api/email-verification/verify-otp", requireAuth, async (req: any, res) => {
 
     try {
       const { email, otp } = req.body;
@@ -4952,7 +4439,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userAgent = req.get('User-Agent');
 
       const result = await OTPEmailService.verifyEmailOTP(
-        sessionUser.id,
+        req.user.id,
         email,
         otp,
         ipAddress,

@@ -1,27 +1,34 @@
 import { ArrowLeft } from "lucide-react";
-import { useLocation } from "wouter";
 import { useEffect, useState } from "react";
+import { useLocation } from "wouter";
 
 export default function PrivacyPolicy() {
   const [, setLocation] = useLocation();
   const [from, setFrom] = useState<string | null>(null);
 
   useEffect(() => {
-    // Get the 'from' parameter to know where to navigate back
+    // Check query parameters for the 'from' parameter
     const urlParams = new URLSearchParams(window.location.search);
     const fromParam = urlParams.get('from');
     setFrom(fromParam);
+
+    // Prefetch the registration page for instant navigation
+    if (fromParam === 'employee-registration' || fromParam === 'company-registration') {
+      // Preload the auth page for instant navigation
+      import('@/pages/auth').catch(() => {
+        // Silently fail if prefetch doesn't work
+      });
+    }
   }, []);
 
   const handleBack = () => {
-    // Navigate back to the specific registration form based on 'from' parameter
+    // Use instant client-side navigation
     if (from === 'employee-registration') {
       setLocation('/?view=employee-register');
     } else if (from === 'company-registration') {
       setLocation('/?view=company-register');
     } else {
-      // If no 'from' parameter, just go back in history
-      window.history.back();
+      setLocation('/');
     }
   };
 
