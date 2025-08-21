@@ -591,8 +591,8 @@ export default function AuthPage() {
         </header>
 
         <main className="flex-1 py-12 px-4 sm:px-6 lg:px-8">
-          <div className="max-w-md mx-auto">
-            <Card className="rounded-2xl shadow-xl">
+          <div className="max-w-2xl mx-auto">
+            <Card className="rounded-2xl shadow-xl min-h-[600px]">
               <CardContent className="p-8">
                 <div className="flex items-center mb-6">
                   <Button
@@ -933,8 +933,8 @@ export default function AuthPage() {
         </header>
 
         <main className="flex-1 py-12 px-4 sm:px-6 lg:px-8">
-          <div className="max-w-3xl mx-auto">
-            <Card className="rounded-2xl shadow-xl">
+          <div className="max-w-2xl mx-auto">
+            <Card className="rounded-2xl shadow-xl min-h-[600px]">
               <CardContent className="p-8">
                 <div className="flex items-center mb-6">
                   <Button
