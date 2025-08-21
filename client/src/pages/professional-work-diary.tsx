@@ -1019,7 +1019,7 @@ export default function ProfessionalWorkDiary() {
                     <FormItem>
                       <FormLabel>Category</FormLabel>
                       <FormControl>
-                        <Input {...field} placeholder="e.g., Development, Design, Management" />
+                        <Input {...field} value={field.value || ""} placeholder="e.g., Development, Design, Management" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -1033,7 +1033,7 @@ export default function ProfessionalWorkDiary() {
                     <FormItem>
                       <FormLabel>Project</FormLabel>
                       <FormControl>
-                        <Input {...field} placeholder="e.g., Mobile App v2.0" />
+                        <Input {...field} value={field.value || ""} placeholder="e.g., Mobile App v2.0" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -1047,7 +1047,7 @@ export default function ProfessionalWorkDiary() {
                     <FormItem>
                       <FormLabel>Client</FormLabel>
                       <FormControl>
-                        <Input {...field} placeholder="e.g., ABC Corporation" />
+                        <Input {...field} value={field.value || ""} placeholder="e.g., ABC Corporation" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -1110,6 +1110,7 @@ export default function ProfessionalWorkDiary() {
                           type="number" 
                           min="0" 
                           step="0.5"
+                          value={field.value?.toString() || ""}
                           onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
                           placeholder="0" 
                         />
@@ -1131,6 +1132,7 @@ export default function ProfessionalWorkDiary() {
                           type="number" 
                           min="0" 
                           step="0.5"
+                          value={field.value?.toString() || ""}
                           onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
                           placeholder="0" 
                         />
@@ -1147,7 +1149,7 @@ export default function ProfessionalWorkDiary() {
                     <FormItem className="flex flex-row items-start space-x-3 space-y-0">
                       <FormControl>
                         <Checkbox
-                          checked={field.value}
+                          checked={field.value || false}
                           onCheckedChange={field.onChange}
                         />
                       </FormControl>
@@ -1170,6 +1172,7 @@ export default function ProfessionalWorkDiary() {
                             {...field} 
                             type="number" 
                             min="0"
+                            value={field.value?.toString() || ""}
                             onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
                             placeholder="0" 
                           />
@@ -1190,6 +1193,7 @@ export default function ProfessionalWorkDiary() {
                     <FormControl>
                       <Textarea 
                         {...field} 
+                        value={field.value || ""}
                         rows={4}
                         placeholder="Detailed description of the work performed..."
                       />
@@ -1208,6 +1212,7 @@ export default function ProfessionalWorkDiary() {
                     <FormControl>
                       <Textarea 
                         {...field} 
+                        value={field.value || ""}
                         rows={3}
                         placeholder="What challenges did you encounter and how did you address them?"
                       />
@@ -1226,6 +1231,7 @@ export default function ProfessionalWorkDiary() {
                     <FormControl>
                       <Textarea 
                         {...field} 
+                        value={field.value || ""}
                         rows={3}
                         placeholder="What did you learn from this work? New skills, insights, etc."
                       />
