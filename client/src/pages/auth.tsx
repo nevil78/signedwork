@@ -17,6 +17,8 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { insertEmployeeSchema, insertCompanySchema, loginSchema, type InsertEmployee, type InsertCompany, type LoginData } from "@shared/schema";
 import { Link } from "wouter";
 import { PrefetchLink } from "@/components/PrefetchLink";
+import PrivacyPolicyModal from "@/components/PrivacyPolicyModal";
+import TermsOfServiceModal from "@/components/TermsOfServiceModal";
 
 type AuthView = "selection" | "employee" | "company" | "login" | "success" | "otp-verification" | "verification-pending" | "registration-success" | "employee-register" | "company-register";
 
@@ -100,6 +102,8 @@ export default function AuthPage() {
   const [otp, setOTP] = useState("");
   const [countdown, setCountdown] = useState(60); // 1 minute
   const [fieldErrors, setFieldErrors] = useState<Record<string, boolean>>({});
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
   const { toast } = useToast();
 
   // Handle URL view parameters dynamically
@@ -822,13 +826,21 @@ export default function AuthPage() {
                       />
                       <label htmlFor="terms" className="text-sm text-slate-600">
                         I agree to the{" "}
-                        <PrefetchLink href="/terms?from=employee-registration" className="text-primary hover:text-primary-dark">
+                        <button 
+                          type="button"
+                          onClick={() => setShowTermsModal(true)}
+                          className="text-primary hover:text-primary-dark underline"
+                        >
                           Terms of Service
-                        </PrefetchLink>{" "}
+                        </button>{" "}
                         and{" "}
-                        <PrefetchLink href="/privacy?from=employee-registration" className="text-primary hover:text-primary-dark">
+                        <button 
+                          type="button"
+                          onClick={() => setShowPrivacyModal(true)}
+                          className="text-primary hover:text-primary-dark underline"
+                        >
                           Privacy Policy
-                        </PrefetchLink>
+                        </button>
                       </label>
                     </div>
                     
@@ -886,6 +898,16 @@ export default function AuthPage() {
             </Card>
           </div>
         </main>
+        
+        {/* Legal Modals */}
+        <PrivacyPolicyModal 
+          isOpen={showPrivacyModal} 
+          onClose={() => setShowPrivacyModal(false)} 
+        />
+        <TermsOfServiceModal 
+          isOpen={showTermsModal} 
+          onClose={() => setShowTermsModal(false)} 
+        />
       </div>
     );
   }
@@ -1376,13 +1398,21 @@ export default function AuthPage() {
                       />
                       <label htmlFor="company-terms" className="text-sm text-slate-600">
                         I agree to the{" "}
-                        <PrefetchLink href="/terms?from=company-registration" className="text-primary hover:text-primary-dark">
+                        <button 
+                          type="button"
+                          onClick={() => setShowTermsModal(true)}
+                          className="text-primary hover:text-primary-dark underline"
+                        >
                           Terms of Service
-                        </PrefetchLink>{" "}
+                        </button>{" "}
                         and{" "}
-                        <PrefetchLink href="/privacy?from=company-registration" className="text-primary hover:text-primary-dark">
+                        <button 
+                          type="button"
+                          onClick={() => setShowPrivacyModal(true)}
+                          className="text-primary hover:text-primary-dark underline"
+                        >
                           Privacy Policy
-                        </PrefetchLink>
+                        </button>
                       </label>
                     </div>
                     
@@ -1415,6 +1445,16 @@ export default function AuthPage() {
             </Card>
           </div>
         </main>
+        
+        {/* Legal Modals */}
+        <PrivacyPolicyModal 
+          isOpen={showPrivacyModal} 
+          onClose={() => setShowPrivacyModal(false)} 
+        />
+        <TermsOfServiceModal 
+          isOpen={showTermsModal} 
+          onClose={() => setShowTermsModal(false)} 
+        />
       </div>
     );
   }
@@ -1996,6 +2036,16 @@ export default function AuthPage() {
         <p className="text-slate-600 mb-4">Loading...</p>
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
       </div>
+      
+      {/* Legal Modals */}
+      <PrivacyPolicyModal 
+        isOpen={showPrivacyModal} 
+        onClose={() => setShowPrivacyModal(false)} 
+      />
+      <TermsOfServiceModal 
+        isOpen={showTermsModal} 
+        onClose={() => setShowTermsModal(false)} 
+      />
     </div>
   );
 }
