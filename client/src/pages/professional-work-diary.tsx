@@ -1321,7 +1321,16 @@ export default function ProfessionalWorkDiary() {
                 >
                   Cancel
                 </Button>
-                <Button type="submit" disabled={workEntryMutation.isPending}>
+                <Button 
+                  type="submit" 
+                  disabled={workEntryMutation.isPending}
+                  onClick={() => {
+                    console.log('Create Entry button clicked!');
+                    console.log('Form state:', workEntryForm.formState);
+                    console.log('Form errors:', workEntryForm.formState.errors);
+                    console.log('Is valid:', workEntryForm.formState.isValid);
+                  }}
+                >
                   {workEntryMutation.isPending 
                     ? "Saving..." 
                     : editingEntry 
