@@ -275,35 +275,25 @@ export default function ProfessionalWorkDiary() {
     workEntryMutation.mutate(submissionData);
   };
 
-  // FIXED: Create/Update work entry mutation with comprehensive error handling
+  // Create/Update work entry mutation
   const workEntryMutation = useMutation({
     mutationFn: async (data: WorkEntryFormData) => {
-      console.log('=== MUTATION FUNCTION ===');
-      console.log('Mutation called with data:', data);
-
       // Final validation before API call
       if (!data.companyId) {
-        console.error('CompanyId missing in mutation');
         throw new Error('Company ID is required');
       }
 
       if (!data.title?.trim()) {
-        console.error('Title missing in mutation');
         throw new Error('Work title is required');
       }
 
       if (!data.startDate?.trim()) {
-        console.error('Start date missing in mutation');
         throw new Error('Start date is required');
       }
-
-      console.log('Making API request...');
       
       if (editingEntry) {
-        console.log('Updating existing entry:', editingEntry.id);
         return await apiRequest("PUT", `/api/work-entries/${editingEntry.id}`, data);
       } else {
-        console.log('Creating new entry');
         return await apiRequest("POST", "/api/work-entries", data);
       }
     },
@@ -312,7 +302,7 @@ export default function ProfessionalWorkDiary() {
       queryClient.invalidateQueries({ queryKey: ["/api/work-entries/analytics"] });
       setIsAddDialogOpen(false);
       setEditingEntry(null);
-      // Fix 4: Proper form reset with current company
+      // Proper form reset after success
       workEntryForm.reset({
         title: "",
         description: "",
@@ -332,7 +322,7 @@ export default function ProfessionalWorkDiary() {
         achievements: [],
         challenges: "",
         learnings: "",
-        companyId: "",
+        companyId: selectedCompany || "",
       });
       toast({
         title: editingEntry ? "Work entry updated" : "Work entry created",
@@ -340,7 +330,6 @@ export default function ProfessionalWorkDiary() {
       });
     },
     onError: (error: any) => {
-      console.error('Work entry submission error:', error);
       
       // Check if it's an immutable entry error (status 403)
       if (error.message?.includes("Cannot edit approved work entry") || error.message?.includes("immutable")) {
@@ -860,7 +849,7 @@ export default function ProfessionalWorkDiary() {
                                   size="sm"
                                   onClick={() => {
                                     setEditingEntry(entry);
-                                    // Fix 4: Proper form reset with company ID when editing
+                                    // Proper form reset with entry's original data when editing
                                     workEntryForm.reset({
                                       title: entry.title,
                                       description: entry.description || "",
@@ -880,7 +869,7 @@ export default function ProfessionalWorkDiary() {
                                       achievements: entry.achievements || [],
                                       challenges: entry.challenges || "",
                                       learnings: entry.learnings || "",
-                                      companyId: selectedCompany
+                                      companyId: entry.companyId // Use entry's original company ID
                                     });
                                     setIsAddDialogOpen(true);
                                   }}
