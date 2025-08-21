@@ -1605,7 +1605,7 @@ export default function AuthPage() {
             </div>
             
             {/* Sign Up Link - Outside the box, displayed below */}
-            <div className="text-center text-sm text-slate-600">
+            <div className={`text-center text-sm text-slate-600 ${loginForm.watch("accountType") === "employee" ? "mt-4" : "mt-0"}`}>
               Don't have an account?{" "}
               <Button 
                 variant="link" 
