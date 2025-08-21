@@ -46,7 +46,9 @@ interface FeedbackStats {
   total: number;
   new: number;
   inReview: number;
+  inProgress: number;
   resolved: number;
+  closed: number;
   byType: Record<string, number>;
 }
 
@@ -260,9 +262,9 @@ export default function AdminFeedback() {
           <TabsTrigger value="all">All ({allFeedback.length})</TabsTrigger>
           <TabsTrigger value="new">New ({stats?.new || 0})</TabsTrigger>
           <TabsTrigger value="in_review">In Review ({stats?.inReview || 0})</TabsTrigger>
-          <TabsTrigger value="in_progress">In Progress</TabsTrigger>
+          <TabsTrigger value="in_progress">In Progress ({stats?.inProgress || 0})</TabsTrigger>
           <TabsTrigger value="resolved">Resolved ({stats?.resolved || 0})</TabsTrigger>
-          <TabsTrigger value="closed">Closed</TabsTrigger>
+          <TabsTrigger value="closed">Closed ({stats?.closed || 0})</TabsTrigger>
         </TabsList>
 
         <TabsContent value={activeTab} className="space-y-4">

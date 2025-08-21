@@ -382,7 +382,9 @@ export interface IStorage {
     total: number;
     new: number;
     inReview: number;
+    inProgress: number;
     resolved: number;
+    closed: number;
     byType: Record<string, number>;
   }>;
 
@@ -2721,13 +2723,17 @@ export class DatabaseStorage implements IStorage {
     total: number;
     new: number;
     inReview: number;
+    inProgress: number;
     resolved: number;
+    closed: number;
     byType: Record<string, number>;
   }> {
     const [totalResult] = await db.select({ count: count() }).from(userFeedback);
     const [newResult] = await db.select({ count: count() }).from(userFeedback).where(eq(userFeedback.status, 'new'));
     const [reviewResult] = await db.select({ count: count() }).from(userFeedback).where(eq(userFeedback.status, 'in_review'));
+    const [progressResult] = await db.select({ count: count() }).from(userFeedback).where(eq(userFeedback.status, 'in_progress'));
     const [resolvedResult] = await db.select({ count: count() }).from(userFeedback).where(eq(userFeedback.status, 'resolved'));
+    const [closedResult] = await db.select({ count: count() }).from(userFeedback).where(eq(userFeedback.status, 'closed'));
     
     const typeResults = await db
       .select({
@@ -2746,7 +2752,9 @@ export class DatabaseStorage implements IStorage {
       total: totalResult.count,
       new: newResult.count,
       inReview: reviewResult.count,
+      inProgress: progressResult.count,
       resolved: resolvedResult.count,
+      closed: closedResult.count,
       byType
     };
   }
