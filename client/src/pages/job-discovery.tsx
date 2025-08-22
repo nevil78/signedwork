@@ -20,7 +20,7 @@ import {
   Briefcase, TrendingUp, Star, Users, ChevronRight,
   Heart, HeartHandshake, Zap, Target, Sparkles, Globe, 
   Paperclip, FileText, X, Menu, MoreVertical, Download,
-  CheckCircle, XCircle, Calendar, User, AlertCircle
+  CheckCircle, XCircle, Calendar, User, AlertCircle, Shield
 } from 'lucide-react';
 import type { JobListing, JobApplication, SavedJob, JobAlert } from '@shared/schema';
 import EmployeeNavHeader from '@/components/employee-nav-header';
@@ -1077,16 +1077,33 @@ export default function JobDiscoveryPage() {
                 </Label>
               </div>
               
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="include-work-diary"
-                  checked={includeWorkDiary}
-                  onCheckedChange={(checked) => setIncludeWorkDiary(checked === true)}
-                  data-testid="checkbox-include-work-diary"
-                />
-                <Label htmlFor="include-work-diary">
-                  Include my work diary as experience
-                </Label>
+              <div className="space-y-2">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="include-work-diary"
+                    checked={includeWorkDiary}
+                    onCheckedChange={(checked) => setIncludeWorkDiary(checked === true)}
+                    data-testid="checkbox-include-work-diary"
+                  />
+                  <Label htmlFor="include-work-diary">
+                    Include my work diary as experience
+                  </Label>
+                </div>
+                {includeWorkDiary && (
+                  <div className="ml-6 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                    <div className="flex items-start space-x-2">
+                      <Shield className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                      <div className="text-sm">
+                        <p className="text-blue-800 dark:text-blue-200 font-medium mb-1">
+                          🔒 Verified Entries Only
+                        </p>
+                        <p className="text-blue-700 dark:text-blue-300">
+                          Only your company-verified and immutable work entries will be shared. This ensures recruiters see authenticated work history.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 

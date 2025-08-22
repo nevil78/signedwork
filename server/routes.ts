@@ -3702,10 +3702,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ? await storage.getEmployeeProfile(application.employeeId)
         : null;
         
-      // Get work diary data if shared  
-      const workDiaryData = application.includeWorkDiary
-        ? await storage.getWorkEntries(application.employeeId)
-        : null;
+      // Get work diary data if shared - ONLY VERIFIED ENTRIES
+      let workDiaryData = null;
+      if (application.includeWorkDiary) {
+        const allWorkEntries = await storage.getWorkEntries(application.employeeId);
+        // Filter only verified/approved entries for security
+        workDiaryData = allWorkEntries.filter((entry: any) => entry.approvalStatus === "approved");
+      }
       
       res.json({
         application,
