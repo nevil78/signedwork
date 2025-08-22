@@ -17,7 +17,7 @@ import {
   Plus, Building2, Calendar as CalendarIcon, Clock, Edit, LogOut, User, BookOpen,
   Filter, Search, TrendingUp, DollarSign, Timer, Target, BarChart3,
   FileText, Tag, Briefcase, AlertCircle, CheckCircle, XCircle, Pause,
-  PlayCircle, Star, Award, Activity, PieChart, Clipboard, Shield
+  PlayCircle, Star, Award, Activity, PieChart, Clipboard, Shield, Loader2
 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -94,7 +94,7 @@ export default function ProfessionalWorkDiary() {
   };
 
   // Fetch user companies
-  const { data: companies } = useQuery<Company[]>({
+  const { data: companies, isLoading: companiesLoading } = useQuery<Company[]>({
     queryKey: ["/api/employee-companies"],
     refetchInterval: 30000, // Auto-refresh every 30 seconds
     refetchOnWindowFocus: true,
@@ -131,7 +131,7 @@ export default function ProfessionalWorkDiary() {
   }, [socket, currentUser?.id]);
 
   // Fetch work entries for selected company - FIXED: Using query parameter format
-  const { data: workEntries, isLoading } = useQuery<WorkEntry[]>({
+  const { data: workEntries, isLoading: workEntriesLoading } = useQuery<WorkEntry[]>({
     queryKey: ["/api/work-entries", selectedCompany],
     queryFn: async () => {
       if (!selectedCompany) return [];
@@ -150,7 +150,7 @@ export default function ProfessionalWorkDiary() {
   });
 
   // Analytics for the selected company - FIXED: Using query parameter format
-  const { data: analytics } = useQuery({
+  const { data: analytics, isLoading: analyticsLoading } = useQuery({
     queryKey: ["/api/work-entries/analytics", selectedCompany],
     queryFn: async () => {
       if (!selectedCompany) return {};
@@ -445,7 +445,27 @@ export default function ProfessionalWorkDiary() {
                 </div>
               </CardHeader>
               <CardContent>
-                {companies && companies.length > 0 ? (
+                {companiesLoading ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {[1, 2, 3].map((i) => (
+                      <Card key={i} className="border-2">
+                        <CardContent className="p-6 text-center">
+                          <div className="animate-pulse">
+                            <div className="flex justify-center items-center mb-4">
+                              <div className="h-12 w-12 bg-gray-200 rounded"></div>
+                              <div className="ml-2">
+                                <div className="h-4 w-16 bg-gray-200 rounded"></div>
+                              </div>
+                            </div>
+                            <div className="h-5 bg-gray-200 rounded w-3/4 mx-auto mb-2"></div>
+                            <div className="h-3 bg-gray-200 rounded w-1/2 mx-auto mb-1"></div>
+                            <div className="h-4 bg-gray-200 rounded w-2/3 mx-auto"></div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                ) : companies && companies.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {companies.map((company) => (
                       <Card 
@@ -579,53 +599,72 @@ export default function ProfessionalWorkDiary() {
 
               {/* Analytics Cards */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-                <Card>
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm text-gray-600">Total Entries</p>
-                        <p className="text-2xl font-bold">{(analytics as any)?.totalEntries || workEntries?.length || 0}</p>
-                      </div>
-                      <FileText className="h-8 w-8 text-blue-500" />
-                    </div>
-                  </CardContent>
-                </Card>
+                {analyticsLoading ? (
+                  // Loading skeleton for analytics
+                  Array.from({ length: 4 }).map((_, i) => (
+                    <Card key={i}>
+                      <CardContent className="p-6">
+                        <div className="flex items-center justify-between">
+                          <div className="animate-pulse">
+                            <div className="h-4 bg-gray-200 rounded w-20 mb-2"></div>
+                            <div className="h-8 bg-gray-200 rounded w-16"></div>
+                          </div>
+                          <div className="h-8 w-8 bg-gray-200 rounded"></div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))
+                ) : (
+                  <>
+                    <Card>
+                      <CardContent className="p-6">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm text-gray-600">Total Entries</p>
+                            <p className="text-2xl font-bold">{(analytics as any)?.totalEntries || workEntries?.length || 0}</p>
+                          </div>
+                          <FileText className="h-8 w-8 text-blue-500" />
+                        </div>
+                      </CardContent>
+                    </Card>
 
-                <Card>
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm text-gray-600">Hours Logged</p>
-                        <p className="text-2xl font-bold">{(analytics as any)?.totalHours || 0}h</p>
-                      </div>
-                      <Timer className="h-8 w-8 text-green-500" />
-                    </div>
-                  </CardContent>
-                </Card>
+                    <Card>
+                      <CardContent className="p-6">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm text-gray-600">Hours Logged</p>
+                            <p className="text-2xl font-bold">{(analytics as any)?.totalHours || 0}h</p>
+                          </div>
+                          <Timer className="h-8 w-8 text-green-500" />
+                        </div>
+                      </CardContent>
+                    </Card>
 
-                <Card>
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm text-gray-600">Billable Hours</p>
-                        <p className="text-2xl font-bold">{(analytics as any)?.billableHours || 0}h</p>
-                      </div>
-                      <DollarSign className="h-8 w-8 text-yellow-500" />
-                    </div>
-                  </CardContent>
-                </Card>
+                    <Card>
+                      <CardContent className="p-6">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm text-gray-600">Billable Hours</p>
+                            <p className="text-2xl font-bold">{(analytics as any)?.billableHours || 0}h</p>
+                          </div>
+                          <DollarSign className="h-8 w-8 text-yellow-500" />
+                        </div>
+                      </CardContent>
+                    </Card>
 
-                <Card>
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm text-gray-600">Completion Rate</p>
-                        <p className="text-2xl font-bold">{(analytics as any)?.completionRate || 0}%</p>
-                      </div>
-                      <Target className="h-8 w-8 text-purple-500" />
-                    </div>
-                  </CardContent>
-                </Card>
+                    <Card>
+                      <CardContent className="p-6">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm text-gray-600">Completion Rate</p>
+                            <p className="text-2xl font-bold">{(analytics as any)?.completionRate || 0}%</p>
+                          </div>
+                          <Target className="h-8 w-8 text-purple-500" />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </>
+                )}
               </div>
             </div>
 
@@ -682,10 +721,44 @@ export default function ProfessionalWorkDiary() {
 
             {/* Work Entries List */}
             <div className="space-y-4">
-              {isLoading ? (
-                <div className="text-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-                  <p className="text-gray-600">Loading work entries...</p>
+              {workEntriesLoading ? (
+                <div className="space-y-4">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <Card key={i} className="hover:shadow-lg transition-shadow">
+                      <CardContent className="p-6">
+                        <div className="animate-pulse">
+                          <div className="flex items-start justify-between mb-4">
+                            <div className="flex-1">
+                              <div className="flex items-center space-x-3 mb-3">
+                                <div className="h-6 bg-gray-200 rounded w-48"></div>
+                                <div className="h-5 bg-gray-200 rounded w-20"></div>
+                                <div className="h-5 bg-gray-200 rounded w-16"></div>
+                              </div>
+                              <div className="h-4 bg-gray-200 rounded w-full mb-2"></div>
+                              <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                            </div>
+                            <div className="flex space-x-2">
+                              <div className="h-8 w-8 bg-gray-200 rounded"></div>
+                              <div className="h-8 w-8 bg-gray-200 rounded"></div>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                            {Array.from({ length: 4 }).map((_, j) => (
+                              <div key={j}>
+                                <div className="h-3 bg-gray-200 rounded w-16 mb-1"></div>
+                                <div className="h-4 bg-gray-200 rounded w-20"></div>
+                              </div>
+                            ))}
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            {Array.from({ length: 3 }).map((_, j) => (
+                              <div key={j} className="h-6 bg-gray-200 rounded w-16"></div>
+                            ))}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
                 </div>
               ) : displayEntries.length > 0 ? (
                 displayEntries.map((entry) => {
@@ -1414,6 +1487,9 @@ export default function ProfessionalWorkDiary() {
                     onSubmit(formData);
                   }}
                 >
+                  {workEntryMutation.isPending && (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  )}
                   {workEntryMutation.isPending 
                     ? "Saving..." 
                     : editingEntry 
@@ -1469,6 +1545,9 @@ export default function ProfessionalWorkDiary() {
                   Cancel
                 </Button>
                 <Button type="submit" disabled={joinCompanyMutation.isPending}>
+                  {joinCompanyMutation.isPending && (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  )}
                   {joinCompanyMutation.isPending ? "Joining..." : "Join Company"}
                 </Button>
               </div>
