@@ -26,7 +26,12 @@ import {
   Trash2,
   Eye,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  Search,
+  Filter,
+  SortAsc,
+  SortDesc,
+  X
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -41,6 +46,16 @@ export default function CompanyHierarchy() {
   const [selectedEmployee, setSelectedEmployee] = useState<any>(null);
   const [selectedBranch, setSelectedBranch] = useState<any>(null);
   const [selectedTeam, setSelectedTeam] = useState<any>(null);
+  
+  // Search and filtering state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterRole, setFilterRole] = useState("all");
+  const [filterBranch, setFilterBranch] = useState("all");
+  const [filterTeam, setFilterTeam] = useState("all");
+  const [filterVerification, setFilterVerification] = useState("all");
+  const [sortBy, setSortBy] = useState("name");
+  const [sortOrder, setSortOrder] = useState("asc");
+  
   const [newBranch, setNewBranch] = useState({
     name: "",
     location: "",
@@ -336,6 +351,113 @@ export default function CompanyHierarchy() {
     if (userEmployee.hierarchyRole === 'team_lead' && userEmployee.teamId === team.id) return true;
     
     return false;
+  };
+
+  // Search and filtering functions
+  const getFilteredEmployees = () => {
+    if (!Array.isArray(employees)) return [];
+    
+    let filtered = employees.filter((emp: any) => {
+      // Text search
+      if (searchQuery) {
+        const searchLower = searchQuery.toLowerCase();
+        const fullName = `${emp.employee?.firstName} ${emp.employee?.lastName}`.toLowerCase();
+        const position = emp.position?.toLowerCase() || "";
+        const email = emp.employee?.email?.toLowerCase() || "";
+        
+        if (!fullName.includes(searchLower) && 
+            !position.includes(searchLower) && 
+            !email.includes(searchLower)) {
+          return false;
+        }
+      }
+      
+      // Role filter
+      if (filterRole !== "all" && emp.hierarchyRole !== filterRole) {
+        return false;
+      }
+      
+      // Branch filter
+      if (filterBranch !== "all") {
+        if (filterBranch === "headquarters" && emp.branchId) {
+          return false;
+        }
+        if (filterBranch !== "headquarters" && emp.branchId !== filterBranch) {
+          return false;
+        }
+      }
+      
+      // Team filter
+      if (filterTeam !== "all") {
+        if (filterTeam === "no_team" && emp.teamId) {
+          return false;
+        }
+        if (filterTeam !== "no_team" && emp.teamId !== filterTeam) {
+          return false;
+        }
+      }
+      
+      // Verification filter
+      if (filterVerification !== "all") {
+        if (filterVerification === "can_verify" && !emp.canVerifyWork) {
+          return false;
+        }
+        if (filterVerification === "cannot_verify" && emp.canVerifyWork) {
+          return false;
+        }
+      }
+      
+      return true;
+    });
+    
+    // Sorting
+    filtered.sort((a: any, b: any) => {
+      let aValue, bValue;
+      
+      switch (sortBy) {
+        case "name":
+          aValue = `${a.employee?.firstName} ${a.employee?.lastName}`.toLowerCase();
+          bValue = `${b.employee?.firstName} ${b.employee?.lastName}`.toLowerCase();
+          break;
+        case "role":
+          aValue = a.hierarchyRole || "";
+          bValue = b.hierarchyRole || "";
+          break;
+        case "position":
+          aValue = a.position || "";
+          bValue = b.position || "";
+          break;
+        case "branch":
+          aValue = a.branchId ? (Array.isArray(branches) ? branches.find((br: any) => br.id === a.branchId)?.name || "" : "") : "Headquarters";
+          bValue = b.branchId ? (Array.isArray(branches) ? branches.find((br: any) => br.id === b.branchId)?.name || "" : "") : "Headquarters";
+          break;
+        case "team":
+          aValue = a.teamId ? (Array.isArray(teams) ? teams.find((t: any) => t.id === a.teamId)?.name || "" : "") : "";
+          bValue = b.teamId ? (Array.isArray(teams) ? teams.find((t: any) => t.id === b.teamId)?.name || "" : "") : "";
+          break;
+        default:
+          aValue = a[sortBy] || "";
+          bValue = b[sortBy] || "";
+      }
+      
+      if (sortOrder === "asc") {
+        return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+      } else {
+        return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
+      }
+    });
+    
+    return filtered;
+  };
+
+  const clearFilters = () => {
+    setSearchQuery("");
+    setFilterRole("all");
+    setFilterBranch("all");
+    setFilterTeam("all");
+    setFilterVerification("all");
+    setSortBy("name");
+    setSortOrder("asc");
   };
 
   const getRoleIcon = (role: string) => {
@@ -938,11 +1060,141 @@ export default function CompanyHierarchy() {
               </CardDescription>
             </CardHeader>
             <CardContent>
+              {/* Search and Filter Controls */}
+              <div className="space-y-4 mb-6" data-testid="employee-search-filters">
+                {/* Search Bar */}
+                <div className="relative">
+                  <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search employees by name, position, or email..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10 pr-10"
+                    data-testid="employee-search-input"
+                  />
+                  {searchQuery && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setSearchQuery("")}
+                      className="absolute right-1 top-1 h-8 w-8 p-0"
+                      data-testid="clear-search"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+
+                {/* Filter Controls */}
+                <div className="flex flex-wrap gap-4">
+                  <div className="flex items-center gap-2">
+                    <Filter className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">Filters:</span>
+                  </div>
+                  
+                  <Select value={filterRole} onValueChange={setFilterRole}>
+                    <SelectTrigger className="w-[140px]" data-testid="filter-role">
+                      <SelectValue placeholder="All Roles" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Roles</SelectItem>
+                      <SelectItem value="employee">Employee</SelectItem>
+                      <SelectItem value="team_lead">Team Lead</SelectItem>
+                      <SelectItem value="branch_manager">Branch Manager</SelectItem>
+                      <SelectItem value="company_admin">Company Admin</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Select value={filterBranch} onValueChange={setFilterBranch}>
+                    <SelectTrigger className="w-[160px]" data-testid="filter-branch">
+                      <SelectValue placeholder="All Branches" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Locations</SelectItem>
+                      <SelectItem value="headquarters">Headquarters</SelectItem>
+                      {Array.isArray(branches) && branches.map((branch: any) => (
+                        <SelectItem key={branch.id} value={branch.id}>
+                          {branch.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  <Select value={filterTeam} onValueChange={setFilterTeam}>
+                    <SelectTrigger className="w-[140px]" data-testid="filter-team">
+                      <SelectValue placeholder="All Teams" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Teams</SelectItem>
+                      <SelectItem value="no_team">No Team</SelectItem>
+                      {Array.isArray(teams) && teams.map((team: any) => (
+                        <SelectItem key={team.id} value={team.id}>
+                          {team.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  <Select value={filterVerification} onValueChange={setFilterVerification}>
+                    <SelectTrigger className="w-[160px]" data-testid="filter-verification">
+                      <SelectValue placeholder="All Verifiers" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Employees</SelectItem>
+                      <SelectItem value="can_verify">Can Verify</SelectItem>
+                      <SelectItem value="cannot_verify">Cannot Verify</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Sort Controls and Clear */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-muted-foreground">Sort by:</span>
+                      <Select value={sortBy} onValueChange={setSortBy}>
+                        <SelectTrigger className="w-[120px]" data-testid="sort-by">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="name">Name</SelectItem>
+                          <SelectItem value="role">Role</SelectItem>
+                          <SelectItem value="position">Position</SelectItem>
+                          <SelectItem value="branch">Branch</SelectItem>
+                          <SelectItem value="team">Team</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
+                        data-testid="sort-order"
+                      >
+                        {sortOrder === "asc" ? <SortAsc className="h-4 w-4" /> : <SortDesc className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                    
+                    <div className="text-sm text-muted-foreground">
+                      {getFilteredEmployees().length} of {Array.isArray(employees) ? employees.length : 0} employees
+                    </div>
+                  </div>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={clearFilters}
+                    data-testid="clear-filters"
+                  >
+                    Clear Filters
+                  </Button>
+                </div>
+              </div>
+
               {employeesLoading ? (
                 <div className="text-center py-4" data-testid="employees-loading">Loading employees...</div>
-              ) : Array.isArray(employees) && employees.length > 0 ? (
+              ) : getFilteredEmployees().length > 0 ? (
                 <div className="space-y-3" data-testid="employees-list">
-                  {employees.map((emp: any) => (
+                  {getFilteredEmployees().map((emp: any) => (
                     <div key={emp.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors" data-testid={`employee-${emp.id}`}>
                       <div className="flex items-center gap-4">
                         {getRoleIcon(emp.hierarchyRole)}
@@ -966,12 +1218,12 @@ export default function CompanyHierarchy() {
                           <div className="flex flex-col items-end">
                             <span>
                               {emp.branchId ? 
-                                branches?.find((b: any) => b.id === emp.branchId)?.name || "Unknown Branch" 
+                                (Array.isArray(branches) ? branches.find((b: any) => b.id === emp.branchId)?.name || "Unknown Branch" : "Unknown Branch")
                                 : "Headquarters"}
                             </span>
                             {emp.teamId && (
                               <span className="text-xs">
-                                Team: {teams?.find((t: any) => t.id === emp.teamId)?.name || "Unknown Team"}
+                                Team: {Array.isArray(teams) ? teams.find((t: any) => t.id === emp.teamId)?.name || "Unknown Team" : "Unknown Team"}
                               </span>
                             )}
                           </div>
@@ -1000,7 +1252,10 @@ export default function CompanyHierarchy() {
                 </div>
               ) : (
                 <div className="text-center py-8 text-muted-foreground" data-testid="no-employees">
-                  No employees found. Invite employees to join your company first.
+                  {Array.isArray(employees) && employees.length > 0 ? 
+                    "No employees match your search criteria. Try adjusting your filters." :
+                    "No employees found. Invite employees to join your company first."
+                  }
                 </div>
               )}
             </CardContent>
