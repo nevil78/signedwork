@@ -4107,6 +4107,43 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  async getCompanyWorkEntries(companyId: string): Promise<any[]> {
+    try {
+      const query = db
+        .select({
+          id: workEntries.id,
+          employeeId: workEntries.employeeId,
+          title: workEntries.title,
+          description: workEntries.description,
+          date: workEntries.date,
+          hoursWorked: workEntries.hoursWorked,
+          category: workEntries.category,
+          status: workEntries.status,
+          verificationNote: workEntries.verificationNote,
+          verifiedBy: workEntries.verifiedBy,
+          verifiedByRole: workEntries.verifiedByRole,
+          verifiedByName: workEntries.verifiedByName,
+          createdAt: workEntries.createdAt,
+          updatedAt: workEntries.updatedAt,
+          employee: {
+            firstName: employees.firstName,
+            lastName: employees.lastName,
+            email: employees.email
+          }
+        })
+        .from(workEntries)
+        .leftJoin(employees, eq(workEntries.employeeId, employees.id))
+        .leftJoin(companyEmployees, eq(workEntries.employeeId, companyEmployees.employeeId))
+        .where(eq(companyEmployees.companyId, companyId))
+        .orderBy(desc(workEntries.date));
+
+      return await query;
+    } catch (error) {
+      console.error('Error fetching company work entries:', error);
+      throw new Error('Failed to fetch company work entries');
+    }
+  }
+
   async getPendingWorkVerifications(userId: string): Promise<any[]> {
     try {
       // Get user's company employee relation to determine verification scope
@@ -4176,10 +4213,147 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  async getCompanyPendingVerifications(companyId: string): Promise<any[]> {
+    try {
+      const query = db
+        .select({
+          id: workEntries.id,
+          employeeId: workEntries.employeeId,
+          title: workEntries.title,
+          description: workEntries.description,
+          date: workEntries.date,
+          hoursWorked: workEntries.hoursWorked,
+          category: workEntries.category,
+          status: workEntries.status,
+          createdAt: workEntries.createdAt,
+          employee: {
+            firstName: employees.firstName,
+            lastName: employees.lastName,
+            email: employees.email
+          }
+        })
+        .from(workEntries)
+        .leftJoin(employees, eq(workEntries.employeeId, employees.id))
+        .leftJoin(companyEmployees, eq(workEntries.employeeId, companyEmployees.employeeId))
+        .where(and(
+          eq(workEntries.status, 'pending'),
+          eq(companyEmployees.companyId, companyId)
+        ))
+        .orderBy(desc(workEntries.createdAt));
+
+      return await query;
+    } catch (error) {
+      console.error('Error fetching company pending verifications:', error);
+      throw new Error('Failed to fetch company pending verifications');
+    }
+  }
+
+  async canEmployeeVerifyWork(employeeId: string, workEntryId: string): Promise<boolean> {
+    try {
+      // Check if employee has verification permissions in hierarchy
+      const employeeRole = await db
+        .select({
+          hierarchyRole: companyEmployees.hierarchyRole,
+          canVerifyWork: companyEmployees.canVerifyWork,
+          companyId: companyEmployees.companyId,
+          branchId: companyEmployees.branchId,
+          teamId: companyEmployees.teamId
+        })
+        .from(companyEmployees)
+        .where(eq(companyEmployees.employeeId, employeeId))
+        .limit(1);
+
+      if (!employeeRole.length || !employeeRole[0].canVerifyWork) {
+        return false;
+      }
+
+      // Get work entry details to check if it's in their scope
+      const workEntry = await db
+        .select({
+          employeeId: workEntries.employeeId
+        })
+        .from(workEntries)
+        .where(eq(workEntries.id, workEntryId))
+        .limit(1);
+
+      if (!workEntry.length) {
+        return false;
+      }
+
+      // Get work entry employee's hierarchy info
+      const entryEmployeeRole = await db
+        .select({
+          companyId: companyEmployees.companyId,
+          branchId: companyEmployees.branchId,
+          teamId: companyEmployees.teamId
+        })
+        .from(companyEmployees)
+        .where(eq(companyEmployees.employeeId, workEntry[0].employeeId))
+        .limit(1);
+
+      if (!entryEmployeeRole.length) {
+        return false;
+      }
+
+      const verifier = employeeRole[0];
+      const entryEmployee = entryEmployeeRole[0];
+
+      // Check scope based on hierarchy role
+      if (verifier.hierarchyRole === 'company_admin' && verifier.companyId === entryEmployee.companyId) {
+        return true;
+      } else if (verifier.hierarchyRole === 'branch_manager' && 
+                 verifier.companyId === entryEmployee.companyId && 
+                 verifier.branchId === entryEmployee.branchId) {
+        return true;
+      } else if (verifier.hierarchyRole === 'team_lead' && 
+                 verifier.companyId === entryEmployee.companyId && 
+                 verifier.branchId === entryEmployee.branchId && 
+                 verifier.teamId === entryEmployee.teamId) {
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      console.error('Error checking employee verification permission:', error);
+      return false;
+    }
+  }
+
+  async canCompanyVerifyWork(companyId: string, workEntryId: string): Promise<boolean> {
+    try {
+      // Get work entry details
+      const workEntry = await db
+        .select({
+          employeeId: workEntries.employeeId
+        })
+        .from(workEntries)
+        .where(eq(workEntries.id, workEntryId))
+        .limit(1);
+
+      if (!workEntry.length) {
+        return false;
+      }
+
+      // Check if work entry employee belongs to this company
+      const employeeCompany = await db
+        .select({
+          companyId: companyEmployees.companyId
+        })
+        .from(companyEmployees)
+        .where(eq(companyEmployees.employeeId, workEntry[0].employeeId))
+        .limit(1);
+
+      return employeeCompany.length > 0 && employeeCompany[0].companyId === companyId;
+    } catch (error) {
+      console.error('Error checking company verification permission:', error);
+      return false;
+    }
+  }
+
   async verifyWorkEntry(verifierId: string, workEntryId: string, action: string, note: string): Promise<any> {
     try {
-      // Get verifier details
-      const verifier = await db
+      // Check if verifier is an employee or company
+      const employeeVerifier = await db
         .select({
           employee: {
             firstName: employees.firstName,
@@ -4192,12 +4366,29 @@ export class DatabaseStorage implements IStorage {
         .where(eq(companyEmployees.employeeId, verifierId))
         .limit(1);
 
-      if (!verifier.length) {
-        throw new Error('Verifier not found');
-      }
+      let verifierName = 'Unknown';
+      let verifierRole = 'unknown';
 
-      const verifierInfo = verifier[0];
-      const verifierName = `${verifierInfo.employee?.firstName} ${verifierInfo.employee?.lastName}`;
+      if (employeeVerifier.length > 0) {
+        // Verifier is an employee
+        const verifierInfo = employeeVerifier[0];
+        verifierName = `${verifierInfo.employee?.firstName} ${verifierInfo.employee?.lastName}`;
+        verifierRole = verifierInfo.hierarchyRole || 'employee';
+      } else {
+        // Check if verifier is a company
+        const companyVerifier = await db
+          .select({
+            name: companies.name
+          })
+          .from(companies)
+          .where(eq(companies.id, verifierId))
+          .limit(1);
+
+        if (companyVerifier.length > 0) {
+          verifierName = companyVerifier[0].name || 'Company Admin';
+          verifierRole = 'company_admin';
+        }
+      }
 
       // Update work entry
       const [updatedEntry] = await db
@@ -4205,7 +4396,7 @@ export class DatabaseStorage implements IStorage {
         .set({
           status: action === 'approve' ? 'approved' : 'rejected',
           verifiedBy: verifierId,
-          verifiedByRole: verifierInfo.hierarchyRole,
+          verifiedByRole: verifierRole,
           verifiedByName: verifierName,
           verificationNote: note,
           verifiedAt: new Date(),

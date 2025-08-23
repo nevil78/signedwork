@@ -57,11 +57,11 @@ export default function WorkVerification() {
   });
 
   const { data: workEntries, isLoading: workEntriesLoading } = useQuery({
-    queryKey: ["/api/company/work-entries"]
+    queryKey: ["/api/work-verification/my-entries"]
   });
 
   const { data: pendingVerifications, isLoading: pendingLoading } = useQuery({
-    queryKey: ["/api/company/work-entries/pending-verification"]
+    queryKey: ["/api/work-verification/pending"]
   });
 
   const { data: employees } = useQuery({
@@ -74,7 +74,7 @@ export default function WorkVerification() {
 
   // Mutations
   const submitWorkMutation = useMutation({
-    mutationFn: (data: any) => apiRequest("/api/company/work-entries", "POST", data),
+    mutationFn: (data: any) => apiRequest("/api/work-verification/submit", "POST", data),
     onSuccess: () => {
       toast({
         title: "Work Entry Submitted",
@@ -87,7 +87,7 @@ export default function WorkVerification() {
         hoursWorked: 8,
         category: "development"
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/company/work-entries"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/work-verification/my-entries"] });
     },
     onError: (error: any) => {
       toast({
@@ -100,7 +100,7 @@ export default function WorkVerification() {
 
   const verifyWorkMutation = useMutation({
     mutationFn: ({ workEntryId, action, note }: { workEntryId: string, action: 'approve' | 'reject', note: string }) => 
-      apiRequest(`/api/company/work-entries/${workEntryId}/verify`, "POST", { action, note }),
+      apiRequest(`/api/work-verification/verify/${workEntryId}`, "POST", { action, note }),
     onSuccess: (_, variables) => {
       toast({
         title: `Work Entry ${variables.action === 'approve' ? 'Approved' : 'Rejected'}`,
@@ -109,8 +109,8 @@ export default function WorkVerification() {
       setIsVerificationDialogOpen(false);
       setSelectedWorkEntry(null);
       setVerificationNote("");
-      queryClient.invalidateQueries({ queryKey: ["/api/company/work-entries"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/company/work-entries/pending-verification"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/work-verification/my-entries"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/work-verification/pending"] });
     },
     onError: (error: any) => {
       toast({
