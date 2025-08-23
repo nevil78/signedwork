@@ -4045,6 +4045,181 @@ export class DatabaseStorage implements IStorage {
     
     return updatedRole;
   }
+  // Work verification methods
+  async createWorkEntry(data: any): Promise<any> {
+    try {
+      const [workEntry] = await db
+        .insert(workEntries)
+        .values({
+          id: this.generateId(),
+          employeeId: data.employeeId,
+          title: data.title,
+          description: data.description,
+          date: data.date,
+          hoursWorked: data.hoursWorked,
+          category: data.category,
+          status: data.status || 'pending',
+          createdAt: new Date(),
+          updatedAt: new Date()
+        })
+        .returning();
+
+      return workEntry;
+    } catch (error) {
+      console.error('Error creating work entry:', error);
+      throw new Error('Failed to create work entry');
+    }
+  }
+
+  async getAllWorkEntries(userId: string): Promise<any[]> {
+    try {
+      const query = db
+        .select({
+          id: workEntries.id,
+          employeeId: workEntries.employeeId,
+          title: workEntries.title,
+          description: workEntries.description,
+          date: workEntries.date,
+          hoursWorked: workEntries.hoursWorked,
+          category: workEntries.category,
+          status: workEntries.status,
+          verificationNote: workEntries.verificationNote,
+          verifiedBy: workEntries.verifiedBy,
+          verifiedByRole: workEntries.verifiedByRole,
+          verifiedByName: workEntries.verifiedByName,
+          createdAt: workEntries.createdAt,
+          updatedAt: workEntries.updatedAt,
+          employee: {
+            firstName: employees.firstName,
+            lastName: employees.lastName,
+            email: employees.email
+          }
+        })
+        .from(workEntries)
+        .leftJoin(employees, eq(workEntries.employeeId, employees.id))
+        .where(eq(workEntries.employeeId, userId))
+        .orderBy(desc(workEntries.date));
+
+      return await query;
+    } catch (error) {
+      console.error('Error fetching work entries:', error);
+      throw new Error('Failed to fetch work entries');
+    }
+  }
+
+  async getPendingWorkVerifications(userId: string): Promise<any[]> {
+    try {
+      // Get user's company employee relation to determine verification scope
+      const userEmployee = await db
+        .select()
+        .from(companyEmployees)
+        .where(eq(companyEmployees.employeeId, userId))
+        .limit(1);
+
+      if (!userEmployee.length) {
+        return [];
+      }
+
+      const { companyId, hierarchyRole, branchId, teamId } = userEmployee[0];
+
+      // Build base query for pending work entries
+      const baseQuery = db
+        .select({
+          id: workEntries.id,
+          employeeId: workEntries.employeeId,
+          title: workEntries.title,
+          description: workEntries.description,
+          date: workEntries.date,
+          hoursWorked: workEntries.hoursWorked,
+          category: workEntries.category,
+          status: workEntries.status,
+          createdAt: workEntries.createdAt,
+          employee: {
+            firstName: employees.firstName,
+            lastName: employees.lastName,
+            email: employees.email
+          }
+        })
+        .from(workEntries)
+        .leftJoin(employees, eq(workEntries.employeeId, employees.id))
+        .leftJoin(companyEmployees, eq(workEntries.employeeId, companyEmployees.employeeId))
+        .where(and(
+          eq(workEntries.status, 'pending'),
+          eq(companyEmployees.companyId, companyId)
+        ));
+
+      // Apply scope based on hierarchy role
+      if (hierarchyRole === 'team_lead' && teamId) {
+        return await baseQuery
+          .where(and(
+            eq(workEntries.status, 'pending'),
+            eq(companyEmployees.companyId, companyId),
+            eq(companyEmployees.teamId, teamId)
+          ))
+          .orderBy(desc(workEntries.createdAt));
+      } else if (hierarchyRole === 'branch_manager' && branchId) {
+        return await baseQuery
+          .where(and(
+            eq(workEntries.status, 'pending'),
+            eq(companyEmployees.companyId, companyId),
+            eq(companyEmployees.branchId, branchId)
+          ))
+          .orderBy(desc(workEntries.createdAt));
+      } else if (hierarchyRole === 'company_admin') {
+        return await baseQuery.orderBy(desc(workEntries.createdAt));
+      }
+
+      return [];
+    } catch (error) {
+      console.error('Error fetching pending verifications:', error);
+      throw new Error('Failed to fetch pending verifications');
+    }
+  }
+
+  async verifyWorkEntry(verifierId: string, workEntryId: string, action: string, note: string): Promise<any> {
+    try {
+      // Get verifier details
+      const verifier = await db
+        .select({
+          employee: {
+            firstName: employees.firstName,
+            lastName: employees.lastName
+          },
+          hierarchyRole: companyEmployees.hierarchyRole
+        })
+        .from(companyEmployees)
+        .leftJoin(employees, eq(companyEmployees.employeeId, employees.id))
+        .where(eq(companyEmployees.employeeId, verifierId))
+        .limit(1);
+
+      if (!verifier.length) {
+        throw new Error('Verifier not found');
+      }
+
+      const verifierInfo = verifier[0];
+      const verifierName = `${verifierInfo.employee?.firstName} ${verifierInfo.employee?.lastName}`;
+
+      // Update work entry
+      const [updatedEntry] = await db
+        .update(workEntries)
+        .set({
+          status: action === 'approve' ? 'approved' : 'rejected',
+          verifiedBy: verifierId,
+          verifiedByRole: verifierInfo.hierarchyRole,
+          verifiedByName: verifierName,
+          verificationNote: note,
+          verifiedAt: new Date(),
+          updatedAt: new Date()
+        })
+        .where(eq(workEntries.id, workEntryId))
+        .returning();
+
+      return updatedEntry;
+    } catch (error) {
+      console.error('Error verifying work entry:', error);
+      throw new Error('Failed to verify work entry');
+    }
+  }
 }
 
 export const storage = new DatabaseStorage();

@@ -29,6 +29,7 @@ import CompanyEmployeeWorkDiary from "@/pages/company-employee-work-diary";
 import CompanyEmployees from "@/pages/company-employees";
 import CompanyHierarchy from "@/pages/company-hierarchy";
 import CompanyHierarchyTest from "@/pages/company-hierarchy-test";
+import WorkVerification from "@/pages/work-verification";
 import { EmployeeSummaryDashboard } from "@/pages/employee-summary-dashboard";
 import AdminLogin from "@/pages/admin-login";
 import AdminDashboard from "@/pages/admin-dashboard";
@@ -83,6 +84,7 @@ function Router() {
       <Route path="/company-employees" component={CompanyEmployees} />
       <Route path="/company-hierarchy" component={CompanyHierarchy} />
       <Route path="/company-hierarchy-test" component={CompanyHierarchyTest} />
+      <Route path="/work-verification" component={WorkVerification} />
       <Route path="/company-employee/:employeeId" component={CompanyEmployeeProfile} />
       <Route path="/employee-work-diary/:employeeId" component={CompanyEmployeeWorkDiary} />
       <Route path="/employee-profile" component={() => { window.location.href = "/profile"; return null; }} />

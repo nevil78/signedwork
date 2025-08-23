@@ -4844,5 +4844,72 @@ This message was sent through the Signedwork contact form.
     }
   });
 
+  // Work verification endpoints
+  app.post('/api/company/work-entries', requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const { title, description, date, hoursWorked, category } = req.body;
+      
+      if (!title || !description || !date || !hoursWorked) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+
+      const workEntry = await storage.createWorkEntry({
+        employeeId: userId,
+        title,
+        description,
+        date: new Date(date),
+        hoursWorked: parseFloat(hoursWorked),
+        category: category || 'other',
+        status: 'pending'
+      });
+
+      res.json(workEntry);
+    } catch (error) {
+      console.error('Error creating work entry:', error);
+      res.status(500).json({ message: 'Failed to create work entry' });
+    }
+  });
+
+  app.get('/api/company/work-entries', requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const workEntries = await storage.getAllWorkEntries(userId);
+      res.json(workEntries);
+    } catch (error) {
+      console.error('Error fetching work entries:', error);
+      res.status(500).json({ message: 'Failed to fetch work entries' });
+    }
+  });
+
+  app.get('/api/company/work-entries/pending-verification', requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const pendingEntries = await storage.getPendingWorkVerifications(userId);
+      res.json(pendingEntries);
+    } catch (error) {
+      console.error('Error fetching pending verifications:', error);
+      res.status(500).json({ message: 'Failed to fetch pending verifications' });
+    }
+  });
+
+  app.post('/api/company/work-entries/:workEntryId/verify', requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const { workEntryId } = req.params;
+      const { action, note } = req.body;
+      
+      if (!['approve', 'reject'].includes(action)) {
+        return res.status(400).json({ message: "Invalid action" });
+      }
+
+      const verifiedEntry = await storage.verifyWorkEntry(userId, workEntryId, action, note);
+      res.json(verifiedEntry);
+    } catch (error) {
+      console.error('Error verifying work entry:', error);
+      res.status(500).json({ message: 'Failed to verify work entry' });
+    }
+  });
+
   return httpServer;
 }

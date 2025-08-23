@@ -285,6 +285,25 @@ export default function CompanyDashboard() {
                 </CardDescription>
               </CardHeader>
             </Card>
+
+            {/* Work Verification Card */}
+            <Card 
+              className="cursor-pointer hover:shadow-md hover:border-green-200 transition-all duration-200" 
+              onClick={() => navigate('/work-verification')}
+              data-testid="work-verification-card"
+            >
+              <CardHeader className="pb-4">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-8 h-8 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
+                    <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
+                  </div>
+                  <CardTitle className="text-base font-semibold">Work Verification</CardTitle>
+                </div>
+                <CardDescription className="text-sm">
+                  Submit work entries and manage hierarchical verification workflows
+                </CardDescription>
+              </CardHeader>
+            </Card>
 {/* Manage Employees Card */}
             <Card 
               className="cursor-pointer hover:shadow-md hover:border-orange-200 transition-all duration-200" 
