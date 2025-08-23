@@ -15,6 +15,7 @@ import {
   Target
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import CompanyNavHeader from "@/components/company-nav-header";
 
 function CompanyManagerDashboard() {
   const [, setLocation] = useLocation();
@@ -55,6 +56,8 @@ function CompanyManagerDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50" data-testid="company-manager-dashboard">
+      <CompanyNavHeader />
+      
       <div className="max-w-7xl mx-auto p-6">
         {/* Header */}
         <div className="mb-8">

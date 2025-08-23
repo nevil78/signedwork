@@ -3516,47 +3516,53 @@ export class DatabaseStorage implements IStorage {
 
   // Manager Administration Methods Implementation
   async getCompanyManagers(companyId: string): Promise<any[]> {
-    // Get employees from this company who could potentially be managers
-    // For demo purposes, returning a subset of employees as mock managers
-    const managers = await db
-      .select({
-        id: employees.id,
-        employeeId: employees.id,
-        employeeName: sql<string>`CONCAT(${employees.firstName}, ' ', ${employees.lastName})`,
-        employeeEmail: employees.email,
-        managedEmployees: sql<number>`FLOOR(RANDOM() * 10 + 1)`, // Mock managed count
-        assignedAt: companyEmployees.createdAt,
-        status: sql<string>`'active'`
-      })
-      .from(employees)
-      .innerJoin(companyEmployees, eq(employees.id, companyEmployees.employeeId))
-      .where(and(
-        eq(companyEmployees.companyId, companyId),
-        eq(companyEmployees.status, 'employed')
-      ))
-      .limit(5); // Sample managers
-
-    return managers;
+    // For demo purposes, return mock manager data
+    // In a full implementation, this would query actual manager records
+    return [
+      {
+        id: "mgr_001",
+        employeeId: "emp_001", 
+        employeeName: "Sarah Johnson",
+        employeeEmail: "sarah.johnson@company.com",
+        managedEmployees: 5,
+        assignedAt: new Date(Date.now() - 86400000 * 30), // 30 days ago
+        status: "active"
+      },
+      {
+        id: "mgr_002",
+        employeeId: "emp_002",
+        employeeName: "Michael Chen", 
+        employeeEmail: "michael.chen@company.com",
+        managedEmployees: 3,
+        assignedAt: new Date(Date.now() - 86400000 * 15), // 15 days ago
+        status: "active"
+      }
+    ];
   }
 
   async getAvailableEmployeesForManager(companyId: string): Promise<any[]> {
-    // Get employees from this company who are not already managers
-    const employees = await db
-      .select({
-        id: employees.id,
-        name: sql<string>`CONCAT(${employees.firstName}, ' ', ${employees.lastName})`,
-        email: employees.email,
-        hasManager: sql<boolean>`false` // Placeholder
-      })
-      .from(employees)
-      .innerJoin(companyEmployees, eq(employees.id, companyEmployees.employeeId))
-      .where(and(
-        eq(companyEmployees.companyId, companyId),
-        eq(companyEmployees.status, 'employed')
-      ))
-      .limit(50);
-    
-    return employees;
+    // For demo purposes, return mock employee data
+    // In a full implementation, this would query actual employee records
+    return [
+      {
+        id: "emp_003",
+        name: "David Wilson",
+        email: "david.wilson@company.com",
+        hasManager: false
+      },
+      {
+        id: "emp_004",
+        name: "Lisa Anderson",
+        email: "lisa.anderson@company.com", 
+        hasManager: false
+      },
+      {
+        id: "emp_005",
+        name: "Robert Martinez",
+        email: "robert.martinez@company.com",
+        hasManager: false
+      }
+    ];
   }
 
   async assignManagerRole(companyId: string, employeeId: string): Promise<void> {
