@@ -605,8 +605,10 @@ export default function CompanyHierarchy() {
                       <SelectValue placeholder="Select branch (optional)" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Headquarters (No Branch)</SelectItem>
-                      {Array.isArray(branches) && branches.map((branch: any) => (
+                      <SelectItem value="headquarters">Headquarters (No Branch)</SelectItem>
+                      {Array.isArray(branches) && branches
+                        .filter((branch: any) => branch.id && branch.id.trim() !== "")
+                        .map((branch: any) => (
                         <SelectItem key={branch.id} value={branch.id}>
                           {branch.name} - {branch.location}
                         </SelectItem>
@@ -621,10 +623,12 @@ export default function CompanyHierarchy() {
                       <SelectValue placeholder="Select team lead (optional)" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">No team lead assigned</SelectItem>
-                      {Array.isArray(employees) && employees.map((emp: any) => (
+                      <SelectItem value="no_lead">No team lead assigned</SelectItem>
+                      {Array.isArray(employees) && employees
+                        .filter((emp: any) => emp.employeeId && emp.employeeId.trim() !== "")
+                        .map((emp: any) => (
                         <SelectItem key={emp.employeeId} value={emp.employeeId}>
-                          {emp.employee?.firstName} {emp.employee?.lastName} - {emp.position}
+                          {emp.employee?.firstName || "Unknown"} {emp.employee?.lastName || "Employee"} - {emp.position || "No Position"}
                         </SelectItem>
                       ))}
                     </SelectContent>

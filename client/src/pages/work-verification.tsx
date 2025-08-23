@@ -283,7 +283,7 @@ export default function WorkVerification() {
                   <Label htmlFor="work-category">Category</Label>
                   <Select value={newWorkEntry.category} onValueChange={(value) => setNewWorkEntry({ ...newWorkEntry, category: value })}>
                     <SelectTrigger data-testid="select-work-category">
-                      <SelectValue />
+                      <SelectValue placeholder="Select category" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="development">Development</SelectItem>
@@ -498,13 +498,29 @@ export default function WorkVerification() {
                   
                   <Select value={filterStatus} onValueChange={setFilterStatus}>
                     <SelectTrigger className="w-32" data-testid="filter-status">
-                      <SelectValue />
+                      <SelectValue placeholder="Filter status" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Status</SelectItem>
                       <SelectItem value="pending">Pending</SelectItem>
                       <SelectItem value="approved">Approved</SelectItem>
                       <SelectItem value="rejected">Rejected</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  
+                  <Select value={filterEmployee} onValueChange={setFilterEmployee}>
+                    <SelectTrigger className="w-40" data-testid="filter-employee">
+                      <SelectValue placeholder="Filter employee" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Employees</SelectItem>
+                      {Array.isArray(employees) && employees
+                        .filter((emp: any) => emp.employeeId && emp.employeeId.trim() !== "") // Filter out empty/null IDs
+                        .map((emp: any) => (
+                        <SelectItem key={emp.employeeId} value={emp.employeeId}>
+                          {emp.firstName || "Unknown"} {emp.lastName || "Employee"}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
