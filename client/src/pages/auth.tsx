@@ -378,6 +378,18 @@ export default function AuthPage() {
       if (response.userType === "employee") {
         console.log("Redirecting to employee summary dashboard");
         window.location.href = "/summary";
+      } else if (response.userType === "company") {
+        // Role-based redirect for company users
+        if (response.companySubRole === "COMPANY_ADMIN") {
+          console.log("Redirecting to company admin dashboard");
+          window.location.href = "/company/admin/dashboard";
+        } else if (response.companySubRole === "MANAGER") {
+          console.log("Redirecting to company manager dashboard");
+          window.location.href = "/company/manager/dashboard";
+        } else {
+          console.log("Redirecting to general company dashboard");
+          window.location.href = "/company-dashboard";
+        }
       } else {
         console.log("Redirecting to company dashboard");
         window.location.href = "/company-dashboard";

@@ -17,8 +17,17 @@ import {
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import CompanyNavHeader from "@/components/company-nav-header";
+import { CompanyRoleGuard } from "@/hooks/useCompanyRoleGuard";
 
 function CompanyAdminDashboard() {
+  return (
+    <CompanyRoleGuard allowedRoles={["COMPANY_ADMIN"]}>
+      <CompanyAdminDashboardContent />
+    </CompanyRoleGuard>
+  );
+}
+
+function CompanyAdminDashboardContent() {
   const [, setLocation] = useLocation();
 
   // Fetch admin dashboard data
