@@ -1,12 +1,13 @@
 import { 
   employees, companies, experiences, educations, certifications, projects, endorsements, workEntries, employeeCompanies,
-  companyInvitationCodes, companyEmployees, jobListings, jobApplications, savedJobs, jobAlerts, profileViews, admins, emailVerifications, userFeedback, loginSessions,
+  companyInvitationCodes, companyEmployees, companyBranches, companyTeams, jobListings, jobApplications, savedJobs, jobAlerts, profileViews, admins, emailVerifications, userFeedback, loginSessions,
   skills, skillTrends, userSkillPreferences, skillAnalytics, pendingUsers,
   type Employee, type Company, type InsertEmployee, type InsertCompany,
   type Experience, type Education, type Certification, type Project, type Endorsement, type WorkEntry, type EmployeeCompany,
   type InsertExperience, type InsertEducation, type InsertCertification, 
   type InsertProject, type InsertEndorsement, type InsertWorkEntry, type InsertEmployeeCompany,
   type CompanyInvitationCode, type CompanyEmployee, type InsertCompanyInvitationCode, type InsertCompanyEmployee,
+  type CompanyBranch, type CompanyTeam, type InsertCompanyBranch, type InsertCompanyTeam,
   type JobListing, type JobApplication, type SavedJob, type JobAlert, type ProfileView,
   type InsertJobListing, type InsertJobApplication, type InsertSavedJob, type InsertJobAlert,
   type Admin, type InsertAdmin, type LoginSession, type InsertLoginSession,
@@ -92,6 +93,48 @@ function generateAdminId(): string {
   
   // Add 3 random numbers
   for (let i = 0; i < 3; i++) {
+    result += numbers.charAt(Math.floor(Math.random() * numbers.length));
+  }
+  
+  return result;
+}
+
+// Generate a short, memorable branch ID
+function generateBranchId(): string {
+  const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const numbers = '0123456789';
+  
+  // Format: BRN-ABC123 (3 letters + 3 numbers)
+  let result = 'BRN-';
+  
+  // Add 3 random letters
+  for (let i = 0; i < 3; i++) {
+    result += letters.charAt(Math.floor(Math.random() * letters.length));
+  }
+  
+  // Add 3 random numbers
+  for (let i = 0; i < 3; i++) {
+    result += numbers.charAt(Math.floor(Math.random() * numbers.length));
+  }
+  
+  return result;
+}
+
+// Generate a short, memorable team ID
+function generateTeamId(): string {
+  const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const numbers = '0123456789';
+  
+  // Format: TM-ABC123 (3 letters + 3 numbers)
+  let result = 'TM-';
+  
+  // Add 3 random letters
+  for (let i = 0; i < 2; i++) {
+    result += letters.charAt(Math.floor(Math.random() * letters.length));
+  }
+  
+  // Add 4 random numbers
+  for (let i = 0; i < 4; i++) {
     result += numbers.charAt(Math.floor(Math.random() * numbers.length));
   }
   
@@ -428,6 +471,100 @@ export interface IStorage {
   getLoginSessions(userId: string, userType: string): Promise<LoginSession[]>;
   updateLoginSession(sessionId: string, data: Partial<LoginSession>): Promise<LoginSession>;
   getLoginSessionsCount(userId: string, userType: string): Promise<number>;
+
+  // ==================== HIERARCHICAL COMPANY STRUCTURE OPERATIONS ====================
+  
+  // Company Branch operations (for HDFC Surat, HDFC Mumbai, etc.)
+  getCompanyBranches(companyId: string): Promise<CompanyBranch[]>;
+  getCompanyBranch(branchId: string): Promise<CompanyBranch | undefined>;
+  createCompanyBranch(branch: InsertCompanyBranch): Promise<CompanyBranch>;
+  updateCompanyBranch(branchId: string, data: Partial<CompanyBranch>): Promise<CompanyBranch>;
+  deleteCompanyBranch(branchId: string): Promise<void>;
+  
+  // Company Team operations (for teams within branches)
+  getCompanyTeams(companyId: string, branchId?: string): Promise<CompanyTeam[]>;
+  getCompanyTeam(teamId: string): Promise<CompanyTeam | undefined>;
+  createCompanyTeam(team: InsertCompanyTeam): Promise<CompanyTeam>;
+  updateCompanyTeam(teamId: string, data: Partial<CompanyTeam>): Promise<CompanyTeam>;
+  deleteCompanyTeam(teamId: string): Promise<void>;
+  getTeamMembers(teamId: string): Promise<CompanyEmployee[]>;
+  
+  // Enhanced CompanyEmployee operations with hierarchy
+  getEmployeeHierarchyInfo(employeeId: string, companyId: string): Promise<{
+    employee: Employee;
+    companyRole: CompanyEmployee;
+    branch?: CompanyBranch;
+    team?: CompanyTeam;
+    permissions: {
+      canVerifyWork: boolean;
+      canManageEmployees: boolean;
+      canCreateTeams: boolean;
+      verificationScope: string;
+    };
+  } | null>;
+  
+  // Role-based verification methods
+  canEmployeeVerifyWork(verifierId: string, employeeId: string, companyId: string): Promise<boolean>;
+  getEmployeesVerifiableByUser(verifierId: string, companyId: string): Promise<CompanyEmployee[]>;
+  
+  // Hierarchical work entry operations with verification tracking
+  createWorkEntryWithHierarchy(workEntry: InsertWorkEntry & {
+    branchId?: string;
+    teamId?: string;
+  }): Promise<WorkEntry>;
+  
+  verifyWorkEntryHierarchical(workEntryId: string, verifierId: string, data: {
+    approvalStatus: "approved" | "needs_changes";
+    companyRating?: number;
+    companyFeedback?: string;
+  }): Promise<WorkEntry>;
+  
+  getWorkEntriesWithHierarchy(options: {
+    employeeId?: string;
+    companyId?: string;
+    branchId?: string;
+    teamId?: string;
+    verifierId?: string;
+    includeHierarchyInfo?: boolean;
+  }): Promise<(WorkEntry & {
+    employee?: Employee;
+    company?: Company;
+    branch?: CompanyBranch;
+    team?: CompanyTeam;
+    verifier?: Employee;
+    externalCompanyDisplay?: string; // "HDFC" for external view
+    internalVerificationDisplay?: string; // "Manager X, HDFC Surat" for internal view
+  })[]>;
+  
+  // Company hierarchy reporting
+  getCompanyHierarchyStructure(companyId: string): Promise<{
+    company: Company;
+    branches: (CompanyBranch & {
+      teams: (CompanyTeam & {
+        members: CompanyEmployee[];
+        teamLead?: Employee;
+      })[];
+      employeeCount: number;
+    })[];
+    headquarterTeams: (CompanyTeam & {
+      members: CompanyEmployee[];
+      teamLead?: Employee;
+    })[];
+    totalEmployees: number;
+    totalBranches: number;
+    totalTeams: number;
+  }>;
+  
+  // Permission management
+  updateEmployeeHierarchyRole(employeeId: string, companyId: string, updates: {
+    hierarchyRole?: "company_admin" | "branch_manager" | "team_lead" | "employee";
+    canVerifyWork?: boolean;
+    canManageEmployees?: boolean;
+    canCreateTeams?: boolean;
+    verificationScope?: "none" | "team" | "branch" | "company";
+    branchId?: string;
+    teamId?: string;
+  }): Promise<CompanyEmployee>;
 }
 
 export interface JobSearchFilters {

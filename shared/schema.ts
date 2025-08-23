@@ -152,6 +152,8 @@ export const workEntries = pgTable("work_entries", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   employeeId: varchar("employee_id").notNull().references(() => employees.id, { onDelete: "cascade" }),
   companyId: varchar("company_id").notNull().references(() => companies.id, { onDelete: "cascade" }),
+  branchId: varchar("branch_id").references(() => companyBranches.id), // Employee's branch when work was done
+  teamId: varchar("team_id").references(() => companyTeams.id), // Employee's team when work was done
   title: text("title").notNull(),
   description: text("description"),
   startDate: text("start_date").notNull(),
@@ -162,6 +164,14 @@ export const workEntries = pgTable("work_entries", {
   actualHours: integer("actual_hours"), // actual time spent
   status: text("status").notNull().default("pending"), // Employee task status: pending, in_progress, completed, on_hold
   approvalStatus: text("approval_status").notNull().default("pending_review"), // Company approval: pending_review, approved, needs_changes
+  // Enhanced hierarchical verification tracking
+  verifiedBy: varchar("verified_by").references(() => employees.id), // Employee ID who verified this work
+  verifiedByRole: text("verified_by_role"), // Role of verifier: "team_lead", "branch_manager", "company_admin"
+  verifiedByName: text("verified_by_name"), // Name for display: "Manager X, HDFC Surat"
+  verifiedAt: timestamp("verified_at"), // When verification was completed
+  // External display vs internal tracking
+  externalCompanyName: text("external_company_name"), // What external recruiters see: "HDFC"
+  internalVerificationPath: text("internal_verification_path"), // Full path: "HDFC > Surat Branch > Sales Team > Manager X"
   workType: text("work_type").notNull().default("task"), // task, meeting, project, research, documentation, training
   category: text("category"), // development, design, management, client_work, etc.
   project: text("project"), // project name or identifier
@@ -232,17 +242,64 @@ export const companyInvitationCodes = pgTable("company_invitation_codes", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-// New table for company-employee relationships
+// Company branches table for hierarchical structure (HDFC Surat, HDFC Mumbai, etc.)
+export const companyBranches = pgTable("company_branches", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  branchId: varchar("branch_id").notNull().unique(), // BRN-ABC123 format
+  parentCompanyId: varchar("parent_company_id").notNull().references(() => companies.id, { onDelete: "cascade" }),
+  name: text("name").notNull(), // "HDFC Surat Branch"
+  code: varchar("code", { length: 10 }).notNull(), // "SURAT", "MUMBAI" etc.
+  address: text("address").notNull(),
+  city: text("city").notNull(),
+  state: text("state").notNull(),
+  pincode: text("pincode").notNull(),
+  managerEmail: text("manager_email"), // Branch manager's email
+  phone: text("phone"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Teams within branches (Manager + team structure)
+export const companyTeams = pgTable("company_teams", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  teamId: varchar("team_id").notNull().unique(), // TM-ABC123 format
+  parentCompanyId: varchar("parent_company_id").notNull().references(() => companies.id, { onDelete: "cascade" }),
+  branchId: varchar("branch_id").references(() => companyBranches.id, { onDelete: "cascade" }), // Can be null for HQ teams
+  name: text("name").notNull(), // "Sales Team A", "Development Team 1"
+  description: text("description"),
+  teamLeadId: varchar("team_lead_id").references(() => employees.id), // Team lead employee ID
+  department: text("department").notNull(), // "Sales", "Development", "HR", etc.
+  maxMembers: integer("max_members").default(10), // Team size limit
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Enhanced company-employee relationships with hierarchy and roles
 export const companyEmployees = pgTable("company_employees", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   companyId: varchar("company_id").notNull().references(() => companies.id, { onDelete: "cascade" }),
   employeeId: varchar("employee_id").notNull().references(() => employees.id, { onDelete: "cascade" }),
+  branchId: varchar("branch_id").references(() => companyBranches.id), // Employee's branch (null for HQ)
+  teamId: varchar("team_id").references(() => companyTeams.id), // Employee's team (null if not assigned)
   position: text("position"),
   department: text("department"),
+  // Enhanced role system for hierarchy
+  hierarchyRole: varchar("hierarchy_role", { length: 20 }).notNull().default("employee"), 
+  // Roles: "company_admin", "branch_manager", "team_lead", "employee"
+  // Permissions for verification and management
+  canVerifyWork: boolean("can_verify_work").default(false), // Can approve work entries
+  canManageEmployees: boolean("can_manage_employees").default(false), // Can manage team members
+  canCreateTeams: boolean("can_create_teams").default(false), // Can create teams/branches
+  // Verification scope (who they can verify)
+  verificationScope: text("verification_scope").default("none"), // "none", "team", "branch", "company"
   joinedAt: timestamp("joined_at").defaultNow(),
   leftAt: timestamp("left_at"),
   status: varchar("status", { length: 20 }).default("employed").notNull(), // "employed" or "ex-employee"
   isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 // Job listings table for job discovery
@@ -444,10 +501,22 @@ export const endorsementsRelations = relations(endorsements, ({ one }) => ({
   }),
 }));
 
-export const employeeCompaniesRelations = relations(employeeCompanies, ({ one, many }) => ({
+export const companyEmployeesRelations = relations(companyEmployees, ({ one, many }) => ({
   employee: one(employees, {
-    fields: [employeeCompanies.employeeId],
+    fields: [companyEmployees.employeeId],
     references: [employees.id],
+  }),
+  company: one(companies, {
+    fields: [companyEmployees.companyId],
+    references: [companies.id],
+  }),
+  branch: one(companyBranches, {
+    fields: [companyEmployees.branchId],
+    references: [companyBranches.id],
+  }),
+  team: one(companyTeams, {
+    fields: [companyEmployees.teamId],
+    references: [companyTeams.id],
   }),
   workEntries: many(workEntries),
 }));
@@ -457,9 +526,21 @@ export const workEntriesRelations = relations(workEntries, ({ one }) => ({
     fields: [workEntries.employeeId],
     references: [employees.id],
   }),
-  company: one(employeeCompanies, {
+  company: one(companies, {
     fields: [workEntries.companyId],
-    references: [employeeCompanies.id],
+    references: [companies.id],
+  }),
+  branch: one(companyBranches, {
+    fields: [workEntries.branchId],
+    references: [companyBranches.id],
+  }),
+  team: one(companyTeams, {
+    fields: [workEntries.teamId],
+    references: [companyTeams.id],
+  }),
+  verifier: one(employees, {
+    fields: [workEntries.verifiedBy],
+    references: [employees.id],
   }),
 }));
 
@@ -468,6 +549,37 @@ export const companiesRelations = relations(companies, ({ many }) => ({
   profileViews: many(profileViews),
   companyEmployees: many(companyEmployees),
   invitationCodes: many(companyInvitationCodes),
+  branches: many(companyBranches),
+  teams: many(companyTeams),
+  workEntries: many(workEntries),
+}));
+
+// New hierarchy relations
+export const companyBranchesRelations = relations(companyBranches, ({ one, many }) => ({
+  parentCompany: one(companies, {
+    fields: [companyBranches.parentCompanyId],
+    references: [companies.id],
+  }),
+  teams: many(companyTeams),
+  employees: many(companyEmployees),
+  workEntries: many(workEntries),
+}));
+
+export const companyTeamsRelations = relations(companyTeams, ({ one, many }) => ({
+  parentCompany: one(companies, {
+    fields: [companyTeams.parentCompanyId],
+    references: [companies.id],
+  }),
+  branch: one(companyBranches, {
+    fields: [companyTeams.branchId],
+    references: [companyBranches.id],
+  }),
+  teamLead: one(employees, {
+    fields: [companyTeams.teamLeadId],
+    references: [employees.id],
+  }),
+  members: many(companyEmployees),
+  workEntries: many(workEntries),
 }));
 
 export const jobListingsRelations = relations(jobListings, ({ one, many }) => ({
@@ -656,6 +768,27 @@ export const insertCompanySchema = createInsertSchema(companies).omit({
     .refine((val) => !val || /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(val), "Invalid PAN format. Example: ABCDE1234F"),
 });
 
+// Insert schemas for hierarchy tables
+export const insertCompanyBranchSchema = createInsertSchema(companyBranches).omit({
+  id: true,
+  branchId: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertCompanyTeamSchema = createInsertSchema(companyTeams).omit({
+  id: true,
+  teamId: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertCompanyEmployeeSchema = createInsertSchema(companyEmployees).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export const insertCompanyInvitationCodeSchema = createInsertSchema(companyInvitationCodes).omit({
   id: true,
   code: true,
@@ -665,10 +798,7 @@ export const insertCompanyInvitationCodeSchema = createInsertSchema(companyInvit
   createdAt: true,
 });
 
-export const insertCompanyEmployeeSchema = createInsertSchema(companyEmployees).omit({
-  id: true,
-  joinedAt: true,
-});
+
 
 export const insertJobListingSchema = createInsertSchema(jobListings).omit({
   id: true,
@@ -816,16 +946,7 @@ export const companyInvitationCodesRelations = relations(companyInvitationCodes,
   }),
 }));
 
-export const companyEmployeesRelations = relations(companyEmployees, ({ one }) => ({
-  company: one(companies, {
-    fields: [companyEmployees.companyId],
-    references: [companies.id],
-  }),
-  employee: one(employees, {
-    fields: [companyEmployees.employeeId],
-    references: [employees.id],
-  }),
-}));
+
 
 
 
@@ -841,6 +962,8 @@ export type WorkEntry = typeof workEntries.$inferSelect;
 export type Company = typeof companies.$inferSelect;
 export type CompanyInvitationCode = typeof companyInvitationCodes.$inferSelect;
 export type CompanyEmployee = typeof companyEmployees.$inferSelect;
+export type CompanyBranch = typeof companyBranches.$inferSelect;
+export type CompanyTeam = typeof companyTeams.$inferSelect;
 
 export type InsertEmployee = z.infer<typeof insertEmployeeSchema>;
 export type InsertExperience = z.infer<typeof insertExperienceSchema>;
@@ -853,6 +976,8 @@ export type InsertWorkEntry = z.infer<typeof insertWorkEntrySchema>;
 export type InsertCompany = z.infer<typeof insertCompanySchema>;
 export type InsertCompanyInvitationCode = z.infer<typeof insertCompanyInvitationCodeSchema>;
 export type InsertCompanyEmployee = z.infer<typeof insertCompanyEmployeeSchema>;
+export type InsertCompanyBranch = z.infer<typeof insertCompanyBranchSchema>;
+export type InsertCompanyTeam = z.infer<typeof insertCompanyTeamSchema>;
 export type LoginData = z.infer<typeof loginSchema>;
 export type ChangePasswordData = z.infer<typeof changePasswordSchema>;
 export type RequestPasswordResetData = z.infer<typeof requestPasswordResetSchema>;
