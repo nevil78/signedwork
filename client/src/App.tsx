@@ -89,7 +89,7 @@ function Router() {
       {/* Company Role-Based Routes */}
       <Route path="/company/admin/dashboard" component={CompanyAdminDashboard} />
       <Route path="/company/manager/dashboard" component={CompanyManagerDashboard} />
-      <Route path="/company/403" component={Company403} />
+      <Route path="/company/403" component={() => <Company403 />} />
       <Route path="/admin/login" component={AdminLogin} />
       <Route path="/admin/dashboard" component={AdminDashboard} />
       <Route path="/admin/verifications" component={AdminVerifications} />
