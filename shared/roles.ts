@@ -51,7 +51,7 @@ export function canAccessRoute(role: CompanyRole, route: string): boolean {
   for (const [routePattern, allowedRoles] of Object.entries(ROUTE_PERMISSIONS)) {
     const pattern = routePattern.replace('*', '.*');
     if (new RegExp(pattern).test(route)) {
-      return allowedRoles.includes(role);
+      return (allowedRoles as readonly CompanyRole[]).includes(role);
     }
   }
   return false;
