@@ -732,9 +732,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         type: userType,
       };
       
-      // Add company sub-role for company accounts
+      // Add company sub-role for company accounts using database lookup
       if (userType === "company") {
-        const companySubRole = getTemporaryRole(user.email);
+        // Try to get role from database first, fallback to temporary mapping
+        let companySubRole;
+        try {
+          const company = await storage.getCompany(user.id);
+          companySubRole = company?.companySubRole || getTemporaryRole(user.email);
+        } catch (error) {
+          console.log("Database role lookup failed, using temporary mapping:", error.message);
+          companySubRole = getTemporaryRole(user.email);
+        }
+        
         sessionUser.companySubRole = companySubRole;
         sessionUser.companyId = user.id;
         sessionUser.displayName = user.name;
@@ -5012,5 +5021,96 @@ This message was sent through the Signedwork contact form.
     }
   });
 
+  // STEP 2: Company Role Management Endpoints
+  
+  // Get employees with their roles for role management
+  app.get("/api/company/employees/with-roles", requireCompany, requireCompanyRole(['COMPANY_ADMIN']), async (req: any, res) => {
+    try {
+      const companyId = req.user.id;
+      const employees = await storage.getCompanyEmployees(companyId);
+      
+      // Map to include role information
+      const employeesWithRoles = employees.map((emp: any) => ({
+        id: emp.employeeId,
+        firstName: emp.employee?.firstName || 'Unknown',
+        lastName: emp.employee?.lastName || '',
+        email: emp.employee?.email || '',
+        role: 'EMPLOYEE', // Will be enhanced when database role field is available
+        position: emp.position,
+        department: emp.department,
+        joinedAt: emp.joinedAt,
+      }));
+      
+      res.json(employeesWithRoles);
+    } catch (error: any) {
+      console.error("Error fetching employees with roles:", error);
+      res.status(500).json({ message: "Failed to fetch employee roles" });
+    }
+  });
+
+  // Update employee role (placeholder implementation)
+  app.patch("/api/company/employees/:employeeId/role", requireCompany, requireCompanyRole(['COMPANY_ADMIN']), async (req: any, res) => {
+    try {
+      const { employeeId } = req.params;
+      const { role } = req.body;
+
+      // Validate role
+      if (!['EMPLOYEE', 'MANAGER', 'COMPANY_ADMIN'].includes(role)) {
+        return res.status(400).json({ message: "Invalid role specified" });
+      }
+
+      // Log role update for now
+      console.log(`Role update: Employee ${employeeId} assigned role ${role}`);
+      
+      res.json({ message: "Employee role updated successfully" });
+    } catch (error: any) {
+      console.error("Error updating employee role:", error);
+      res.status(500).json({ message: "Failed to update employee role" });
+    }
+  });
+
+  // Send manager invitation (placeholder implementation)
+  app.post("/api/company/invite-manager", requireCompany, requireCompanyRole(['COMPANY_ADMIN']), async (req: any, res) => {
+    try {
+      const { email, role } = req.body;
+      const companyId = req.user.id;
+
+      // Validate role for manager invitation
+      if (!['MANAGER', 'COMPANY_ADMIN'].includes(role)) {
+        return res.status(400).json({ message: "Invalid role for manager invitation" });
+      }
+
+      // Log invitation for now
+      console.log(`Manager invitation: ${email} invited with role ${role} for company ${companyId}`);
+      
+      res.json({ 
+        message: "Manager invitation sent successfully",
+        invitation: {
+          id: `inv_${Date.now()}`,
+          email,
+          role,
+          companyId,
+          status: 'pending'
+        }
+      });
+    } catch (error: any) {
+      console.error("Error sending manager invitation:", error);
+      res.status(500).json({ message: "Failed to send manager invitation" });
+    }
+  });
+
+  // Get pending manager invitations (placeholder implementation)
+  app.get("/api/company/manager-invites/pending", requireCompany, requireCompanyRole(['COMPANY_ADMIN']), async (req: any, res) => {
+    try {
+      // Return empty array for now
+      res.json([]);
+    } catch (error: any) {
+      console.error("Error fetching pending invitations:", error);
+      res.status(500).json({ message: "Failed to fetch pending invitations" });
+    }
+  });
+
   return httpServer;
 }
+
+

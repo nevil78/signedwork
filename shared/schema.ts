@@ -209,6 +209,10 @@ export const companies = pgTable("companies", {
   establishmentYear: text("establishment_year").notNull(),
   password: text("password").notNull(),
   emailVerified: boolean("email_verified").default(false),
+  // Company role system for enterprise access control
+  companySubRole: text("company_sub_role", { 
+    enum: ["COMPANY_ADMIN", "MANAGER", "BRANCH_ADMIN"] 
+  }).notNull().default("COMPANY_ADMIN"),
   // PAN/CIN Verification fields
   verificationStatus: text("verification_status").default("unverified"), // unverified, pending, verified, rejected
   verificationMethod: text("verification_method"), // manual, api, document_upload

@@ -218,6 +218,27 @@ function CompanyAdminDashboardContent() {
           </Card>
 
           <Card 
+            className="cursor-pointer hover:shadow-lg transition-all duration-200 border-2 hover:border-amber-200"
+            onClick={() => setLocation("/company/admin/roles")}
+            data-testid="nav-role-management"
+          >
+            <CardHeader>
+              <CardTitle className="flex items-center gap-3 text-gray-900">
+                <Shield className="h-6 w-6 text-amber-600" />
+                Role Management
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-600 mb-4">
+                Assign roles and permissions to employees and managers
+              </p>
+              <Button variant="outline" className="w-full">
+                Manage Roles
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card 
             className="cursor-pointer hover:shadow-lg transition-all duration-200 border-2 hover:border-orange-200"
             onClick={() => setLocation("/company/admin/teams")}
             data-testid="nav-teams"
