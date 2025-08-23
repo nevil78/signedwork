@@ -25,6 +25,9 @@ import { SignupVerificationService } from "./signupVerificationService";
 import { sendEmail } from "./sendgrid";
 import { aiJobService, type EmployeeProfile } from "./aiJobService";
 import { COMPANY_ROLES, type CompanyRole, type CompanyPermission, canAccessRoute, hasPermission, hasCompanyPermission, getTemporaryRole } from "@shared/roles";
+import { managerAuthService } from "./managerAuth";
+import { matrixTeamsService } from "./matrixTeamsService";
+import { managerLoginSchema } from "@shared/schema";
 
 // Global variable to store the Socket.IO server instance for real-time updates
 let io: SocketIOServer;
@@ -5107,6 +5110,131 @@ This message was sent through the Signedwork contact form.
     } catch (error: any) {
       console.error("Error fetching pending invitations:", error);
       res.status(500).json({ message: "Failed to fetch pending invitations" });
+    }
+  });
+
+  // ========================
+  // MATRIX TEAMS & MANAGER AUTHENTICATION ROUTES
+  // ========================
+
+  // Manager Login
+  app.post("/api/auth/manager/login", async (req, res) => {
+    try {
+      const { email, password } = managerLoginSchema.parse(req.body);
+      
+      const manager = await managerAuthService.authenticateManager(email, password);
+      if (!manager) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+
+      // Set manager session
+      req.session.user = {
+        id: manager.id,
+        email: manager.email,
+        type: "manager",
+        companyId: manager.companyId,
+        companySubRole: manager.role,
+        displayName: `${manager.firstName} ${manager.lastName}`
+      };
+
+      res.json({ 
+        message: "Login successful", 
+        user: {
+          id: manager.id,
+          email: manager.email,
+          type: "manager",
+          role: manager.role,
+          companyId: manager.companyId
+        }
+      });
+    } catch (error) {
+      console.error("Manager login error:", error);
+      res.status(400).json({ message: "Login failed" });
+    }
+  });
+
+  // Manager Teams (Manager Dashboard)
+  app.get("/api/manager/teams", requireAuth, async (req: any, res) => {
+    try {
+      const user = req.session.user;
+      if (user.type !== "manager") {
+        return res.status(403).json({ message: "Manager access required" });
+      }
+
+      const teams = await matrixTeamsService.getManagerTeamsWithStats(user.id);
+      res.json(teams);
+    } catch (error) {
+      console.error("Error fetching manager teams:", error);
+      res.status(500).json({ message: "Failed to fetch teams" });
+    }
+  });
+
+  // Manager's Pending Work Entries
+  app.get("/api/manager/work-entries/pending", requireAuth, async (req: any, res) => {
+    try {
+      const user = req.session.user;
+      if (user.type !== "manager") {
+        return res.status(403).json({ message: "Manager access required" });
+      }
+
+      const entries = await matrixTeamsService.getManagerWorkEntries(user.id);
+      res.json(entries);
+    } catch (error) {
+      console.error("Error fetching pending entries:", error);
+      res.status(500).json({ message: "Failed to fetch work entries" });
+    }
+  });
+
+  // Manager's Approved Work Entries
+  app.get("/api/manager/work-entries/approved", requireAuth, async (req: any, res) => {
+    try {
+      const user = req.session.user;
+      if (user.type !== "manager") {
+        return res.status(403).json({ message: "Manager access required" });
+      }
+
+      // Get approved entries for manager's teams (last 30 days)
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+      const entries = await storage.getApprovedWorkEntriesForManager(user.id, thirtyDaysAgo);
+      res.json(entries);
+    } catch (error) {
+      console.error("Error fetching approved entries:", error);
+      res.status(500).json({ message: "Failed to fetch approved entries" });
+    }
+  });
+
+  // Approve Work Entry (Manager)
+  app.post("/api/manager/work-entries/:entryId/approve", requireAuth, async (req: any, res) => {
+    try {
+      const user = req.session.user;
+      if (user.type !== "manager") {
+        return res.status(403).json({ message: "Manager access required" });
+      }
+
+      const { entryId } = req.params;
+      const { comments, rating } = req.body;
+
+      const approvedEntry = await matrixTeamsService.approveWorkEntry(
+        entryId,
+        user.id,
+        "manager",
+        comments,
+        rating
+      );
+
+      // Emit real-time update
+      emitRealTimeUpdate("workEntryApproved", {
+        entryId: approvedEntry.id,
+        approvedBy: user.displayName,
+        approvedAt: approvedEntry.approvedAt
+      }, [`company_${user.companyId}`]);
+
+      res.json({ message: "Work entry approved successfully", entry: approvedEntry });
+    } catch (error: any) {
+      console.error("Error approving work entry:", error);
+      res.status(400).json({ message: error.message || "Failed to approve work entry" });
     }
   });
 

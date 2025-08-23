@@ -1,0 +1,149 @@
+Matrix Teams, Manager Dashboards & Approval Workflow
+
+Context for AI:
+You are implementing hierarchical work diary management for Signedwork. Do not change the existing employee login or 8-digit join code workflow. Focus only on manager functionality, team/project assignments, approval workflow, and company oversight.
+
+Requirements
+1️⃣ Matrix Team Assignments
+
+Employees can belong to multiple teams/projects.
+
+Managers are assigned to specific teams/projects.
+
+Work diary submissions include a team_id / project_id reference.
+
+Routing logic:
+
+Manager sees only entries for their assigned teams/projects.
+
+Company sees all entries for all teams/projects.
+
+2️⃣ Manager Dashboard
+
+Login via Company Login page using invite credentials.
+
+Features:
+
+My Team / Project View:
+
+List of assigned employees per team/project.
+
+Pending work diary entries.
+
+Work Diary Approval:
+
+Approve / Reject / Request Changes.
+
+Add comments and ratings.
+
+Once approved, entry becomes immutable.
+
+Create Own Work Entries:
+
+Managers can submit personal work entries under their employee section.
+
+Routed and visible to company like any other entry.
+
+Reports / Analytics:
+
+Submission frequency, approvals, team performance metrics.
+
+Access Limitations:
+
+Cannot see other managers’ teams/projects.
+
+Cannot create employees or other managers.
+
+Cannot modify company-wide settings.
+
+3️⃣ Approval & Immutability Rules
+
+Single approval per entry: once approved, immutable.
+
+Company as fallback:
+
+Company can approve pending entries for any manager/team.
+
+First approver (manager or company) locks the entry.
+
+Any further attempts to approve/reject → blocked.
+
+Server-Side Enforcement:
+
+if (workEntry.status !== 'pending') {
+    throw new Error("Entry already approved or rejected (immutable)");
+}
+workEntry.status = 'approved';
+workEntry.approved_by_id = currentUser.id;
+workEntry.approval_time = now();
+save(workEntry);
+
+4️⃣ Audit Trail
+
+Track who approved/rejected, timestamp, employee, manager/team.
+
+All actions visible to company.
+
+Managers can reset their credentials; company retains override authority.
+
+5️⃣ Routing & Visibility Logic
+
+Manager Dashboard
+
+Shows only assigned employees for assigned teams/projects.
+
+Work diary submissions for their teams only.
+
+Company Dashboard
+
+Shows all employees and managers.
+
+Can approve pending entries for any team if manager unavailable.
+
+Can reassign employees between managers.
+
+Employee Dashboard
+
+Unchanged.
+
+Joins teams/projects as assigned by company.
+
+6️⃣ Optional Enhancements
+
+Concurrency Control
+
+Use database transactions or row-level locks to ensure atomic first approval.
+
+Team Assignment Updates
+
+Employees can move between teams/projects without affecting historical approvals.
+
+Delegation Handling
+
+If manager unavailable, company can approve, maintaining immutability rules.
+
+Acceptance Criteria
+
+Employees can belong to multiple teams/projects.
+
+Managers see only their assigned teams and pending entries.
+
+Approvals are atomic and immutable: first approver locks the entry.
+
+Company can approve pending entries for unavailable managers.
+
+Audit trail logs employee, manager, approver, timestamp.
+
+Managers can submit personal work entries under their employee section.
+
+Employee login workflow remains unchanged.
+
+This ensures:
+
+Matrix team support.
+
+Delegation/fallback handled safely.
+
+Immutable approval logic enforced.
+
+Complete company visibility and auditability.

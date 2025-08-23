@@ -1,0 +1,35 @@
+                                 +------------------+
+                                 |   Company Login  |
+                                 | Full Dashboard   |
+                                 |-----------------|
+                                 | - View all       |
+                                 |   employees      |
+                                 | - View all       |
+                                 |   managers       |
+                                 | - Approve any    |
+                                 |   pending entries|
+                                 +--------+---------+
+                                          |
+                ---------------------------------------------------
+                |                                                 |
+      +---------v---------+                             +---------v---------+
+      | Manager Nevil     |                             | Manager Harsh     |
+      | (Team X)          |                             | (Team Y)          |
+      |------------------|                             |------------------|
+      | - My Team:        |                             | - My Team:        |
+      |   a1, a2, a3, a4, |                             |   b1, b2, b3, b4, |
+      |   a5              |                             |   b5              |
+      | - Pending Entries |                             | - Pending Entries |
+      | - Approve/Reject  |                             | - Approve/Reject  |
+      | - Personal Entries|                             | - Personal Entries|
+      +---------+---------+                             +---------+---------+
+                |                                                 |
+                |                                                 |
+   -------------------------------                     -------------------------------
+   |                             |                     |                             |
++--v--+                       +--v--+             +--v--+                       +--v--+
+| a1  |                       | a2  |             | b1  |                       | b2  |
+| a3  |                       | a4  |             | b3  |                       | b4  |
+| a5  |                       +-----+             | b5  |                       +-----+
++-----+                                           +-----+
+(Employee work diary submissions routed to their manager)

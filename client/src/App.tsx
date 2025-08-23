@@ -60,6 +60,8 @@ function PageLoader() {
 }
 
 import NotFound from "@/pages/not-found";
+import ManagerLogin from "@/pages/manager-login";
+import ManagerDashboard from "@/pages/manager-dashboard";
 
 function Router() {
   return (
@@ -112,6 +114,8 @@ function Router() {
       <Route path="/support" component={SupportPage} />
       <Route path="/terms" component={() => <Suspense fallback={<PageLoader />}><TermsOfService /></Suspense>} />
       <Route path="/privacy" component={() => <Suspense fallback={<PageLoader />}><PrivacyPolicy /></Suspense>} />
+      <Route path="/manager-login" component={ManagerLogin} />
+      <Route path="/manager-dashboard" component={ManagerDashboard} />
 
       <Route component={NotFound} />
     </Switch>
