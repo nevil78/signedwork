@@ -25,7 +25,8 @@ import {
   Edit,
   Trash2,
   Eye,
-  CheckCircle
+  CheckCircle,
+  AlertCircle
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -33,12 +34,33 @@ export default function CompanyHierarchy() {
   const [isCreateBranchOpen, setIsCreateBranchOpen] = useState(false);
   const [isCreateTeamOpen, setIsCreateTeamOpen] = useState(false);
   const [isManageEmployeeOpen, setIsManageEmployeeOpen] = useState(false);
+  const [isEditBranchOpen, setIsEditBranchOpen] = useState(false);
+  const [isDeleteBranchOpen, setIsDeleteBranchOpen] = useState(false);
+  const [isEditTeamOpen, setIsEditTeamOpen] = useState(false);
+  const [isDeleteTeamOpen, setIsDeleteTeamOpen] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<any>(null);
+  const [selectedBranch, setSelectedBranch] = useState<any>(null);
+  const [selectedTeam, setSelectedTeam] = useState<any>(null);
   const [newBranch, setNewBranch] = useState({
     name: "",
     location: "",
     description: "",
     managerEmployeeId: ""
+  });
+  const [editBranch, setEditBranch] = useState({
+    name: "",
+    location: "",
+    description: "",
+    managerEmployeeId: "",
+    isActive: true
+  });
+  const [editTeam, setEditTeam] = useState({
+    name: "",
+    description: "",
+    branchId: "",
+    teamLeadEmployeeId: "",
+    maxMembers: 10,
+    isActive: true
   });
   const [newTeam, setNewTeam] = useState({
     name: "",
@@ -126,6 +148,73 @@ export default function CompanyHierarchy() {
     }
   });
 
+  const updateBranchMutation = useMutation({
+    mutationFn: async ({ branchId, updates }: { branchId: string; updates: any }) => {
+      return apiRequest(`/api/company/branches/${branchId}`, "PUT", updates);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/company/branches"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/company/structure"] });
+      setIsEditBranchOpen(false);
+      setSelectedBranch(null);
+      toast({ title: "Success", description: "Branch updated successfully" });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to update branch", variant: "destructive" });
+    }
+  });
+
+  const deleteBranchMutation = useMutation({
+    mutationFn: async (branchId: string) => {
+      return apiRequest(`/api/company/branches/${branchId}`, "DELETE");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/company/branches"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/company/structure"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/company/teams"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/company/employees"] });
+      setIsDeleteBranchOpen(false);
+      setSelectedBranch(null);
+      toast({ title: "Success", description: "Branch deleted successfully" });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to delete branch", variant: "destructive" });
+    }
+  });
+
+  const updateTeamMutation = useMutation({
+    mutationFn: async ({ teamId, updates }: { teamId: string; updates: any }) => {
+      return apiRequest(`/api/company/teams/${teamId}`, "PUT", updates);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/company/teams"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/company/structure"] });
+      setIsEditTeamOpen(false);
+      setSelectedTeam(null);
+      toast({ title: "Success", description: "Team updated successfully" });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to update team", variant: "destructive" });
+    }
+  });
+
+  const deleteTeamMutation = useMutation({
+    mutationFn: async (teamId: string) => {
+      return apiRequest(`/api/company/teams/${teamId}`, "DELETE");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/company/teams"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/company/structure"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/company/employees"] });
+      setIsDeleteTeamOpen(false);
+      setSelectedTeam(null);
+      toast({ title: "Success", description: "Team deleted successfully" });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to delete team", variant: "destructive" });
+    }
+  });
+
   // Handle employee selection for hierarchy management
   const handleManageEmployee = (employee: any) => {
     setSelectedEmployee(employee);
@@ -139,6 +228,45 @@ export default function CompanyHierarchy() {
       verificationScope: employee.verificationScope || "none"
     });
     setIsManageEmployeeOpen(true);
+  };
+
+  // Handle branch edit
+  const handleEditBranch = (branch: any) => {
+    setSelectedBranch(branch);
+    setEditBranch({
+      name: branch.name || "",
+      location: branch.location || "",
+      description: branch.description || "",
+      managerEmployeeId: branch.managerEmployeeId || "",
+      isActive: branch.isActive !== false
+    });
+    setIsEditBranchOpen(true);
+  };
+
+  // Handle branch delete confirmation
+  const handleDeleteBranch = (branch: any) => {
+    setSelectedBranch(branch);
+    setIsDeleteBranchOpen(true);
+  };
+
+  // Handle team edit
+  const handleEditTeam = (team: any) => {
+    setSelectedTeam(team);
+    setEditTeam({
+      name: team.name || "",
+      description: team.description || "",
+      branchId: team.branchId || "",
+      teamLeadEmployeeId: team.teamLeadEmployeeId || "",
+      maxMembers: team.maxMembers || 10,
+      isActive: team.isActive !== false
+    });
+    setIsEditTeamOpen(true);
+  };
+
+  // Handle team delete confirmation
+  const handleDeleteTeam = (team: any) => {
+    setSelectedTeam(team);
+    setIsDeleteTeamOpen(true);
   };
 
   const getRoleIcon = (role: string) => {
@@ -544,11 +672,21 @@ export default function CompanyHierarchy() {
                             </div>
                           </div>
                           <div className="flex gap-1">
-                            <Button variant="ghost" size="sm" data-testid={`edit-branch-${branch.id}`}>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={() => handleEditBranch(branch)}
+                              data-testid={`edit-branch-${branch.id}`}
+                            >
                               <Edit className="h-4 w-4" />
                             </Button>
-                            <Button variant="ghost" size="sm" data-testid={`view-branch-${branch.id}`}>
-                              <Eye className="h-4 w-4" />
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={() => handleDeleteBranch(branch)}
+                              data-testid={`delete-branch-${branch.id}`}
+                            >
+                              <Trash2 className="h-4 w-4 text-red-500" />
                             </Button>
                           </div>
                         </div>
@@ -604,11 +742,21 @@ export default function CompanyHierarchy() {
                             </div>
                           </div>
                           <div className="flex gap-1">
-                            <Button variant="ghost" size="sm" data-testid={`edit-team-${team.id}`}>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={() => handleEditTeam(team)}
+                              data-testid={`edit-team-${team.id}`}
+                            >
                               <Edit className="h-4 w-4" />
                             </Button>
-                            <Button variant="ghost" size="sm" data-testid={`view-team-${team.id}`}>
-                              <Eye className="h-4 w-4" />
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={() => handleDeleteTeam(team)}
+                              data-testid={`delete-team-${team.id}`}
+                            >
+                              <Trash2 className="h-4 w-4 text-red-500" />
                             </Button>
                           </div>
                         </div>
@@ -681,6 +829,302 @@ export default function CompanyHierarchy() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Edit Branch Dialog */}
+      <Dialog open={isEditBranchOpen} onOpenChange={setIsEditBranchOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Branch</DialogTitle>
+            <DialogDescription>
+              Update {selectedBranch?.name}'s details and settings
+            </DialogDescription>
+          </DialogHeader>
+          {selectedBranch && (
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="edit-branch-name">Branch Name</Label>
+                <Input
+                  id="edit-branch-name"
+                  value={editBranch.name}
+                  onChange={(e) => setEditBranch({ ...editBranch, name: e.target.value })}
+                  placeholder="e.g., Mumbai Branch, Delhi Office"
+                  data-testid="input-edit-branch-name"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-branch-location">Location</Label>
+                <Input
+                  id="edit-branch-location"
+                  value={editBranch.location}
+                  onChange={(e) => setEditBranch({ ...editBranch, location: e.target.value })}
+                  placeholder="e.g., Mumbai, Maharashtra"
+                  data-testid="input-edit-branch-location"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-branch-description">Description</Label>
+                <Textarea
+                  id="edit-branch-description"
+                  value={editBranch.description}
+                  onChange={(e) => setEditBranch({ ...editBranch, description: e.target.value })}
+                  placeholder="Brief description of the branch"
+                  data-testid="textarea-edit-branch-description"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-branch-manager">Branch Manager</Label>
+                <Select value={editBranch.managerEmployeeId} onValueChange={(value) => setEditBranch({ ...editBranch, managerEmployeeId: value })}>
+                  <SelectTrigger data-testid="select-edit-branch-manager">
+                    <SelectValue placeholder="Select a manager (optional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">No manager assigned</SelectItem>
+                    {Array.isArray(employees) && employees.map((emp: any) => (
+                      <SelectItem key={emp.employeeId} value={emp.employeeId}>
+                        {emp.employee?.firstName} {emp.employee?.lastName} - {emp.position}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="edit-branch-active">Branch Active</Label>
+                <Switch
+                  id="edit-branch-active"
+                  checked={editBranch.isActive}
+                  onCheckedChange={(checked) => setEditBranch({ ...editBranch, isActive: checked })}
+                  data-testid="switch-edit-branch-active"
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button 
+                  onClick={() => updateBranchMutation.mutate({ 
+                    branchId: selectedBranch.id, 
+                    updates: editBranch 
+                  })}
+                  disabled={!editBranch.name || !editBranch.location || updateBranchMutation.isPending}
+                  className="flex-1"
+                  data-testid="button-update-branch"
+                >
+                  {updateBranchMutation.isPending ? "Updating..." : "Update Branch"}
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setIsEditBranchOpen(false)}
+                  className="flex-1"
+                  data-testid="button-cancel-edit-branch"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Branch Confirmation Dialog */}
+      <Dialog open={isDeleteBranchOpen} onOpenChange={setIsDeleteBranchOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <AlertCircle className="h-5 w-5" />
+              Delete Branch
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete "{selectedBranch?.name}"? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          {selectedBranch && (
+            <div className="space-y-4">
+              <div className="p-4 bg-red-50 rounded-lg border border-red-200">
+                <h4 className="font-medium text-red-800 mb-2">This will:</h4>
+                <ul className="text-sm text-red-700 space-y-1">
+                  <li>• Remove the branch from your organization</li>
+                  <li>• Move all teams in this branch to headquarters</li>
+                  <li>• Reassign all employees to headquarters</li>
+                  <li>• Remove all branch-specific permissions</li>
+                </ul>
+              </div>
+              <div className="flex gap-2">
+                <Button 
+                  variant="destructive"
+                  onClick={() => deleteBranchMutation.mutate(selectedBranch.id)}
+                  disabled={deleteBranchMutation.isPending}
+                  className="flex-1"
+                  data-testid="button-confirm-delete-branch"
+                >
+                  {deleteBranchMutation.isPending ? "Deleting..." : "Delete Branch"}
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setIsDeleteBranchOpen(false)}
+                  className="flex-1"
+                  data-testid="button-cancel-delete-branch"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Team Dialog */}
+      <Dialog open={isEditTeamOpen} onOpenChange={setIsEditTeamOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Team</DialogTitle>
+            <DialogDescription>
+              Update {selectedTeam?.name}'s details and settings
+            </DialogDescription>
+          </DialogHeader>
+          {selectedTeam && (
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="edit-team-name">Team Name</Label>
+                <Input
+                  id="edit-team-name"
+                  value={editTeam.name}
+                  onChange={(e) => setEditTeam({ ...editTeam, name: e.target.value })}
+                  placeholder="e.g., Sales Team A, Backend Development"
+                  data-testid="input-edit-team-name"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-team-branch">Branch Assignment</Label>
+                <Select value={editTeam.branchId} onValueChange={(value) => setEditTeam({ ...editTeam, branchId: value })}>
+                  <SelectTrigger data-testid="select-edit-team-branch">
+                    <SelectValue placeholder="Select branch (optional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Headquarters (No Branch)</SelectItem>
+                    {Array.isArray(branches) && branches.map((branch: any) => (
+                      <SelectItem key={branch.id} value={branch.id}>
+                        {branch.name} - {branch.location}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="edit-team-lead">Team Lead</Label>
+                <Select value={editTeam.teamLeadEmployeeId} onValueChange={(value) => setEditTeam({ ...editTeam, teamLeadEmployeeId: value })}>
+                  <SelectTrigger data-testid="select-edit-team-lead">
+                    <SelectValue placeholder="Select team lead (optional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">No team lead assigned</SelectItem>
+                    {Array.isArray(employees) && employees.map((emp: any) => (
+                      <SelectItem key={emp.employeeId} value={emp.employeeId}>
+                        {emp.employee?.firstName} {emp.employee?.lastName} - {emp.position}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="edit-team-description">Description</Label>
+                <Textarea
+                  id="edit-team-description"
+                  value={editTeam.description}
+                  onChange={(e) => setEditTeam({ ...editTeam, description: e.target.value })}
+                  placeholder="Brief description of the team's role"
+                  data-testid="textarea-edit-team-description"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-max-members">Maximum Members</Label>
+                <Input
+                  id="edit-max-members"
+                  type="number"
+                  value={editTeam.maxMembers}
+                  onChange={(e) => setEditTeam({ ...editTeam, maxMembers: parseInt(e.target.value) || 10 })}
+                  min="1"
+                  max="50"
+                  data-testid="input-edit-max-members"
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="edit-team-active">Team Active</Label>
+                <Switch
+                  id="edit-team-active"
+                  checked={editTeam.isActive}
+                  onCheckedChange={(checked) => setEditTeam({ ...editTeam, isActive: checked })}
+                  data-testid="switch-edit-team-active"
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button 
+                  onClick={() => updateTeamMutation.mutate({ 
+                    teamId: selectedTeam.id, 
+                    updates: editTeam 
+                  })}
+                  disabled={!editTeam.name || updateTeamMutation.isPending}
+                  className="flex-1"
+                  data-testid="button-update-team"
+                >
+                  {updateTeamMutation.isPending ? "Updating..." : "Update Team"}
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setIsEditTeamOpen(false)}
+                  className="flex-1"
+                  data-testid="button-cancel-edit-team"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Team Confirmation Dialog */}
+      <Dialog open={isDeleteTeamOpen} onOpenChange={setIsDeleteTeamOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <AlertCircle className="h-5 w-5" />
+              Delete Team
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete "{selectedTeam?.name}"? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          {selectedTeam && (
+            <div className="space-y-4">
+              <div className="p-4 bg-red-50 rounded-lg border border-red-200">
+                <h4 className="font-medium text-red-800 mb-2">This will:</h4>
+                <ul className="text-sm text-red-700 space-y-1">
+                  <li>• Remove the team from your organization</li>
+                  <li>• Reassign all team members to their branch or headquarters</li>
+                  <li>• Remove all team-specific permissions and assignments</li>
+                  <li>• Archive all team-related work entries and data</li>
+                </ul>
+              </div>
+              <div className="flex gap-2">
+                <Button 
+                  variant="destructive"
+                  onClick={() => deleteTeamMutation.mutate(selectedTeam.id)}
+                  disabled={deleteTeamMutation.isPending}
+                  className="flex-1"
+                  data-testid="button-confirm-delete-team"
+                >
+                  {deleteTeamMutation.isPending ? "Deleting..." : "Delete Team"}
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setIsDeleteTeamOpen(false)}
+                  className="flex-1"
+                  data-testid="button-cancel-delete-team"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Employee Hierarchy Management Dialog */}
       <Dialog open={isManageEmployeeOpen} onOpenChange={setIsManageEmployeeOpen}>
