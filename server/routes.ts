@@ -206,10 +206,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     saveUninitialized: false, // Don't create session until something stored
     rolling: true, // Reset expiration on activity
     cookie: {
-      secure: false, // Set to true in production with HTTPS
-      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production', // Auto-detect production
+      httpOnly: true, // Prevent XSS - no client-side access
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
-      sameSite: 'lax'
+      sameSite: 'strict' // Enhanced CSRF protection
     },
     name: 'sessionId', // Custom session name
   }));
@@ -249,7 +249,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  // User info endpoint for client state hydration - PROTECTED ROUTE
+  // Simple /me endpoint for client state hydration - PROTECTED ROUTE
+  app.get("/api/me", requireAuth, (req: any, res) => {
+    const user = req.user;
+    const response: any = {
+      userId: user.id,
+      userType: user.type,
+    };
+    
+    // Include company-specific data for company users
+    if (user.type === "company") {
+      response.companyId = user.id; // Company user's ID is the company ID
+      response.companySubRole = user.companySubRole;
+    }
+    
+    res.json(response);
+  });
+
+  // Detailed user info endpoint for client state hydration - PROTECTED ROUTE
   app.get("/api/auth/me", requireAuth, (req: any, res) => {
     const user = req.user;
     const response: any = {
