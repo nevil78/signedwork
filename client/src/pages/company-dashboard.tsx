@@ -31,6 +31,7 @@ import { useSocket } from '@/hooks/useSocket';
 import { FeedbackButton } from '@/components/FeedbackButton';
 import { CompanyVerificationEdit } from '@/components/CompanyVerificationEdit';
 import CompanyNavHeader from '@/components/company-nav-header';
+import { useCompanyAuth } from '@/hooks/useCompanyAuth';
 
 interface InvitationCode {
   code: string;
@@ -53,6 +54,20 @@ export default function CompanyDashboard() {
   const [copied, setCopied] = useState(false);
   const [location, navigate] = useLocation();
   const queryClient = useQueryClient();
+  const { companySubRole, isLoading: isAuthLoading } = useCompanyAuth();
+
+  // Role-based redirect to specialized dashboards
+  useEffect(() => {
+    if (!isAuthLoading && companySubRole) {
+      if (companySubRole === 'COMPANY_ADMIN') {
+        navigate('/company/admin/dashboard');
+        return;
+      } else if (companySubRole === 'MANAGER') {
+        navigate('/company/manager/dashboard');
+        return;
+      }
+    }
+  }, [companySubRole, isAuthLoading, navigate]);
 
 
 
