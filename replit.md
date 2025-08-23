@@ -1,13 +1,5 @@
 # Overview
-This project is a LinkedIn-like professional networking platform built with Express.js and React. Its main purpose is to provide advanced profile management for employees and detailed company registration capabilities. The platform aims to facilitate professional networking, job discovery, and work tracking, fostering a robust ecosystem for professional growth and business collaboration. 
-
-**STEP 1 COMPLETE**: Successfully implemented enterprise-grade role-based access control system with COMPANY_ADMIN and MANAGER sub-roles under unified Company Login, featuring secure server-side enforcement, automatic role-based redirects, and comprehensive permission framework.
-
-**STEP 2 COMPLETE**: Implemented company role management system with database schema updates, role assignment UI, and server endpoints for managing employee roles.
-
-**STEP 3 IN PROGRESS**: Addressing manager authentication architecture - implementing separate manager login system to enable individual manager accounts while maintaining company context and role-based permissions.
-
-Key capabilities include comprehensive employee profiles with CV fields, company-based work diary management, an invitation system for company joining, enterprise role management system, and an administrative panel for user and platform control. The business vision is to create a dynamic and efficient online space for professionals and companies to connect, manage their work, and discover opportunities.
+This project is a LinkedIn-like professional networking platform built with Express.js and React. Its main purpose is to provide advanced profile management for employees and detailed company registration capabilities. The platform aims to facilitate professional networking, job discovery, and work tracking, fostering a robust ecosystem for professional growth and business collaboration. Key capabilities include comprehensive employee profiles with CV fields, company-based work diary management, an invitation system for company joining, and an administrative panel for user and platform control. The business vision is to create a dynamic and efficient online space for professionals and companies to connect, manage their work, and discover opportunities.
 
 # User Preferences
 Preferred communication style: Simple, everyday language.
@@ -42,8 +34,6 @@ Preferred communication style: Simple, everyday language.
 - **Session Security**: Configurable timeouts and secure cookie settings
 - **Email Verification**: Optional email verification system with OTP and SendGrid integration
 - **Google OAuth**: Employee sign-up and login integration
-- **Company Sub-Roles**: Enterprise-level role system with COMPANY_ADMIN, MANAGER, and BRANCH_ADMIN roles
-- **Permission System**: Fine-grained permissions map for company context roles with server-side enforcement
 
 ## UI/UX Decisions
 - Modern UI built with shadcn/ui components.
@@ -61,7 +51,6 @@ Preferred communication style: Simple, everyday language.
 - **Work Diary**: Company-based work tracking system with task creation, status, priority, time tracking, tagging, and CRUD operations. Features company invitation system and approval workflows with rating and feedback. Includes shared documents system for job applications, allowing companies to view verified work entries and shared profile data.
 - **Company Management**: Company registration with detailed business info, invitation code generation, and employee management (employment status tracking).
 - **Admin Panel**: Role-based access for managing users (employees and companies), platform statistics, and comprehensive data deletion with backup and confirmation safeguards. Uses direct SQL execution via Drizzle's sql template literals to ensure reliable deletion operations.
-- **Company Role System**: Enterprise-grade role-based access control with automatic login redirects, protected routes, and permission-based middleware for fine-grained access control within company contexts.
 - **Enhanced Security**: Secure password reset flow (OTP-based), immutable protection for approved work entries.
 - **Job Discovery Page**: Comprehensive job discovery platform with AI-powered search, advanced filtering, and application management.
 - **Trending Skills Module**: Advanced skills discovery and personalization system with market insights and analytics.

@@ -28,14 +28,6 @@ import CompanySharedDocumentsPage from "@/pages/company-shared-documents";
 import CompanyEmployeeWorkDiary from "@/pages/company-employee-work-diary";
 import CompanyEmployees from "@/pages/company-employees";
 import { EmployeeSummaryDashboard } from "@/pages/employee-summary-dashboard";
-import CompanyAdminDashboard from "@/pages/company-admin-dashboard";
-import CompanyManagerDashboard from "@/pages/company-manager-dashboard";
-import CompanyAdminManagers from "@/pages/company-admin-managers";
-import CompanyAdminSettings from "@/pages/company-admin-settings";
-import CompanyAdminEmployees from "@/pages/company-admin-employees";
-import CompanyAdminReports from "@/pages/company-admin-reports";
-import CompanyRoleManagement from "@/pages/company-role-management";
-import Company403 from "@/pages/company-403";
 import AdminLogin from "@/pages/admin-login";
 import AdminDashboard from "@/pages/admin-dashboard";
 import AdminSetup from "@/pages/admin-setup";
@@ -60,8 +52,6 @@ function PageLoader() {
 }
 
 import NotFound from "@/pages/not-found";
-import ManagerLogin from "@/pages/manager-login";
-import ManagerDashboard from "@/pages/manager-dashboard";
 
 function Router() {
   return (
@@ -92,17 +82,6 @@ function Router() {
       <Route path="/company-employee/:employeeId" component={CompanyEmployeeProfile} />
       <Route path="/employee-work-diary/:employeeId" component={CompanyEmployeeWorkDiary} />
       <Route path="/employee-profile" component={() => { window.location.href = "/profile"; return null; }} />
-      
-      {/* Company Role-Based Routes */}
-      <Route path="/company/admin/dashboard" component={CompanyAdminDashboard} />
-      <Route path="/company/admin/managers" component={CompanyAdminManagers} />
-      <Route path="/company/admin/settings" component={CompanyAdminSettings} />
-      <Route path="/company/admin/employees" component={CompanyAdminEmployees} />
-      <Route path="/company/admin/reports" component={CompanyAdminReports} />
-      <Route path="/company/admin/roles" component={CompanyRoleManagement} />
-      <Route path="/company-role-management" component={CompanyRoleManagement} />
-      <Route path="/company/manager/dashboard" component={CompanyManagerDashboard} />
-      <Route path="/company/403" component={() => <Company403 />} />
       <Route path="/admin/login" component={AdminLogin} />
       <Route path="/admin/dashboard" component={AdminDashboard} />
       <Route path="/admin/verifications" component={AdminVerifications} />
@@ -114,8 +93,6 @@ function Router() {
       <Route path="/support" component={SupportPage} />
       <Route path="/terms" component={() => <Suspense fallback={<PageLoader />}><TermsOfService /></Suspense>} />
       <Route path="/privacy" component={() => <Suspense fallback={<PageLoader />}><PrivacyPolicy /></Suspense>} />
-      <Route path="/manager-login" component={ManagerLogin} />
-      <Route path="/manager-dashboard" component={ManagerDashboard} />
 
       <Route component={NotFound} />
     </Switch>

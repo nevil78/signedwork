@@ -1,12 +1,11 @@
 import { Link, useLocation } from 'wouter';
-import { Building2, Users, FileText, Briefcase, UserCheck, LogOut, Settings, ChevronDown, Menu, MessageSquare, Clock, Shield, BarChart3 } from 'lucide-react';
+import { Building2, Users, FileText, Briefcase, UserCheck, LogOut, Settings, ChevronDown, Menu, MessageSquare, Clock } from 'lucide-react';
 import { FeedbackButton } from '@/components/FeedbackButton';
 import signedworkLogo from "@assets/Signed-work-Logo (1)_1755168042120.png";
 import { Button } from '@/components/ui/button';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
-import { useCompanyAuth } from '@/hooks/useCompanyAuth';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   DropdownMenu,
@@ -26,7 +25,6 @@ export default function CompanyNavHeader({ companyId, companyName }: CompanyNavH
   const [location, setLocation] = useLocation();
   const { toast } = useToast();
   const [sessionTime, setSessionTime] = useState<string>('24h 0m');
-  const { companySubRole } = useCompanyAuth();
 
   // Fetch company data if not provided
   const { data: company } = useQuery({
@@ -80,7 +78,7 @@ export default function CompanyNavHeader({ companyId, companyName }: CompanyNavH
   });
 
   const getCurrentTab = () => {
-    if (location === '/company-dashboard' || location === '/company/admin/dashboard' || location === '/company/manager/dashboard') return 'dashboard';
+    if (location === '/company-dashboard') return 'dashboard';
     if (location === '/company-employees') return 'employees';
     if (location === '/company-work-entries') return 'work-entries';
     if (location === '/company-jobs') return 'jobs';
@@ -90,16 +88,7 @@ export default function CompanyNavHeader({ companyId, companyName }: CompanyNavH
   };
 
   const handleTabChange = (value: string) => {
-    if (value === 'dashboard') {
-      // Role-based dashboard routing
-      if (companySubRole === 'COMPANY_ADMIN') {
-        setLocation('/company/admin/dashboard');
-      } else if (companySubRole === 'MANAGER') {
-        setLocation('/company/manager/dashboard');
-      } else {
-        setLocation('/company-dashboard');
-      }
-    }
+    if (value === 'dashboard') setLocation('/company-dashboard');
     else if (value === 'employees') setLocation('/company-employees');
     else if (value === 'work-entries') setLocation('/company-work-entries');
     else if (value === 'jobs') setLocation('/company-jobs');
@@ -131,16 +120,8 @@ export default function CompanyNavHeader({ companyId, companyName }: CompanyNavH
                     value="dashboard" 
                     className="data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 data-[state=active]:bg-blue-50 rounded-none h-full px-6 font-medium border border-transparent hover:border-gray-200"
                   >
-                    {companySubRole === 'COMPANY_ADMIN' ? (
-                      <Shield className="h-4 w-4 mr-2" />
-                    ) : companySubRole === 'MANAGER' ? (
-                      <BarChart3 className="h-4 w-4 mr-2" />
-                    ) : (
-                      <Building2 className="h-4 w-4 mr-2" />
-                    )}
-                    {companySubRole === 'COMPANY_ADMIN' ? 'Admin' : 
-                     companySubRole === 'MANAGER' ? 'Manager' : 
-                     'Dashboard'}
+                    <Building2 className="h-4 w-4 mr-2" />
+                    Dashboard
                   </TabsTrigger>
                   <TabsTrigger 
                     value="employees" 
@@ -190,39 +171,17 @@ export default function CompanyNavHeader({ companyId, companyName }: CompanyNavH
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="w-64 p-2 bg-white shadow-lg border border-gray-200 rounded-lg">
                   
-                  {/* Dashboard - Role-based routing */}
+                  {/* Dashboard - Most Prominent */}
                   <div className="px-1 py-1">
                     <DropdownMenuItem 
-                      onClick={() => {
-                        if (companySubRole === 'COMPANY_ADMIN') {
-                          setLocation('/company/admin/dashboard');
-                        } else if (companySubRole === 'MANAGER') {
-                          setLocation('/company/manager/dashboard');
-                        } else {
-                          setLocation('/company-dashboard');
-                        }
-                      }}
+                      onClick={() => setLocation('/company-dashboard')}
                       className={`flex items-center cursor-pointer font-semibold text-base py-3 px-3 rounded-lg transition-all duration-200 ${getCurrentTab() === 'dashboard' ? 'bg-blue-100 text-blue-700 border-2 border-blue-300 shadow-sm' : 'hover:bg-blue-50 hover:border hover:border-blue-200 border border-transparent'}`}
                       data-testid="mobile-nav-company-dashboard"
                     >
-                      {companySubRole === 'COMPANY_ADMIN' ? (
-                        <Shield className="h-5 w-5 mr-3 text-blue-600" />
-                      ) : companySubRole === 'MANAGER' ? (
-                        <BarChart3 className="h-5 w-5 mr-3 text-blue-600" />
-                      ) : (
-                        <Building2 className="h-5 w-5 mr-3 text-blue-600" />
-                      )}
+                      <Building2 className="h-5 w-5 mr-3 text-blue-600" />
                       <div className="flex flex-col">
-                        <span>
-                          {companySubRole === 'COMPANY_ADMIN' ? 'Admin Dashboard' : 
-                           companySubRole === 'MANAGER' ? 'Manager Dashboard' : 
-                           'Dashboard'}
-                        </span>
-                        <span className="text-xs font-normal text-muted-foreground">
-                          {companySubRole === 'COMPANY_ADMIN' ? 'Company Administration' : 
-                           companySubRole === 'MANAGER' ? 'Team Management' : 
-                           'Company Overview'}
-                        </span>
+                        <span>Dashboard</span>
+                        <span className="text-xs font-normal text-muted-foreground">Company Overview</span>
                       </div>
                     </DropdownMenuItem>
                   </div>

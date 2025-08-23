@@ -177,71 +177,6 @@ export const workEntries = pgTable("work_entries", {
   attachments: text("attachments").array().default(sql`'{}'::text[]`), // file URLs or paths
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-  // Matrix Teams Enhancement - Add team reference and approval tracking
-  teamId: varchar("team_id").references(() => teams.id), // Team/project assignment
-  approvedBy: varchar("approved_by"), // ID of approver (manager or company)
-  approvedByType: text("approved_by_type"), // 'manager' or 'company'
-  approvedAt: timestamp("approved_at"),
-  approvalComments: text("approval_comments"),
-  isImmutable: boolean("is_immutable").default(false), // First approval locks entry
-  submittedBy: varchar("submitted_by"), // For manager personal entries
-  submittedByType: text("submitted_by_type").default("employee"), // 'employee' or 'manager'
-});
-
-// Teams/Projects table for matrix team assignments
-export const teams = pgTable("teams", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  companyId: varchar("company_id").notNull().references(() => companies.id, { onDelete: "cascade" }),
-  name: text("name").notNull(),
-  description: text("description"),
-  managerId: varchar("manager_id"), // References manager account
-  isActive: boolean("is_active").default(true),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-// Employee-Team assignments for matrix teams
-export const employeeTeamAssignments = pgTable("employee_team_assignments", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  employeeId: varchar("employee_id").notNull().references(() => employees.id, { onDelete: "cascade" }),
-  teamId: varchar("team_id").notNull().references(() => teams.id, { onDelete: "cascade" }),
-  companyId: varchar("company_id").notNull().references(() => companies.id, { onDelete: "cascade" }),
-  assignedBy: varchar("assigned_by"), // Who assigned this employee to team
-  assignedAt: timestamp("assigned_at").defaultNow(),
-  isActive: boolean("is_active").default(true),
-});
-
-// Manager accounts for separate authentication
-export const managers = pgTable("managers", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  companyId: varchar("company_id").notNull().references(() => companies.id, { onDelete: "cascade" }),
-  email: text("email").notNull().unique(),
-  password: text("password").notNull(),
-  firstName: text("first_name").notNull(),
-  lastName: text("last_name").notNull(),
-  role: text("role").default("MANAGER"), // MANAGER, COMPANY_ADMIN
-  invitedBy: varchar("invited_by"), // Company admin who invited
-  inviteToken: varchar("invite_token"),
-  inviteAccepted: boolean("invite_accepted").default(false),
-  permissions: jsonb("permissions"),
-  isActive: boolean("is_active").default(true),
-  lastLogin: timestamp("last_login"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-// Manager invitations table
-export const managerInvitations = pgTable("manager_invitations", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  companyId: varchar("company_id").notNull().references(() => companies.id, { onDelete: "cascade" }),
-  email: text("email").notNull(),
-  role: text("role").notNull(),
-  teamId: varchar("team_id").references(() => teams.id), // Which team they'll manage
-  inviteToken: varchar("invite_token").unique().notNull(),
-  invitedBy: varchar("invited_by").references(() => companies.id),
-  expiresAt: timestamp("expires_at"),
-  status: text("status").default("pending"), // pending, accepted, expired
-  createdAt: timestamp("created_at").defaultNow(),
 });
 
 export const companies = pgTable("companies", {
@@ -274,10 +209,6 @@ export const companies = pgTable("companies", {
   establishmentYear: text("establishment_year").notNull(),
   password: text("password").notNull(),
   emailVerified: boolean("email_verified").default(false),
-  // Company role system for enterprise access control
-  companySubRole: text("company_sub_role", { 
-    enum: ["COMPANY_ADMIN", "MANAGER", "BRANCH_ADMIN"] 
-  }).notNull().default("COMPANY_ADMIN"),
   // PAN/CIN Verification fields
   verificationStatus: text("verification_status").default("unverified"), // unverified, pending, verified, rejected
   verificationMethod: text("verification_method"), // manual, api, document_upload
@@ -647,11 +578,6 @@ export const insertWorkEntrySchema = createInsertSchema(workEntries).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
-  approvedBy: true,
-  approvedByType: true,
-  approvedAt: true,
-  isImmutable: true,
-  teamId: true, // Will be set programmatically
 }).extend({
   title: z.string()
     .min(3, "Work title must be at least 3 characters long")
@@ -923,44 +849,6 @@ export type InsertCertification = z.infer<typeof insertCertificationSchema>;
 export type InsertProject = z.infer<typeof insertProjectSchema>;
 export type InsertEndorsement = z.infer<typeof insertEndorsementSchema>;
 export type InsertEmployeeCompany = z.infer<typeof insertEmployeeCompanySchema>;
-
-// Matrix Teams Schema Definitions
-export const insertTeamSchema = createInsertSchema(teams).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const insertManagerSchema = createInsertSchema(managers).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-  inviteToken: true,
-  inviteAccepted: true,
-  lastLogin: true,
-});
-
-export const insertManagerInvitationSchema = createInsertSchema(managerInvitations).omit({
-  id: true,
-  createdAt: true,
-  inviteToken: true,
-});
-
-// Matrix Teams Schema Types
-export type Team = typeof teams.$inferSelect;
-export type InsertTeam = z.infer<typeof insertTeamSchema>;
-export type EmployeeTeamAssignment = typeof employeeTeamAssignments.$inferSelect;
-export type InsertEmployeeTeamAssignment = typeof employeeTeamAssignments.$inferInsert;
-export type Manager = typeof managers.$inferSelect;
-export type InsertManager = z.infer<typeof insertManagerSchema>;
-export type ManagerInvitation = typeof managerInvitations.$inferSelect;
-export type InsertManagerInvitation = z.infer<typeof insertManagerInvitationSchema>;
-
-// Enhanced login schema for manager authentication
-export const managerLoginSchema = z.object({
-  email: z.string().email("Invalid email format"),
-  password: z.string().min(1, "Password is required"),
-});
 export type InsertWorkEntry = z.infer<typeof insertWorkEntrySchema>;
 export type InsertCompany = z.infer<typeof insertCompanySchema>;
 export type InsertCompanyInvitationCode = z.infer<typeof insertCompanyInvitationCodeSchema>;
