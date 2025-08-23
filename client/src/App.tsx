@@ -34,6 +34,7 @@ import CompanyAdminManagers from "@/pages/company-admin-managers";
 import CompanyAdminSettings from "@/pages/company-admin-settings";
 import CompanyAdminEmployees from "@/pages/company-admin-employees";
 import CompanyAdminReports from "@/pages/company-admin-reports";
+import AdminAccess from "@/pages/admin-access";
 import Company403 from "@/pages/company-403";
 import AdminLogin from "@/pages/admin-login";
 import AdminDashboard from "@/pages/admin-dashboard";
@@ -91,6 +92,7 @@ function Router() {
       <Route path="/employee-profile" component={() => { window.location.href = "/profile"; return null; }} />
       
       {/* Company Role-Based Routes */}
+      <Route path="/admin" component={AdminAccess} />
       <Route path="/company/admin/dashboard" component={CompanyAdminDashboard} />
       <Route path="/company/admin/managers" component={CompanyAdminManagers} />
       <Route path="/company/admin/settings" component={CompanyAdminSettings} />
