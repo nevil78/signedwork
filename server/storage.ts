@@ -3514,6 +3514,537 @@ export class DatabaseStorage implements IStorage {
       .where(lt(pendingUsers.tokenExpiry, new Date()));
     return result.rowCount || 0;
   }
+
+  // ==================== HIERARCHICAL COMPANY STRUCTURE IMPLEMENTATION ====================
+  
+  // Company Branch operations (for HDFC Surat, HDFC Mumbai, etc.)
+  async getCompanyBranches(companyId: string): Promise<CompanyBranch[]> {
+    return await db
+      .select()
+      .from(companyBranches)
+      .where(eq(companyBranches.companyId, companyId))
+      .orderBy(asc(companyBranches.name));
+  }
+
+  async getCompanyBranch(branchId: string): Promise<CompanyBranch | undefined> {
+    const [branch] = await db
+      .select()
+      .from(companyBranches)
+      .where(eq(companyBranches.id, branchId));
+    return branch || undefined;
+  }
+
+  async createCompanyBranch(branchData: InsertCompanyBranch): Promise<CompanyBranch> {
+    // Generate unique branch ID
+    let branchId = generateBranchId();
+    let attempts = 0;
+    const maxAttempts = 10;
+    
+    while (attempts < maxAttempts) {
+      const existing = await db.select().from(companyBranches).where(eq(companyBranches.branchId, branchId));
+      if (existing.length === 0) {
+        break;
+      }
+      branchId = generateBranchId();
+      attempts++;
+    }
+    
+    if (attempts >= maxAttempts) {
+      throw new Error("Failed to generate unique branch ID");
+    }
+
+    const [branch] = await db
+      .insert(companyBranches)
+      .values({
+        ...branchData,
+        branchId,
+      })
+      .returning();
+    return branch;
+  }
+
+  async updateCompanyBranch(branchId: string, data: Partial<CompanyBranch>): Promise<CompanyBranch> {
+    const [branch] = await db
+      .update(companyBranches)
+      .set(data)
+      .where(eq(companyBranches.id, branchId))
+      .returning();
+    return branch;
+  }
+
+  async deleteCompanyBranch(branchId: string): Promise<void> {
+    await db
+      .delete(companyBranches)
+      .where(eq(companyBranches.id, branchId));
+  }
+
+  // Company Team operations (for teams within branches)
+  async getCompanyTeams(companyId: string, branchId?: string): Promise<CompanyTeam[]> {
+    let query = db
+      .select()
+      .from(companyTeams)
+      .where(eq(companyTeams.companyId, companyId));
+    
+    if (branchId) {
+      query = query.where(eq(companyTeams.branchId, branchId));
+    }
+    
+    return await query.orderBy(asc(companyTeams.name));
+  }
+
+  async getCompanyTeam(teamId: string): Promise<CompanyTeam | undefined> {
+    const [team] = await db
+      .select()
+      .from(companyTeams)
+      .where(eq(companyTeams.id, teamId));
+    return team || undefined;
+  }
+
+  async createCompanyTeam(teamData: InsertCompanyTeam): Promise<CompanyTeam> {
+    // Generate unique team ID
+    let teamId = generateTeamId();
+    let attempts = 0;
+    const maxAttempts = 10;
+    
+    while (attempts < maxAttempts) {
+      const existing = await db.select().from(companyTeams).where(eq(companyTeams.teamId, teamId));
+      if (existing.length === 0) {
+        break;
+      }
+      teamId = generateTeamId();
+      attempts++;
+    }
+    
+    if (attempts >= maxAttempts) {
+      throw new Error("Failed to generate unique team ID");
+    }
+
+    const [team] = await db
+      .insert(companyTeams)
+      .values({
+        ...teamData,
+        teamId,
+      })
+      .returning();
+    return team;
+  }
+
+  async updateCompanyTeam(teamId: string, data: Partial<CompanyTeam>): Promise<CompanyTeam> {
+    const [team] = await db
+      .update(companyTeams)
+      .set(data)
+      .where(eq(companyTeams.id, teamId))
+      .returning();
+    return team;
+  }
+
+  async deleteCompanyTeam(teamId: string): Promise<void> {
+    await db
+      .delete(companyTeams)
+      .where(eq(companyTeams.id, teamId));
+  }
+
+  async getTeamMembers(teamId: string): Promise<CompanyEmployee[]> {
+    return await db
+      .select()
+      .from(companyEmployees)
+      .where(eq(companyEmployees.teamId, teamId))
+      .orderBy(asc(companyEmployees.position));
+  }
+
+  // Enhanced CompanyEmployee operations with hierarchy
+  async getEmployeeHierarchyInfo(employeeId: string, companyId: string): Promise<{
+    employee: Employee;
+    companyRole: CompanyEmployee;
+    branch?: CompanyBranch;
+    team?: CompanyTeam;
+    permissions: {
+      canVerifyWork: boolean;
+      canManageEmployees: boolean;
+      canCreateTeams: boolean;
+      verificationScope: string;
+    };
+  } | null> {
+    try {
+      // Get employee and company relationship
+      const [employee] = await db.select().from(employees).where(eq(employees.id, employeeId));
+      if (!employee) return null;
+
+      const [companyRole] = await db
+        .select()
+        .from(companyEmployees)
+        .where(and(
+          eq(companyEmployees.employeeId, employeeId),
+          eq(companyEmployees.companyId, companyId)
+        ));
+      if (!companyRole) return null;
+
+      // Get branch info if applicable
+      let branch: CompanyBranch | undefined;
+      if (companyRole.branchId) {
+        const [branchResult] = await db
+          .select()
+          .from(companyBranches)
+          .where(eq(companyBranches.id, companyRole.branchId));
+        branch = branchResult || undefined;
+      }
+
+      // Get team info if applicable
+      let team: CompanyTeam | undefined;
+      if (companyRole.teamId) {
+        const [teamResult] = await db
+          .select()
+          .from(companyTeams)
+          .where(eq(companyTeams.id, companyRole.teamId));
+        team = teamResult || undefined;
+      }
+
+      // Calculate permissions based on hierarchy role
+      const permissions = {
+        canVerifyWork: companyRole.canVerifyWork || false,
+        canManageEmployees: companyRole.canManageEmployees || false,
+        canCreateTeams: companyRole.canCreateTeams || false,
+        verificationScope: companyRole.verificationScope || "none"
+      };
+
+      return {
+        employee,
+        companyRole,
+        branch,
+        team,
+        permissions
+      };
+    } catch (error) {
+      console.error("Error getting employee hierarchy info:", error);
+      return null;
+    }
+  }
+
+  // Role-based verification methods
+  async canEmployeeVerifyWork(verifierId: string, employeeId: string, companyId: string): Promise<boolean> {
+    try {
+      const verifierInfo = await this.getEmployeeHierarchyInfo(verifierId, companyId);
+      const employeeInfo = await this.getEmployeeHierarchyInfo(employeeId, companyId);
+
+      if (!verifierInfo || !employeeInfo) return false;
+
+      // Company admin can verify anyone
+      if (verifierInfo.companyRole.hierarchyRole === "company_admin") {
+        return true;
+      }
+
+      // Branch manager can verify employees in their branch
+      if (verifierInfo.companyRole.hierarchyRole === "branch_manager" && 
+          verifierInfo.companyRole.branchId === employeeInfo.companyRole.branchId) {
+        return true;
+      }
+
+      // Team lead can verify employees in their team
+      if (verifierInfo.companyRole.hierarchyRole === "team_lead" && 
+          verifierInfo.companyRole.teamId === employeeInfo.companyRole.teamId) {
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      console.error("Error checking verification permissions:", error);
+      return false;
+    }
+  }
+
+  async getEmployeesVerifiableByUser(verifierId: string, companyId: string): Promise<CompanyEmployee[]> {
+    try {
+      const verifierInfo = await this.getEmployeeHierarchyInfo(verifierId, companyId);
+      if (!verifierInfo) return [];
+
+      let query = db.select().from(companyEmployees).where(eq(companyEmployees.companyId, companyId));
+
+      // Filter based on verification scope
+      switch (verifierInfo.companyRole.hierarchyRole) {
+        case "company_admin":
+          // Can verify all employees in company
+          break;
+        case "branch_manager":
+          // Can verify employees in their branch
+          if (verifierInfo.companyRole.branchId) {
+            query = query.where(eq(companyEmployees.branchId, verifierInfo.companyRole.branchId));
+          }
+          break;
+        case "team_lead":
+          // Can verify employees in their team
+          if (verifierInfo.companyRole.teamId) {
+            query = query.where(eq(companyEmployees.teamId, verifierInfo.companyRole.teamId));
+          }
+          break;
+        default:
+          return []; // Regular employees can't verify others
+      }
+
+      return await query;
+    } catch (error) {
+      console.error("Error getting verifiable employees:", error);
+      return [];
+    }
+  }
+
+  // Hierarchical work entry operations with verification tracking
+  async createWorkEntryWithHierarchy(workEntryData: InsertWorkEntry & {
+    branchId?: string;
+    teamId?: string;
+  }): Promise<WorkEntry> {
+    const [workEntry] = await db
+      .insert(workEntries)
+      .values(workEntryData)
+      .returning();
+    return workEntry;
+  }
+
+  async verifyWorkEntryHierarchical(workEntryId: string, verifierId: string, data: {
+    approvalStatus: "approved" | "needs_changes";
+    companyRating?: number;
+    companyFeedback?: string;
+  }): Promise<WorkEntry> {
+    // Get verifier hierarchy info for proper attribution
+    const verifierInfo = await this.getEmployeeHierarchyInfo(verifierId, ""); // Company ID will be derived from work entry
+    
+    const [workEntry] = await db
+      .update(workEntries)
+      .set({
+        ...data,
+        verifiedBy: verifierId,
+        verifiedAt: new Date(),
+        // Store hierarchy context for dual display system
+        verifiedByRole: verifierInfo?.companyRole.hierarchyRole,
+        verifiedByName: verifierInfo ? `${verifierInfo.employee.firstName} ${verifierInfo.employee.lastName}` : undefined
+      })
+      .where(eq(workEntries.id, workEntryId))
+      .returning();
+    
+    return workEntry;
+  }
+
+  async getWorkEntriesWithHierarchy(options: {
+    employeeId?: string;
+    companyId?: string;
+    branchId?: string;
+    teamId?: string;
+    verifierId?: string;
+    includeHierarchyInfo?: boolean;
+  }): Promise<(WorkEntry & {
+    employee?: Employee;
+    company?: Company;
+    branch?: CompanyBranch;
+    team?: CompanyTeam;
+    verifier?: Employee;
+    externalCompanyDisplay?: string; // "HDFC" for external view
+    internalVerificationDisplay?: string; // "Manager X, HDFC Surat" for internal view
+  })[]> {
+    try {
+      let query = db.select().from(workEntries);
+
+      // Apply filters
+      const conditions = [];
+      if (options.employeeId) conditions.push(eq(workEntries.employeeId, options.employeeId));
+      if (options.companyId) conditions.push(eq(workEntries.companyId, options.companyId));
+      if (conditions.length > 0) {
+        query = query.where(and(...conditions));
+      }
+
+      const workEntryResults = await query.orderBy(desc(workEntries.createdAt));
+
+      if (!options.includeHierarchyInfo) {
+        return workEntryResults;
+      }
+
+      // Enhance with hierarchy information
+      const enhancedResults = await Promise.all(
+        workEntryResults.map(async (workEntry) => {
+          const enhanced: any = { ...workEntry };
+
+          // Get employee info
+          if (workEntry.employeeId) {
+            const [employee] = await db.select().from(employees).where(eq(employees.id, workEntry.employeeId));
+            enhanced.employee = employee;
+          }
+
+          // Get company info
+          if (workEntry.companyId) {
+            const [company] = await db.select().from(companies).where(eq(companies.id, workEntry.companyId));
+            enhanced.company = company;
+            enhanced.externalCompanyDisplay = company?.name; // External display: "HDFC"
+          }
+
+          // Get verifier info for internal display
+          if (workEntry.verifiedBy) {
+            const [verifier] = await db.select().from(employees).where(eq(employees.id, workEntry.verifiedBy));
+            enhanced.verifier = verifier;
+
+            // Build internal verification display: "Manager X, HDFC Surat Branch"
+            if (verifier && enhanced.company) {
+              let internalDisplay = verifier.name || verifier.email;
+              
+              // Add branch/team context if available
+              if (workEntry.verifierBranchId) {
+                const [branch] = await db.select().from(companyBranches).where(eq(companyBranches.id, workEntry.verifierBranchId));
+                if (branch) {
+                  internalDisplay += `, ${enhanced.company.name} ${branch.name}`;
+                  enhanced.branch = branch;
+                }
+              } else if (workEntry.verifierTeamId) {
+                const [team] = await db.select().from(companyTeams).where(eq(companyTeams.id, workEntry.verifierTeamId));
+                if (team) {
+                  internalDisplay += `, ${team.name}`;
+                  enhanced.team = team;
+                }
+              } else {
+                internalDisplay += `, ${enhanced.company.name}`;
+              }
+
+              enhanced.internalVerificationDisplay = internalDisplay;
+            }
+          }
+
+          return enhanced;
+        })
+      );
+
+      return enhancedResults;
+    } catch (error) {
+      console.error("Error getting work entries with hierarchy:", error);
+      return [];
+    }
+  }
+
+  // Company hierarchy reporting
+  async getCompanyHierarchyStructure(companyId: string): Promise<{
+    company: Company;
+    branches: (CompanyBranch & {
+      teams: (CompanyTeam & {
+        members: CompanyEmployee[];
+        teamLead?: Employee;
+      })[];
+      employeeCount: number;
+    })[];
+    headquarterTeams: (CompanyTeam & {
+      members: CompanyEmployee[];
+      teamLead?: Employee;
+    })[];
+    totalEmployees: number;
+    totalBranches: number;
+    totalTeams: number;
+  }> {
+    try {
+      // Get company info
+      const [company] = await db.select().from(companies).where(eq(companies.id, companyId));
+      if (!company) throw new Error("Company not found");
+
+      // Get all branches
+      const branches = await this.getCompanyBranches(companyId);
+
+      // Get branch teams and employees
+      const branchesWithDetails = await Promise.all(
+        branches.map(async (branch) => {
+          const teams = await this.getCompanyTeams(companyId, branch.id);
+          const teamsWithMembers = await Promise.all(
+            teams.map(async (team) => {
+              const members = await this.getTeamMembers(team.id);
+              let teamLead: Employee | undefined;
+              
+              // Find team lead
+              const leadMember = members.find(m => m.hierarchyRole === "team_lead");
+              if (leadMember) {
+                const [employee] = await db.select().from(employees).where(eq(employees.id, leadMember.employeeId));
+                teamLead = employee;
+              }
+              
+              return { ...team, members, teamLead };
+            })
+          );
+
+          // Count total employees in branch
+          const [employeeCount] = await db
+            .select({ count: sql<number>`COUNT(*)` })
+            .from(companyEmployees)
+            .where(eq(companyEmployees.branchId, branch.id));
+
+          return {
+            ...branch,
+            teams: teamsWithMembers,
+            employeeCount: employeeCount?.count || 0
+          };
+        })
+      );
+
+      // Get headquarters teams (teams not assigned to any branch)
+      const headquarterTeams = await db
+        .select()
+        .from(companyTeams)
+        .where(and(
+          eq(companyTeams.companyId, companyId),
+          sql`${companyTeams.branchId} IS NULL`
+        ));
+
+      const hqTeamsWithMembers = await Promise.all(
+        headquarterTeams.map(async (team) => {
+          const members = await this.getTeamMembers(team.id);
+          let teamLead: Employee | undefined;
+          
+          const leadMember = members.find(m => m.hierarchyRole === "team_lead");
+          if (leadMember) {
+            const [employee] = await db.select().from(employees).where(eq(employees.id, leadMember.employeeId));
+            teamLead = employee;
+          }
+          
+          return { ...team, members, teamLead };
+        })
+      );
+
+      // Get total counts
+      const [totalEmployeesResult] = await db
+        .select({ count: sql<number>`COUNT(*)` })
+        .from(companyEmployees)
+        .where(eq(companyEmployees.companyId, companyId));
+
+      const [totalTeamsResult] = await db
+        .select({ count: sql<number>`COUNT(*)` })
+        .from(companyTeams)
+        .where(eq(companyTeams.companyId, companyId));
+
+      return {
+        company,
+        branches: branchesWithDetails,
+        headquarterTeams: hqTeamsWithMembers,
+        totalEmployees: totalEmployeesResult?.count || 0,
+        totalBranches: branches.length,
+        totalTeams: totalTeamsResult?.count || 0
+      };
+    } catch (error) {
+      console.error("Error getting company hierarchy structure:", error);
+      throw error;
+    }
+  }
+
+  // Permission management
+  async updateEmployeeHierarchyRole(employeeId: string, companyId: string, updates: {
+    hierarchyRole?: "company_admin" | "branch_manager" | "team_lead" | "employee";
+    canVerifyWork?: boolean;
+    canManageEmployees?: boolean;
+    canCreateTeams?: boolean;
+    verificationScope?: "none" | "team" | "branch" | "company";
+    branchId?: string;
+    teamId?: string;
+  }): Promise<CompanyEmployee> {
+    const [updatedRole] = await db
+      .update(companyEmployees)
+      .set(updates)
+      .where(and(
+        eq(companyEmployees.employeeId, employeeId),
+        eq(companyEmployees.companyId, companyId)
+      ))
+      .returning();
+    
+    return updatedRole;
+  }
 }
 
 export const storage = new DatabaseStorage();

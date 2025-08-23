@@ -246,15 +246,13 @@ export const companyInvitationCodes = pgTable("company_invitation_codes", {
 export const companyBranches = pgTable("company_branches", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   branchId: varchar("branch_id").notNull().unique(), // BRN-ABC123 format
-  parentCompanyId: varchar("parent_company_id").notNull().references(() => companies.id, { onDelete: "cascade" }),
+  companyId: varchar("company_id").notNull().references(() => companies.id, { onDelete: "cascade" }),
   name: text("name").notNull(), // "HDFC Surat Branch"
-  code: varchar("code", { length: 10 }).notNull(), // "SURAT", "MUMBAI" etc.
-  address: text("address").notNull(),
-  city: text("city").notNull(),
-  state: text("state").notNull(),
-  pincode: text("pincode").notNull(),
-  managerEmail: text("manager_email"), // Branch manager's email
+  location: text("location"),
+  address: text("address"),
   phone: text("phone"),
+  email: text("email"),
+  managerEmployeeId: varchar("manager_employee_id"), // Branch manager's employee ID
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -264,12 +262,11 @@ export const companyBranches = pgTable("company_branches", {
 export const companyTeams = pgTable("company_teams", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   teamId: varchar("team_id").notNull().unique(), // TM-ABC123 format
-  parentCompanyId: varchar("parent_company_id").notNull().references(() => companies.id, { onDelete: "cascade" }),
+  companyId: varchar("company_id").notNull().references(() => companies.id, { onDelete: "cascade" }),
   branchId: varchar("branch_id").references(() => companyBranches.id, { onDelete: "cascade" }), // Can be null for HQ teams
   name: text("name").notNull(), // "Sales Team A", "Development Team 1"
   description: text("description"),
-  teamLeadId: varchar("team_lead_id").references(() => employees.id), // Team lead employee ID
-  department: text("department").notNull(), // "Sales", "Development", "HR", etc.
+  teamLeadEmployeeId: varchar("team_lead_employee_id"), // Team lead employee ID
   maxMembers: integer("max_members").default(10), // Team size limit
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
@@ -556,8 +553,8 @@ export const companiesRelations = relations(companies, ({ many }) => ({
 
 // New hierarchy relations
 export const companyBranchesRelations = relations(companyBranches, ({ one, many }) => ({
-  parentCompany: one(companies, {
-    fields: [companyBranches.parentCompanyId],
+  company: one(companies, {
+    fields: [companyBranches.companyId],
     references: [companies.id],
   }),
   teams: many(companyTeams),
@@ -566,8 +563,8 @@ export const companyBranchesRelations = relations(companyBranches, ({ one, many 
 }));
 
 export const companyTeamsRelations = relations(companyTeams, ({ one, many }) => ({
-  parentCompany: one(companies, {
-    fields: [companyTeams.parentCompanyId],
+  company: one(companies, {
+    fields: [companyTeams.companyId],
     references: [companies.id],
   }),
   branch: one(companyBranches, {
@@ -575,7 +572,7 @@ export const companyTeamsRelations = relations(companyTeams, ({ one, many }) => 
     references: [companyBranches.id],
   }),
   teamLead: one(employees, {
-    fields: [companyTeams.teamLeadId],
+    fields: [companyTeams.teamLeadEmployeeId],
     references: [employees.id],
   }),
   members: many(companyEmployees),

@@ -2034,6 +2034,232 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ==================== HIERARCHICAL COMPANY STRUCTURE API ROUTES ====================
+  
+  // Company Branch Management Routes
+  app.get("/api/company/branches", requireCompany, async (req: any, res) => {
+    try {
+      const branches = await storage.getCompanyBranches(req.user.id);
+      res.json(branches);
+    } catch (error) {
+      console.error("Get company branches error:", error);
+      res.status(500).json({ message: "Failed to fetch company branches" });
+    }
+  });
+
+  app.post("/api/company/branches", requireCompany, async (req: any, res) => {
+    try {
+      const branchData = {
+        ...req.body,
+        companyId: req.user.id,
+      };
+      const branch = await storage.createCompanyBranch(branchData);
+      
+      emitRealTimeUpdate('branch-created', {
+        branch,
+        companyId: req.user.id
+      }, [`company-${req.user.id}`]);
+      
+      res.json(branch);
+    } catch (error) {
+      console.error("Create company branch error:", error);
+      res.status(500).json({ message: "Failed to create company branch" });
+    }
+  });
+
+  app.put("/api/company/branches/:id", requireCompany, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const branch = await storage.updateCompanyBranch(id, req.body);
+      
+      emitRealTimeUpdate('branch-updated', {
+        branch,
+        companyId: req.user.id
+      }, [`company-${req.user.id}`]);
+      
+      res.json(branch);
+    } catch (error) {
+      console.error("Update company branch error:", error);
+      res.status(500).json({ message: "Failed to update company branch" });
+    }
+  });
+
+  app.delete("/api/company/branches/:id", requireCompany, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteCompanyBranch(id);
+      
+      emitRealTimeUpdate('branch-deleted', {
+        branchId: id,
+        companyId: req.user.id
+      }, [`company-${req.user.id}`]);
+      
+      res.json({ message: "Branch deleted successfully" });
+    } catch (error) {
+      console.error("Delete company branch error:", error);
+      res.status(500).json({ message: "Failed to delete company branch" });
+    }
+  });
+
+  // Company Team Management Routes
+  app.get("/api/company/teams", requireCompany, async (req: any, res) => {
+    try {
+      const { branchId } = req.query;
+      const teams = await storage.getCompanyTeams(req.user.id, branchId as string);
+      res.json(teams);
+    } catch (error) {
+      console.error("Get company teams error:", error);
+      res.status(500).json({ message: "Failed to fetch company teams" });
+    }
+  });
+
+  app.post("/api/company/teams", requireCompany, async (req: any, res) => {
+    try {
+      const teamData = {
+        ...req.body,
+        companyId: req.user.id,
+      };
+      const team = await storage.createCompanyTeam(teamData);
+      
+      emitRealTimeUpdate('team-created', {
+        team,
+        companyId: req.user.id
+      }, [`company-${req.user.id}`]);
+      
+      res.json(team);
+    } catch (error) {
+      console.error("Create company team error:", error);
+      res.status(500).json({ message: "Failed to create company team" });
+    }
+  });
+
+  app.get("/api/company/teams/:id/members", requireCompany, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const members = await storage.getTeamMembers(id);
+      res.json(members);
+    } catch (error) {
+      console.error("Get team members error:", error);
+      res.status(500).json({ message: "Failed to fetch team members" });
+    }
+  });
+
+  // Employee Hierarchy Information Routes
+  app.get("/api/company/employees/:employeeId/hierarchy", requireCompany, async (req: any, res) => {
+    try {
+      const { employeeId } = req.params;
+      const hierarchyInfo = await storage.getEmployeeHierarchyInfo(employeeId, req.user.id);
+      
+      if (!hierarchyInfo) {
+        return res.status(404).json({ message: "Employee not found or not in this company" });
+      }
+      
+      res.json(hierarchyInfo);
+    } catch (error) {
+      console.error("Get employee hierarchy info error:", error);
+      res.status(500).json({ message: "Failed to fetch employee hierarchy information" });
+    }
+  });
+
+  app.get("/api/company/structure", requireCompany, async (req: any, res) => {
+    try {
+      const structure = await storage.getCompanyHierarchyStructure(req.user.id);
+      res.json(structure);
+    } catch (error) {
+      console.error("Get company hierarchy structure error:", error);
+      res.status(500).json({ message: "Failed to fetch company hierarchy structure" });
+    }
+  });
+
+  // Hierarchical Work Entry Operations
+  app.get("/api/company/work-entries/hierarchy", requireCompany, async (req: any, res) => {
+    try {
+      const { branchId, teamId, includeHierarchyInfo } = req.query;
+      
+      const workEntries = await storage.getWorkEntriesWithHierarchy({
+        companyId: req.user.id,
+        branchId: branchId as string,
+        teamId: teamId as string,
+        includeHierarchyInfo: includeHierarchyInfo === 'true'
+      });
+      
+      res.json(workEntries);
+    } catch (error) {
+      console.error("Get hierarchical work entries error:", error);
+      res.status(500).json({ message: "Failed to fetch hierarchical work entries" });
+    }
+  });
+
+  app.post("/api/company/work-entries/:id/verify-hierarchical", requireCompany, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { verifierId, approvalStatus, companyRating, companyFeedback } = req.body;
+      
+      // Check if the verifier has permission to verify this work entry
+      const workEntry = await storage.getWorkEntry(id);
+      if (!workEntry) {
+        return res.status(404).json({ message: "Work entry not found" });
+      }
+      
+      const canVerify = await storage.canEmployeeVerifyWork(verifierId, workEntry.employeeId, req.user.id);
+      if (!canVerify) {
+        return res.status(403).json({ message: "Insufficient permissions to verify this work entry" });
+      }
+      
+      const verifiedWorkEntry = await storage.verifyWorkEntryHierarchical(id, verifierId, {
+        approvalStatus,
+        companyRating,
+        companyFeedback
+      });
+      
+      emitRealTimeUpdate('work-entry-verified-hierarchical', {
+        workEntry: verifiedWorkEntry,
+        verifierId,
+        companyId: req.user.id
+      }, [
+        `user-${workEntry.employeeId}`,
+        `company-${req.user.id}`,
+        `verifier-${verifierId}`
+      ]);
+      
+      res.json(verifiedWorkEntry);
+    } catch (error) {
+      console.error("Hierarchical work entry verification error:", error);
+      res.status(500).json({ message: "Failed to verify work entry" });
+    }
+  });
+
+  app.get("/api/company/employees/:employeeId/verifiable", requireCompany, async (req: any, res) => {
+    try {
+      const { employeeId } = req.params;
+      const verifiableEmployees = await storage.getEmployeesVerifiableByUser(employeeId, req.user.id);
+      res.json(verifiableEmployees);
+    } catch (error) {
+      console.error("Get verifiable employees error:", error);
+      res.status(500).json({ message: "Failed to fetch verifiable employees" });
+    }
+  });
+
+  app.patch("/api/company/employees/:employeeId/hierarchy-role", requireCompany, async (req: any, res) => {
+    try {
+      const { employeeId } = req.params;
+      const updates = req.body;
+      
+      const updatedRole = await storage.updateEmployeeHierarchyRole(employeeId, req.user.id, updates);
+      
+      emitRealTimeUpdate('employee-hierarchy-role-updated', {
+        employeeId,
+        updates,
+        companyId: req.user.id
+      }, [`company-${req.user.id}`, `user-${employeeId}`]);
+      
+      res.json(updatedRole);
+    } catch (error) {
+      console.error("Update employee hierarchy role error:", error);
+      res.status(500).json({ message: "Failed to update employee hierarchy role" });
+    }
+  });
+
   // PAN verification admin routes - PROTECTED ROUTE
   app.get("/api/admin/companies/pending-pan-verification", requireAdmin, async (req: any, res) => {
     
