@@ -99,6 +99,10 @@ export default function CompanyHierarchy() {
     queryKey: ["/api/company/employees"],
   });
 
+  const { data: currentUser } = useQuery({
+    queryKey: ["/api/auth/user"],
+  });
+
   // Mutations
   const createBranchMutation = useMutation({
     mutationFn: async (branchData: any) => {
@@ -267,6 +271,71 @@ export default function CompanyHierarchy() {
   const handleDeleteTeam = (team: any) => {
     setSelectedTeam(team);
     setIsDeleteTeamOpen(true);
+  };
+
+  // Permission system
+  const getCurrentUserEmployee = () => {
+    if (!currentUser || !Array.isArray(employees)) return null;
+    return employees.find((emp: any) => emp.employee?.email === currentUser.email);
+  };
+
+  const canManageBranches = () => {
+    const userEmployee = getCurrentUserEmployee();
+    if (!userEmployee) return false;
+    return userEmployee.hierarchyRole === 'company_admin' || userEmployee.canManageEmployees;
+  };
+
+  const canManageTeams = () => {
+    const userEmployee = getCurrentUserEmployee();
+    if (!userEmployee) return false;
+    return userEmployee.hierarchyRole === 'company_admin' || 
+           userEmployee.hierarchyRole === 'branch_manager' || 
+           userEmployee.canCreateTeams;
+  };
+
+  const canManageEmployee = (targetEmployee: any) => {
+    const userEmployee = getCurrentUserEmployee();
+    if (!userEmployee || !targetEmployee) return false;
+    
+    // Company admin can manage everyone
+    if (userEmployee.hierarchyRole === 'company_admin') return true;
+    
+    // Branch manager can manage employees in their branch
+    if (userEmployee.hierarchyRole === 'branch_manager' && userEmployee.branchId === targetEmployee.branchId) return true;
+    
+    // Team lead can manage employees in their team
+    if (userEmployee.hierarchyRole === 'team_lead' && userEmployee.teamId === targetEmployee.teamId) return true;
+    
+    return false;
+  };
+
+  const canEditBranch = (branch: any) => {
+    const userEmployee = getCurrentUserEmployee();
+    if (!userEmployee) return false;
+    
+    // Company admin can edit all branches
+    if (userEmployee.hierarchyRole === 'company_admin') return true;
+    
+    // Branch manager can only edit their own branch
+    if (userEmployee.hierarchyRole === 'branch_manager' && userEmployee.branchId === branch.id) return true;
+    
+    return false;
+  };
+
+  const canEditTeam = (team: any) => {
+    const userEmployee = getCurrentUserEmployee();
+    if (!userEmployee) return false;
+    
+    // Company admin can edit all teams
+    if (userEmployee.hierarchyRole === 'company_admin') return true;
+    
+    // Branch manager can edit teams in their branch
+    if (userEmployee.hierarchyRole === 'branch_manager' && userEmployee.branchId === team.branchId) return true;
+    
+    // Team lead can edit their own team
+    if (userEmployee.hierarchyRole === 'team_lead' && userEmployee.teamId === team.id) return true;
+    
+    return false;
   };
 
   const getRoleIcon = (role: string) => {
@@ -477,6 +546,46 @@ export default function CompanyHierarchy() {
 
       <Separator />
 
+      {/* User Permissions Info */}
+      {getCurrentUserEmployee() && (
+        <Card className="mb-6" data-testid="user-permissions-info">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                {getRoleIcon(getCurrentUserEmployee()?.hierarchyRole)}
+                <div>
+                  <h3 className="font-medium">
+                    {getCurrentUserEmployee()?.employee?.firstName} {getCurrentUserEmployee()?.employee?.lastName}
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    {getCurrentUserEmployee()?.hierarchyRole?.replace('_', ' ')} • {getCurrentUserEmployee()?.position}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-4 text-sm">
+                <div className="flex items-center gap-2">
+                  <span className="text-muted-foreground">Permissions:</span>
+                  <div className="flex gap-1">
+                    <Badge variant={canManageBranches() ? "default" : "secondary"} className="text-xs">
+                      {canManageBranches() ? "✓" : "✗"} Branches
+                    </Badge>
+                    <Badge variant={canManageTeams() ? "default" : "secondary"} className="text-xs">
+                      {canManageTeams() ? "✓" : "✗"} Teams
+                    </Badge>
+                    <Badge variant={getCurrentUserEmployee()?.canVerifyWork ? "default" : "secondary"} className="text-xs">
+                      {getCurrentUserEmployee()?.canVerifyWork ? "✓" : "✗"} Verify Work
+                    </Badge>
+                  </div>
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  Scope: {getCurrentUserEmployee()?.verificationScope || "none"}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Overview Stats */}
       {structure && (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4" data-testid="hierarchy-stats">
@@ -639,10 +748,29 @@ export default function CompanyHierarchy() {
         <TabsContent value="branches" className="space-y-4">
           <Card data-testid="branches-management">
             <CardHeader>
-              <CardTitle>Branch Management</CardTitle>
-              <CardDescription>
-                Manage your company branches and locations
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Branch Management</CardTitle>
+                  <CardDescription>
+                    Manage your company branches and locations
+                  </CardDescription>
+                </div>
+                <div className="flex items-center gap-2">
+                  {!canManageBranches() && (
+                    <span className="text-xs text-muted-foreground px-2 py-1 bg-yellow-50 rounded border">
+                      Admin/Manager Only
+                    </span>
+                  )}
+                  <Button 
+                    onClick={() => setIsCreateBranchOpen(true)} 
+                    disabled={!canManageBranches()}
+                    data-testid="create-branch-button"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create Branch
+                  </Button>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               {branchesLoading ? (
@@ -676,7 +804,9 @@ export default function CompanyHierarchy() {
                               variant="ghost" 
                               size="sm" 
                               onClick={() => handleEditBranch(branch)}
+                              disabled={!canEditBranch(branch)}
                               data-testid={`edit-branch-${branch.id}`}
+                              title={!canEditBranch(branch) ? "You don't have permission to edit this branch" : "Edit branch"}
                             >
                               <Edit className="h-4 w-4" />
                             </Button>
@@ -684,7 +814,9 @@ export default function CompanyHierarchy() {
                               variant="ghost" 
                               size="sm" 
                               onClick={() => handleDeleteBranch(branch)}
+                              disabled={!canEditBranch(branch)}
                               data-testid={`delete-branch-${branch.id}`}
+                              title={!canEditBranch(branch) ? "You don't have permission to delete this branch" : "Delete branch"}
                             >
                               <Trash2 className="h-4 w-4 text-red-500" />
                             </Button>
@@ -707,10 +839,29 @@ export default function CompanyHierarchy() {
         <TabsContent value="teams" className="space-y-4">
           <Card data-testid="teams-management">
             <CardHeader>
-              <CardTitle>Team Management</CardTitle>
-              <CardDescription>
-                Organize teams within branches or at headquarters
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Team Management</CardTitle>
+                  <CardDescription>
+                    Organize teams within branches or at headquarters
+                  </CardDescription>
+                </div>
+                <div className="flex items-center gap-2">
+                  {!canManageTeams() && (
+                    <span className="text-xs text-muted-foreground px-2 py-1 bg-yellow-50 rounded border">
+                      Manager/Lead Only
+                    </span>
+                  )}
+                  <Button 
+                    onClick={() => setIsCreateTeamOpen(true)} 
+                    disabled={!canManageTeams()}
+                    data-testid="create-team-button"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create Team
+                  </Button>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               {teamsLoading ? (
@@ -746,7 +897,9 @@ export default function CompanyHierarchy() {
                               variant="ghost" 
                               size="sm" 
                               onClick={() => handleEditTeam(team)}
+                              disabled={!canEditTeam(team)}
                               data-testid={`edit-team-${team.id}`}
+                              title={!canEditTeam(team) ? "You don't have permission to edit this team" : "Edit team"}
                             >
                               <Edit className="h-4 w-4" />
                             </Button>
@@ -754,7 +907,9 @@ export default function CompanyHierarchy() {
                               variant="ghost" 
                               size="sm" 
                               onClick={() => handleDeleteTeam(team)}
+                              disabled={!canEditTeam(team)}
                               data-testid={`delete-team-${team.id}`}
+                              title={!canEditTeam(team) ? "You don't have permission to delete this team" : "Delete team"}
                             >
                               <Trash2 className="h-4 w-4 text-red-500" />
                             </Button>
@@ -823,11 +978,18 @@ export default function CompanyHierarchy() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
+                        {!canManageEmployee(emp) && (
+                          <span className="text-xs text-muted-foreground px-2 py-1 bg-yellow-50 rounded border">
+                            No Permission
+                          </span>
+                        )}
                         <Button 
                           variant="outline" 
                           size="sm" 
                           onClick={() => handleManageEmployee(emp)}
+                          disabled={!canManageEmployee(emp)}
                           data-testid={`manage-employee-${emp.id}`}
+                          title={!canManageEmployee(emp) ? "You don't have permission to manage this employee" : "Manage employee"}
                         >
                           <Settings className="h-4 w-4 mr-1" />
                           Manage
