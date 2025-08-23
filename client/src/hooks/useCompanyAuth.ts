@@ -10,7 +10,7 @@ export function useCompanyAuth() {
     user,
     isLoading,
     isAuthenticated: !!user,
-    companySubRole: user?.companySubRole,
-    companyId: user?.companyId,
+    companySubRole: (user as any)?.companySubRole,
+    companyId: (user as any)?.companyId,
   };
 }
