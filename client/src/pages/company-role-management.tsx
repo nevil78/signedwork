@@ -59,7 +59,7 @@ export default function CompanyRoleManagement() {
               onClick={() => window.location.href = '/company-dashboard'}
               className="w-full"
             >
-              Go Back to Dashboard
+              Go to Dashboard
             </Button>
           </CardContent>
         </Card>
