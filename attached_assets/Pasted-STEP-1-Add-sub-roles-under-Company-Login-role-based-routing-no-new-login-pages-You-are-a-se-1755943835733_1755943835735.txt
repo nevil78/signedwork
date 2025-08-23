@@ -1,0 +1,132 @@
+STEP 1 — Add sub-roles under “Company Login” + role-based routing (no new login pages)
+
+You are a senior full-stack engineer working on Signedwork.
+Implement internal sub-roles under the existing Company Login so that:
+
+The main landing page stays exactly the same: only “Employee Login” and “Company Login”.
+
+Managers log in via Company Login but see a restricted Manager Dashboard.
+
+Company Admins log in via Company Login and see the Full Company Dashboard.
+
+All route access is enforced server-side (not just hidden in UI).
+
+Constraints (do not violate)
+
+❌ Do NOT add new top-level login/sign-up pages.
+
+❌ Do NOT change Employee Login flow.
+
+✅ Keep the same company auth endpoint(s); just return the user’s sub-role after successful auth.
+
+✅ Use existing session mechanism (secure HTTP-only cookies).
+
+✅ No DB migration in this step; if a role field is missing, stub a role provider (e.g., config/feature flag/mock) so we can wire DB later.
+
+Deliverables
+
+Roles (company context)
+
+COMPANY_ADMIN
+
+MANAGER
+
+(prepare constant for BRANCH_ADMIN but do not expose it yet)
+
+Server-side (Express)
+
+Add a RoleGuard middleware:
+
+Ensures an authenticated company session exists.
+
+Checks a companySubRole value in session (e.g., COMPANY_ADMIN or MANAGER).
+
+Add route groups:
+
+/company/admin/* → requires COMPANY_ADMIN
+
+/company/manager/* → requires MANAGER or COMPANY_ADMIN (admins can view manager areas)
+
+On successful Company Login, include in the session payload:
+
+companyId, companySubRole, userId, displayName.
+
+If the real role source isn’t in DB yet, create a temporary role provider:
+
+For now, map login email domain or a simple allowlist file to a role (only for development).
+We will replace this with DB roles in Step 2.
+
+Frontend (React + TypeScript)
+
+After Company Login, read companySubRole from the auth response and redirect:
+
+COMPANY_ADMIN → /company/admin/dashboard
+
+MANAGER → /company/manager/dashboard
+
+Implement route guards on the client (for UX only): if a user without the right role navigates manually, show a 403 page. (Server is the source of truth.)
+
+Create minimal shells:
+
+Company Admin Dashboard: Nav items (Company Settings, Managers, Employees, Teams/Branches, Reports).
+
+Manager Dashboard: Nav items (My Team, Pending Approvals, Team Reports).
+No company-wide settings, billing, or global employee lists.
+
+Permissions map (foundation)
+
+Create a simple constant map (no DB yet) the app can consult:
+
+COMPANY_ADMIN: ['work.approve.any', 'employee.manage', 'manager.manage', 'settings.read', 'settings.write', 'reports.view']
+
+MANAGER: ['work.approve.directReports', 'reports.view.team']
+
+Use it inside RoleGuard only for coarse checks; detailed checks will come later.
+
+Security
+
+Ensure server-side enforcement on every protected route. Never rely solely on client routing.
+
+Session cookie remains HTTP-only, Secure, SameSite=Lax/Strict (match current config).
+
+Add a /me endpoint to return { userId, companyId, companySubRole } so the client can hydrate state safely.
+
+Acceptance Criteria (must pass)
+
+From the main page, there are still only two buttons: Employee Login, Company Login.
+
+Logging in as a seeded Company Admin goes to /company/admin/dashboard with full nav.
+
+Logging in as a seeded Manager goes to /company/manager/dashboard with limited nav.
+
+A Manager attempting to access /company/admin/* gets 403 (confirmed via direct URL).
+
+An Admin can access /company/manager/* (for oversight).
+
+Employee users cannot access any /company/* routes (401/403).
+
+Refreshing the page preserves the role (via session). /me returns correct role.
+
+Test Scenarios
+
+Admin happy path: Login → redirected to admin dashboard → can open Settings → OK.
+
+Manager happy path: Login → redirected to manager dashboard → cannot see Settings link → direct hit /company/admin/settings returns 403.
+
+Employee isolation: Employee token cannot call /company/manager/pending-approvals (403).
+
+Session integrity: Delete local storage and refresh → still authorized via cookie; /me returns expected role.
+
+Nav parity: Manager nav only shows: My Team, Pending Approvals, Team Reports.
+
+Notes for later steps (do NOT implement now)
+
+Manager invitation flow (email invite + set password).
+
+Assigning employees to managers (supervisor routing).
+
+Approval SLA/escalation.
+
+“Verified by <Company>” public view logic.
+
+DB-backed roles & scopes.
