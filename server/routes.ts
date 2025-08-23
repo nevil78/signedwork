@@ -676,15 +676,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Remove password from response
       const { password: _, ...userResponse } = user;
       
-      // Include role-based redirect information for company users
+      // Include role-based redirect and session information for company users
       const response: any = { 
         message: "Login successful",
         user: userResponse,
         userType 
       };
       
-      // Add redirect path for company users based on their sub-role
+      // Add company-specific session data to response
       if (userType === "company" && sessionUser.companySubRole) {
+        response.companyId = sessionUser.companyId;
+        response.userId = sessionUser.id;
+        response.displayName = sessionUser.displayName;
+        response.companySubRole = sessionUser.companySubRole;
+        
+        // Add redirect path based on sub-role
         if (sessionUser.companySubRole === "COMPANY_ADMIN") {
           response.redirectTo = "/company/admin/dashboard";
         } else if (sessionUser.companySubRole === "MANAGER") {
