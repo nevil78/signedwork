@@ -435,7 +435,7 @@ export interface IStorage {
   getRecentActivity(companyId: string): Promise<any[]>;
   getManagerTeamStats(managerId: string): Promise<any>;
   getManagerPendingApprovals(managerId: string): Promise<any[]>;
-  getCompanyReports(companyId: string): Promise<any[]>;
+  getCompanyReports(companyId: string, timeRange?: string, reportType?: string): Promise<any[]>;
   
   // Manager Administration Methods
   getCompanyManagers(companyId: string): Promise<any[]>;
@@ -3474,16 +3474,59 @@ export class DatabaseStorage implements IStorage {
     return recentActivities;
   }
 
-  async getCompanyReports(companyId: string): Promise<any> {
-    // Basic company reports - can be expanded later
-    const stats = await this.getCompanyStats(companyId);
-    const pendingApprovals = await this.getPendingApprovals(companyId);
+  async getCompanyReports(companyId: string, timeRange?: string, reportType?: string): Promise<any[]> {
+    // Mock reports data for demo purposes
+    const allReports = [
+      {
+        id: "report_001",
+        name: "Employee Performance Analysis",
+        type: "performance",
+        description: "Comprehensive analysis of employee work entries, approval rates, and productivity metrics",
+        generatedAt: new Date(Date.now() - 86400000), // 1 day ago
+        dataPoints: 247,
+        status: "ready",
+        fileSize: "1.2 MB",
+        format: "PDF"
+      },
+      {
+        id: "report_002", 
+        name: "Work Entry Analytics",
+        type: "analytics",
+        description: "Detailed breakdown of work entries by department, status, and time periods",
+        generatedAt: new Date(Date.now() - 86400000 * 2), // 2 days ago
+        dataPoints: 156,
+        status: "ready",
+        fileSize: "890 KB",
+        format: "Excel"
+      },
+      {
+        id: "report_003",
+        name: "Approval Workflow Report",
+        type: "workflow",
+        description: "Analysis of approval times, bottlenecks, and workflow efficiency",
+        generatedAt: new Date(Date.now() - 86400000 * 3), // 3 days ago
+        dataPoints: 89,
+        status: "ready",
+        fileSize: "745 KB",
+        format: "PDF"
+      },
+      {
+        id: "report_004",
+        name: "Employee Engagement Metrics",
+        type: "engagement",
+        description: "Employee activity levels, feedback scores, and engagement analytics",
+        generatedAt: new Date(Date.now() - 86400000 * 5), // 5 days ago
+        dataPoints: 198,
+        status: "processing",
+        fileSize: null,
+        format: "PDF"
+      }
+    ];
     
-    return {
-      stats,
-      pendingApprovalsCount: pendingApprovals.length,
-      lastUpdated: new Date().toISOString()
-    };
+    // Filter by report type if specified
+    return reportType && reportType !== 'all' 
+      ? allReports.filter(report => report.type === reportType)
+      : allReports;
   }
 
   // Manager-specific methods (placeholders for future expansion)

@@ -4743,6 +4743,19 @@ This message was sent through the Signedwork contact form.
     }
   });
 
+  app.put("/api/company/admin/settings", requireCompanyRole([COMPANY_ROLES.COMPANY_ADMIN]), async (req: any, res) => {
+    try {
+      const companyId = req.user.id;
+      const updates = req.body;
+      
+      const updatedCompany = await storage.updateCompany(companyId, updates);
+      res.json(updatedCompany);
+    } catch (error) {
+      console.error("Company settings update error:", error);
+      res.status(500).json({ message: "Failed to update company settings" });
+    }
+  });
+
   app.get("/api/company/admin/managers", requireCompanyRole([COMPANY_ROLES.COMPANY_ADMIN]), async (req: any, res) => {
     try {
       const companyId = req.user.id;
@@ -4797,7 +4810,8 @@ This message was sent through the Signedwork contact form.
 
   app.get("/api/company/admin/employees", requireCompanyRole([COMPANY_ROLES.COMPANY_ADMIN]), async (req: any, res) => {
     try {
-      const employees = await storage.getCompanyEmployees(req.user.id);
+      const companyId = req.user.id;
+      const employees = await storage.getCompanyEmployees(companyId);
       res.json(employees);
     } catch (error) {
       console.error("Company employees error:", error);
@@ -4807,7 +4821,9 @@ This message was sent through the Signedwork contact form.
 
   app.get("/api/company/admin/reports", requireCompanyRole([COMPANY_ROLES.COMPANY_ADMIN]), async (req: any, res) => {
     try {
-      const reports = await storage.getCompanyReports(req.user.id);
+      const companyId = req.user.id;
+      const { timeRange, reportType } = req.query;
+      const reports = await storage.getCompanyReports(companyId, timeRange as string, reportType as string);
       res.json(reports);
     } catch (error) {
       console.error("Company reports error:", error);
