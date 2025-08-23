@@ -24,6 +24,7 @@ import { OTPEmailService } from "./otpEmailService";
 import { SignupVerificationService } from "./signupVerificationService";
 import { sendEmail } from "./sendgrid";
 import { aiJobService, type EmployeeProfile } from "./aiJobService";
+import { COMPANY_ROLES, type CompanyRole, canAccessRoute, hasPermission, getTemporaryRole } from "@shared/roles";
 
 // Global variable to store the Socket.IO server instance for real-time updates
 let io: SocketIOServer;
@@ -91,6 +92,50 @@ function requireAdmin(req: any, res: any, next: any) {
   });
 }
 
+// Role-based authentication middleware for company sub-roles
+function requireCompanyRole(allowedRoles: CompanyRole[]) {
+  return (req: any, res: any, next: any) => {
+    requireAuth(req, res, () => {
+      if (req.user.type !== 'company') {
+        return res.status(403).json({ message: "Company access required" });
+      }
+      
+      const userRole = req.user.companySubRole;
+      if (!userRole || !allowedRoles.includes(userRole)) {
+        return res.status(403).json({ 
+          message: "Insufficient permissions",
+          required: allowedRoles,
+          current: userRole
+        });
+      }
+      
+      next();
+    });
+  };
+}
+
+// Route-based authorization middleware
+function requireRouteAccess(req: any, res: any, next: any) {
+  requireAuth(req, res, () => {
+    if (req.user.type !== 'company') {
+      return res.status(403).json({ message: "Company access required" });
+    }
+    
+    const userRole = req.user.companySubRole;
+    const requestPath = req.path;
+    
+    if (!canAccessRoute(userRole, requestPath)) {
+      return res.status(403).json({ 
+        message: "Access denied to this route",
+        route: requestPath,
+        role: userRole
+      });
+    }
+    
+    next();
+  });
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Session configuration
   // Create database session store
@@ -150,6 +195,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       remainingTime: `${remainingHours}h ${remainingMinutes}m`,
       cycleLength: "24 hours"
     });
+  });
+
+  // User info endpoint for client state hydration - PROTECTED ROUTE
+  app.get("/api/auth/me", requireAuth, (req: any, res) => {
+    const user = req.user;
+    const response: any = {
+      userId: user.id,
+      email: user.email,
+      userType: user.type,
+    };
+    
+    // Include company-specific data for company users
+    if (user.type === "company") {
+      response.companyId = user.companyId;
+      response.companySubRole = user.companySubRole;
+      response.displayName = user.displayName;
+    }
+    
+    res.json(response);
   });
 
   // Initialize Passport and Google OAuth
@@ -592,21 +656,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Email verification is optional - users can login without verification
       // They can verify their email later in their profile page
       
-      // Store user session
-      (req.session as any).user = {
+      // Store user session with company sub-role for company users
+      const sessionUser: any = {
         id: user.id,
         email: user.email,
         type: userType,
       };
       
+      // Add company sub-role for company accounts
+      if (userType === "company") {
+        const companySubRole = getTemporaryRole(user.email);
+        sessionUser.companySubRole = companySubRole;
+        sessionUser.companyId = user.id;
+        sessionUser.displayName = user.name;
+      }
+      
+      (req.session as any).user = sessionUser;
+      
       // Remove password from response
       const { password: _, ...userResponse } = user;
       
-      res.json({ 
+      // Include role-based redirect information for company users
+      const response: any = { 
         message: "Login successful",
         user: userResponse,
         userType 
-      });
+      };
+      
+      // Add redirect path for company users based on their sub-role
+      if (userType === "company" && sessionUser.companySubRole) {
+        if (sessionUser.companySubRole === "COMPANY_ADMIN") {
+          response.redirectTo = "/company/admin/dashboard";
+        } else if (sessionUser.companySubRole === "MANAGER") {
+          response.redirectTo = "/company/manager/dashboard";
+        } else {
+          response.redirectTo = "/company-dashboard";
+        }
+      }
+      
+      res.json(response);
     } catch (error: any) {
       if (error.name === "ZodError") {
         const validationError = fromZodError(error);
@@ -4615,6 +4703,128 @@ This message was sent through the Signedwork contact form.
     } catch (error) {
       console.error("Contact form submission error:", error);
       res.status(500).json({ message: "Failed to send message" });
+    }
+  });
+
+  // ===== COMPANY SUB-ROLE ROUTES =====
+  
+  // Company Admin Routes (COMPANY_ADMIN only)
+  app.get("/api/company/admin/dashboard", requireCompanyRole([COMPANY_ROLES.COMPANY_ADMIN]), async (req: any, res) => {
+    try {
+      // Get company admin dashboard data using the correct company ID
+      const companyId = req.user.id; // Company user's ID is the company ID
+      const companyStats = await storage.getCompanyStats(companyId);
+      const pendingApprovals = await storage.getPendingApprovals(companyId);
+      const recentActivity = await storage.getRecentActivity(companyId);
+      
+      res.json({
+        stats: companyStats,
+        pendingApprovals: pendingApprovals.slice(0, 5), // Latest 5
+        recentActivity: recentActivity.slice(0, 10), // Latest 10
+        role: req.user.companySubRole
+      });
+    } catch (error) {
+      console.error("Admin dashboard error:", error);
+      res.status(500).json({ message: "Failed to load admin dashboard" });
+    }
+  });
+
+  app.get("/api/company/admin/settings", requireCompanyRole([COMPANY_ROLES.COMPANY_ADMIN]), async (req: any, res) => {
+    try {
+      const company = await storage.getCompany(req.user.id);
+      if (!company) {
+        return res.status(404).json({ message: "Company not found" });
+      }
+      
+      res.json(company);
+    } catch (error) {
+      console.error("Company settings error:", error);
+      res.status(500).json({ message: "Failed to load company settings" });
+    }
+  });
+
+  app.get("/api/company/admin/managers", requireCompanyRole([COMPANY_ROLES.COMPANY_ADMIN]), async (req: any, res) => {
+    try {
+      // Get all managers in the company (future: when manager roles are in DB)
+      // For now, return placeholder data
+      res.json({
+        managers: [],
+        message: "Manager management will be available when roles are stored in database"
+      });
+    } catch (error) {
+      console.error("Managers list error:", error);
+      res.status(500).json({ message: "Failed to load managers" });
+    }
+  });
+
+  app.get("/api/company/admin/employees", requireCompanyRole([COMPANY_ROLES.COMPANY_ADMIN]), async (req: any, res) => {
+    try {
+      const employees = await storage.getCompanyEmployees(req.user.id);
+      res.json(employees);
+    } catch (error) {
+      console.error("Company employees error:", error);
+      res.status(500).json({ message: "Failed to load employees" });
+    }
+  });
+
+  app.get("/api/company/admin/reports", requireCompanyRole([COMPANY_ROLES.COMPANY_ADMIN]), async (req: any, res) => {
+    try {
+      const reports = await storage.getCompanyReports(req.user.id);
+      res.json(reports);
+    } catch (error) {
+      console.error("Company reports error:", error);
+      res.status(500).json({ message: "Failed to load reports" });
+    }
+  });
+
+  // Manager Routes (MANAGER and COMPANY_ADMIN can access)
+  app.get("/api/company/manager/dashboard", requireCompanyRole([COMPANY_ROLES.MANAGER, COMPANY_ROLES.COMPANY_ADMIN]), async (req: any, res) => {
+    try {
+      // Get manager-specific dashboard data
+      const teamStats = await storage.getManagerTeamStats(req.user.id);
+      const pendingApprovals = await storage.getManagerPendingApprovals(req.user.id);
+      
+      res.json({
+        teamStats,
+        pendingApprovals,
+        role: req.user.companySubRole
+      });
+    } catch (error) {
+      console.error("Manager dashboard error:", error);
+      res.status(500).json({ message: "Failed to load manager dashboard" });
+    }
+  });
+
+  app.get("/api/company/manager/team", requireCompanyRole([COMPANY_ROLES.MANAGER, COMPANY_ROLES.COMPANY_ADMIN]), async (req: any, res) => {
+    try {
+      // Get manager's team members (future: when manager-employee relationships are in DB)
+      res.json({
+        teamMembers: [],
+        message: "Team management will be available when manager-employee relationships are stored in database"
+      });
+    } catch (error) {
+      console.error("Manager team error:", error);
+      res.status(500).json({ message: "Failed to load team" });
+    }
+  });
+
+  app.get("/api/company/manager/pending-approvals", requireCompanyRole([COMPANY_ROLES.MANAGER, COMPANY_ROLES.COMPANY_ADMIN]), async (req: any, res) => {
+    try {
+      const pendingApprovals = await storage.getManagerPendingApprovals(req.user.id);
+      res.json(pendingApprovals);
+    } catch (error) {
+      console.error("Manager pending approvals error:", error);
+      res.status(500).json({ message: "Failed to load pending approvals" });
+    }
+  });
+
+  app.get("/api/company/manager/team-reports", requireCompanyRole([COMPANY_ROLES.MANAGER, COMPANY_ROLES.COMPANY_ADMIN]), async (req: any, res) => {
+    try {
+      const teamReports = await storage.getManagerTeamReports(req.user.id);
+      res.json(teamReports);
+    } catch (error) {
+      console.error("Manager team reports error:", error);
+      res.status(500).json({ message: "Failed to load team reports" });
     }
   });
 

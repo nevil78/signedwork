@@ -3377,6 +3377,128 @@ export class DatabaseStorage implements IStorage {
       .where(lt(pendingUsers.tokenExpiry, new Date()));
     return result.rowCount || 0;
   }
+
+  // Company Role-Based Dashboard Methods
+  async getCompanyStats(companyId: string): Promise<{
+    totalEmployees: number;
+    totalWorkEntries: number;
+    approvalRate: number;
+  }> {
+    // Get total employees
+    const [employeeCount] = await db
+      .select({ count: sql<number>`COUNT(*)` })
+      .from(companyEmployees)
+      .where(and(
+        eq(companyEmployees.companyId, companyId),
+        eq(companyEmployees.status, 'employed')
+      ));
+
+    // Get total work entries
+    const [workEntryCount] = await db
+      .select({ count: sql<number>`COUNT(*)` })
+      .from(workEntries)
+      .where(eq(workEntries.companyId, companyId));
+
+    // Get approval rate
+    const [approvedCount] = await db
+      .select({ count: sql<number>`COUNT(*)` })
+      .from(workEntries)
+      .where(and(
+        eq(workEntries.companyId, companyId),
+        eq(workEntries.status, 'approved')
+      ));
+
+    const totalWorkEntries = workEntryCount?.count || 0;
+    const approvedEntries = approvedCount?.count || 0;
+    const approvalRate = totalWorkEntries > 0 ? Math.round((approvedEntries / totalWorkEntries) * 100) : 0;
+
+    return {
+      totalEmployees: employeeCount?.count || 0,
+      totalWorkEntries,
+      approvalRate
+    };
+  }
+
+  async getPendingApprovals(companyId: string): Promise<any[]> {
+    const pendingEntries = await db
+      .select({
+        id: workEntries.id,
+        title: workEntries.title,
+        description: workEntries.description,
+        employeeId: workEntries.employeeId,
+        employeeName: sql<string>`CONCAT(${employees.firstName}, ' ', ${employees.lastName})`,
+        createdAt: workEntries.createdAt,
+        priority: workEntries.priority
+      })
+      .from(workEntries)
+      .leftJoin(employees, eq(workEntries.employeeId, employees.id))
+      .where(and(
+        eq(workEntries.companyId, companyId),
+        eq(workEntries.status, 'pending')
+      ))
+      .orderBy(desc(workEntries.createdAt));
+
+    return pendingEntries;
+  }
+
+  async getRecentActivity(companyId: string): Promise<any[]> {
+    // Return recent work entry activities
+    const recentActivities = await db
+      .select({
+        id: workEntries.id,
+        description: sql<string>`CONCAT('Work entry "', ${workEntries.title}, '" by ', ${employees.firstName}, ' ', ${employees.lastName})`,
+        type: sql<string>`'work_entry'`,
+        timestamp: workEntries.createdAt,
+        status: workEntries.status
+      })
+      .from(workEntries)
+      .leftJoin(employees, eq(workEntries.employeeId, employees.id))
+      .where(eq(workEntries.companyId, companyId))
+      .orderBy(desc(workEntries.createdAt))
+      .limit(20);
+
+    return recentActivities;
+  }
+
+  async getCompanyReports(companyId: string): Promise<any> {
+    // Basic company reports - can be expanded later
+    const stats = await this.getCompanyStats(companyId);
+    const pendingApprovals = await this.getPendingApprovals(companyId);
+    
+    return {
+      stats,
+      pendingApprovalsCount: pendingApprovals.length,
+      lastUpdated: new Date().toISOString()
+    };
+  }
+
+  // Manager-specific methods (placeholders for future expansion)
+  async getManagerTeamStats(managerId: string): Promise<{
+    totalMembers: number;
+    completedThisWeek: number;
+    performanceScore: number;
+  }> {
+    // Placeholder implementation - will be enhanced when manager-employee relationships are in DB
+    return {
+      totalMembers: 0,
+      completedThisWeek: 0,
+      performanceScore: 85
+    };
+  }
+
+  async getManagerPendingApprovals(managerId: string): Promise<any[]> {
+    // Placeholder implementation - will be enhanced when manager-employee relationships are in DB
+    return [];
+  }
+
+  async getManagerTeamReports(managerId: string): Promise<any> {
+    // Placeholder implementation - will be enhanced when manager-employee relationships are in DB
+    return {
+      teamPerformance: [],
+      productivity: 0,
+      goals: []
+    };
+  }
 }
 
 export const storage = new DatabaseStorage();

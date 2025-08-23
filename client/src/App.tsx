@@ -28,6 +28,9 @@ import CompanySharedDocumentsPage from "@/pages/company-shared-documents";
 import CompanyEmployeeWorkDiary from "@/pages/company-employee-work-diary";
 import CompanyEmployees from "@/pages/company-employees";
 import { EmployeeSummaryDashboard } from "@/pages/employee-summary-dashboard";
+import CompanyAdminDashboard from "@/pages/company-admin-dashboard";
+import CompanyManagerDashboard from "@/pages/company-manager-dashboard";
+import Company403 from "@/pages/company-403";
 import AdminLogin from "@/pages/admin-login";
 import AdminDashboard from "@/pages/admin-dashboard";
 import AdminSetup from "@/pages/admin-setup";
@@ -82,6 +85,11 @@ function Router() {
       <Route path="/company-employee/:employeeId" component={CompanyEmployeeProfile} />
       <Route path="/employee-work-diary/:employeeId" component={CompanyEmployeeWorkDiary} />
       <Route path="/employee-profile" component={() => { window.location.href = "/profile"; return null; }} />
+      
+      {/* Company Role-Based Routes */}
+      <Route path="/company/admin/dashboard" component={CompanyAdminDashboard} />
+      <Route path="/company/manager/dashboard" component={CompanyManagerDashboard} />
+      <Route path="/company/403" component={Company403} />
       <Route path="/admin/login" component={AdminLogin} />
       <Route path="/admin/dashboard" component={AdminDashboard} />
       <Route path="/admin/verifications" component={AdminVerifications} />
