@@ -150,28 +150,30 @@ function CompanyAdminDashboardContent() {
           </Card>
         </div>
 
-        {/* Navigation Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <Card 
-            className="cursor-pointer hover:shadow-lg transition-all duration-200 border-2 hover:border-blue-200"
-            onClick={() => setLocation("/company/admin/settings")}
-            data-testid="nav-company-settings"
-          >
-            <CardHeader>
-              <CardTitle className="flex items-center gap-3 text-gray-900">
-                <Settings className="h-6 w-6 text-blue-600" />
-                Company Settings
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-600 mb-4">
-                Manage company information, verification status, and platform configuration
-              </p>
-              <Button variant="outline" className="w-full">
-                Open Settings
-              </Button>
-            </CardContent>
-          </Card>
+        {/* Company Admin Navigation */}
+        <div className="mb-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Company Administration</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <Card 
+              className="cursor-pointer hover:shadow-lg transition-all duration-200 border-2 hover:border-blue-200"
+              onClick={() => setLocation("/company/admin/settings")}
+              data-testid="nav-company-settings"
+            >
+              <CardHeader>
+                <CardTitle className="flex items-center gap-3 text-gray-900">
+                  <Settings className="h-6 w-6 text-blue-600" />
+                  Company Settings
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-600 mb-4">
+                  Manage company information, billing, verification status, and platform configuration
+                </p>
+                <Button variant="outline" className="w-full">
+                  Open Settings
+                </Button>
+              </CardContent>
+            </Card>
 
           <Card 
             className="cursor-pointer hover:shadow-lg transition-all duration-200 border-2 hover:border-green-200"
@@ -305,6 +307,7 @@ function CompanyAdminDashboardContent() {
             </CardContent>
           </Card>
         )}
+        </div>
       </div>
     </div>
   );

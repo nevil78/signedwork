@@ -149,31 +149,34 @@ function CompanyManagerDashboardContent() {
           </Card>
         </div>
 
-        {/* Manager Navigation */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <Card 
-            className="cursor-pointer hover:shadow-lg transition-all duration-200 border-2 hover:border-blue-200"
-            onClick={() => setLocation("/company/manager/team")}
-            data-testid="nav-my-team"
-          >
-            <CardHeader>
-              <CardTitle className="flex items-center gap-3 text-gray-900">
-                <Users className="h-6 w-6 text-blue-600" />
-                My Team
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-600 mb-4">
-                View team members, their work progress, and performance metrics
-              </p>
-              <Button variant="outline" className="w-full">
-                Manage Team
-                <Badge variant="secondary" className="ml-2">
-                  {(dashboardData as any)?.teamStats?.totalMembers || 0}
-                </Badge>
-              </Button>
-            </CardContent>
-          </Card>
+        {/* Manager Navigation - Team Focus Only */}
+        <div className="mb-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Team Management</h2>
+          <p className="text-gray-600 mb-6">Manage your team members and their work assignments</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <Card 
+              className="cursor-pointer hover:shadow-lg transition-all duration-200 border-2 hover:border-blue-200"
+              onClick={() => setLocation("/company/manager/team")}
+              data-testid="nav-my-team"
+            >
+              <CardHeader>
+                <CardTitle className="flex items-center gap-3 text-gray-900">
+                  <Users className="h-6 w-6 text-blue-600" />
+                  My Team
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-600 mb-4">
+                  View team members, their work progress, and performance metrics
+                </p>
+                <Button variant="outline" className="w-full">
+                  Manage Team
+                  <Badge variant="secondary" className="ml-2">
+                    {(dashboardData as any)?.teamStats?.totalMembers || 0}
+                  </Badge>
+                </Button>
+              </CardContent>
+            </Card>
 
           <Card 
             className="cursor-pointer hover:shadow-lg transition-all duration-200 border-2 hover:border-orange-200"
@@ -222,25 +225,34 @@ function CompanyManagerDashboardContent() {
             </CardContent>
           </Card>
 
-          <Card 
-            className="cursor-pointer hover:shadow-lg transition-all duration-200 border-2 hover:border-purple-200"
-            onClick={() => setLocation("/company/manager/schedule")}
-            data-testid="nav-schedule"
-          >
-            <CardHeader>
-              <CardTitle className="flex items-center gap-3 text-gray-900">
-                <Calendar className="h-6 w-6 text-purple-600" />
-                Team Schedule
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-600 mb-4">
-                Manage team schedules, deadlines, and project timelines
-              </p>
-              <Button variant="outline" className="w-full">
-                View Schedule
-                <Badge variant="secondary" className="ml-2">Soon</Badge>
-              </Button>
+          </div>
+        </div>
+
+        {/* Team Activity Summary */}
+        <div className="mt-8">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Team Activity Summary</h3>
+          <Card>
+            <CardContent className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-green-600">
+                    {(dashboardData as any)?.teamStats?.activeMembers || 0}
+                  </div>
+                  <p className="text-sm text-gray-600">Active Team Members</p>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-blue-600">
+                    {(dashboardData as any)?.teamStats?.weeklyTasks || 0}
+                  </div>
+                  <p className="text-sm text-gray-600">Tasks This Week</p>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-orange-600">
+                    {(dashboardData as any)?.teamStats?.avgCompletionTime || "0"}h
+                  </div>
+                  <p className="text-sm text-gray-600">Avg Completion Time</p>
+                </div>
+              </div>
             </CardContent>
           </Card>
 
