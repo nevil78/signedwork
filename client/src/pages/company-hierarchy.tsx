@@ -777,9 +777,9 @@ export default function CompanyHierarchy() {
         <TabsContent value="employees" className="space-y-4">
           <Card data-testid="employee-roles-management">
             <CardHeader>
-              <CardTitle>Employee Role Management</CardTitle>
+              <CardTitle>Employee Assignment & Role Management</CardTitle>
               <CardDescription>
-                Manage employee hierarchy roles and permissions
+                Assign employees to branches/teams and manage their hierarchy roles and permissions
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -788,23 +788,39 @@ export default function CompanyHierarchy() {
               ) : Array.isArray(employees) && employees.length > 0 ? (
                 <div className="space-y-3" data-testid="employees-list">
                   {employees.map((emp: any) => (
-                    <div key={emp.id} className="flex items-center justify-between p-4 border rounded-lg" data-testid={`employee-${emp.id}`}>
-                      <div className="flex items-center gap-3">
+                    <div key={emp.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors" data-testid={`employee-${emp.id}`}>
+                      <div className="flex items-center gap-4">
                         {getRoleIcon(emp.hierarchyRole)}
-                        <div>
+                        <div className="flex-1">
                           <h4 className="font-medium">
                             {emp.employee?.firstName} {emp.employee?.lastName}
                           </h4>
                           <p className="text-sm text-muted-foreground">{emp.position}</p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <Badge className={getRoleBadgeColor(emp.hierarchyRole)}>
+                              {emp.hierarchyRole?.replace('_', ' ') || 'employee'}
+                            </Badge>
+                            {emp.canVerifyWork && (
+                              <Badge variant="outline" className="bg-green-50 text-green-700">
+                                Can Verify
+                              </Badge>
+                            )}
+                          </div>
                         </div>
-                        <Badge className={getRoleBadgeColor(emp.hierarchyRole)}>
-                          {emp.hierarchyRole?.replace('_', ' ') || 'employee'}
-                        </Badge>
-                        {emp.canVerifyWork && (
-                          <Badge variant="outline" className="bg-green-50 text-green-700">
-                            Can Verify
-                          </Badge>
-                        )}
+                        <div className="text-sm text-muted-foreground">
+                          <div className="flex flex-col items-end">
+                            <span>
+                              {emp.branchId ? 
+                                branches?.find((b: any) => b.id === emp.branchId)?.name || "Unknown Branch" 
+                                : "Headquarters"}
+                            </span>
+                            {emp.teamId && (
+                              <span className="text-xs">
+                                Team: {teams?.find((t: any) => t.id === emp.teamId)?.name || "Unknown Team"}
+                              </span>
+                            )}
+                          </div>
+                        </div>
                       </div>
                       <div className="flex items-center gap-2">
                         <Button 
@@ -1128,68 +1144,105 @@ export default function CompanyHierarchy() {
 
       {/* Employee Hierarchy Management Dialog */}
       <Dialog open={isManageEmployeeOpen} onOpenChange={setIsManageEmployeeOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Manage Employee Hierarchy</DialogTitle>
+            <DialogTitle>Manage Employee Assignment & Permissions</DialogTitle>
             <DialogDescription>
-              Update {selectedEmployee?.employee?.firstName}'s role and permissions
+              Update {selectedEmployee?.employee?.firstName} {selectedEmployee?.employee?.lastName}'s assignment, role and permissions
             </DialogDescription>
           </DialogHeader>
           {selectedEmployee && (
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="hierarchy-role">Hierarchy Role</Label>
-                <Select value={employeeUpdate.hierarchyRole} onValueChange={(value) => setEmployeeUpdate({ ...employeeUpdate, hierarchyRole: value })}>
-                  <SelectTrigger data-testid="select-hierarchy-role">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="employee">Employee</SelectItem>
-                    <SelectItem value="team_lead">Team Lead</SelectItem>
-                    <SelectItem value="branch_manager">Branch Manager</SelectItem>
-                    <SelectItem value="company_admin">Company Admin</SelectItem>
-                  </SelectContent>
-                </Select>
+            <div className="space-y-6">
+              {/* Employee Info Section */}
+              <div className="p-4 bg-blue-50 rounded-lg border">
+                <div className="flex items-center gap-3">
+                  {getRoleIcon(selectedEmployee.hierarchyRole)}
+                  <div>
+                    <h4 className="font-medium">{selectedEmployee.employee?.firstName} {selectedEmployee.employee?.lastName}</h4>
+                    <p className="text-sm text-muted-foreground">{selectedEmployee.position}</p>
+                    <p className="text-xs text-muted-foreground">Employee ID: {selectedEmployee.employeeId}</p>
+                  </div>
+                </div>
               </div>
 
-              <div>
-                <Label htmlFor="employee-branch">Branch Assignment</Label>
-                <Select value={employeeUpdate.branchId} onValueChange={(value) => setEmployeeUpdate({ ...employeeUpdate, branchId: value })}>
-                  <SelectTrigger data-testid="select-employee-branch">
-                    <SelectValue placeholder="Select branch (optional)" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">Headquarters (No Branch)</SelectItem>
-                    {Array.isArray(branches) && branches.map((branch: any) => (
-                      <SelectItem key={branch.id} value={branch.id}>
-                        {branch.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              {/* Assignment Section */}
+              <div className="space-y-4">
+                <h4 className="font-medium">Organizational Assignment</h4>
+                
+                <div>
+                  <Label htmlFor="employee-branch">Branch Assignment</Label>
+                  <Select value={employeeUpdate.branchId} onValueChange={(value) => setEmployeeUpdate({ ...employeeUpdate, branchId: value, teamId: value ? employeeUpdate.teamId : "" })}>
+                    <SelectTrigger data-testid="select-employee-branch">
+                      <SelectValue placeholder="Select branch (optional)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Headquarters (No Branch)</SelectItem>
+                      {Array.isArray(branches) && branches.map((branch: any) => (
+                        <SelectItem key={branch.id} value={branch.id}>
+                          {branch.name} - {branch.location}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label htmlFor="employee-team">Team Assignment</Label>
+                  <Select 
+                    value={employeeUpdate.teamId} 
+                    onValueChange={(value) => setEmployeeUpdate({ ...employeeUpdate, teamId: value })}
+                    disabled={!employeeUpdate.branchId && teams?.filter((t: any) => !t.branchId).length === 0}
+                  >
+                    <SelectTrigger data-testid="select-employee-team">
+                      <SelectValue placeholder="Select team (optional)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">No Team</SelectItem>
+                      {Array.isArray(teams) && teams
+                        .filter((team: any) => 
+                          employeeUpdate.branchId ? 
+                            team.branchId === employeeUpdate.branchId : 
+                            !team.branchId
+                        )
+                        .map((team: any) => (
+                          <SelectItem key={team.id} value={team.id}>
+                            {team.name} {team.branchId ? "" : "(HQ)"}
+                          </SelectItem>
+                        ))
+                      }
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {employeeUpdate.branchId ? 
+                      "Only teams in the selected branch are available" : 
+                      "Only headquarters teams are available when no branch is selected"
+                    }
+                  </p>
+                </div>
               </div>
 
-              <div>
-                <Label htmlFor="employee-team">Team Assignment</Label>
-                <Select value={employeeUpdate.teamId} onValueChange={(value) => setEmployeeUpdate({ ...employeeUpdate, teamId: value })}>
-                  <SelectTrigger data-testid="select-employee-team">
-                    <SelectValue placeholder="Select team (optional)" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">No Team</SelectItem>
-                    {Array.isArray(teams) && teams.map((team: any) => (
-                      <SelectItem key={team.id} value={team.id}>
-                        {team.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              {/* Role & Permissions Section */}
+              <div className="space-y-4">
+                <h4 className="font-medium">Role & Hierarchy</h4>
+                
+                <div>
+                  <Label htmlFor="hierarchy-role">Hierarchy Role</Label>
+                  <Select value={employeeUpdate.hierarchyRole} onValueChange={(value) => setEmployeeUpdate({ ...employeeUpdate, hierarchyRole: value })}>
+                    <SelectTrigger data-testid="select-hierarchy-role">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="employee">Employee</SelectItem>
+                      <SelectItem value="team_lead">Team Lead</SelectItem>
+                      <SelectItem value="branch_manager">Branch Manager</SelectItem>
+                      <SelectItem value="company_admin">Company Admin</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-
-              <Separator />
 
               <div className="space-y-3">
-                <h4 className="font-medium">Permissions</h4>
+                <h4 className="font-medium">Permissions & Authority</h4>
                 
                 <div className="flex items-center justify-between">
                   <Label htmlFor="can-verify-work">Can Verify Work</Label>
@@ -1220,21 +1273,35 @@ export default function CompanyHierarchy() {
                     data-testid="switch-can-create-teams"
                   />
                 </div>
+
+                <div>
+                  <Label htmlFor="verification-scope">Verification Scope</Label>
+                  <Select value={employeeUpdate.verificationScope} onValueChange={(value) => setEmployeeUpdate({ ...employeeUpdate, verificationScope: value })}>
+                    <SelectTrigger data-testid="select-verification-scope">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">None</SelectItem>
+                      <SelectItem value="team">Team Level - Can verify team members' work</SelectItem>
+                      <SelectItem value="branch">Branch Level - Can verify entire branch</SelectItem>
+                      <SelectItem value="company">Company Level - Can verify company-wide</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Determines what level of work entries this employee can verify
+                  </p>
+                </div>
               </div>
 
-              <div>
-                <Label htmlFor="verification-scope">Verification Scope</Label>
-                <Select value={employeeUpdate.verificationScope} onValueChange={(value) => setEmployeeUpdate({ ...employeeUpdate, verificationScope: value })}>
-                  <SelectTrigger data-testid="select-verification-scope">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">None</SelectItem>
-                    <SelectItem value="team">Team Level</SelectItem>
-                    <SelectItem value="branch">Branch Level</SelectItem>
-                    <SelectItem value="company">Company Level</SelectItem>
-                  </SelectContent>
-                </Select>
+              {/* Assignment Summary */}
+              <div className="p-3 bg-gray-50 rounded-lg border">
+                <h5 className="font-medium text-sm mb-2">Assignment Summary</h5>
+                <div className="text-xs space-y-1">
+                  <div>Branch: {employeeUpdate.branchId ? branches?.find((b: any) => b.id === employeeUpdate.branchId)?.name || "Unknown" : "Headquarters"}</div>
+                  <div>Team: {employeeUpdate.teamId ? teams?.find((t: any) => t.id === employeeUpdate.teamId)?.name || "Unknown" : "No Team"}</div>
+                  <div>Role: {employeeUpdate.hierarchyRole.replace('_', ' ')}</div>
+                  <div>Can Verify: {employeeUpdate.canVerifyWork ? `Yes (${employeeUpdate.verificationScope})` : "No"}</div>
+                </div>
               </div>
 
               <Button 
