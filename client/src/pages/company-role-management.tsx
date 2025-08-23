@@ -34,6 +34,39 @@ export default function CompanyRoleManagement() {
     enabled: hasAccess,
   });
 
+  // Handle access denied - redirect to company dashboard
+  if (roleLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (!hasAccess) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <Shield className="mx-auto h-12 w-12 text-red-500 mb-4" />
+            <CardTitle className="text-xl">Access Denied</CardTitle>
+          </CardHeader>
+          <CardContent className="text-center space-y-4">
+            <p className="text-gray-600">
+              You need Company Admin permissions to access role management.
+            </p>
+            <Button 
+              onClick={() => window.location.href = '/company-dashboard'}
+              className="w-full"
+            >
+              Go Back to Dashboard
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   // Mutation to update employee role
   const updateRoleMutation = useMutation({
     mutationFn: async ({ employeeId, role }: { employeeId: string; role: string }) => {
