@@ -7,32 +7,29 @@ export const COMPANY_ROLES = {
 
 export type CompanyRole = typeof COMPANY_ROLES[keyof typeof COMPANY_ROLES];
 
-// Permissions map for role-based access control
-export const ROLE_PERMISSIONS = {
+// Company permissions map for server-side access control (updated to match requirements)
+export const COMPANY_PERMISSIONS = {
   [COMPANY_ROLES.COMPANY_ADMIN]: [
     'work.approve.any',
     'employee.manage',
     'manager.manage',
     'settings.read',
     'settings.write',
-    'reports.view',
-    'company.admin',
-    'billing.manage',
-    'integrations.manage'
+    'reports.view'
   ],
   [COMPANY_ROLES.MANAGER]: [
     'work.approve.directReports',
-    'reports.view.team',
-    'team.manage',
-    'approvals.pending'
+    'reports.view.team'
   ],
   [COMPANY_ROLES.BRANCH_ADMIN]: [
-    'work.approve.branch',
-    'employee.manage.branch',
-    'reports.view.branch',
+    'work.approve.directReports',
+    'reports.view.team',
     'settings.read'
   ]
 } as const;
+
+// Legacy alias for backwards compatibility
+export const ROLE_PERMISSIONS = COMPANY_PERMISSIONS;
 
 // Route access mapping
 export const ROUTE_PERMISSIONS = {
@@ -41,10 +38,32 @@ export const ROUTE_PERMISSIONS = {
   '/company/branch/*': [COMPANY_ROLES.BRANCH_ADMIN, COMPANY_ROLES.COMPANY_ADMIN], // Future use
 } as const;
 
+// Define permission types for better type safety
+export type CompanyPermission = 
+  | 'work.approve.any'
+  | 'work.approve.directReports'
+  | 'employee.manage'
+  | 'manager.manage'
+  | 'settings.read'
+  | 'settings.write'
+  | 'reports.view'
+  | 'reports.view.team';
+
 // Helper functions for permission checking
+export function hasCompanyPermission(role: CompanyRole, permission: CompanyPermission): boolean {
+  const rolePermissions = COMPANY_PERMISSIONS[role] || [];
+  return rolePermissions.includes(permission);
+}
+
+// Legacy function for backwards compatibility
 export function hasPermission(role: CompanyRole, permission: string): boolean {
-  const rolePermissions = ROLE_PERMISSIONS[role] || [];
+  const rolePermissions = COMPANY_PERMISSIONS[role] || [];
   return rolePermissions.includes(permission as any);
+}
+
+// Get all permissions for a role
+export function getCompanyPermissions(role: CompanyRole): readonly CompanyPermission[] {
+  return COMPANY_PERMISSIONS[role] || [];
 }
 
 export function canAccessRoute(role: CompanyRole, route: string): boolean {
@@ -56,6 +75,10 @@ export function canAccessRoute(role: CompanyRole, route: string): boolean {
   }
   return false;
 }
+
+// Usage examples for permission checking:
+// if (hasCompanyPermission(userRole, 'work.approve.any')) { /* Allow */ }
+// if (hasCompanyPermission(userRole, 'reports.view.team')) { /* Allow */ }
 
 // Temporary role provider for development (will be replaced with DB in Step 2)
 export function getTemporaryRole(email: string): CompanyRole {

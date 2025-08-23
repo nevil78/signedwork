@@ -34,6 +34,8 @@ Preferred communication style: Simple, everyday language.
 - **Session Security**: Configurable timeouts and secure cookie settings
 - **Email Verification**: Optional email verification system with OTP and SendGrid integration
 - **Google OAuth**: Employee sign-up and login integration
+- **Company Sub-Roles**: Enterprise-level role system with COMPANY_ADMIN, MANAGER, and BRANCH_ADMIN roles
+- **Permission System**: Fine-grained permissions map for company context roles with server-side enforcement
 
 ## UI/UX Decisions
 - Modern UI built with shadcn/ui components.
@@ -51,6 +53,7 @@ Preferred communication style: Simple, everyday language.
 - **Work Diary**: Company-based work tracking system with task creation, status, priority, time tracking, tagging, and CRUD operations. Features company invitation system and approval workflows with rating and feedback. Includes shared documents system for job applications, allowing companies to view verified work entries and shared profile data.
 - **Company Management**: Company registration with detailed business info, invitation code generation, and employee management (employment status tracking).
 - **Admin Panel**: Role-based access for managing users (employees and companies), platform statistics, and comprehensive data deletion with backup and confirmation safeguards. Uses direct SQL execution via Drizzle's sql template literals to ensure reliable deletion operations.
+- **Company Role System**: Enterprise-grade role-based access control with automatic login redirects, protected routes, and permission-based middleware for fine-grained access control within company contexts.
 - **Enhanced Security**: Secure password reset flow (OTP-based), immutable protection for approved work entries.
 - **Job Discovery Page**: Comprehensive job discovery platform with AI-powered search, advanced filtering, and application management.
 - **Trending Skills Module**: Advanced skills discovery and personalization system with market insights and analytics.

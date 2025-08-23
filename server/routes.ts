@@ -24,7 +24,7 @@ import { OTPEmailService } from "./otpEmailService";
 import { SignupVerificationService } from "./signupVerificationService";
 import { sendEmail } from "./sendgrid";
 import { aiJobService, type EmployeeProfile } from "./aiJobService";
-import { COMPANY_ROLES, type CompanyRole, canAccessRoute, hasPermission, getTemporaryRole } from "@shared/roles";
+import { COMPANY_ROLES, type CompanyRole, type CompanyPermission, canAccessRoute, hasPermission, hasCompanyPermission, getTemporaryRole } from "@shared/roles";
 
 // Global variable to store the Socket.IO server instance for real-time updates
 let io: SocketIOServer;
@@ -118,6 +118,42 @@ function requireCompanyRole(allowedRoles: CompanyRole[]) {
           message: "Insufficient permissions for this company route",
           code: "INSUFFICIENT_COMPANY_PERMISSIONS",
           required: allowedRoles,
+          current: req.user.companySubRole,
+          route: req.path
+        });
+      }
+      
+      next();
+    });
+  };
+}
+
+// Permission-based middleware for fine-grained access control
+function requireCompanyPermission(permission: CompanyPermission) {
+  return (req: any, res: any, next: any) => {
+    requireAuth(req, res, () => {
+      // Validate company session exists
+      if (req.user.type !== 'company') {
+        return res.status(403).json({ 
+          message: "Company access required",
+          code: "COMPANY_ACCESS_REQUIRED"
+        });
+      }
+      
+      // Validate companySubRole exists in session
+      if (!req.user.companySubRole) {
+        return res.status(403).json({ 
+          message: "Company role not found in session",
+          code: "COMPANY_ROLE_MISSING"
+        });
+      }
+      
+      // Check if the user's role has the required permission
+      if (!hasCompanyPermission(req.user.companySubRole, permission)) {
+        return res.status(403).json({ 
+          message: "Insufficient permissions for this action",
+          code: "INSUFFICIENT_COMPANY_PERMISSIONS",
+          required: permission,
           current: req.user.companySubRole,
           route: req.path
         });
@@ -4901,6 +4937,61 @@ This message was sent through the Signedwork contact form.
     } catch (error) {
       console.error("Manager team reports error:", error);
       res.status(500).json({ message: "Failed to load team reports" });
+    }
+  });
+
+  // =====================================================
+  // PERMISSION-BASED ROUTE EXAMPLES
+  // =====================================================
+
+  // Example: Work approval with specific permission check
+  app.post("/api/company/work-entries/:id/approve", requireCompanyPermission('work.approve.any'), async (req: any, res) => {
+    try {
+      const workEntryId = req.params.id;
+      const companyId = req.user.id;
+      
+      // Only users with 'work.approve.any' permission (COMPANY_ADMIN) can access this
+      const workEntry = await storage.approveWorkEntry(workEntryId, {
+        approvedBy: req.user.companySubRole,
+        approvedAt: new Date(),
+        companyId: companyId
+      });
+      
+      res.json({ message: "Work entry approved", workEntry });
+    } catch (error) {
+      console.error("Work approval error:", error);
+      res.status(500).json({ message: "Failed to approve work entry" });
+    }
+  });
+
+  // Example: Manager-specific work approval
+  app.post("/api/company/work-entries/:id/approve-team", requireCompanyPermission('work.approve.directReports'), async (req: any, res) => {
+    try {
+      const workEntryId = req.params.id;
+      
+      // Only users with 'work.approve.directReports' permission (MANAGER, COMPANY_ADMIN) can access this
+      const workEntry = await storage.approveWorkEntryForDirectReports(workEntryId, {
+        approvedBy: req.user.companySubRole,
+        approvedAt: new Date()
+      });
+      
+      res.json({ message: "Work entry approved by manager", workEntry });
+    } catch (error) {
+      console.error("Manager work approval error:", error);
+      res.status(500).json({ message: "Failed to approve work entry" });
+    }
+  });
+
+  // Example: Employee management (COMPANY_ADMIN only via permission)
+  app.get("/api/company/employees/manage", requireCompanyPermission('employee.manage'), async (req: any, res) => {
+    try {
+      const companyId = req.user.id;
+      // Only users with 'employee.manage' permission (COMPANY_ADMIN) can access this
+      const employees = await storage.getCompanyEmployeesForManagement(companyId);
+      res.json(employees);
+    } catch (error) {
+      console.error("Employee management error:", error);
+      res.status(500).json({ message: "Failed to load employee management data" });
     }
   });
 
