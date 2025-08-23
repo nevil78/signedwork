@@ -20,16 +20,16 @@ export default function CompanyRoleManagement() {
   const [inviteRole, setInviteRole] = useState<string>("MANAGER");
 
   // Role guard - only COMPANY_ADMIN can access this page
-  const { hasAccess, isLoading: roleLoading } = useCompanyRoleGuard(['COMPANY_ADMIN']);
+  const { isAuthorized: hasAccess, isLoading: roleLoading } = useCompanyRoleGuard({ allowedRoles: ['COMPANY_ADMIN'] });
 
   // Fetch company employees with their current roles
-  const { data: employees, isLoading: employeesLoading } = useQuery({
+  const { data: employees = [], isLoading: employeesLoading } = useQuery({
     queryKey: ['/api/company/employees/with-roles'],
     enabled: hasAccess,
   });
 
   // Fetch pending manager invitations
-  const { data: pendingInvites, isLoading: invitesLoading } = useQuery({
+  const { data: pendingInvites = [], isLoading: invitesLoading } = useQuery({
     queryKey: ['/api/company/manager-invites/pending'],
     enabled: hasAccess,
   });
@@ -70,10 +70,7 @@ export default function CompanyRoleManagement() {
   // Mutation to update employee role
   const updateRoleMutation = useMutation({
     mutationFn: async ({ employeeId, role }: { employeeId: string; role: string }) => {
-      return apiRequest(`/api/company/employees/${employeeId}/role`, {
-        method: 'PATCH',
-        body: { role }
-      });
+      return apiRequest(`/api/company/employees/${employeeId}/role`, 'PATCH', { role });
     },
     onSuccess: () => {
       toast({
@@ -96,10 +93,7 @@ export default function CompanyRoleManagement() {
   // Mutation to invite manager
   const inviteManagerMutation = useMutation({
     mutationFn: async ({ email, role }: { email: string; role: string }) => {
-      return apiRequest('/api/company/invite-manager', {
-        method: 'POST',
-        body: { email, role }
-      });
+      return apiRequest('/api/company/invite-manager', 'POST', { email, role });
     },
     onSuccess: () => {
       toast({
