@@ -92,20 +92,34 @@ function requireAdmin(req: any, res: any, next: any) {
   });
 }
 
-// Role-based authentication middleware for company sub-roles
+// RoleGuard middleware for company routes - validates session and roles
 function requireCompanyRole(allowedRoles: CompanyRole[]) {
   return (req: any, res: any, next: any) => {
     requireAuth(req, res, () => {
+      // Validate company session exists
       if (req.user.type !== 'company') {
-        return res.status(403).json({ message: "Company access required" });
+        return res.status(403).json({ 
+          message: "Company access required",
+          code: "COMPANY_ACCESS_REQUIRED"
+        });
       }
       
-      const userRole = req.user.companySubRole;
-      if (!userRole || !allowedRoles.includes(userRole)) {
+      // Validate companySubRole exists in session
+      if (!req.user.companySubRole) {
         return res.status(403).json({ 
-          message: "Insufficient permissions",
+          message: "Company role not found in session",
+          code: "COMPANY_ROLE_MISSING"
+        });
+      }
+      
+      // Validate companySubRole matches route requirement
+      if (!allowedRoles.includes(req.user.companySubRole)) {
+        return res.status(403).json({ 
+          message: "Insufficient permissions for this company route",
+          code: "INSUFFICIENT_COMPANY_PERMISSIONS",
           required: allowedRoles,
-          current: userRole
+          current: req.user.companySubRole,
+          route: req.path
         });
       }
       
@@ -114,7 +128,9 @@ function requireCompanyRole(allowedRoles: CompanyRole[]) {
   };
 }
 
-// Route-based authorization middleware
+
+
+// Route-based authorization middleware (legacy - keeping for compatibility)
 function requireRouteAccess(req: any, res: any, next: any) {
   requireAuth(req, res, () => {
     if (req.user.type !== 'company') {
