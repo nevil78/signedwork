@@ -266,6 +266,25 @@ export default function CompanyDashboard() {
         <div className="mb-8">
           <h3 className="text-lg font-semibold mb-4">Management Tools</h3>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            
+            {/* NEW: Company Hierarchy Card */}
+            <Card 
+              className="cursor-pointer hover:shadow-md hover:border-yellow-200 transition-all duration-200" 
+              onClick={() => navigate('/company-hierarchy')}
+              data-testid="company-hierarchy-card"
+            >
+              <CardHeader className="pb-4">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-8 h-8 bg-yellow-100 dark:bg-yellow-900 rounded-lg flex items-center justify-center">
+                    <Building2 className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
+                  </div>
+                  <CardTitle className="text-base font-semibold">Company Hierarchy</CardTitle>
+                </div>
+                <CardDescription className="text-sm">
+                  Manage branches, teams, and employee roles in your organizational structure
+                </CardDescription>
+              </CardHeader>
+            </Card>
 {/* Manage Employees Card */}
             <Card 
               className="cursor-pointer hover:shadow-md hover:border-orange-200 transition-all duration-200" 
