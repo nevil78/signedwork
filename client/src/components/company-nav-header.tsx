@@ -80,7 +80,7 @@ export default function CompanyNavHeader({ companyId, companyName }: CompanyNavH
   });
 
   const getCurrentTab = () => {
-    if (location === '/company-dashboard') return 'dashboard';
+    if (location === '/company-dashboard' || location === '/company/admin/dashboard' || location === '/company/manager/dashboard') return 'dashboard';
     if (location === '/company-employees') return 'employees';
     if (location === '/company-work-entries') return 'work-entries';
     if (location === '/company-jobs') return 'jobs';
@@ -90,7 +90,16 @@ export default function CompanyNavHeader({ companyId, companyName }: CompanyNavH
   };
 
   const handleTabChange = (value: string) => {
-    if (value === 'dashboard') setLocation('/company-dashboard');
+    if (value === 'dashboard') {
+      // Role-based dashboard routing
+      if (companySubRole === 'COMPANY_ADMIN') {
+        setLocation('/company/admin/dashboard');
+      } else if (companySubRole === 'MANAGER') {
+        setLocation('/company/manager/dashboard');
+      } else {
+        setLocation('/company-dashboard');
+      }
+    }
     else if (value === 'employees') setLocation('/company-employees');
     else if (value === 'work-entries') setLocation('/company-work-entries');
     else if (value === 'jobs') setLocation('/company-jobs');
@@ -122,8 +131,16 @@ export default function CompanyNavHeader({ companyId, companyName }: CompanyNavH
                     value="dashboard" 
                     className="data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 data-[state=active]:bg-blue-50 rounded-none h-full px-6 font-medium border border-transparent hover:border-gray-200"
                   >
-                    <Building2 className="h-4 w-4 mr-2" />
-                    Dashboard
+                    {companySubRole === 'COMPANY_ADMIN' ? (
+                      <Shield className="h-4 w-4 mr-2" />
+                    ) : companySubRole === 'MANAGER' ? (
+                      <BarChart3 className="h-4 w-4 mr-2" />
+                    ) : (
+                      <Building2 className="h-4 w-4 mr-2" />
+                    )}
+                    {companySubRole === 'COMPANY_ADMIN' ? 'Admin' : 
+                     companySubRole === 'MANAGER' ? 'Manager' : 
+                     'Dashboard'}
                   </TabsTrigger>
                   <TabsTrigger 
                     value="employees" 
