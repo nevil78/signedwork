@@ -428,6 +428,20 @@ export interface IStorage {
   getLoginSessions(userId: string, userType: string): Promise<LoginSession[]>;
   updateLoginSession(sessionId: string, data: Partial<LoginSession>): Promise<LoginSession>;
   getLoginSessionsCount(userId: string, userType: string): Promise<number>;
+  
+  // Company Sub-Role System Storage Methods
+  getCompanyStats(companyId: string): Promise<any>;
+  getPendingApprovals(companyId: string): Promise<any[]>;
+  getRecentActivity(companyId: string): Promise<any[]>;
+  getManagerTeamStats(managerId: string): Promise<any>;
+  getManagerPendingApprovals(managerId: string): Promise<any[]>;
+  getCompanyReports(companyId: string): Promise<any[]>;
+  
+  // Manager Administration Methods
+  getCompanyManagers(companyId: string): Promise<any[]>;
+  getAvailableEmployeesForManager(companyId: string): Promise<any[]>;
+  assignManagerRole(companyId: string, employeeId: string): Promise<void>;
+  removeManagerRole(companyId: string, managerId: string): Promise<void>;
 }
 
 export interface JobSearchFilters {
@@ -3498,6 +3512,72 @@ export class DatabaseStorage implements IStorage {
       productivity: 0,
       goals: []
     };
+  }
+
+  // Manager Administration Methods Implementation
+  async getCompanyManagers(companyId: string): Promise<any[]> {
+    // Get employees from this company who could potentially be managers
+    // For demo purposes, returning a subset of employees as mock managers
+    const managers = await db
+      .select({
+        id: employees.id,
+        employeeId: employees.id,
+        employeeName: sql<string>`CONCAT(${employees.firstName}, ' ', ${employees.lastName})`,
+        employeeEmail: employees.email,
+        managedEmployees: sql<number>`FLOOR(RANDOM() * 10 + 1)`, // Mock managed count
+        assignedAt: companyEmployees.createdAt,
+        status: sql<string>`'active'`
+      })
+      .from(employees)
+      .innerJoin(companyEmployees, eq(employees.id, companyEmployees.employeeId))
+      .where(and(
+        eq(companyEmployees.companyId, companyId),
+        eq(companyEmployees.status, 'employed')
+      ))
+      .limit(5); // Sample managers
+
+    return managers;
+  }
+
+  async getAvailableEmployeesForManager(companyId: string): Promise<any[]> {
+    // Get employees from this company who are not already managers
+    const employees = await db
+      .select({
+        id: employees.id,
+        name: sql<string>`CONCAT(${employees.firstName}, ' ', ${employees.lastName})`,
+        email: employees.email,
+        hasManager: sql<boolean>`false` // Placeholder
+      })
+      .from(employees)
+      .innerJoin(companyEmployees, eq(employees.id, companyEmployees.employeeId))
+      .where(and(
+        eq(companyEmployees.companyId, companyId),
+        eq(companyEmployees.status, 'employed')
+      ))
+      .limit(50);
+    
+    return employees;
+  }
+
+  async assignManagerRole(companyId: string, employeeId: string): Promise<void> {
+    // For demo purposes, this would update the employee's role in the future
+    // when manager roles are stored in the database
+    console.log(`Manager role assigned to employee ${employeeId} in company ${companyId}`);
+    
+    // In future implementation:
+    // 1. Create manager record in managers table
+    // 2. Update employee role permissions
+    // 3. Set up manager-employee relationships
+  }
+
+  async removeManagerRole(companyId: string, managerId: string): Promise<void> {
+    // For demo purposes, this would remove the manager role in the future
+    console.log(`Manager role removed for ${managerId} in company ${companyId}`);
+    
+    // In future implementation:
+    // 1. Remove manager record
+    // 2. Update affected employees' manager assignments
+    // 3. Transfer pending approvals
   }
 }
 

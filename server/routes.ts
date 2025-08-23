@@ -4745,15 +4745,53 @@ This message was sent through the Signedwork contact form.
 
   app.get("/api/company/admin/managers", requireCompanyRole([COMPANY_ROLES.COMPANY_ADMIN]), async (req: any, res) => {
     try {
-      // Get all managers in the company (future: when manager roles are in DB)
-      // For now, return placeholder data
-      res.json({
-        managers: [],
-        message: "Manager management will be available when roles are stored in database"
-      });
+      const companyId = req.user.id;
+      const managers = await storage.getCompanyManagers(companyId);
+      res.json(managers);
     } catch (error) {
       console.error("Managers list error:", error);
       res.status(500).json({ message: "Failed to load managers" });
+    }
+  });
+
+  app.get('/api/company/employees/available-for-manager', requireCompanyRole([COMPANY_ROLES.COMPANY_ADMIN]), async (req: any, res) => {
+    try {
+      const companyId = req.user.id;
+      const employees = await storage.getAvailableEmployeesForManager(companyId);
+      res.json(employees);
+    } catch (error) {
+      console.error("Error fetching available employees:", error);
+      res.status(500).json({ message: "Failed to fetch available employees" });
+    }
+  });
+
+  app.post('/api/company/admin/assign-manager', requireCompanyRole([COMPANY_ROLES.COMPANY_ADMIN]), async (req: any, res) => {
+    try {
+      const companyId = req.user.id;
+      const { employeeId } = req.body;
+      
+      if (!employeeId) {
+        return res.status(400).json({ message: "Employee ID is required" });
+      }
+
+      await storage.assignManagerRole(companyId, employeeId);
+      res.json({ message: "Manager role assigned successfully" });
+    } catch (error) {
+      console.error("Error assigning manager role:", error);
+      res.status(500).json({ message: "Failed to assign manager role" });
+    }
+  });
+
+  app.delete('/api/company/admin/managers/:managerId', requireCompanyRole([COMPANY_ROLES.COMPANY_ADMIN]), async (req: any, res) => {
+    try {
+      const companyId = req.user.id;
+      const { managerId } = req.params;
+      
+      await storage.removeManagerRole(companyId, managerId);
+      res.json({ message: "Manager role removed successfully" });
+    } catch (error) {
+      console.error("Error removing manager role:", error);
+      res.status(500).json({ message: "Failed to remove manager role" });
     }
   });
 

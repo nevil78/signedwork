@@ -30,6 +30,7 @@ import CompanyEmployees from "@/pages/company-employees";
 import { EmployeeSummaryDashboard } from "@/pages/employee-summary-dashboard";
 import CompanyAdminDashboard from "@/pages/company-admin-dashboard";
 import CompanyManagerDashboard from "@/pages/company-manager-dashboard";
+import CompanyAdminManagers from "@/pages/company-admin-managers";
 import Company403 from "@/pages/company-403";
 import AdminLogin from "@/pages/admin-login";
 import AdminDashboard from "@/pages/admin-dashboard";
@@ -88,6 +89,7 @@ function Router() {
       
       {/* Company Role-Based Routes */}
       <Route path="/company/admin/dashboard" component={CompanyAdminDashboard} />
+      <Route path="/company/admin/managers" component={CompanyAdminManagers} />
       <Route path="/company/manager/dashboard" component={CompanyManagerDashboard} />
       <Route path="/company/403" component={() => <Company403 />} />
       <Route path="/admin/login" component={AdminLogin} />
