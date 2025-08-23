@@ -98,6 +98,7 @@ function Router() {
       <Route path="/company/admin/employees" component={CompanyAdminEmployees} />
       <Route path="/company/admin/reports" component={CompanyAdminReports} />
       <Route path="/company/admin/roles" component={CompanyRoleManagement} />
+      <Route path="/company-role-management" component={CompanyRoleManagement} />
       <Route path="/company/manager/dashboard" component={CompanyManagerDashboard} />
       <Route path="/company/403" component={() => <Company403 />} />
       <Route path="/admin/login" component={AdminLogin} />
