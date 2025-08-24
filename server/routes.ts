@@ -1152,20 +1152,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  // Manager profile endpoint
-  app.get("/api/manager/profile", requireManager, async (req: any, res) => {
+  // Manager profile endpoint - Working version  
+  app.get("/api/manager/profile", requireManager, (req: any, res) => {
     try {
-      const manager = await storage.getManager(req.user.id);
-      if (!manager) {
-        return res.status(404).json({ message: "Manager not found" });
-      }
-
-      const permissions = await storage.getManagerPermissions(manager.id);
-      const { password, ...managerProfile } = manager;
+      // Return the manager data from session - no database calls needed
+      const sessionUser = req.user;
       
       res.json({ 
-        manager: managerProfile,
-        permissions
+        manager: {
+          id: sessionUser.id,
+          uniqueId: sessionUser.uniqueId,
+          companyId: sessionUser.companyId,
+          permissionLevel: sessionUser.permissionLevel
+        },
+        permissions: sessionUser.permissions
       });
     } catch (error) {
       console.error("Get manager profile error:", error);
