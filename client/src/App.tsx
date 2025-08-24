@@ -36,6 +36,10 @@ import AdminDashboard from "@/pages/admin-dashboard";
 import AdminSetup from "@/pages/admin-setup";
 import AdminVerifications from "@/pages/admin-verifications";
 import AdminFeedback from "@/pages/admin-feedback";
+import ManagerLogin from "@/pages/manager-login";
+import ManagerDashboard from "@/pages/manager-dashboard";
+import ManagerWorkEntries from "@/pages/manager-work-entries";
+import ManagerEmployees from "@/pages/manager-employees";
 import FeedbackPage from "@/pages/feedback";
 import ContactPage from "@/pages/contact";
 import AboutPage from "@/pages/about";
@@ -93,6 +97,13 @@ function Router() {
       <Route path="/admin/verifications" component={AdminVerifications} />
       <Route path="/admin/feedback" component={AdminFeedback} />
       <Route path="/admin/setup" component={AdminSetup} />
+      
+      {/* Manager Portal Routes */}
+      <Route path="/manager/login" component={ManagerLogin} />
+      <Route path="/manager/dashboard" component={ManagerDashboard} />
+      <Route path="/manager/work-entries" component={ManagerWorkEntries} />
+      <Route path="/manager/employees" component={ManagerEmployees} />
+      
       <Route path="/feedback" component={FeedbackPage} />
       <Route path="/contact" component={ContactPage} />
       <Route path="/about" component={AboutPage} />
