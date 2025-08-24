@@ -2889,8 +2889,8 @@ export default function CompanyHierarchy() {
 
       {/* Create Manager Account Dialog */}
       <Dialog open={isCreateManagerOpen} onOpenChange={setIsCreateManagerOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-hidden">
+          <DialogHeader className="flex-shrink-0">
             <DialogTitle className="flex items-center gap-2">
               <ShieldCheck className="h-5 w-5 text-indigo-600" />
               Create Manager Account
@@ -2900,7 +2900,7 @@ export default function CompanyHierarchy() {
             </DialogDescription>
           </DialogHeader>
           
-          <div className="space-y-6">
+          <div className="space-y-6 overflow-y-auto flex-1 pr-2 max-h-[calc(90vh-120px)]">
             {/* Employee Selection */}
             <div className="space-y-3">
               <Label htmlFor="manager-employee">Select Employee</Label>
@@ -3117,33 +3117,34 @@ export default function CompanyHierarchy() {
               </div>
             )}
 
-            <div className="flex gap-3">
-              <Button 
-                onClick={() => {
-                  if (newManager.password !== newManager.confirmPassword) {
-                    toast({ title: "Error", description: "Passwords do not match", variant: "destructive" });
-                    return;
-                  }
-                  if (!newManager.employeeId || !newManager.username || !newManager.password) {
-                    toast({ title: "Error", description: "Please fill in all required fields", variant: "destructive" });
-                    return;
-                  }
-                  createManagerMutation.mutate(newManager);
-                }}
-                disabled={createManagerMutation.isPending}
-                className="flex-1"
-                data-testid="button-create-manager-account"
-              >
-                {createManagerMutation.isPending ? "Creating Account..." : "Create Manager Account"}
-              </Button>
-              <Button 
-                variant="outline" 
-                onClick={() => setIsCreateManagerOpen(false)}
-                className="flex-1"
-              >
-                Cancel
-              </Button>
-            </div>
+          </div>
+          
+          <div className="flex gap-3 flex-shrink-0 pt-4 border-t">
+            <Button 
+              onClick={() => {
+                if (newManager.password !== newManager.confirmPassword) {
+                  toast({ title: "Error", description: "Passwords do not match", variant: "destructive" });
+                  return;
+                }
+                if (!newManager.employeeId || !newManager.username || !newManager.password) {
+                  toast({ title: "Error", description: "Please fill in all required fields", variant: "destructive" });
+                  return;
+                }
+                createManagerMutation.mutate(newManager);
+              }}
+              disabled={createManagerMutation.isPending}
+              className="flex-1"
+              data-testid="button-create-manager-account"
+            >
+              {createManagerMutation.isPending ? "Creating Account..." : "Create Manager Account"}
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => setIsCreateManagerOpen(false)}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
