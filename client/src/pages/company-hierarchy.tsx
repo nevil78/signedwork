@@ -2096,6 +2096,289 @@ export default function CompanyHierarchy() {
 
         {/* Manager Accounts Tab */}
         <TabsContent value="managers" className="space-y-4">
+          {/* Manager Account Correlation Matrix */}
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Crown className="h-5 w-5 text-purple-600" />
+                Manager Control Matrix
+              </CardTitle>
+              <CardDescription>
+                Visual mapping of manager permissions and organizational unit control relationships
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {Array.isArray(employees) && employees.filter(emp => ['company_admin', 'branch_manager', 'team_lead'].includes(emp.hierarchyRole)).length > 0 ? (
+                <div className="space-y-6">
+                  {/* Permission Scope Visualization */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Manager Hierarchy */}
+                    <div className="p-4 border rounded-lg bg-purple-50">
+                      <h4 className="font-medium text-purple-900 mb-4 flex items-center gap-2">
+                        <Crown className="h-4 w-4" />
+                        Management Hierarchy & Scope
+                      </h4>
+                      <div className="space-y-4">
+                        {/* Company Admins */}
+                        {Array.isArray(employees) && employees.filter(emp => emp.hierarchyRole === 'company_admin').map((admin: any) => (
+                          <div key={admin.id} className="p-3 bg-yellow-100 rounded-lg border-l-4 border-yellow-500">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <Crown className="h-5 w-5 text-yellow-600" />
+                                <div>
+                                  <p className="font-medium text-yellow-900">{admin.firstName} {admin.lastName}</p>
+                                  <p className="text-xs text-yellow-700">Company Administrator</p>
+                                </div>
+                              </div>
+                              <Badge className="bg-yellow-200 text-yellow-800">
+                                Full Access
+                              </Badge>
+                            </div>
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              <Badge variant="outline" className="text-xs bg-white">
+                                All Branches ({Array.isArray(branches) ? branches.length : 0})
+                              </Badge>
+                              <Badge variant="outline" className="text-xs bg-white">
+                                All Teams ({Array.isArray(teams) ? teams.length : 0})
+                              </Badge>
+                              <Badge variant="outline" className="text-xs bg-white">
+                                All Employees ({Array.isArray(employees) ? employees.length : 0})
+                              </Badge>
+                            </div>
+                          </div>
+                        ))}
+
+                        {/* Branch Managers */}
+                        {Array.isArray(employees) && employees.filter(emp => emp.hierarchyRole === 'branch_manager').map((manager: any) => {
+                          const managerBranch = Array.isArray(branches) ? branches.find(b => b.id === manager.branchId) : null;
+                          const branchTeams = Array.isArray(teams) ? teams.filter(team => team.branchId === manager.branchId) : [];
+                          const branchEmployees = Array.isArray(employees) ? employees.filter(emp => emp.branchId === manager.branchId) : [];
+
+                          return (
+                            <div key={manager.id} className="p-3 bg-blue-100 rounded-lg border-l-4 border-blue-500 ml-4">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                  <Building2 className="h-4 w-4 text-blue-600" />
+                                  <div>
+                                    <p className="font-medium text-blue-900">{manager.firstName} {manager.lastName}</p>
+                                    <p className="text-xs text-blue-700">Branch Manager - {managerBranch?.name || 'Unassigned'}</p>
+                                  </div>
+                                </div>
+                                <Badge className="bg-blue-200 text-blue-800">
+                                  Branch Level
+                                </Badge>
+                              </div>
+                              <div className="mt-3 flex flex-wrap gap-2">
+                                <Badge variant="outline" className="text-xs bg-white">
+                                  {branchTeams.length} Teams
+                                </Badge>
+                                <Badge variant="outline" className="text-xs bg-white">
+                                  {branchEmployees.length} Staff
+                                </Badge>
+                                {managerBranch && (
+                                  <Badge variant="outline" className="text-xs bg-white">
+                                    {managerBranch.location}
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+
+                        {/* Team Leads */}
+                        {Array.isArray(employees) && employees.filter(emp => emp.hierarchyRole === 'team_lead').map((lead: any) => {
+                          const leadTeam = Array.isArray(teams) ? teams.find(t => t.id === lead.teamId) : null;
+                          const teamMembers = Array.isArray(employees) ? employees.filter(emp => emp.teamId === lead.teamId) : [];
+                          const leadBranch = Array.isArray(branches) ? branches.find(b => b.id === lead.branchId) : null;
+
+                          return (
+                            <div key={lead.id} className="p-3 bg-green-100 rounded-lg border-l-4 border-green-500 ml-8">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                  <Users className="h-4 w-4 text-green-600" />
+                                  <div>
+                                    <p className="font-medium text-green-900">{lead.firstName} {lead.lastName}</p>
+                                    <p className="text-xs text-green-700">
+                                      Team Lead - {leadTeam?.name || 'Unassigned'} 
+                                      {leadBranch && ` (${leadBranch.name})`}
+                                    </p>
+                                  </div>
+                                </div>
+                                <Badge className="bg-green-200 text-green-800">
+                                  Team Level
+                                </Badge>
+                              </div>
+                              <div className="mt-3 flex flex-wrap gap-2">
+                                <Badge variant="outline" className="text-xs bg-white">
+                                  {teamMembers.length - 1} Direct Reports
+                                </Badge>
+                                {leadTeam && (
+                                  <Badge variant="outline" className="text-xs bg-white">
+                                    Max {leadTeam.maxMembers} capacity
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Permission Matrix */}
+                    <div className="p-4 border rounded-lg bg-gray-50">
+                      <h4 className="font-medium text-gray-900 mb-4 flex items-center gap-2">
+                        <ShieldCheck className="h-4 w-4" />
+                        Access Control Matrix
+                      </h4>
+                      <div className="space-y-4">
+                        {/* Matrix Header */}
+                        <div className="grid grid-cols-4 gap-2 text-xs font-medium text-gray-600 border-b pb-2">
+                          <div>Permission</div>
+                          <div>Admin</div>
+                          <div>Branch Mgr</div>
+                          <div>Team Lead</div>
+                        </div>
+
+                        {/* Permission Rows */}
+                        {[
+                          { name: 'Create Branches', admin: true, branch: false, team: false },
+                          { name: 'Manage Teams', admin: true, branch: true, team: false },
+                          { name: 'Hire/Fire Staff', admin: true, branch: true, team: false },
+                          { name: 'Assign Roles', admin: true, branch: true, team: true },
+                          { name: 'Verify Work', admin: true, branch: true, team: true },
+                          { name: 'View Reports', admin: true, branch: true, team: true },
+                          { name: 'Manage Invites', admin: true, branch: true, team: false },
+                          { name: 'Edit Structure', admin: true, branch: false, team: false }
+                        ].map((permission, index) => (
+                          <div key={index} className="grid grid-cols-4 gap-2 items-center py-1">
+                            <div className="text-xs text-gray-700">{permission.name}</div>
+                            <div className="flex justify-center">
+                              {permission.admin ? (
+                                <CheckCircle className="h-3 w-3 text-green-600" />
+                              ) : (
+                                <X className="h-3 w-3 text-red-400" />
+                              )}
+                            </div>
+                            <div className="flex justify-center">
+                              {permission.branch ? (
+                                <CheckCircle className="h-3 w-3 text-green-600" />
+                              ) : (
+                                <X className="h-3 w-3 text-red-400" />
+                              )}
+                            </div>
+                            <div className="flex justify-center">
+                              {permission.team ? (
+                                <CheckCircle className="h-3 w-3 text-green-600" />
+                              ) : (
+                                <X className="h-3 w-3 text-red-400" />
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Manager Workload Distribution */}
+                  <div className="p-4 border rounded-lg bg-gradient-to-r from-indigo-50 to-purple-50">
+                    <h4 className="font-medium text-indigo-900 mb-4 flex items-center gap-2">
+                      <Users className="h-4 w-4" />
+                      Manager Workload Analysis
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {/* Company Level */}
+                      <div className="p-3 bg-white rounded border">
+                        <h5 className="font-medium text-sm mb-2 flex items-center gap-2">
+                          <Crown className="h-3 w-3 text-yellow-600" />
+                          Company Level
+                        </h5>
+                        <div className="space-y-2">
+                          {Array.isArray(employees) && employees.filter(emp => emp.hierarchyRole === 'company_admin').length > 0 ? (
+                            employees.filter(emp => emp.hierarchyRole === 'company_admin').map((admin: any) => (
+                              <div key={admin.id} className="flex justify-between items-center text-xs">
+                                <span>{admin.firstName} {admin.lastName}</span>
+                                <Badge variant="outline" className="text-xs">
+                                  {Array.isArray(employees) ? employees.length : 0} reports
+                                </Badge>
+                              </div>
+                            ))
+                          ) : (
+                            <p className="text-xs text-gray-500">No company administrators</p>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Branch Level */}
+                      <div className="p-3 bg-white rounded border">
+                        <h5 className="font-medium text-sm mb-2 flex items-center gap-2">
+                          <Building2 className="h-3 w-3 text-blue-600" />
+                          Branch Level
+                        </h5>
+                        <div className="space-y-2">
+                          {Array.isArray(employees) && employees.filter(emp => emp.hierarchyRole === 'branch_manager').length > 0 ? (
+                            employees.filter(emp => emp.hierarchyRole === 'branch_manager').map((manager: any) => {
+                              const directReports = Array.isArray(employees) ? employees.filter(emp => emp.branchId === manager.branchId && emp.id !== manager.id) : [];
+                              return (
+                                <div key={manager.id} className="flex justify-between items-center text-xs">
+                                  <span>{manager.firstName} {manager.lastName}</span>
+                                  <Badge variant="outline" className="text-xs">
+                                    {directReports.length} reports
+                                  </Badge>
+                                </div>
+                              );
+                            })
+                          ) : (
+                            <p className="text-xs text-gray-500">No branch managers</p>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Team Level */}
+                      <div className="p-3 bg-white rounded border">
+                        <h5 className="font-medium text-sm mb-2 flex items-center gap-2">
+                          <Users className="h-3 w-3 text-green-600" />
+                          Team Level
+                        </h5>
+                        <div className="space-y-2">
+                          {Array.isArray(employees) && employees.filter(emp => emp.hierarchyRole === 'team_lead').length > 0 ? (
+                            employees.filter(emp => emp.hierarchyRole === 'team_lead').slice(0, 4).map((lead: any) => {
+                              const teamMembers = Array.isArray(employees) ? employees.filter(emp => emp.teamId === lead.teamId && emp.id !== lead.id) : [];
+                              return (
+                                <div key={lead.id} className="flex justify-between items-center text-xs">
+                                  <span>{lead.firstName} {lead.lastName}</span>
+                                  <Badge variant="outline" className="text-xs">
+                                    {teamMembers.length} reports
+                                  </Badge>
+                                </div>
+                              );
+                            })
+                          ) : (
+                            <p className="text-xs text-gray-500">No team leads</p>
+                          )}
+                          {Array.isArray(employees) && employees.filter(emp => emp.hierarchyRole === 'team_lead').length > 4 && (
+                            <p className="text-xs text-gray-500">+{employees.filter(emp => emp.hierarchyRole === 'team_lead').length - 4} more leads</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-12 text-gray-500">
+                  <Crown className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-700 mb-2">No Managers Assigned</h3>
+                  <p className="text-gray-600 mb-4">
+                    Assign employees to management roles to see the control matrix and permission scope.
+                  </p>
+                  <Button onClick={() => setSelectedEmployee(null) || setIsManageEmployeeOpen(true)}>
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    Assign Manager Roles
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           <Card data-testid="manager-accounts-management">
             <CardHeader>
               <div className="flex items-center justify-between">
