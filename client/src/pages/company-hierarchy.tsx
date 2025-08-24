@@ -31,7 +31,11 @@ import {
   Filter,
   SortAsc,
   SortDesc,
-  X
+  X,
+  ShieldCheck,
+  Key,
+  Mail,
+  Clock
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -774,11 +778,12 @@ export default function CompanyHierarchy() {
 
       {/* Main Content Tabs */}
       <Tabs defaultValue="structure" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4" data-testid="hierarchy-tabs">
+        <TabsList className="grid w-full grid-cols-5" data-testid="hierarchy-tabs">
           <TabsTrigger value="structure">Structure</TabsTrigger>
           <TabsTrigger value="branches">Branches</TabsTrigger>
           <TabsTrigger value="teams">Teams</TabsTrigger>
           <TabsTrigger value="employees">Employee Roles</TabsTrigger>
+          <TabsTrigger value="managers">Manager Accounts</TabsTrigger>
         </TabsList>
 
         {/* Structure Tab */}
@@ -1267,6 +1272,42 @@ export default function CompanyHierarchy() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* Manager Accounts Tab */}
+        <TabsContent value="managers" className="space-y-4">
+          <Card data-testid="manager-accounts-management">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <ShieldCheck className="h-5 w-5 text-indigo-600" />
+                    Manager Account Management
+                  </CardTitle>
+                  <CardDescription>
+                    Create and manage manager sub-accounts with login credentials and permissions
+                  </CardDescription>
+                </div>
+                <Button data-testid="button-create-manager">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Manager Account
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-8" data-testid="managers-coming-soon">
+                <ShieldCheck className="h-16 w-16 text-indigo-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">Manager Account System</h3>
+                <p className="text-gray-600 mb-4">
+                  This unified interface will include manager account creation, permission management, and employee assignments.
+                </p>
+                <p className="text-sm text-gray-500">
+                  Manager account functionality is being integrated into this consolidated hierarchy management interface.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
       </Tabs>
 
       {/* Edit Branch Dialog */}
@@ -1661,6 +1702,481 @@ export default function CompanyHierarchy() {
                   <Label htmlFor="hierarchy-role">Hierarchy Role</Label>
                   <Select value={employeeUpdate.hierarchyRole} onValueChange={(value) => setEmployeeUpdate({ ...employeeUpdate, hierarchyRole: value })}>
                     <SelectTrigger data-testid="select-hierarchy-role">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="employee">Employee</SelectItem>
+                      <SelectItem value="team_lead">Team Lead</SelectItem>
+                      <SelectItem value="branch_manager">Branch Manager</SelectItem>
+                      <SelectItem value="company_admin">Company Admin</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <h4 className="font-medium">Permissions & Authority</h4>
+                
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="can-verify-work">Can Verify Work</Label>
+                  <Switch
+                    id="can-verify-work"
+                    checked={employeeUpdate.canVerifyWork}
+                    onCheckedChange={(checked) => setEmployeeUpdate({ ...employeeUpdate, canVerifyWork: checked })}
+                    data-testid="switch-can-verify-work"
+                  />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="can-manage-employees">Can Manage Employees</Label>
+                  <Switch
+                    id="can-manage-employees"
+                    checked={employeeUpdate.canManageEmployees}
+                    onCheckedChange={(checked) => setEmployeeUpdate({ ...employeeUpdate, canManageEmployees: checked })}
+                    data-testid="switch-can-manage-employees"
+                  />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="can-create-teams">Can Create Teams</Label>
+                  <Switch
+                    id="can-create-teams"
+                    checked={employeeUpdate.canCreateTeams}
+                    onCheckedChange={(checked) => setEmployeeUpdate({ ...employeeUpdate, canCreateTeams: checked })}
+                    data-testid="switch-can-create-teams"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="verification-scope">Verification Scope</Label>
+                  <Select value={employeeUpdate.verificationScope} onValueChange={(value) => setEmployeeUpdate({ ...employeeUpdate, verificationScope: value })}>
+                    <SelectTrigger data-testid="select-verification-scope">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">None</SelectItem>
+                      <SelectItem value="team">Team Level - Can verify team members' work</SelectItem>
+                      <SelectItem value="branch">Branch Level - Can verify entire branch</SelectItem>
+                      <SelectItem value="company">Company Level - Can verify company-wide</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Determines what level of work entries this employee can verify
+                  </p>
+                </div>
+              </div>
+
+              {/* Assignment Summary */}
+              <div className="p-3 bg-gray-50 rounded-lg border">
+                <h5 className="font-medium text-sm mb-2">Assignment Summary</h5>
+                <div className="text-xs space-y-1">
+                  <div>Branch: {employeeUpdate.branchId ? branches?.find((b: any) => b.id === employeeUpdate.branchId)?.name || "Unknown" : "Headquarters"}</div>
+                  <div>Team: {employeeUpdate.teamId ? teams?.find((t: any) => t.id === employeeUpdate.teamId)?.name || "Unknown" : "No Team"}</div>
+                  <div>Role: {employeeUpdate.hierarchyRole.replace('_', ' ')}</div>
+                  <div>Can Verify: {employeeUpdate.canVerifyWork ? `Yes (${employeeUpdate.verificationScope})` : "No"}</div>
+                </div>
+              </div>
+
+              <Button 
+                onClick={() => updateEmployeeHierarchyMutation.mutate({ 
+                  employeeId: selectedEmployee.employeeId, 
+                  updates: employeeUpdate 
+                })}
+                disabled={updateEmployeeHierarchyMutation.isPending}
+                className="w-full"
+                data-testid="button-update-employee-hierarchy"
+              >
+                {updateEmployeeHierarchyMutation.isPending ? "Updating..." : "Update Employee"}
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Branch Dialog */}
+      <Dialog open={isEditBranchOpen} onOpenChange={setIsEditBranchOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Branch</DialogTitle>
+            <DialogDescription>
+              Update branch information and settings
+            </DialogDescription>
+          </DialogHeader>
+          {selectedBranch && (
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="edit-branch-name">Branch Name</Label>
+                <Input
+                  id="edit-branch-name"
+                  value={editBranch.name}
+                  onChange={(e) => setEditBranch({ ...editBranch, name: e.target.value })}
+                  placeholder="e.g., Mumbai Branch, Delhi Office"
+                  data-testid="input-edit-branch-name"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-branch-location">Location</Label>
+                <Input
+                  id="edit-branch-location"
+                  value={editBranch.location}
+                  onChange={(e) => setEditBranch({ ...editBranch, location: e.target.value })}
+                  placeholder="e.g., Mumbai, Maharashtra"
+                  data-testid="input-edit-branch-location"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-branch-description">Description</Label>
+                <Textarea
+                  id="edit-branch-description"
+                  value={editBranch.description}
+                  onChange={(e) => setEditBranch({ ...editBranch, description: e.target.value })}
+                  placeholder="Brief description of the branch"
+                  data-testid="textarea-edit-branch-description"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-branch-manager">Branch Manager</Label>
+                <Select value={editBranch.managerEmployeeId} onValueChange={(value) => setEditBranch({ ...editBranch, managerEmployeeId: value })}>
+                  <SelectTrigger data-testid="select-edit-branch-manager">
+                    <SelectValue placeholder="Select a manager (optional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="no_manager">No manager assigned</SelectItem>
+                    {Array.isArray(employees) && employees
+                      .filter((emp: any) => emp.employeeId && emp.employeeId.trim() !== "")
+                      .map((emp: any) => (
+                      <SelectItem key={emp.employeeId} value={emp.employeeId}>
+                        {emp.employee?.firstName || "Unknown"} {emp.employee?.lastName || "Employee"} - {emp.position || "No Position"}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="edit-branch-active">Branch Active</Label>
+                <Switch
+                  id="edit-branch-active"
+                  checked={editBranch.isActive}
+                  onCheckedChange={(checked) => setEditBranch({ ...editBranch, isActive: checked })}
+                  data-testid="switch-edit-branch-active"
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button 
+                  onClick={() => updateBranchMutation.mutate({ 
+                    branchId: selectedBranch.id, 
+                    updates: editBranch 
+                  })}
+                  disabled={!editBranch.name || !editBranch.location || updateBranchMutation.isPending}
+                  className="flex-1"
+                  data-testid="button-update-branch"
+                >
+                  {updateBranchMutation.isPending ? "Updating..." : "Update Branch"}
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setIsEditBranchOpen(false)}
+                  className="flex-1"
+                  data-testid="button-cancel-edit-branch"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Branch Confirmation Dialog */}
+      <Dialog open={isDeleteBranchOpen} onOpenChange={setIsDeleteBranchOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <AlertCircle className="h-5 w-5" />
+              Delete Branch
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete "{selectedBranch?.name}"? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          {selectedBranch && (
+            <div className="space-y-4">
+              <div className="p-4 bg-red-50 rounded-lg border border-red-200">
+                <h4 className="font-medium text-red-800 mb-2">This will:</h4>
+                <ul className="text-sm text-red-700 space-y-1">
+                  <li>• Remove the branch from your organization</li>
+                  <li>• Reassign all branch employees to headquarters</li>
+                  <li>• Delete all teams within this branch</li>
+                  <li>• Remove all branch-specific permissions and assignments</li>
+                  <li>• Archive all branch-related work entries and data</li>
+                </ul>
+              </div>
+              <div className="flex gap-2">
+                <Button 
+                  variant="destructive"
+                  onClick={() => deleteBranchMutation.mutate(selectedBranch.id)}
+                  disabled={deleteBranchMutation.isPending}
+                  className="flex-1"
+                  data-testid="button-confirm-delete-branch"
+                >
+                  {deleteBranchMutation.isPending ? "Deleting..." : "Delete Branch"}
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setIsDeleteBranchOpen(false)}
+                  className="flex-1"
+                  data-testid="button-cancel-delete-branch"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Team Dialog */}
+      <Dialog open={isEditTeamOpen} onOpenChange={setIsEditTeamOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Team</DialogTitle>
+            <DialogDescription>
+              Update team information and settings
+            </DialogDescription>
+          </DialogHeader>
+          {selectedTeam && (
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="edit-team-name">Team Name</Label>
+                <Input
+                  id="edit-team-name"
+                  value={editTeam.name}
+                  onChange={(e) => setEditTeam({ ...editTeam, name: e.target.value })}
+                  placeholder="e.g., Sales Team A, Backend Development"
+                  data-testid="input-edit-team-name"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-team-branch">Branch Assignment</Label>
+                <Select value={editTeam.branchId} onValueChange={(value) => setEditTeam({ ...editTeam, branchId: value })}>
+                  <SelectTrigger data-testid="select-edit-team-branch">
+                    <SelectValue placeholder="Select branch (optional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="headquarters">Headquarters (No Branch)</SelectItem>
+                    {Array.isArray(branches) && branches
+                      .filter((branch: any) => branch.id && branch.id.trim() !== "")
+                      .map((branch: any) => (
+                      <SelectItem key={branch.id} value={branch.id}>
+                        {branch.name} - {branch.location}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="edit-team-lead">Team Lead</Label>
+                <Select value={editTeam.teamLeadEmployeeId} onValueChange={(value) => setEditTeam({ ...editTeam, teamLeadEmployeeId: value })}>
+                  <SelectTrigger data-testid="select-edit-team-lead">
+                    <SelectValue placeholder="Select team lead (optional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="no_lead">No lead assigned</SelectItem>
+                    {Array.isArray(employees) && employees
+                      .filter((emp: any) => emp.employeeId && emp.employeeId.trim() !== "")
+                      .map((emp: any) => (
+                      <SelectItem key={emp.employeeId} value={emp.employeeId}>
+                        {emp.employee?.firstName || "Unknown"} {emp.employee?.lastName || "Employee"} - {emp.position || "No Position"}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="edit-team-description">Description</Label>
+                <Textarea
+                  id="edit-team-description"
+                  value={editTeam.description}
+                  onChange={(e) => setEditTeam({ ...editTeam, description: e.target.value })}
+                  placeholder="Brief description of the team's role"
+                  data-testid="textarea-edit-team-description"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-max-members">Maximum Members</Label>
+                <Input
+                  id="edit-max-members"
+                  type="number"
+                  value={editTeam.maxMembers}
+                  onChange={(e) => setEditTeam({ ...editTeam, maxMembers: parseInt(e.target.value) || 10 })}
+                  min="1"
+                  max="50"
+                  data-testid="input-edit-max-members"
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="edit-team-active">Team Active</Label>
+                <Switch
+                  id="edit-team-active"
+                  checked={editTeam.isActive}
+                  onCheckedChange={(checked) => setEditTeam({ ...editTeam, isActive: checked })}
+                  data-testid="switch-edit-team-active"
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button 
+                  onClick={() => updateTeamMutation.mutate({ 
+                    teamId: selectedTeam.id, 
+                    updates: editTeam 
+                  })}
+                  disabled={!editTeam.name || updateTeamMutation.isPending}
+                  className="flex-1"
+                  data-testid="button-update-team"
+                >
+                  {updateTeamMutation.isPending ? "Updating..." : "Update Team"}
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setIsEditTeamOpen(false)}
+                  className="flex-1"
+                  data-testid="button-cancel-edit-team"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Team Confirmation Dialog */}
+      <Dialog open={isDeleteTeamOpen} onOpenChange={setIsDeleteTeamOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <AlertCircle className="h-5 w-5" />
+              Delete Team
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete "{selectedTeam?.name}"? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          {selectedTeam && (
+            <div className="space-y-4">
+              <div className="p-4 bg-red-50 rounded-lg border border-red-200">
+                <h4 className="font-medium text-red-800 mb-2">This will:</h4>
+                <ul className="text-sm text-red-700 space-y-1">
+                  <li>• Remove the team from your organization</li>
+                  <li>• Reassign all team members to their branch or headquarters</li>
+                  <li>• Remove all team-specific permissions and assignments</li>
+                  <li>• Archive all team-related work entries and data</li>
+                </ul>
+              </div>
+              <div className="flex gap-2">
+                <Button 
+                  variant="destructive"
+                  onClick={() => deleteTeamMutation.mutate(selectedTeam.id)}
+                  disabled={deleteTeamMutation.isPending}
+                  className="flex-1"
+                  data-testid="button-confirm-delete-team"
+                >
+                  {deleteTeamMutation.isPending ? "Deleting..." : "Delete Team"}
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setIsDeleteTeamOpen(false)}
+                  className="flex-1"
+                  data-testid="button-cancel-delete-team"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Employee Hierarchy Management Dialog */}
+      <Dialog open={isManageEmployeeOpen} onOpenChange={setIsManageEmployeeOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Manage Employee Assignment & Permissions</DialogTitle>
+            <DialogDescription>
+              Update {selectedEmployee?.employee?.firstName} {selectedEmployee?.employee?.lastName}'s assignment, role and permissions
+            </DialogDescription>
+          </DialogHeader>
+          {selectedEmployee && (
+            <div className="space-y-6">
+              {/* Employee Info Section */}
+              <div className="p-4 bg-blue-50 rounded-lg border">
+                <div className="flex items-center gap-3">
+                  {getRoleIcon(selectedEmployee.hierarchyRole)}
+                  <div>
+                    <h4 className="font-medium">{selectedEmployee.employee?.firstName} {selectedEmployee.employee?.lastName}</h4>
+                    <p className="text-sm text-muted-foreground">{selectedEmployee.position}</p>
+                    <p className="text-xs text-muted-foreground">Employee ID: {selectedEmployee.employeeId}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Assignment Section */}
+              <div className="space-y-4">
+                <h4 className="font-medium">Organizational Assignment</h4>
+                
+                <div>
+                  <Label htmlFor="employee-branch">Branch Assignment</Label>
+                  <Select value={employeeUpdate.branchId} onValueChange={(value) => setEmployeeUpdate({ ...employeeUpdate, branchId: value, teamId: value ? employeeUpdate.teamId : "" })}>
+                    <SelectTrigger data-testid="select-employee-branch">
+                      <SelectValue placeholder="Select branch (optional)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="headquarters">Headquarters (No Branch)</SelectItem>
+                      {Array.isArray(branches) && branches
+                        .filter((branch: any) => branch.id && branch.id.trim() !== "")
+                        .map((branch: any) => (
+                        <SelectItem key={branch.id} value={branch.id}>
+                          {branch.name} - {branch.location}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label htmlFor="employee-team">Team Assignment</Label>
+                  <Select 
+                    value={employeeUpdate.teamId} 
+                    onValueChange={(value) => setEmployeeUpdate({ ...employeeUpdate, teamId: value })}
+                    disabled={!employeeUpdate.branchId || employeeUpdate.branchId === "headquarters"}
+                  >
+                    <SelectTrigger data-testid="select-employee-team">
+                      <SelectValue placeholder="Select team (optional)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="no_team">No Team</SelectItem>
+                      {Array.isArray(teams) && teams
+                        .filter((team: any) => 
+                          team.id && team.id.trim() !== "" && 
+                          (team.branchId === employeeUpdate.branchId || (!team.branchId && employeeUpdate.branchId === "headquarters"))
+                        )
+                        .map((team: any) => (
+                        <SelectItem key={team.id} value={team.id}>
+                          {team.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {(!employeeUpdate.branchId || employeeUpdate.branchId === "headquarters") && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Assign to a branch first to select teams
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <Label htmlFor="employee-hierarchy-role">Hierarchy Role</Label>
+                  <Select value={employeeUpdate.hierarchyRole} onValueChange={(value) => setEmployeeUpdate({ ...employeeUpdate, hierarchyRole: value })}>
+                    <SelectTrigger data-testid="select-employee-hierarchy-role">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>

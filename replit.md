@@ -52,6 +52,7 @@ Preferred communication style: Simple, everyday language.
 - **Work Diary with Hierarchical Verification**: Company-based work tracking system with multi-level approval workflows and dual display system (external/internal verification view).
 - **Role-Based Permission System**: Four-tier hierarchy roles (Company Admin → Branch Manager → Team Lead → Employee) with granular permissions.
 - **Company Management**: Company registration with business info, invitation code generation, branch/team creation, and hierarchical employee management with employment status tracking.
+- **Unified Company Hierarchy Management**: Consolidated interface for organizational structure, employee roles, permissions, and manager account creation in a single tabbed interface (December 2024).
 - **Admin Panel**: Role-based access for managing users (employees and companies), platform statistics, and comprehensive data deletion with safeguards.
 - **Enhanced Security**: Secure password reset flow (OTP-based), immutable protection for approved work entries, hierarchical access control.
 - **Job Discovery Page**: Comprehensive job discovery platform with AI-powered search, advanced filtering, and application management.

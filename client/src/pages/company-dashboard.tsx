@@ -281,7 +281,7 @@ export default function CompanyDashboard() {
                   <CardTitle className="text-base font-semibold">Company Hierarchy</CardTitle>
                 </div>
                 <CardDescription className="text-sm">
-                  Manage branches, teams, and employee roles in your organizational structure
+                  Manage branches, teams, employee roles, and manager accounts in your organizational structure
                 </CardDescription>
               </CardHeader>
             </Card>
@@ -324,23 +324,7 @@ export default function CompanyDashboard() {
             </Card>
 
             {/* Manage Managers Card */}
-            <Card 
-              className="cursor-pointer hover:shadow-md hover:border-indigo-200 transition-all duration-200" 
-              onClick={() => navigate('/company-managers')}
-              data-testid="manage-managers-card"
-            >
-              <CardHeader className="pb-4">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-8 h-8 bg-indigo-100 dark:bg-indigo-900 rounded-lg flex items-center justify-center">
-                    <ShieldCheck className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                  </div>
-                  <CardTitle className="text-base font-semibold">Manage Managers</CardTitle>
-                </div>
-                <CardDescription className="text-sm">
-                  Create and control manager sub-accounts for work approval
-                </CardDescription>
-              </CardHeader>
-            </Card>
+{/* Manage Managers functionality has been consolidated into Company Hierarchy page */}
 
             <Card className="cursor-pointer hover:shadow-md hover:border-blue-200 transition-all duration-200" onClick={() => navigate('/company-work-entries')}>
               <CardHeader className="pb-4">

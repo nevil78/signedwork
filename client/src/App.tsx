@@ -40,7 +40,7 @@ import ManagerLogin from "@/pages/manager-login";
 import ManagerDashboard from "@/pages/manager-dashboard";
 import ManagerWorkEntries from "@/pages/manager-work-entries";
 import ManagerEmployees from "@/pages/manager-employees";
-import CompanyManagerManagement from "@/pages/company-manager-management";
+{/* CompanyManagerManagement consolidated into CompanyHierarchy */}
 import FeedbackPage from "@/pages/feedback";
 import ContactPage from "@/pages/contact";
 import AboutPage from "@/pages/about";
@@ -87,7 +87,7 @@ function Router() {
       <Route path="/company-recruiter" component={CompanyRecruiterPage} />
       <Route path="/company-shared-documents/:applicationId" component={CompanySharedDocumentsPage} />
       <Route path="/company-employees" component={CompanyEmployees} />
-      <Route path="/company-managers" component={CompanyManagerManagement} />
+{/* /company-managers route removed - functionality consolidated into /company-hierarchy */}
       <Route path="/company-hierarchy" component={CompanyHierarchy} />
       <Route path="/company-hierarchy-test" component={CompanyHierarchyTest} />
       <Route path="/work-verification" component={WorkVerification} />
