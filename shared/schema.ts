@@ -169,6 +169,10 @@ export const workEntries = pgTable("work_entries", {
   verifiedByRole: text("verified_by_role"), // Role of verifier: "team_lead", "branch_manager", "company_admin"
   verifiedByName: text("verified_by_name"), // Name for display: "Manager X, HDFC Surat"
   verifiedAt: timestamp("verified_at"), // When verification was completed
+  // Manager approval tracking
+  approvedByManagerId: varchar("approved_by_manager_id").references(() => companyManagers.id), // Manager who approved
+  approvedByManagerName: text("approved_by_manager_name"), // Manager name for display
+  managerApprovalDate: timestamp("manager_approval_date"), // When manager approved
   // External display vs internal tracking
   externalCompanyName: text("external_company_name"), // What external recruiters see: "HDFC"
   internalVerificationPath: text("internal_verification_path"), // Full path: "HDFC > Surat Branch > Sales Team > Manager X"
@@ -280,6 +284,7 @@ export const companyEmployees = pgTable("company_employees", {
   employeeId: varchar("employee_id").notNull().references(() => employees.id, { onDelete: "cascade" }),
   branchId: varchar("branch_id").references(() => companyBranches.id), // Employee's branch (null for HQ)
   teamId: varchar("team_id").references(() => companyTeams.id), // Employee's team (null if not assigned)
+  assignedManagerId: varchar("assigned_manager_id").references(() => companyManagers.id), // Manager responsible for this employee
   position: text("position"),
   department: text("department"),
   // Enhanced role system for hierarchy
@@ -295,6 +300,36 @@ export const companyEmployees = pgTable("company_employees", {
   leftAt: timestamp("left_at"),
   status: varchar("status", { length: 20 }).default("employed").notNull(), // "employed" or "ex-employee"
   isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Company managers table for sub-account system
+export const companyManagers = pgTable("company_managers", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  companyId: varchar("company_id").notNull().references(() => companies.id, { onDelete: "cascade" }),
+  uniqueId: varchar("unique_id", { length: 8 }).notNull().unique(), // JNM123 format
+  password: text("password").notNull(), // Hashed password
+  managerName: text("manager_name").notNull(),
+  managerEmail: text("manager_email").notNull(),
+  branchId: varchar("branch_id").references(() => companyBranches.id), // Manager's branch (null for HQ)
+  teamId: varchar("team_id").references(() => companyTeams.id), // Manager's team (null if branch-level)
+  permissionLevel: text("permission_level").notNull().default("team_lead"), // "branch_manager", "team_lead"
+  isActive: boolean("is_active").default(true),
+  lastLoginAt: timestamp("last_login_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Manager permissions table for granular access control
+export const managerPermissions = pgTable("manager_permissions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  managerId: varchar("manager_id").notNull().references(() => companyManagers.id, { onDelete: "cascade" }),
+  canApproveWork: boolean("can_approve_work").default(true),
+  canEditEmployees: boolean("can_edit_employees").default(false),
+  canViewAnalytics: boolean("can_view_analytics").default(true),
+  canInviteEmployees: boolean("can_invite_employees").default(false),
+  canManageTeams: boolean("can_manage_teams").default(false),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -549,6 +584,7 @@ export const companiesRelations = relations(companies, ({ many }) => ({
   branches: many(companyBranches),
   teams: many(companyTeams),
   workEntries: many(workEntries),
+  managers: many(companyManagers),
 }));
 
 // New hierarchy relations
@@ -577,6 +613,33 @@ export const companyTeamsRelations = relations(companyTeams, ({ one, many }) => 
   }),
   members: many(companyEmployees),
   workEntries: many(workEntries),
+  managers: many(companyManagers),
+}));
+
+// Manager relations
+export const companyManagersRelations = relations(companyManagers, ({ one, many }) => ({
+  company: one(companies, {
+    fields: [companyManagers.companyId],
+    references: [companies.id],
+  }),
+  branch: one(companyBranches, {
+    fields: [companyManagers.branchId],
+    references: [companyBranches.id],
+  }),
+  team: one(companyTeams, {
+    fields: [companyManagers.teamId],
+    references: [companyTeams.id],
+  }),
+  permissions: one(managerPermissions),
+  managedEmployees: many(companyEmployees),
+  approvedWorkEntries: many(workEntries),
+}));
+
+export const managerPermissionsRelations = relations(managerPermissions, ({ one }) => ({
+  manager: one(companyManagers, {
+    fields: [managerPermissions.managerId],
+    references: [companyManagers.id],
+  }),
 }));
 
 export const jobListingsRelations = relations(jobListings, ({ one, many }) => ({
@@ -780,6 +843,28 @@ export const insertCompanyTeamSchema = createInsertSchema(companyTeams).omit({
   updatedAt: true,
 });
 
+// Manager insert schemas
+export const insertCompanyManagerSchema = createInsertSchema(companyManagers).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  lastLoginAt: true,
+}).extend({
+  managerName: z.string().min(2, "Manager name must be at least 2 characters"),
+  managerEmail: z.string().email("Invalid email format"),
+  password: z.string()
+    .min(8, "Password must be at least 8 characters")
+    .max(12, "Password max length should be 12")
+    .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+    .regex(/\d/, "Password must contain at least one number"),
+});
+
+export const insertManagerPermissionSchema = createInsertSchema(managerPermissions).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export const insertCompanyEmployeeSchema = createInsertSchema(companyEmployees).omit({
   id: true,
   createdAt: true,
@@ -961,6 +1046,8 @@ export type CompanyInvitationCode = typeof companyInvitationCodes.$inferSelect;
 export type CompanyEmployee = typeof companyEmployees.$inferSelect;
 export type CompanyBranch = typeof companyBranches.$inferSelect;
 export type CompanyTeam = typeof companyTeams.$inferSelect;
+export type CompanyManager = typeof companyManagers.$inferSelect;
+export type ManagerPermission = typeof managerPermissions.$inferSelect;
 
 export type InsertEmployee = z.infer<typeof insertEmployeeSchema>;
 export type InsertExperience = z.infer<typeof insertExperienceSchema>;
@@ -969,6 +1056,8 @@ export type InsertCertification = z.infer<typeof insertCertificationSchema>;
 export type InsertProject = z.infer<typeof insertProjectSchema>;
 export type InsertEndorsement = z.infer<typeof insertEndorsementSchema>;
 export type InsertEmployeeCompany = z.infer<typeof insertEmployeeCompanySchema>;
+export type InsertCompanyManager = z.infer<typeof insertCompanyManagerSchema>;
+export type InsertManagerPermission = z.infer<typeof insertManagerPermissionSchema>;
 export type InsertWorkEntry = z.infer<typeof insertWorkEntrySchema>;
 export type InsertCompany = z.infer<typeof insertCompanySchema>;
 export type InsertCompanyInvitationCode = z.infer<typeof insertCompanyInvitationCodeSchema>;

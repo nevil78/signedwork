@@ -1,6 +1,6 @@
 import { 
   employees, companies, experiences, educations, certifications, projects, endorsements, workEntries, employeeCompanies,
-  companyInvitationCodes, companyEmployees, companyBranches, companyTeams, jobListings, jobApplications, savedJobs, jobAlerts, profileViews, admins, emailVerifications, userFeedback, loginSessions,
+  companyInvitationCodes, companyEmployees, companyBranches, companyTeams, companyManagers, managerPermissions, jobListings, jobApplications, savedJobs, jobAlerts, profileViews, admins, emailVerifications, userFeedback, loginSessions,
   skills, skillTrends, userSkillPreferences, skillAnalytics, pendingUsers,
   type Employee, type Company, type InsertEmployee, type InsertCompany,
   type Experience, type Education, type Certification, type Project, type Endorsement, type WorkEntry, type EmployeeCompany,
@@ -8,6 +8,7 @@ import {
   type InsertProject, type InsertEndorsement, type InsertWorkEntry, type InsertEmployeeCompany,
   type CompanyInvitationCode, type CompanyEmployee, type InsertCompanyInvitationCode, type InsertCompanyEmployee,
   type CompanyBranch, type CompanyTeam, type InsertCompanyBranch, type InsertCompanyTeam,
+  type CompanyManager, type ManagerPermission, type InsertCompanyManager, type InsertManagerPermission,
   type JobListing, type JobApplication, type SavedJob, type JobAlert, type ProfileView,
   type InsertJobListing, type InsertJobApplication, type InsertSavedJob, type InsertJobAlert,
   type Admin, type InsertAdmin, type LoginSession, type InsertLoginSession,
@@ -76,6 +77,20 @@ function generateInvitationCode(): string {
   }
   
   return code;
+}
+
+// Generate unique manager ID based on company name (JNM123 format)
+function generateManagerUniqueId(companyName: string): string {
+  // Extract consonants from company name
+  const consonants = companyName.match(/[bcdfghjklmnpqrstvwxyz]/gi) || ['X', 'Y', 'Z'];
+  
+  // Take first 3 consonants (or pad with X, Y, Z if needed)
+  const prefix = consonants.slice(0, 3).join('').toUpperCase().padEnd(3, 'XYZ'[consonants.length % 3]);
+  
+  // Generate 3 random numbers
+  const suffix = Math.floor(100 + Math.random() * 900);
+  
+  return prefix + suffix; // "JNM123"
 }
 
 // Generate a short, memorable admin ID
@@ -565,6 +580,56 @@ export interface IStorage {
     branchId?: string;
     teamId?: string;
   }): Promise<CompanyEmployee>;
+
+  // Manager Account Operations (CEO/Company Admin only)
+  createManager(managerData: InsertCompanyManager): Promise<CompanyManager>;
+  getManager(id: string): Promise<CompanyManager | undefined>;
+  getManagerByUniqueId(uniqueId: string): Promise<CompanyManager | undefined>;
+  getManagersByCompany(companyId: string): Promise<CompanyManager[]>;
+  updateManager(id: string, data: Partial<CompanyManager>): Promise<CompanyManager>;
+  deleteManager(id: string): Promise<void>;
+  resetManagerPassword(id: string, newPassword: string): Promise<void>;
+  updateManagerLastLogin(id: string): Promise<void>;
+
+  // Manager Authentication
+  authenticateManager(uniqueId: string, password: string): Promise<CompanyManager | null>;
+  
+  // Manager Permissions
+  createManagerPermissions(permissionData: InsertManagerPermission): Promise<ManagerPermission>;
+  getManagerPermissions(managerId: string): Promise<ManagerPermission | undefined>;
+  updateManagerPermissions(managerId: string, data: Partial<ManagerPermission>): Promise<ManagerPermission>;
+  
+  // Manager-scoped Employee Operations
+  getEmployeesAssignedToManager(managerId: string): Promise<(CompanyEmployee & { employee: Employee })[]>;
+  assignEmployeeToManager(employeeId: string, companyId: string, managerId: string): Promise<CompanyEmployee>;
+  unassignEmployeeFromManager(employeeId: string, companyId: string): Promise<CompanyEmployee>;
+  
+  // Manager-scoped Work Entry Operations
+  getWorkEntriesForManager(managerId: string, filters?: {
+    status?: string;
+    approvalStatus?: string;
+    startDate?: string;
+    endDate?: string;
+  }): Promise<(WorkEntry & { employee: Employee })[]>;
+  
+  approveWorkEntryAsManager(workEntryId: string, managerId: string, data: {
+    approvalStatus: "manager_approved" | "manager_rejected";
+    managerFeedback?: string;
+    managerRating?: number;
+  }): Promise<WorkEntry>;
+  
+  // Manager Analytics
+  getManagerAnalytics(managerId: string): Promise<{
+    totalEmployees: number;
+    pendingWorkEntries: number;
+    approvedWorkEntries: number;
+    rejectedWorkEntries: number;
+    teamProductivity: {
+      averageHoursPerWeek: number;
+      completedTasks: number;
+      ongoingTasks: number;
+    };
+  }>;
 }
 
 export interface JobSearchFilters {
@@ -4410,6 +4475,304 @@ export class DatabaseStorage implements IStorage {
       console.error('Error verifying work entry:', error);
       throw new Error('Failed to verify work entry');
     }
+  }
+
+  // Manager Account Operations (CEO/Company Admin only)
+  async createManager(managerData: InsertCompanyManager): Promise<CompanyManager> {
+    const hashedPassword = await bcrypt.hash(managerData.password, 10);
+    
+    // Generate unique manager ID
+    const company = await this.getCompany(managerData.companyId);
+    if (!company) throw new Error('Company not found');
+    
+    let uniqueId = generateManagerUniqueId(company.name);
+    let attempts = 0;
+    const maxAttempts = 10;
+    
+    // Ensure uniqueness
+    while (attempts < maxAttempts) {
+      const existing = await db.select().from(companyManagers).where(eq(companyManagers.uniqueId, uniqueId));
+      if (existing.length === 0) break;
+      uniqueId = generateManagerUniqueId(company.name);
+      attempts++;
+    }
+    
+    if (attempts >= maxAttempts) {
+      throw new Error('Failed to generate unique manager ID');
+    }
+    
+    const [manager] = await db
+      .insert(companyManagers)
+      .values({
+        ...managerData,
+        uniqueId,
+        password: hashedPassword,
+      })
+      .returning();
+      
+    // Create default permissions
+    await this.createManagerPermissions({
+      managerId: manager.id,
+      canApproveWork: true,
+      canEditEmployees: false,
+      canViewAnalytics: true,
+      canInviteEmployees: false,
+      canManageTeams: false,
+    });
+    
+    return manager;
+  }
+
+  async getManager(id: string): Promise<CompanyManager | undefined> {
+    const [manager] = await db.select().from(companyManagers).where(eq(companyManagers.id, id));
+    return manager || undefined;
+  }
+
+  async getManagerByUniqueId(uniqueId: string): Promise<CompanyManager | undefined> {
+    const [manager] = await db.select().from(companyManagers).where(eq(companyManagers.uniqueId, uniqueId));
+    return manager || undefined;
+  }
+
+  async getManagersByCompany(companyId: string): Promise<CompanyManager[]> {
+    return await db
+      .select()
+      .from(companyManagers)
+      .where(and(eq(companyManagers.companyId, companyId), eq(companyManagers.isActive, true)))
+      .orderBy(companyManagers.createdAt);
+  }
+
+  async updateManager(id: string, data: Partial<CompanyManager>): Promise<CompanyManager> {
+    const updateData = { ...data, updatedAt: new Date() };
+    if (data.password) {
+      updateData.password = await bcrypt.hash(data.password, 10);
+    }
+    
+    const [manager] = await db
+      .update(companyManagers)
+      .set(updateData)
+      .where(eq(companyManagers.id, id))
+      .returning();
+    return manager;
+  }
+
+  async deleteManager(id: string): Promise<void> {
+    // Soft delete - set isActive to false
+    await db
+      .update(companyManagers)
+      .set({ isActive: false, updatedAt: new Date() })
+      .where(eq(companyManagers.id, id));
+  }
+
+  async resetManagerPassword(id: string, newPassword: string): Promise<void> {
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await db
+      .update(companyManagers)
+      .set({ password: hashedPassword, updatedAt: new Date() })
+      .where(eq(companyManagers.id, id));
+  }
+
+  async updateManagerLastLogin(id: string): Promise<void> {
+    await db
+      .update(companyManagers)
+      .set({ lastLoginAt: new Date() })
+      .where(eq(companyManagers.id, id));
+  }
+
+  // Manager Authentication
+  async authenticateManager(uniqueId: string, password: string): Promise<CompanyManager | null> {
+    const manager = await this.getManagerByUniqueId(uniqueId);
+    if (!manager || !manager.isActive) return null;
+    
+    const isValidPassword = await bcrypt.compare(password, manager.password);
+    if (!isValidPassword) return null;
+    
+    // Update last login
+    await this.updateManagerLastLogin(manager.id);
+    
+    return manager;
+  }
+
+  // Manager Permissions
+  async createManagerPermissions(permissionData: InsertManagerPermission): Promise<ManagerPermission> {
+    const [permission] = await db
+      .insert(managerPermissions)
+      .values(permissionData)
+      .returning();
+    return permission;
+  }
+
+  async getManagerPermissions(managerId: string): Promise<ManagerPermission | undefined> {
+    const [permission] = await db
+      .select()
+      .from(managerPermissions)
+      .where(eq(managerPermissions.managerId, managerId));
+    return permission || undefined;
+  }
+
+  async updateManagerPermissions(managerId: string, data: Partial<ManagerPermission>): Promise<ManagerPermission> {
+    const [permission] = await db
+      .update(managerPermissions)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(managerPermissions.managerId, managerId))
+      .returning();
+    return permission;
+  }
+
+  // Manager-scoped Employee Operations
+  async getEmployeesAssignedToManager(managerId: string): Promise<(CompanyEmployee & { employee: Employee })[]> {
+    return await db
+      .select({
+        ...getTableColumns(companyEmployees),
+        employee: getTableColumns(employees),
+      })
+      .from(companyEmployees)
+      .innerJoin(employees, eq(companyEmployees.employeeId, employees.id))
+      .where(and(
+        eq(companyEmployees.assignedManagerId, managerId),
+        eq(companyEmployees.isActive, true)
+      ))
+      .orderBy(employees.firstName);
+  }
+
+  async assignEmployeeToManager(employeeId: string, companyId: string, managerId: string): Promise<CompanyEmployee> {
+    const [relation] = await db
+      .update(companyEmployees)
+      .set({ assignedManagerId: managerId, updatedAt: new Date() })
+      .where(and(
+        eq(companyEmployees.employeeId, employeeId),
+        eq(companyEmployees.companyId, companyId)
+      ))
+      .returning();
+    return relation;
+  }
+
+  async unassignEmployeeFromManager(employeeId: string, companyId: string): Promise<CompanyEmployee> {
+    const [relation] = await db
+      .update(companyEmployees)
+      .set({ assignedManagerId: null, updatedAt: new Date() })
+      .where(and(
+        eq(companyEmployees.employeeId, employeeId),
+        eq(companyEmployees.companyId, companyId)
+      ))
+      .returning();
+    return relation;
+  }
+
+  // Manager-scoped Work Entry Operations
+  async getWorkEntriesForManager(managerId: string, filters: {
+    status?: string;
+    approvalStatus?: string;
+    startDate?: string;
+    endDate?: string;
+  } = {}): Promise<(WorkEntry & { employee: Employee })[]> {
+    let query = db
+      .select({
+        ...getTableColumns(workEntries),
+        employee: getTableColumns(employees),
+      })
+      .from(workEntries)
+      .innerJoin(employees, eq(workEntries.employeeId, employees.id))
+      .innerJoin(companyEmployees, and(
+        eq(companyEmployees.employeeId, employees.id),
+        eq(companyEmployees.assignedManagerId, managerId),
+        eq(companyEmployees.isActive, true)
+      ));
+
+    const conditions = [];
+    
+    if (filters.status) {
+      conditions.push(eq(workEntries.status, filters.status));
+    }
+    
+    if (filters.approvalStatus) {
+      conditions.push(eq(workEntries.approvalStatus, filters.approvalStatus));
+    }
+    
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+    
+    return await query.orderBy(desc(workEntries.createdAt));
+  }
+
+  async approveWorkEntryAsManager(workEntryId: string, managerId: string, data: {
+    approvalStatus: "manager_approved" | "manager_rejected";
+    managerFeedback?: string;
+    managerRating?: number;
+  }): Promise<WorkEntry> {
+    const manager = await this.getManager(managerId);
+    if (!manager) throw new Error('Manager not found');
+    
+    const [updatedEntry] = await db
+      .update(workEntries)
+      .set({
+        approvalStatus: data.approvalStatus,
+        approvedByManagerId: managerId,
+        approvedByManagerName: manager.managerName,
+        managerApprovalDate: new Date(),
+        companyFeedback: data.managerFeedback,
+        companyRating: data.managerRating,
+        updatedAt: new Date(),
+      })
+      .where(eq(workEntries.id, workEntryId))
+      .returning();
+      
+    return updatedEntry;
+  }
+
+  // Manager Analytics
+  async getManagerAnalytics(managerId: string): Promise<{
+    totalEmployees: number;
+    pendingWorkEntries: number;
+    approvedWorkEntries: number;
+    rejectedWorkEntries: number;
+    teamProductivity: {
+      averageHoursPerWeek: number;
+      completedTasks: number;
+      ongoingTasks: number;
+    };
+  }> {
+    // Get total employees assigned to manager
+    const totalEmployees = await db
+      .select({ count: count() })
+      .from(companyEmployees)
+      .where(and(
+        eq(companyEmployees.assignedManagerId, managerId),
+        eq(companyEmployees.isActive, true)
+      ));
+
+    // Get work entry statistics
+    const workStats = await db
+      .select({
+        status: workEntries.approvalStatus,
+        count: count(),
+        totalHours: sql<number>`SUM(COALESCE(${workEntries.actualHours}, 0))`,
+      })
+      .from(workEntries)
+      .innerJoin(companyEmployees, and(
+        eq(workEntries.employeeId, companyEmployees.employeeId),
+        eq(companyEmployees.assignedManagerId, managerId)
+      ))
+      .groupBy(workEntries.approvalStatus);
+
+    const pending = workStats.find(s => s.status === 'pending_review')?.count || 0;
+    const approved = workStats.find(s => s.status === 'manager_approved')?.count || 0;
+    const rejected = workStats.find(s => s.status === 'manager_rejected')?.count || 0;
+    
+    const totalHours = workStats.reduce((sum, s) => sum + (s.totalHours || 0), 0);
+    const averageHoursPerWeek = totalHours / Math.max(totalEmployees[0]?.count || 1, 1);
+
+    return {
+      totalEmployees: totalEmployees[0]?.count || 0,
+      pendingWorkEntries: pending,
+      approvedWorkEntries: approved,
+      rejectedWorkEntries: rejected,
+      teamProductivity: {
+        averageHoursPerWeek,
+        completedTasks: approved,
+        ongoingTasks: pending,
+      },
+    };
   }
 }
 

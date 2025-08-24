@@ -94,6 +94,44 @@ function requireAdmin(req: any, res: any, next: any) {
   });
 }
 
+// Manager-specific authentication middleware
+function requireManager(req: any, res: any, next: any) {
+  requireAuth(req, res, () => {
+    if (req.user.type !== 'manager') {
+      return res.status(403).json({ message: "Manager access required" });
+    }
+    next();
+  });
+}
+
+// Manager permission middleware
+async function requireManagerPermission(permission: string) {
+  return async (req: any, res: any, next: any) => {
+    try {
+      const managerId = req.user?.id;
+      if (!managerId) {
+        return res.status(401).json({ message: "Manager authentication required" });
+      }
+
+      const permissions = await storage.getManagerPermissions(managerId);
+      if (!permissions) {
+        return res.status(403).json({ message: "Manager permissions not found" });
+      }
+
+      const hasPermission = permissions[permission as keyof typeof permissions];
+      if (!hasPermission) {
+        return res.status(403).json({ message: `Permission denied: ${permission}` });
+      }
+
+      req.managerPermissions = permissions;
+      next();
+    } catch (error) {
+      console.error('Error checking manager permissions:', error);
+      res.status(500).json({ message: "Error checking permissions" });
+    }
+  };
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Session configuration
   // Create database session store
@@ -1046,6 +1084,121 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.error("Admin login error:", error);
       res.status(500).json({ message: "Admin login failed" });
+    }
+  });
+
+  // Manager authentication routes
+
+  // Manager login
+  app.post("/api/manager/auth/login", async (req, res) => {
+    try {
+      const { uniqueId, password } = req.body;
+      
+      if (!uniqueId || !password) {
+        return res.status(400).json({ 
+          message: "Manager ID and password are required" 
+        });
+      }
+      
+      const manager = await storage.authenticateManager(uniqueId, password);
+      
+      if (!manager) {
+        return res.status(401).json({ 
+          message: "Invalid manager ID or password" 
+        });
+      }
+      
+      // Get manager permissions
+      const permissions = await storage.getManagerPermissions(manager.id);
+      
+      // Store manager session
+      (req.session as any).user = {
+        id: manager.id,
+        uniqueId: manager.uniqueId,
+        type: "manager",
+        companyId: manager.companyId,
+        branchId: manager.branchId,
+        teamId: manager.teamId,
+        permissionLevel: manager.permissionLevel,
+        permissions: permissions
+      };
+      
+      // Remove password from response
+      const { password: _, ...managerResponse } = manager;
+      
+      res.json({ 
+        message: "Manager login successful",
+        manager: { ...managerResponse, permissions }
+      });
+    } catch (error: any) {
+      console.error("Manager login error:", error);
+      res.status(500).json({ message: "Manager login failed" });
+    }
+  });
+
+  // Manager logout
+  app.post("/api/manager/auth/logout", requireManager, (req: any, res) => {
+    req.session.destroy((err: any) => {
+      if (err) {
+        console.error("Manager session destroy error:", err);
+        return res.status(500).json({ message: "Logout failed" });
+      }
+      
+      res.clearCookie('sessionId');
+      res.json({ message: "Manager logged out successfully" });
+    });
+  });
+
+  // Manager profile endpoint
+  app.get("/api/manager/profile", requireManager, async (req: any, res) => {
+    try {
+      const manager = await storage.getManager(req.user.id);
+      if (!manager) {
+        return res.status(404).json({ message: "Manager not found" });
+      }
+
+      const permissions = await storage.getManagerPermissions(manager.id);
+      const { password, ...managerProfile } = manager;
+      
+      res.json({ 
+        manager: managerProfile,
+        permissions
+      });
+    } catch (error) {
+      console.error("Get manager profile error:", error);
+      res.status(500).json({ message: "Failed to get manager profile" });
+    }
+  });
+
+  // Manager change password
+  app.post("/api/manager/change-password", requireManager, async (req: any, res) => {
+    try {
+      const { currentPassword, newPassword } = req.body;
+      
+      if (!currentPassword || !newPassword) {
+        return res.status(400).json({ 
+          message: "Current password and new password are required" 
+        });
+      }
+      
+      // Verify current password
+      const manager = await storage.getManager(req.user.id);
+      if (!manager) {
+        return res.status(404).json({ message: "Manager not found" });
+      }
+      
+      const isValidPassword = await bcrypt.compare(currentPassword, manager.password);
+      if (!isValidPassword) {
+        return res.status(401).json({ message: "Current password is incorrect" });
+      }
+      
+      // Update password
+      await storage.resetManagerPassword(manager.id, newPassword);
+      
+      res.json({ message: "Password changed successfully" });
+    } catch (error) {
+      console.error("Manager change password error:", error);
+      res.status(500).json({ message: "Failed to change password" });
     }
   });
 
@@ -2034,6 +2187,272 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Request work entry changes error:", error);
       res.status(500).json({ message: "Failed to request changes" });
+    }
+  });
+
+  // ==================== MANAGER SUB-ACCOUNT SYSTEM API ROUTES ====================
+
+  // Manager Account Management Routes (CEO/Company Admin only)
+
+  // Create manager account
+  app.post("/api/company/managers", requireCompany, async (req: any, res) => {
+    try {
+      const { managerName, managerEmail, branchId, teamId, permissionLevel, permissions } = req.body;
+      
+      if (!managerName || !managerEmail) {
+        return res.status(400).json({ 
+          message: "Manager name and email are required" 
+        });
+      }
+      
+      // Generate a temporary password (can be changed by manager)
+      const tempPassword = Math.random().toString(36).slice(-8) + 'A1';
+      
+      const managerData = {
+        companyId: req.user.id,
+        managerName,
+        managerEmail,
+        branchId: branchId || null,
+        teamId: teamId || null,
+        permissionLevel: permissionLevel || 'team_lead',
+        password: tempPassword
+      };
+      
+      const manager = await storage.createManager(managerData);
+      
+      // Update permissions if provided
+      if (permissions) {
+        await storage.updateManagerPermissions(manager.id, permissions);
+      }
+      
+      // Remove password from response but include uniqueId for setup
+      const { password: _, ...managerResponse } = manager;
+      
+      res.json({
+        message: "Manager account created successfully",
+        manager: managerResponse,
+        tempPassword, // Send temp password for initial setup
+        note: "Manager should change password on first login"
+      });
+    } catch (error: any) {
+      console.error("Create manager error:", error);
+      res.status(500).json({ message: "Failed to create manager account" });
+    }
+  });
+
+  // Get all managers for company
+  app.get("/api/company/managers", requireCompany, async (req: any, res) => {
+    try {
+      const managers = await storage.getManagersByCompany(req.user.id);
+      
+      // Get permissions for each manager
+      const managersWithPermissions = await Promise.all(
+        managers.map(async (manager) => {
+          const permissions = await storage.getManagerPermissions(manager.id);
+          const { password, ...managerData } = manager;
+          return { ...managerData, permissions };
+        })
+      );
+      
+      res.json(managersWithPermissions);
+    } catch (error) {
+      console.error("Get managers error:", error);
+      res.status(500).json({ message: "Failed to get managers" });
+    }
+  });
+
+  // Update manager details
+  app.patch("/api/company/managers/:managerId", requireCompany, async (req: any, res) => {
+    try {
+      const { managerId } = req.params;
+      const { managerName, managerEmail, branchId, teamId, permissionLevel, permissions } = req.body;
+      
+      // Verify manager belongs to this company
+      const manager = await storage.getManager(managerId);
+      if (!manager || manager.companyId !== req.user.id) {
+        return res.status(404).json({ message: "Manager not found" });
+      }
+      
+      // Update manager details
+      const updateData: any = {};
+      if (managerName !== undefined) updateData.managerName = managerName;
+      if (managerEmail !== undefined) updateData.managerEmail = managerEmail;
+      if (branchId !== undefined) updateData.branchId = branchId;
+      if (teamId !== undefined) updateData.teamId = teamId;
+      if (permissionLevel !== undefined) updateData.permissionLevel = permissionLevel;
+      
+      let updatedManager;
+      if (Object.keys(updateData).length > 0) {
+        updatedManager = await storage.updateManager(managerId, updateData);
+      } else {
+        updatedManager = manager;
+      }
+      
+      // Update permissions if provided
+      if (permissions) {
+        await storage.updateManagerPermissions(managerId, permissions);
+      }
+      
+      const { password: _, ...managerResponse } = updatedManager;
+      res.json({
+        message: "Manager updated successfully",
+        manager: managerResponse
+      });
+    } catch (error) {
+      console.error("Update manager error:", error);
+      res.status(500).json({ message: "Failed to update manager" });
+    }
+  });
+
+  // Delete/deactivate manager
+  app.delete("/api/company/managers/:managerId", requireCompany, async (req: any, res) => {
+    try {
+      const { managerId } = req.params;
+      
+      // Verify manager belongs to this company
+      const manager = await storage.getManager(managerId);
+      if (!manager || manager.companyId !== req.user.id) {
+        return res.status(404).json({ message: "Manager not found" });
+      }
+      
+      // Unassign all employees from this manager
+      const assignedEmployees = await storage.getEmployeesAssignedToManager(managerId);
+      for (const emp of assignedEmployees) {
+        await storage.unassignEmployeeFromManager(emp.employeeId, req.user.id);
+      }
+      
+      // Soft delete manager
+      await storage.deleteManager(managerId);
+      
+      res.json({ message: "Manager account deactivated successfully" });
+    } catch (error) {
+      console.error("Delete manager error:", error);
+      res.status(500).json({ message: "Failed to delete manager" });
+    }
+  });
+
+  // Reset manager password
+  app.post("/api/company/managers/:managerId/reset-password", requireCompany, async (req: any, res) => {
+    try {
+      const { managerId } = req.params;
+      
+      // Verify manager belongs to this company
+      const manager = await storage.getManager(managerId);
+      if (!manager || manager.companyId !== req.user.id) {
+        return res.status(404).json({ message: "Manager not found" });
+      }
+      
+      // Generate new temporary password
+      const newPassword = Math.random().toString(36).slice(-8) + 'A1';
+      await storage.resetManagerPassword(managerId, newPassword);
+      
+      res.json({
+        message: "Password reset successfully",
+        tempPassword: newPassword,
+        note: "Manager should change password on next login"
+      });
+    } catch (error) {
+      console.error("Reset manager password error:", error);
+      res.status(500).json({ message: "Failed to reset password" });
+    }
+  });
+
+  // Assign employee to manager
+  app.post("/api/company/employees/:employeeId/assign-manager", requireCompany, async (req: any, res) => {
+    try {
+      const { employeeId } = req.params;
+      const { managerId } = req.body;
+      
+      if (!managerId) {
+        return res.status(400).json({ message: "Manager ID is required" });
+      }
+      
+      // Verify manager belongs to this company
+      const manager = await storage.getManager(managerId);
+      if (!manager || manager.companyId !== req.user.id) {
+        return res.status(404).json({ message: "Manager not found" });
+      }
+      
+      const updatedEmployee = await storage.assignEmployeeToManager(employeeId, req.user.id, managerId);
+      
+      res.json({
+        message: "Employee assigned to manager successfully",
+        employeeRelation: updatedEmployee
+      });
+    } catch (error) {
+      console.error("Assign employee to manager error:", error);
+      res.status(500).json({ message: "Failed to assign employee to manager" });
+    }
+  });
+
+  // Manager-scoped Data Access Routes
+
+  // Get employees assigned to manager
+  app.get("/api/manager/employees", requireManager, async (req: any, res) => {
+    try {
+      const employees = await storage.getEmployeesAssignedToManager(req.user.id);
+      res.json(employees);
+    } catch (error) {
+      console.error("Get manager employees error:", error);
+      res.status(500).json({ message: "Failed to get assigned employees" });
+    }
+  });
+
+  // Get work entries for manager's team
+  app.get("/api/manager/work-entries", requireManager, async (req: any, res) => {
+    try {
+      const { status, approvalStatus, startDate, endDate } = req.query;
+      
+      const filters: any = {};
+      if (status) filters.status = status as string;
+      if (approvalStatus) filters.approvalStatus = approvalStatus as string;
+      if (startDate) filters.startDate = startDate as string;
+      if (endDate) filters.endDate = endDate as string;
+      
+      const workEntries = await storage.getWorkEntriesForManager(req.user.id, filters);
+      res.json(workEntries);
+    } catch (error) {
+      console.error("Get manager work entries error:", error);
+      res.status(500).json({ message: "Failed to get work entries" });
+    }
+  });
+
+  // Approve work entry as manager
+  app.post("/api/manager/work-entries/:workEntryId/approve", requireManager, await requireManagerPermission('canApproveWork'), async (req: any, res) => {
+    try {
+      const { workEntryId } = req.params;
+      const { approvalStatus, managerFeedback, managerRating } = req.body;
+      
+      if (!approvalStatus || !['manager_approved', 'manager_rejected'].includes(approvalStatus)) {
+        return res.status(400).json({ 
+          message: "Valid approval status required (manager_approved or manager_rejected)" 
+        });
+      }
+      
+      const updatedEntry = await storage.approveWorkEntryAsManager(workEntryId, req.user.id, {
+        approvalStatus,
+        managerFeedback,
+        managerRating
+      });
+      
+      res.json({
+        message: "Work entry processed successfully",
+        workEntry: updatedEntry
+      });
+    } catch (error) {
+      console.error("Manager approve work entry error:", error);
+      res.status(500).json({ message: "Failed to process work entry" });
+    }
+  });
+
+  // Get manager analytics
+  app.get("/api/manager/analytics", requireManager, await requireManagerPermission('canViewAnalytics'), async (req: any, res) => {
+    try {
+      const analytics = await storage.getManagerAnalytics(req.user.id);
+      res.json(analytics);
+    } catch (error) {
+      console.error("Get manager analytics error:", error);
+      res.status(500).json({ message: "Failed to get analytics" });
     }
   });
 
