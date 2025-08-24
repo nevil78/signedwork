@@ -51,6 +51,7 @@ export default function CompanyHierarchy() {
   const [isDeleteBranchOpen, setIsDeleteBranchOpen] = useState(false);
   const [isEditTeamOpen, setIsEditTeamOpen] = useState(false);
   const [isDeleteTeamOpen, setIsDeleteTeamOpen] = useState(false);
+  const [isCreateManagerOpen, setIsCreateManagerOpen] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<any>(null);
   const [selectedBranch, setSelectedBranch] = useState<any>(null);
   const [selectedTeam, setSelectedTeam] = useState<any>(null);
@@ -100,6 +101,22 @@ export default function CompanyHierarchy() {
     canManageEmployees: false,
     canCreateTeams: false,
     verificationScope: "none"
+  });
+
+  const [newManager, setNewManager] = useState({
+    employeeId: "",
+    username: "",
+    password: "",
+    confirmPassword: "",
+    accessLevel: "branch_manager",
+    canLogin: true,
+    permissions: {
+      canManageEmployees: true,
+      canCreateTeams: false,
+      canVerifyWork: true,
+      canViewReports: true,
+      canManageBranches: false
+    }
   });
 
   const { toast } = useToast();
@@ -276,6 +293,36 @@ export default function CompanyHierarchy() {
     },
     onError: () => {
       toast({ title: "Error", description: "Failed to delete team", variant: "destructive" });
+    }
+  });
+
+  const createManagerMutation = useMutation({
+    mutationFn: async (managerData: any) => {
+      return apiRequest("/api/company/managers", "POST", managerData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/company/employees"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/company/structure"] });
+      setIsCreateManagerOpen(false);
+      setNewManager({
+        employeeId: "",
+        username: "",
+        password: "",
+        confirmPassword: "",
+        accessLevel: "branch_manager",
+        canLogin: true,
+        permissions: {
+          canManageEmployees: true,
+          canCreateTeams: false,
+          canVerifyWork: true,
+          canViewReports: true,
+          canManageBranches: false
+        }
+      });
+      toast({ title: "Success", description: "Manager account created successfully!" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Failed to create manager account", variant: "destructive" });
     }
   });
 
@@ -2769,28 +2816,337 @@ export default function CompanyHierarchy() {
                     Create and manage manager sub-accounts with login credentials and permissions
                   </CardDescription>
                 </div>
-                <Button data-testid="button-create-manager">
+                <Button 
+                  onClick={() => setIsCreateManagerOpen(true)}
+                  data-testid="button-create-manager"
+                >
                   <Plus className="h-4 w-4 mr-2" />
                   Create Manager Account
                 </Button>
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-8" data-testid="managers-coming-soon">
-                <ShieldCheck className="h-16 w-16 text-indigo-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Manager Account System</h3>
-                <p className="text-gray-600 mb-4">
-                  This unified interface will include manager account creation, permission management, and employee assignments.
-                </p>
-                <p className="text-sm text-gray-500">
-                  Manager account functionality is being integrated into this consolidated hierarchy management interface.
-                </p>
-              </div>
+              {Array.isArray(employees) && employees.filter((emp: any) => emp.hierarchyRole !== 'employee').length > 0 ? (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {employees.filter((emp: any) => emp.hierarchyRole !== 'employee').map((manager: any) => (
+                      <Card key={manager.id} className="p-4 border border-indigo-200">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center">
+                              {getRoleIcon(manager.hierarchyRole)}
+                            </div>
+                            <div>
+                              <h4 className="font-medium text-sm">{manager.firstName} {manager.lastName}</h4>
+                              <p className="text-xs text-gray-600">{manager.hierarchyRole.replace('_', ' ')}</p>
+                            </div>
+                          </div>
+                          <Badge className={getRoleBadgeColor(manager.hierarchyRole)}>
+                            {manager.hierarchyRole === 'company_admin' ? 'Admin' :
+                             manager.hierarchyRole === 'branch_manager' ? 'Manager' :
+                             manager.hierarchyRole === 'team_lead' ? 'Lead' : 'Employee'}
+                          </Badge>
+                        </div>
+                        <div className="space-y-2 text-xs">
+                          <div className="flex justify-between">
+                            <span>Login Access:</span>
+                            <span className={manager.canLogin ? 'text-green-600' : 'text-red-600'}>
+                              {manager.canLogin ? 'Enabled' : 'Disabled'}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Verification:</span>
+                            <span className={manager.canVerifyWork ? 'text-green-600' : 'text-gray-500'}>
+                              {manager.canVerifyWork ? manager.verificationScope : 'None'}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Permissions:</span>
+                            <div className="flex gap-1">
+                              {manager.canManageEmployees && <Badge variant="outline" className="text-xs">Manage</Badge>}
+                              {manager.canCreateTeams && <Badge variant="outline" className="text-xs">Create</Badge>}
+                            </div>
+                          </div>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8" data-testid="managers-empty-state">
+                  <ShieldCheck className="h-16 w-16 text-indigo-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No Manager Accounts</h3>
+                  <p className="text-gray-600 mb-4">
+                    Create manager sub-accounts with login credentials and specialized permissions.
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
 
       </Tabs>
+
+      {/* Create Manager Account Dialog */}
+      <Dialog open={isCreateManagerOpen} onOpenChange={setIsCreateManagerOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ShieldCheck className="h-5 w-5 text-indigo-600" />
+              Create Manager Account
+            </DialogTitle>
+            <DialogDescription>
+              Create a sub-account with login credentials and specialized permissions for a selected employee
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-6">
+            {/* Employee Selection */}
+            <div className="space-y-3">
+              <Label htmlFor="manager-employee">Select Employee</Label>
+              <Select 
+                value={newManager.employeeId} 
+                onValueChange={(value) => setNewManager({ ...newManager, employeeId: value })}
+              >
+                <SelectTrigger data-testid="select-manager-employee">
+                  <SelectValue placeholder="Choose an employee to promote" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Array.isArray(employees) && employees
+                    .filter((emp: any) => emp.hierarchyRole === 'employee')
+                    .map((employee: any) => (
+                      <SelectItem key={employee.id} value={employee.id}>
+                        <div className="flex items-center gap-2">
+                          <User className="h-4 w-4" />
+                          <span>{employee.firstName} {employee.lastName}</span>
+                          <Badge variant="outline" className="text-xs ml-2">
+                            {employee.position || 'Employee'}
+                          </Badge>
+                        </div>
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Login Credentials */}
+            <div className="p-4 bg-gray-50 rounded-lg space-y-4">
+              <h4 className="font-medium text-gray-900 flex items-center gap-2">
+                <Key className="h-4 w-4" />
+                Login Credentials
+              </h4>
+              
+              <div>
+                <Label htmlFor="manager-username">Manager Username</Label>
+                <Input
+                  id="manager-username"
+                  type="text"
+                  value={newManager.username}
+                  onChange={(e) => setNewManager({ ...newManager, username: e.target.value })}
+                  placeholder="manager.username"
+                  data-testid="input-manager-username"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Unique username for manager login system
+                </p>
+              </div>
+
+              <div>
+                <Label htmlFor="manager-password">Password</Label>
+                <Input
+                  id="manager-password"
+                  type="password"
+                  value={newManager.password}
+                  onChange={(e) => setNewManager({ ...newManager, password: e.target.value })}
+                  placeholder="••••••••••"
+                  data-testid="input-manager-password"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="manager-confirm-password">Confirm Password</Label>
+                <Input
+                  id="manager-confirm-password"
+                  type="password"
+                  value={newManager.confirmPassword}
+                  onChange={(e) => setNewManager({ ...newManager, confirmPassword: e.target.value })}
+                  placeholder="••••••••••"
+                  data-testid="input-manager-confirm-password"
+                />
+              </div>
+            </div>
+
+            {/* Access Level */}
+            <div className="space-y-3">
+              <Label htmlFor="access-level">Access Level</Label>
+              <Select 
+                value={newManager.accessLevel} 
+                onValueChange={(value) => setNewManager({ ...newManager, accessLevel: value })}
+              >
+                <SelectTrigger data-testid="select-access-level">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="team_lead">
+                    <div className="flex items-center gap-2">
+                      <UserCheck className="h-4 w-4 text-green-600" />
+                      <div>
+                        <div className="font-medium">Team Lead</div>
+                        <div className="text-xs text-gray-500">Manage specific team members</div>
+                      </div>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="branch_manager">
+                    <div className="flex items-center gap-2">
+                      <Shield className="h-4 w-4 text-blue-600" />
+                      <div>
+                        <div className="font-medium">Branch Manager</div>
+                        <div className="text-xs text-gray-500">Manage entire branch operations</div>
+                      </div>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="company_admin">
+                    <div className="flex items-center gap-2">
+                      <Crown className="h-4 w-4 text-yellow-600" />
+                      <div>
+                        <div className="font-medium">Company Admin</div>
+                        <div className="text-xs text-gray-500">Full company access</div>
+                      </div>
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Permissions */}
+            <div className="p-4 bg-indigo-50 rounded-lg space-y-4">
+              <h4 className="font-medium text-indigo-900 flex items-center gap-2">
+                <Settings className="h-4 w-4" />
+                Manager Permissions
+              </h4>
+              
+              <div className="grid grid-cols-1 gap-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label htmlFor="can-manage-employees" className="text-sm font-medium">
+                      Manage Employees
+                    </Label>
+                    <p className="text-xs text-gray-600">Edit employee roles and assignments</p>
+                  </div>
+                  <Switch
+                    id="can-manage-employees"
+                    checked={newManager.permissions.canManageEmployees}
+                    onCheckedChange={(checked) => 
+                      setNewManager({ 
+                        ...newManager, 
+                        permissions: { ...newManager.permissions, canManageEmployees: checked }
+                      })
+                    }
+                  />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label htmlFor="can-create-teams" className="text-sm font-medium">
+                      Create Teams
+                    </Label>
+                    <p className="text-xs text-gray-600">Add new teams and organizational units</p>
+                  </div>
+                  <Switch
+                    id="can-create-teams"
+                    checked={newManager.permissions.canCreateTeams}
+                    onCheckedChange={(checked) => 
+                      setNewManager({ 
+                        ...newManager, 
+                        permissions: { ...newManager.permissions, canCreateTeams: checked }
+                      })
+                    }
+                  />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label htmlFor="can-verify-work" className="text-sm font-medium">
+                      Verify Work
+                    </Label>
+                    <p className="text-xs text-gray-600">Approve and verify work entries</p>
+                  </div>
+                  <Switch
+                    id="can-verify-work"
+                    checked={newManager.permissions.canVerifyWork}
+                    onCheckedChange={(checked) => 
+                      setNewManager({ 
+                        ...newManager, 
+                        permissions: { ...newManager.permissions, canVerifyWork: checked }
+                      })
+                    }
+                  />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label htmlFor="can-view-reports" className="text-sm font-medium">
+                      View Reports
+                    </Label>
+                    <p className="text-xs text-gray-600">Access analytics and performance reports</p>
+                  </div>
+                  <Switch
+                    id="can-view-reports"
+                    checked={newManager.permissions.canViewReports}
+                    onCheckedChange={(checked) => 
+                      setNewManager({ 
+                        ...newManager, 
+                        permissions: { ...newManager.permissions, canViewReports: checked }
+                      })
+                    }
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Validation Summary */}
+            {newManager.employeeId && newManager.username && newManager.password && (
+              <div className="p-3 bg-green-50 rounded-lg border border-green-200">
+                <h5 className="font-medium text-green-800 text-sm mb-2">Account Summary</h5>
+                <div className="text-xs space-y-1 text-green-700">
+                  <div>Employee: {employees?.find((e: any) => e.id === newManager.employeeId)?.firstName} {employees?.find((e: any) => e.id === newManager.employeeId)?.lastName}</div>
+                  <div>Username: {newManager.username}</div>
+                  <div>Access Level: {newManager.accessLevel.replace('_', ' ')}</div>
+                  <div>Password: {newManager.password === newManager.confirmPassword ? 'Matching ✓' : 'Not matching ✗'}</div>
+                </div>
+              </div>
+            )}
+
+            <div className="flex gap-3">
+              <Button 
+                onClick={() => {
+                  if (newManager.password !== newManager.confirmPassword) {
+                    toast({ title: "Error", description: "Passwords do not match", variant: "destructive" });
+                    return;
+                  }
+                  if (!newManager.employeeId || !newManager.username || !newManager.password) {
+                    toast({ title: "Error", description: "Please fill in all required fields", variant: "destructive" });
+                    return;
+                  }
+                  createManagerMutation.mutate(newManager);
+                }}
+                disabled={createManagerMutation.isPending}
+                className="flex-1"
+                data-testid="button-create-manager-account"
+              >
+                {createManagerMutation.isPending ? "Creating Account..." : "Create Manager Account"}
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => setIsCreateManagerOpen(false)}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Edit Branch Dialog */}
       <Dialog open={isEditBranchOpen} onOpenChange={setIsEditBranchOpen}>
