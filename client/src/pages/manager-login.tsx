@@ -20,7 +20,7 @@ export default function ManagerLogin() {
 
   const loginMutation = useMutation({
     mutationFn: async (data: { uniqueId: string; password: string }) => {
-      const response = await apiRequest("/api/manager/auth/login", "POST", data);
+      const response = await apiRequest("POST", "/api/manager/auth/login", data);
       return response;
     },
     onSuccess: () => {
@@ -140,19 +140,30 @@ export default function ManagerLogin() {
             </form>
 
             <div className="mt-6 pt-6 border-t border-gray-200">
-              <div className="text-center space-y-2">
+              <div className="text-center space-y-3">
                 <p className="text-sm text-gray-600">
                   Need help accessing your account?
                 </p>
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  onClick={() => setLocation("/")}
-                  className="text-blue-600 hover:text-blue-800"
-                  data-testid="link-main-login"
-                >
-                  Back to Main Login
-                </Button>
+                <div className="flex flex-col gap-2">
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => setLocation("/contact")}
+                    className="text-blue-600 hover:text-blue-800"
+                    data-testid="link-contact-support"
+                  >
+                    Contact Support
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => setLocation("/")}
+                    className="text-gray-600 hover:text-gray-800"
+                    data-testid="link-main-login"
+                  >
+                    Back to Main Login
+                  </Button>
+                </div>
               </div>
             </div>
           </CardContent>

@@ -59,7 +59,7 @@ export default function ManagerDashboard() {
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      await apiRequest("/api/manager/auth/logout", "POST");
+      await apiRequest("POST", "/api/manager/auth/logout");
     },
     onSuccess: () => {
       queryClient.clear();

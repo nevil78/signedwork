@@ -71,7 +71,7 @@ export default function ManagerWorkEntries() {
   // Approve/reject work entry mutation
   const approvalMutation = useMutation({
     mutationFn: async (data: { workEntryId: string; approvalStatus: string; managerFeedback?: string; managerRating?: number }) => {
-      return await apiRequest(`/api/manager/work-entries/${data.workEntryId}/approve`, "POST", data);
+      return await apiRequest("POST", `/api/manager/work-entries/${data.workEntryId}/approve`, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/manager/work-entries"] });
