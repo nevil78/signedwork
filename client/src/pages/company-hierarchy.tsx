@@ -105,26 +105,63 @@ export default function CompanyHierarchy() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch data
-  const { data: structure, isLoading: structureLoading } = useQuery({
+  // Real-time data queries with optimized refetch intervals and performance caching
+  const { data: structure, isLoading: structureLoading, refetch: refetchStructure } = useQuery({
     queryKey: ["/api/company/structure"],
+    refetchInterval: 30000, // Refetch every 30 seconds for live organizational changes
+    staleTime: 15000, // Consider data stale after 15 seconds
+    gcTime: 300000, // Keep in cache for 5 minutes
   });
 
-  const { data: branches, isLoading: branchesLoading } = useQuery({
+  const { data: branches, isLoading: branchesLoading, refetch: refetchBranches } = useQuery({
     queryKey: ["/api/company/branches"],
+    refetchInterval: 60000, // Less frequent for structural data
+    staleTime: 30000,
+    gcTime: 600000, // Keep branches in cache for 10 minutes
   });
 
-  const { data: teams, isLoading: teamsLoading } = useQuery({
+  const { data: teams, isLoading: teamsLoading, refetch: refetchTeams } = useQuery({
     queryKey: ["/api/company/teams"],
+    refetchInterval: 45000, // Moderate frequency for team updates
+    staleTime: 25000,
+    gcTime: 600000,
   });
 
-  const { data: employees, isLoading: employeesLoading } = useQuery({
+  const { data: employees, isLoading: employeesLoading, refetch: refetchEmployees } = useQuery({
     queryKey: ["/api/company/employees"],
+    refetchInterval: 30000, // More frequent for employee status changes
+    staleTime: 20000,
+    gcTime: 300000,
   });
 
   const { data: currentUser } = useQuery({
     queryKey: ["/api/auth/user"],
+    staleTime: 600000, // User data rarely changes, cache for 10 minutes
+    gcTime: 1800000, // Keep user data for 30 minutes
   });
+
+  // Performance monitoring and optimization state
+  const [lastUpdateTime, setLastUpdateTime] = useState<Date>(new Date());
+  const [updateCount, setUpdateCount] = useState(0);
+  const [isOptimizedView, setIsOptimizedView] = useState(false);
+
+  // Auto-refresh handler for real-time updates
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        // Refresh data when user returns to tab
+        refetchStructure();
+        refetchEmployees();
+        refetchBranches();
+        refetchTeams();
+        setLastUpdateTime(new Date());
+        setUpdateCount(prev => prev + 1);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [refetchStructure, refetchEmployees, refetchBranches, refetchTeams]);
 
   // Mutations
   const createBranchMutation = useMutation({
@@ -507,7 +544,68 @@ export default function CompanyHierarchy() {
             Manage your organizational structure, branches, teams, and employee roles
           </p>
         </div>
-        <div className="flex gap-2">
+        
+        {/* Real-time Status & Performance Controls */}
+        <div className="flex items-center gap-4">
+          {/* Live Update Status */}
+          <div className="flex items-center gap-2 px-3 py-2 bg-green-50 border border-green-200 rounded-lg">
+            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+            <div className="text-xs">
+              <div className="font-medium text-green-900">Live Updates</div>
+              <div className="text-green-700">
+                Last: {lastUpdateTime.toLocaleTimeString()} ({updateCount} updates)
+              </div>
+            </div>
+          </div>
+
+          {/* Performance Toggle */}
+          <div className="flex items-center gap-2">
+            <Label htmlFor="optimized-view" className="text-xs">Optimized View</Label>
+            <Switch
+              id="optimized-view"
+              checked={isOptimizedView}
+              onCheckedChange={setIsOptimizedView}
+              title={isOptimizedView ? 'Showing summarized data for better performance' : 'Switch to optimized view for large datasets'}
+            />
+          </div>
+
+          {/* Manual Refresh */}
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => {
+              refetchStructure();
+              refetchEmployees();
+              refetchBranches();
+              refetchTeams();
+              setLastUpdateTime(new Date());
+              setUpdateCount(prev => prev + 1);
+              toast({ title: "Data Refreshed", description: "All organizational data has been updated" });
+            }}
+            className="flex items-center gap-2"
+          >
+            <Activity className="h-3 w-3" />
+            Refresh
+          </Button>
+        </div>
+      </div>
+      
+      {/* Performance Indicator */}
+      {(structureLoading || employeesLoading || branchesLoading || teamsLoading) && (
+        <div className="flex items-center justify-center p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="flex items-center gap-3">
+            <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+            <span className="text-blue-800 font-medium">
+              {structureLoading && "Loading organizational structure..."}
+              {employeesLoading && "Loading employee data..."}
+              {branchesLoading && "Loading branch information..."}
+              {teamsLoading && "Loading team details..."}
+            </span>
+          </div>
+        </div>
+      )}
+
+      <div className="flex gap-2">
           <Dialog open={isCreateBranchOpen} onOpenChange={setIsCreateBranchOpen}>
             <DialogTrigger asChild>
               <Button data-testid="button-create-branch">
@@ -678,12 +776,11 @@ export default function CompanyHierarchy() {
             </DialogContent>
           </Dialog>
         </div>
-      </div>
 
-      <Separator />
+        <Separator />
 
-      {/* User Permissions Info */}
-      {getCurrentUserEmployee() && (
+        {/* User Permissions Info */}
+        {getCurrentUserEmployee() && (
         <Card className="mb-6" data-testid="user-permissions-info">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
@@ -1744,9 +1841,14 @@ export default function CompanyHierarchy() {
                     <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
                       <Users className="h-4 w-4" />
                       Team Performance Matrix
+                      {isOptimizedView && (
+                        <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700">
+                          Optimized View
+                        </Badge>
+                      )}
                     </h4>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      {teams.slice(0, 6).map((team: any) => {
+                      {(isOptimizedView ? teams.slice(0, 3) : teams.slice(0, 6)).map((team: any) => {
                         const teamMembers = Array.isArray(employees) ? employees.filter(emp => emp.teamId === team.id) : [];
                         const utilization = (team.maxMembers || 0) > 0 ? teamMembers.length / team.maxMembers : 0;
                         const hasLead = teamMembers.some(emp => emp.hierarchyRole === 'team_lead');
@@ -1764,26 +1866,42 @@ export default function CompanyHierarchy() {
                                   {Math.round(utilization * 100)}%
                                 </span>
                               </div>
-                              <div className="flex justify-between text-xs">
-                                <span>Leadership:</span>
-                                <span className={hasLead ? 'text-green-600' : 'text-red-600'}>
-                                  {hasLead ? 'Assigned' : 'Missing'}
-                                </span>
-                              </div>
-                              <div className="w-full h-1 bg-gray-200 rounded-full overflow-hidden">
-                                <div 
-                                  className={`h-full rounded-full ${utilization > 0.9 ? 'bg-red-500' : utilization > 0.7 ? 'bg-yellow-500' : 'bg-green-500'}`}
-                                  style={{ width: `${Math.min(utilization * 100, 100)}%` }}
-                                ></div>
-                              </div>
+                              {!isOptimizedView && (
+                                <>
+                                  <div className="flex justify-between text-xs">
+                                    <span>Leadership:</span>
+                                    <span className={hasLead ? 'text-green-600' : 'text-red-600'}>
+                                      {hasLead ? 'Assigned' : 'Missing'}
+                                    </span>
+                                  </div>
+                                  <div className="w-full h-1 bg-gray-200 rounded-full overflow-hidden">
+                                    <div 
+                                      className={`h-full rounded-full ${utilization > 0.9 ? 'bg-red-500' : utilization > 0.7 ? 'bg-yellow-500' : 'bg-green-500'}`}
+                                      style={{ width: `${Math.min(utilization * 100, 100)}%` }}
+                                    ></div>
+                                  </div>
+                                </>
+                              )}
                             </div>
                           </div>
                         );
                       })}
                     </div>
-                    {teams.length > 6 && (
-                      <p className="text-xs text-gray-500 mt-2">Showing top 6 teams. Total: {teams.length}</p>
-                    )}
+                    <div className="flex items-center justify-between mt-2">
+                      <p className="text-xs text-gray-500">
+                        Showing {isOptimizedView ? Math.min(3, teams.length) : Math.min(6, teams.length)} of {teams.length} teams
+                      </p>
+                      {teams.length > (isOptimizedView ? 3 : 6) && (
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => setIsOptimizedView(!isOptimizedView)}
+                          className="text-xs"
+                        >
+                          {isOptimizedView ? 'Show More Details' : 'Optimize View'}
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </div>
               ) : (
