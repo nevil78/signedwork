@@ -788,89 +788,521 @@ export default function CompanyHierarchy() {
 
         {/* Structure Tab */}
         <TabsContent value="structure" className="space-y-4">
+          {/* Smart Navigation Breadcrumb */}
+          <Card className="p-3 mb-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-sm">
+                <Building2 className="h-4 w-4 text-blue-600" />
+                <span className="text-gray-600">Current View:</span>
+                <span className="font-medium">Company Structure</span>
+                <ChevronRight className="h-4 w-4 text-gray-400" />
+                <span className="text-gray-500">All Levels</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={() => setSearchQuery("")}>
+                  <Search className="h-4 w-4 mr-1" />
+                  Search Org
+                </Button>
+                <Input
+                  placeholder="Find employee, team, or branch..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-64"
+                />
+              </div>
+            </div>
+            
+            {/* Quick Jump Buttons */}
+            {(Array.isArray(branches) && branches.length > 0) || (Array.isArray(teams) && teams.length > 0) ? (
+              <div className="flex items-center gap-2 mt-3 pt-3 border-t">
+                <span className="text-xs text-gray-500 mr-2">Quick Jump:</span>
+                {Array.isArray(branches) && branches.slice(0, 3).map((branch: any) => (
+                  <Button 
+                    key={branch.id}
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-6 text-xs"
+                    onClick={() => {
+                      const element = document.querySelector(`[data-testid="branch-${branch.id}"]`);
+                      element?.scrollIntoView({ behavior: 'smooth' });
+                    }}
+                  >
+                    <Building2 className="h-3 w-3 mr-1" />
+                    {branch.name}
+                  </Button>
+                ))}
+                {Array.isArray(teams) && teams.filter(t => !t.branchId).slice(0, 2).map((team: any) => (
+                  <Button 
+                    key={team.id}
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-6 text-xs"
+                    onClick={() => {
+                      const element = document.querySelector(`[data-testid="hq-team-${team.id}"]`);
+                      element?.scrollIntoView({ behavior: 'smooth' });
+                    }}
+                  >
+                    <Users className="h-3 w-3 mr-1" />
+                    {team.name} (HQ)
+                  </Button>
+                ))}
+                {Array.isArray(branches) && branches.length > 3 && (
+                  <span className="text-xs text-gray-400">+{branches.length - 3} more</span>
+                )}
+              </div>
+            ) : null}
+          </Card>
+
+          {/* Quick Stats Overview */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <Card className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
+                  <Crown className="h-5 w-5 text-yellow-600" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{Array.isArray(employees) ? employees.filter((emp: any) => emp.hierarchyRole === 'company_admin').length : 0}</p>
+                  <p className="text-xs text-muted-foreground">Company Admins</p>
+                </div>
+              </div>
+            </Card>
+            
+            <Card className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <Building2 className="h-5 w-5 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{Array.isArray(branches) ? branches.length : 0}</p>
+                  <p className="text-xs text-muted-foreground">Active Branches</p>
+                </div>
+              </div>
+            </Card>
+            
+            <Card className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                  <Users className="h-5 w-5 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{Array.isArray(teams) ? teams.length : 0}</p>
+                  <p className="text-xs text-muted-foreground">Active Teams</p>
+                </div>
+              </div>
+            </Card>
+            
+            <Card className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                  <UserCheck className="h-5 w-5 text-purple-600" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{Array.isArray(employees) ? employees.length : 0}</p>
+                  <p className="text-xs text-muted-foreground">Total Employees</p>
+                </div>
+              </div>
+            </Card>
+          </div>
+
+          {/* Organizational Health Panel */}
+          {structure && (
+            <Card className="mb-6">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <CheckCircle className="h-5 w-5 text-green-600" />
+                  Organizational Health Insights
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Structure Health */}
+                  <div className="p-4 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-medium text-blue-900">Structure Balance</h4>
+                      <Building2 className="h-4 w-4 text-blue-600" />
+                    </div>
+                    <div className="space-y-2">
+                      {Array.isArray(branches) && branches.length > 0 ? (
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                          <span className="text-xs text-blue-800">{branches.length} branches active</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                          <span className="text-xs text-blue-800">Centralized structure</span>
+                        </div>
+                      )}
+                      {Array.isArray(teams) && (
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                          <span className="text-xs text-blue-800">{teams.length} teams organized</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Capacity Analysis */}
+                  <div className="p-4 bg-gradient-to-r from-green-50 to-green-100 rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-medium text-green-900">Capacity Status</h4>
+                      <Users className="h-4 w-4 text-green-600" />
+                    </div>
+                    <div className="space-y-2">
+                      {Array.isArray(teams) && teams.length > 0 ? (
+                        (() => {
+                          const overUtilized = teams.filter(team => {
+                            const members = Array.isArray(employees) ? employees.filter(emp => emp.teamId === team.id).length : 0;
+                            return members / (team.maxMembers || 1) > 0.9;
+                          }).length;
+                          
+                          const underUtilized = teams.filter(team => {
+                            const members = Array.isArray(employees) ? employees.filter(emp => emp.teamId === team.id).length : 0;
+                            return members / (team.maxMembers || 1) < 0.3 && members > 0;
+                          }).length;
+
+                          return (
+                            <>
+                              {overUtilized > 0 && (
+                                <div className="flex items-center gap-2">
+                                  <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                                  <span className="text-xs text-green-800">{overUtilized} teams over capacity</span>
+                                </div>
+                              )}
+                              {underUtilized > 0 && (
+                                <div className="flex items-center gap-2">
+                                  <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                                  <span className="text-xs text-green-800">{underUtilized} teams underutilized</span>
+                                </div>
+                              )}
+                              {overUtilized === 0 && underUtilized === 0 && (
+                                <div className="flex items-center gap-2">
+                                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                                  <span className="text-xs text-green-800">Optimal capacity balance</span>
+                                </div>
+                              )}
+                            </>
+                          );
+                        })()
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+                          <span className="text-xs text-green-800">No teams to analyze</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Management Coverage */}
+                  <div className="p-4 bg-gradient-to-r from-purple-50 to-purple-100 rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-medium text-purple-900">Management Coverage</h4>
+                      <Crown className="h-4 w-4 text-purple-600" />
+                    </div>
+                    <div className="space-y-2">
+                      {Array.isArray(employees) && (
+                        (() => {
+                          const managers = employees.filter(emp => 
+                            ['company_admin', 'branch_manager', 'team_lead'].includes(emp.hierarchyRole)
+                          ).length;
+                          const totalEmployees = employees.length;
+                          const managementRatio = totalEmployees > 0 ? (managers / totalEmployees) : 0;
+                          
+                          return (
+                            <>
+                              <div className="flex items-center gap-2">
+                                <div className={`w-2 h-2 rounded-full ${managementRatio > 0.3 ? 'bg-red-500' : managementRatio > 0.15 ? 'bg-yellow-500' : 'bg-green-500'}`}></div>
+                                <span className="text-xs text-purple-800">{managers} managers ({Math.round(managementRatio * 100)}%)</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <div className={`w-2 h-2 rounded-full ${managementRatio < 0.05 ? 'bg-red-500' : 'bg-green-500'}`}></div>
+                                <span className="text-xs text-purple-800">
+                                  {managementRatio < 0.05 ? 'Need more leaders' : 
+                                   managementRatio > 0.3 ? 'Too many managers' : 'Healthy ratio'}
+                                </span>
+                              </div>
+                            </>
+                          );
+                        })()
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Interactive Structure Visualization */}
           <Card data-testid="structure-visualization">
             <CardHeader>
-              <CardTitle>Organizational Structure</CardTitle>
-              <CardDescription>
-                Visual representation of your company hierarchy
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Building2 className="h-5 w-5" />
+                    Interactive Organization Chart
+                  </CardTitle>
+                  <CardDescription>
+                    Visual hierarchy with real-time capacity and health indicators
+                  </CardDescription>
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm">
+                    <Eye className="h-4 w-4 mr-2" />
+                    Full Screen
+                  </Button>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               {structureLoading ? (
                 <div className="text-center py-8" data-testid="structure-loading">
-                  Loading structure...
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                  Loading organizational structure...
                 </div>
               ) : structure ? (
                 <div className="space-y-6" data-testid="structure-tree">
-                  {/* Company Level */}
-                  <div className="flex items-center gap-2 p-4 border rounded-lg bg-blue-50">
-                    <Crown className="h-6 w-6 text-yellow-600" />
-                    <div>
-                      <h3 className="font-semibold">Company Headquarters</h3>
-                      <p className="text-sm text-muted-foreground">
-                        {Array.isArray((structure as any)?.employees) ? (structure as any).employees.filter((emp: any) => emp.hierarchyRole === 'company_admin').length : 0} Admins
-                      </p>
+                  {/* Company Headquarters */}
+                  <div className="relative">
+                    <div className="flex items-center justify-between p-6 border-2 border-yellow-200 rounded-lg bg-gradient-to-r from-yellow-50 to-orange-50 shadow-sm">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center shadow-sm">
+                          <Crown className="h-6 w-6 text-yellow-600" />
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-bold text-gray-900">Company Headquarters</h3>
+                          <p className="text-sm text-gray-600">Central Command & Administration</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Badge className="bg-yellow-100 text-yellow-800">
+                            {Array.isArray(employees) ? employees.filter((emp: any) => emp.hierarchyRole === 'company_admin').length : 0} Admins
+                          </Badge>
+                          <Badge variant="outline">
+                            {Array.isArray(employees) ? employees.filter((emp: any) => !emp.branchId).length : 0} HQ Staff
+                          </Badge>
+                        </div>
+                        <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
+                          <div className="h-full bg-green-500 rounded-full" style={{ width: '85%' }}></div>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-1">Health: Excellent</p>
+                      </div>
                     </div>
+
+                    {/* Connection Lines */}
+                    {Array.isArray(branches) && branches.length > 0 && (
+                      <div className="absolute left-6 top-full w-px h-8 bg-gray-300"></div>
+                    )}
                   </div>
 
                   {/* Branches Level */}
-                  {Array.isArray((structure as any)?.branches) && (structure as any).branches.map((branch: any) => (
-                    <div key={branch.id} className="ml-6 space-y-4" data-testid={`branch-${branch.id}`}>
-                      <div className="flex items-center gap-2 p-4 border rounded-lg bg-blue-50">
-                        <Building2 className="h-5 w-5 text-blue-600" />
-                        <div className="flex-1">
-                          <h4 className="font-semibold">{branch.name}</h4>
-                          <p className="text-sm text-muted-foreground">{branch.location}</p>
-                        </div>
-                        <Badge variant="outline">
-                          {Array.isArray((structure as any)?.employees) ? 
-                            (structure as any).employees.filter((emp: any) => emp.branchId === branch.id).length : 0} employees
-                        </Badge>
-                      </div>
+                  {Array.isArray(branches) && branches.map((branch: any, branchIndex: number) => {
+                    const branchEmployees = Array.isArray(employees) ? employees.filter((emp: any) => emp.branchId === branch.id) : [];
+                    const branchTeams = Array.isArray(teams) ? teams.filter((team: any) => team.branchId === branch.id) : [];
+                    const utilization = branchTeams.reduce((sum: number, team: any) => {
+                      const teamMembers = employees ? employees.filter((emp: any) => emp.teamId === team.id).length : 0;
+                      return sum + (teamMembers / (team.maxMembers || 1));
+                    }, 0) / (branchTeams.length || 1);
 
-                      {/* Teams in this branch */}
-                      {Array.isArray((structure as any)?.teams) && 
-                        (structure as any).teams
-                          .filter((team: any) => team.branchId === branch.id)
-                          .map((team: any) => (
-                            <div key={team.id} className="ml-6 flex items-center gap-2 p-3 border rounded-lg bg-green-50" data-testid={`team-${team.id}`}>
-                              <Users className="h-4 w-4 text-green-600" />
-                              <div className="flex-1">
-                                <h5 className="font-medium">{team.name}</h5>
-                                <p className="text-sm text-muted-foreground">Max {team.maxMembers} members</p>
-                              </div>
-                              <Badge variant="outline" className="bg-green-100">
-                                {Array.isArray((structure as any)?.employees) ? 
-                                  (structure as any).employees.filter((emp: any) => emp.teamId === team.id).length : 0} members
-                              </Badge>
+                    return (
+                      <div key={branch.id} className="relative ml-12" data-testid={`branch-${branch.id}`}>
+                        {/* Branch Node */}
+                        <div className="flex items-center justify-between p-4 border-2 border-blue-200 rounded-lg bg-gradient-to-r from-blue-50 to-indigo-50 shadow-sm hover:shadow-md transition-shadow group">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                              <Building2 className="h-5 w-5 text-blue-600" />
                             </div>
-                          ))
+                            <div>
+                              <h4 className="font-semibold text-gray-900">{branch.name}</h4>
+                              <p className="text-sm text-gray-600">{branch.location}</p>
+                              {branch.description && (
+                                <p className="text-xs text-gray-500 mt-1">{branch.description}</p>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <div className="text-right">
+                              <div className="flex items-center gap-2 mb-2">
+                                <Badge className="bg-blue-100 text-blue-800">
+                                  {branchEmployees.length} employees
+                                </Badge>
+                                <Badge variant="outline">
+                                  {branchTeams.length} teams
+                                </Badge>
+                              </div>
+                              <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                <div 
+                                  className={`h-full rounded-full ${utilization > 0.8 ? 'bg-red-500' : utilization > 0.6 ? 'bg-yellow-500' : 'bg-green-500'}`}
+                                  style={{ width: `${Math.min(utilization * 100, 100)}%` }}
+                                ></div>
+                              </div>
+                              <p className="text-xs text-gray-500 mt-1">
+                                Capacity: {Math.round(utilization * 100)}%
+                              </p>
+                            </div>
+                            
+                            {/* Context-sensitive Actions */}
+                            <div className="flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                className="h-6 px-2 text-xs"
+                                onClick={() => {
+                                  setSelectedBranch(branch);
+                                  setIsCreateTeamOpen(true);
+                                }}
+                                disabled={!canManageTeams()}
+                              >
+                                <Plus className="h-3 w-3 mr-1" />
+                                Add Team
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                className="h-6 px-2 text-xs"
+                                onClick={() => {
+                                  // Navigate to employee management for this branch
+                                  setSearchQuery(branch.name);
+                                }}
+                              >
+                                <Users className="h-3 w-3 mr-1" />
+                                View Staff
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Teams in this branch */}
+                        {branchTeams.length > 0 && (
+                          <div className="mt-4 ml-8 space-y-3">
+                            {branchTeams.map((team: any) => {
+                              const teamMembers = Array.isArray(employees) ? employees.filter((emp: any) => emp.teamId === team.id) : [];
+                              const teamUtilization = teamMembers.length / (team.maxMembers || 1);
+                              
+                              return (
+                                <div key={team.id} className="relative" data-testid={`team-${team.id}`}>
+                                  <div className="flex items-center justify-between p-3 border border-green-200 rounded-lg bg-gradient-to-r from-green-50 to-emerald-50 hover:shadow-sm transition-shadow group">
+                                    <div className="flex items-center gap-3">
+                                      <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                                        <Users className="h-4 w-4 text-green-600" />
+                                      </div>
+                                      <div>
+                                        <h5 className="font-medium text-gray-900">{team.name}</h5>
+                                        <p className="text-xs text-gray-600">
+                                          {teamMembers.length}/{team.maxMembers} members
+                                        </p>
+                                        {teamMembers.length > 0 && (
+                                          <p className="text-xs text-gray-500">
+                                            Manager: {teamMembers.find((emp: any) => emp.hierarchyRole === 'team_lead')?.firstName || 'Unassigned'}
+                                          </p>
+                                        )}
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <Badge 
+                                        className={`${teamUtilization > 0.9 ? 'bg-red-100 text-red-800' : teamUtilization > 0.7 ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}`}
+                                      >
+                                        {Math.round(teamUtilization * 100)}% Full
+                                      </Badge>
+                                      {!team.isActive && (
+                                        <Badge variant="destructive" className="text-xs">Inactive</Badge>
+                                      )}
+                                      {teamUtilization < 0.3 && teamMembers.length > 0 && (
+                                        <Badge variant="outline" className="bg-yellow-50 text-yellow-700 text-xs">
+                                          Underutilized
+                                        </Badge>
+                                      )}
+                                      
+                                      {/* Team Actions */}
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-6 px-2 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                                        onClick={() => {
+                                          // Show team member details
+                                          setSearchQuery(team.name);
+                                        }}
+                                      >
+                                        <Eye className="h-3 w-3" />
+                                      </Button>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+
+                        {/* Connection line to next branch */}
+                        {branchIndex < branches.length - 1 && (
+                          <div className="absolute -left-6 top-full w-px h-8 bg-gray-300"></div>
+                        )}
+                      </div>
+                    );
+                  })}
+
+                  {/* Headquarters Teams (not assigned to branches) */}
+                  {Array.isArray(teams) && teams.filter((team: any) => !team.branchId).length > 0 && (
+                    <div className="ml-12 space-y-3">
+                      <h4 className="font-medium text-gray-700 flex items-center gap-2">
+                        <Crown className="h-4 w-4" />
+                        Headquarters Teams
+                      </h4>
+                      {teams
+                        .filter((team: any) => !team.branchId)
+                        .map((team: any) => {
+                          const teamMembers = Array.isArray(employees) ? employees.filter((emp: any) => emp.teamId === team.id) : [];
+                          const teamUtilization = teamMembers.length / (team.maxMembers || 1);
+                          
+                          return (
+                            <div key={team.id} data-testid={`hq-team-${team.id}`}>
+                              <div className="flex items-center justify-between p-3 border border-purple-200 rounded-lg bg-gradient-to-r from-purple-50 to-pink-50">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                                    <Users className="h-4 w-4 text-purple-600" />
+                                  </div>
+                                  <div>
+                                    <h5 className="font-medium text-gray-900">{team.name} <span className="text-xs text-gray-500">(HQ)</span></h5>
+                                    <p className="text-xs text-gray-600">
+                                      {teamMembers.length}/{team.maxMembers} members
+                                    </p>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Badge 
+                                    className={`${teamUtilization > 0.9 ? 'bg-red-100 text-red-800' : teamUtilization > 0.7 ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}`}
+                                  >
+                                    {Math.round(teamUtilization * 100)}% Full
+                                  </Badge>
+                                  {!team.isActive && (
+                                    <Badge variant="destructive" className="text-xs">Inactive</Badge>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })
                       }
                     </div>
-                  ))}
-
-                  {/* HQ Teams (no branch) */}
-                  {Array.isArray((structure as any)?.teams) && 
-                    (structure as any).teams
-                      .filter((team: any) => !team.branchId)
-                      .map((team: any) => (
-                        <div key={team.id} className="ml-6 flex items-center gap-2 p-3 border rounded-lg bg-green-50" data-testid={`hq-team-${team.id}`}>
-                          <Users className="h-4 w-4 text-green-600" />
-                          <div className="flex-1">
-                            <h5 className="font-medium">{team.name} (HQ)</h5>
-                            <p className="text-sm text-muted-foreground">Max {team.maxMembers} members</p>
-                          </div>
-                          <Badge variant="outline" className="bg-green-100">
-                            {Array.isArray((structure as any)?.employees) ? 
-                              (structure as any).employees.filter((emp: any) => emp.teamId === team.id).length : 0} members
-                          </Badge>
-                        </div>
-                      ))
-                  }
+                  )}
                 </div>
               ) : (
-                <div className="text-center py-8 text-muted-foreground" data-testid="no-structure">
-                  No organizational structure data available
+                <div className="text-center py-12" data-testid="no-structure">
+                  <Building2 className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">Build Your Organization</h3>
+                  <p className="text-gray-600 mb-4">
+                    Create branches and teams to establish your company's organizational structure.
+                  </p>
+                  <div className="flex gap-2 justify-center">
+                    <Button onClick={() => setIsCreateBranchOpen(true)}>
+                      <Building2 className="h-4 w-4 mr-2" />
+                      Create First Branch
+                    </Button>
+                    <Button variant="outline" onClick={() => setIsCreateTeamOpen(true)}>
+                      <Users className="h-4 w-4 mr-2" />
+                      Create HQ Team
+                    </Button>
+                  </div>
                 </div>
               )}
             </CardContent>
