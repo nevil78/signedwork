@@ -35,7 +35,11 @@ import {
   ShieldCheck,
   Key,
   Mail,
-  Clock
+  Clock,
+  AlertTriangle,
+  Lock,
+  Activity,
+  UserPlus
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -2275,6 +2279,251 @@ export default function CompanyHierarchy() {
                             </div>
                           </div>
                         ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Access Control Visualization */}
+                  <div className="p-4 border rounded-lg bg-gradient-to-r from-red-50 to-orange-50">
+                    <h4 className="font-medium text-red-900 mb-4 flex items-center gap-2">
+                      <Shield className="h-4 w-4" />
+                      Security Boundary Visualization
+                    </h4>
+                    <div className="space-y-4">
+                      {/* Permission Scope Map */}
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {/* Data Access Boundaries */}
+                        <div className="space-y-4">
+                          <h5 className="font-medium text-sm text-red-800 mb-3">Data Access Boundaries</h5>
+                          
+                          {/* Company Admin Boundary */}
+                          <div className="p-3 bg-yellow-50 border-2 border-yellow-300 rounded-lg">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Crown className="h-4 w-4 text-yellow-600" />
+                              <span className="font-medium text-yellow-900">Company Administrator Scope</span>
+                            </div>
+                            <div className="grid grid-cols-2 gap-3 text-xs">
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-1">
+                                  <CheckCircle className="h-3 w-3 text-green-600" />
+                                  <span>All employee data</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <CheckCircle className="h-3 w-3 text-green-600" />
+                                  <span>Financial information</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <CheckCircle className="h-3 w-3 text-green-600" />
+                                  <span>Performance reviews</span>
+                                </div>
+                              </div>
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-1">
+                                  <CheckCircle className="h-3 w-3 text-green-600" />
+                                  <span>Work diary entries</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <CheckCircle className="h-3 w-3 text-green-600" />
+                                  <span>System settings</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <CheckCircle className="h-3 w-3 text-green-600" />
+                                  <span>Audit logs</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Branch Manager Boundary */}
+                          <div className="p-3 bg-blue-50 border-2 border-blue-300 rounded-lg ml-4">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Building2 className="h-4 w-4 text-blue-600" />
+                              <span className="font-medium text-blue-900">Branch Manager Scope</span>
+                            </div>
+                            <div className="grid grid-cols-2 gap-3 text-xs">
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-1">
+                                  <CheckCircle className="h-3 w-3 text-green-600" />
+                                  <span>Branch employee data</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <CheckCircle className="h-3 w-3 text-green-600" />
+                                  <span>Team performance</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <X className="h-3 w-3 text-red-500" />
+                                  <span>Other branch data</span>
+                                </div>
+                              </div>
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-1">
+                                  <CheckCircle className="h-3 w-3 text-green-600" />
+                                  <span>Branch work entries</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <X className="h-3 w-3 text-red-500" />
+                                  <span>System settings</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <X className="h-3 w-3 text-red-500" />
+                                  <span>Financial reports</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Team Lead Boundary */}
+                          <div className="p-3 bg-green-50 border-2 border-green-300 rounded-lg ml-8">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Users className="h-4 w-4 text-green-600" />
+                              <span className="font-medium text-green-900">Team Lead Scope</span>
+                            </div>
+                            <div className="grid grid-cols-2 gap-3 text-xs">
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-1">
+                                  <CheckCircle className="h-3 w-3 text-green-600" />
+                                  <span>Team member data</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <CheckCircle className="h-3 w-3 text-green-600" />
+                                  <span>Work verification</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <X className="h-3 w-3 text-red-500" />
+                                  <span>Other team data</span>
+                                </div>
+                              </div>
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-1">
+                                  <CheckCircle className="h-3 w-3 text-green-600" />
+                                  <span>Team work entries</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <X className="h-3 w-3 text-red-500" />
+                                  <span>HR functions</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <X className="h-3 w-3 text-red-500" />
+                                  <span>Branch operations</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Action Boundaries */}
+                        <div className="space-y-4">
+                          <h5 className="font-medium text-sm text-red-800 mb-3">Action Boundaries & Restrictions</h5>
+                          
+                          {/* Critical Actions */}
+                          <div className="p-3 bg-red-100 border border-red-300 rounded-lg">
+                            <h6 className="font-medium text-red-900 text-xs mb-2 flex items-center gap-1">
+                              <AlertTriangle className="h-3 w-3" />
+                              High-Risk Actions (Admin Only)
+                            </h6>
+                            <div className="space-y-1 text-xs">
+                              <div className="flex items-center gap-1 text-red-800">
+                                <Lock className="h-2 w-2" />
+                                <span>Delete company data</span>
+                              </div>
+                              <div className="flex items-center gap-1 text-red-800">
+                                <Lock className="h-2 w-2" />
+                                <span>Modify payment settings</span>
+                              </div>
+                              <div className="flex items-center gap-1 text-red-800">
+                                <Lock className="h-2 w-2" />
+                                <span>Access audit logs</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Moderate Actions */}
+                          <div className="p-3 bg-yellow-100 border border-yellow-300 rounded-lg">
+                            <h6 className="font-medium text-yellow-900 text-xs mb-2 flex items-center gap-1">
+                              <AlertCircle className="h-3 w-3" />
+                              Moderate Actions (Manager+)
+                            </h6>
+                            <div className="space-y-1 text-xs">
+                              <div className="flex items-center gap-1 text-yellow-800">
+                                <Key className="h-2 w-2" />
+                                <span>Hire/terminate employees</span>
+                              </div>
+                              <div className="flex items-center gap-1 text-yellow-800">
+                                <Key className="h-2 w-2" />
+                                <span>Modify team structure</span>
+                              </div>
+                              <div className="flex items-center gap-1 text-yellow-800">
+                                <Key className="h-2 w-2" />
+                                <span>Access performance data</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Standard Actions */}
+                          <div className="p-3 bg-green-100 border border-green-300 rounded-lg">
+                            <h6 className="font-medium text-green-900 text-xs mb-2 flex items-center gap-1">
+                              <Shield className="h-3 w-3" />
+                              Standard Actions (All Roles)
+                            </h6>
+                            <div className="space-y-1 text-xs">
+                              <div className="flex items-center gap-1 text-green-800">
+                                <CheckCircle className="h-2 w-2" />
+                                <span>Verify work entries</span>
+                              </div>
+                              <div className="flex items-center gap-1 text-green-800">
+                                <CheckCircle className="h-2 w-2" />
+                                <span>View assigned reports</span>
+                              </div>
+                              <div className="flex items-center gap-1 text-green-800">
+                                <CheckCircle className="h-2 w-2" />
+                                <span>Update employee roles</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Security Heat Map */}
+                      <div className="p-3 bg-white border rounded-lg">
+                        <h6 className="font-medium text-sm mb-3 flex items-center gap-2">
+                          <Activity className="h-4 w-4 text-purple-600" />
+                          Permission Distribution Heat Map
+                        </h6>
+                        <div className="grid grid-cols-8 gap-1">
+                          {[
+                            'Create', 'Read', 'Update', 'Delete', 'Approve', 'Assign', 'Report', 'Configure'
+                          ].map((action, actionIndex) => (
+                            <div key={actionIndex} className="text-center">
+                              <div className="text-xs font-medium text-gray-600 mb-1">{action}</div>
+                              <div className="space-y-1">
+                                {/* Admin row */}
+                                <div className={`h-3 rounded ${actionIndex < 6 || actionIndex === 7 ? 'bg-red-500' : 'bg-red-300'}`} title="Company Admin"></div>
+                                {/* Branch Manager row */}
+                                <div className={`h-3 rounded ${actionIndex < 5 ? 'bg-yellow-500' : actionIndex < 7 ? 'bg-yellow-300' : 'bg-gray-200'}`} title="Branch Manager"></div>
+                                {/* Team Lead row */}
+                                <div className={`h-3 rounded ${actionIndex < 3 || actionIndex === 4 || actionIndex === 6 ? 'bg-green-500' : 'bg-gray-200'}`} title="Team Lead"></div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="flex items-center gap-4 mt-3 text-xs">
+                          <div className="flex items-center gap-1">
+                            <div className="w-3 h-3 bg-red-500 rounded"></div>
+                            <span>Admin</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <div className="w-3 h-3 bg-yellow-500 rounded"></div>
+                            <span>Branch Mgr</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <div className="w-3 h-3 bg-green-500 rounded"></div>
+                            <span>Team Lead</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <div className="w-3 h-3 bg-gray-200 rounded"></div>
+                            <span>No Access</span>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
