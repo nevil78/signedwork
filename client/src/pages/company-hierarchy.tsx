@@ -336,7 +336,7 @@ export default function CompanyHierarchy() {
   // Permission system
   const getCurrentUserEmployee = () => {
     if (!currentUser || !Array.isArray(employees)) return null;
-    return employees.find((emp: any) => emp.employee?.email === currentUser.email);
+    return employees.find((emp: any) => emp.employee?.email === (currentUser as any)?.email);
   };
 
   const canManageBranches = () => {
@@ -951,7 +951,15 @@ export default function CompanyHierarchy() {
                   <span className="text-xs text-gray-400">+{branches.length - 3} more</span>
                 )}
               </div>
-            ) : null}
+            ) : (
+              <Card className="p-4 border-dashed border-gray-300">
+                <div className="text-center py-8 text-gray-500">
+                  <Building2 className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                  <h3 className="text-lg font-medium text-gray-700 mb-2">No Organizational Data</h3>
+                  <p className="text-sm text-gray-600">Load organizational data to see navigation and statistics</p>
+                </div>
+              </Card>
+            )}
           </Card>
 
           {/* Quick Stats Overview */}
@@ -1201,7 +1209,7 @@ export default function CompanyHierarchy() {
                     const branchEmployees = Array.isArray(employees) ? employees.filter((emp: any) => emp.branchId === branch.id) : [];
                     const branchTeams = Array.isArray(teams) ? teams.filter((team: any) => team.branchId === branch.id) : [];
                     const utilization = branchTeams.reduce((sum: number, team: any) => {
-                      const teamMembers = employees ? employees.filter((emp: any) => emp.teamId === team.id).length : 0;
+                      const teamMembers = Array.isArray(employees) ? employees.filter((emp: any) => emp.teamId === team.id).length : 0;
                       return sum + (teamMembers / (team.maxMembers || 1));
                     }, 0) / (branchTeams.length || 1);
 
@@ -2737,7 +2745,10 @@ export default function CompanyHierarchy() {
                   <p className="text-gray-600 mb-4">
                     Assign employees to management roles to see the control matrix and permission scope.
                   </p>
-                  <Button onClick={() => setSelectedEmployee(null) || setIsManageEmployeeOpen(true)}>
+                  <Button onClick={() => {
+                    setSelectedEmployee(null);
+                    setIsManageEmployeeOpen(true);
+                  }}>
                     <UserPlus className="h-4 w-4 mr-2" />
                     Assign Manager Roles
                   </Button>
@@ -3134,7 +3145,7 @@ export default function CompanyHierarchy() {
                   <Select 
                     value={employeeUpdate.teamId} 
                     onValueChange={(value) => setEmployeeUpdate({ ...employeeUpdate, teamId: value })}
-                    disabled={!employeeUpdate.branchId && teams?.filter((t: any) => !t.branchId).length === 0}
+                    disabled={!employeeUpdate.branchId && Array.isArray(teams) && teams.filter((t: any) => !t.branchId).length === 0}
                   >
                     <SelectTrigger data-testid="select-employee-team">
                       <SelectValue placeholder="Select team (optional)" />
