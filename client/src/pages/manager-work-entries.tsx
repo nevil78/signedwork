@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, memo, useMemo, useCallback } from "react";
 import { useLocation, useSearch } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,9 +20,8 @@ import {
   Star
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useEffect } from "react";
 
-export default function ManagerWorkEntries() {
+const ManagerWorkEntries = memo(function ManagerWorkEntries() {
   const [, setLocation] = useLocation();
   const searchParams = useSearch();
   const { toast } = useToast();
@@ -461,4 +460,6 @@ export default function ManagerWorkEntries() {
       </div>
     </div>
   );
-}
+});
+
+export default ManagerWorkEntries;

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, memo } from "react";
 import { useLocation } from "wouter";
 import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,7 @@ import { Eye, EyeOff, Building2, Shield } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import signedworkLogo from "@assets/Signed-work-Logo (1)_1755168042120.png";
 
-export default function ManagerLogin() {
+const ManagerLogin = memo(function ManagerLogin() {
   const [, setLocation] = useLocation();
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
@@ -177,4 +177,6 @@ export default function ManagerLogin() {
       </div>
     </div>
   );
-}
+});
+
+export default ManagerLogin;

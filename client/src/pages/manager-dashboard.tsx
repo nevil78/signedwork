@@ -19,9 +19,9 @@ import {
   AlertCircle
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useEffect } from "react";
+import { useEffect, memo, useMemo } from "react";
 
-export default function ManagerDashboard() {
+const ManagerDashboard = memo(function ManagerDashboard() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const { manager, isLoading, isAuthenticated, permissions } = useManagerAuth();
@@ -331,4 +331,6 @@ export default function ManagerDashboard() {
       </div>
     </div>
   );
-}
+});
+
+export default ManagerDashboard;

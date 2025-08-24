@@ -19,9 +19,9 @@ import {
   Home
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useEffect } from "react";
+import { useEffect, memo } from "react";
 
-export default function ManagerEmployees() {
+const ManagerEmployees = memo(function ManagerEmployees() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const { manager, isLoading, isAuthenticated } = useManagerAuth();
@@ -295,4 +295,6 @@ export default function ManagerEmployees() {
       </div>
     </div>
   );
-}
+});
+
+export default ManagerEmployees;
