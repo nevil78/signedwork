@@ -1311,6 +1311,180 @@ export default function CompanyHierarchy() {
 
         {/* Branches Tab */}
         <TabsContent value="branches" className="space-y-4">
+          {/* Cross-Reference Matrix */}
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Building2 className="h-5 w-5 text-blue-600" />
+                Branch-Employee Assignment Matrix
+              </CardTitle>
+              <CardDescription>
+                Visual mapping of employee distribution across organizational structure
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {Array.isArray(branches) && branches.length > 0 ? (
+                <div className="space-y-4">
+                  {/* Matrix Header */}
+                  <div className="grid grid-cols-12 gap-2 text-xs font-medium text-gray-600 border-b pb-2">
+                    <div className="col-span-3">Branch/Team</div>
+                    <div className="col-span-2">Total Staff</div>
+                    <div className="col-span-2">Capacity</div>
+                    <div className="col-span-2">Managers</div>
+                    <div className="col-span-2">Utilization</div>
+                    <div className="col-span-1">Status</div>
+                  </div>
+
+                  {/* Branch Rows */}
+                  {branches.map((branch: any) => {
+                    const branchEmployees = Array.isArray(employees) ? employees.filter((emp: any) => emp.branchId === branch.id) : [];
+                    const branchTeams = Array.isArray(teams) ? teams.filter((team: any) => team.branchId === branch.id) : [];
+                    const branchManagers = branchEmployees.filter((emp: any) => emp.hierarchyRole !== 'employee');
+                    const totalCapacity = branchTeams.reduce((sum: number, team: any) => sum + (team.maxMembers || 0), 0);
+                    const utilization = totalCapacity > 0 ? (branchEmployees.length / totalCapacity) : 0;
+
+                    return (
+                      <div key={branch.id} className="space-y-2">
+                        {/* Branch Row */}
+                        <div className="grid grid-cols-12 gap-2 p-3 bg-blue-50 rounded-lg items-center">
+                          <div className="col-span-3 flex items-center gap-2">
+                            <Building2 className="h-4 w-4 text-blue-600" />
+                            <div>
+                              <p className="font-medium text-sm">{branch.name}</p>
+                              <p className="text-xs text-gray-500">{branch.location}</p>
+                            </div>
+                          </div>
+                          <div className="col-span-2">
+                            <Badge className="bg-blue-100 text-blue-800">
+                              {branchEmployees.length} employees
+                            </Badge>
+                          </div>
+                          <div className="col-span-2">
+                            <span className="text-sm">{totalCapacity} max</span>
+                          </div>
+                          <div className="col-span-2">
+                            <Badge variant="outline" className="bg-purple-50 text-purple-700">
+                              {branchManagers.length} leaders
+                            </Badge>
+                          </div>
+                          <div className="col-span-2">
+                            <div className="flex items-center gap-2">
+                              <div className="w-12 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                <div 
+                                  className={`h-full rounded-full ${utilization > 0.9 ? 'bg-red-500' : utilization > 0.7 ? 'bg-yellow-500' : 'bg-green-500'}`}
+                                  style={{ width: `${Math.min(utilization * 100, 100)}%` }}
+                                ></div>
+                              </div>
+                              <span className="text-xs">{Math.round(utilization * 100)}%</span>
+                            </div>
+                          </div>
+                          <div className="col-span-1">
+                            <div className={`w-3 h-3 rounded-full ${branch.isActive ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                          </div>
+                        </div>
+
+                        {/* Team Rows */}
+                        {branchTeams.map((team: any) => {
+                          const teamMembers = Array.isArray(employees) ? employees.filter((emp: any) => emp.teamId === team.id) : [];
+                          const teamUtilization = (team.maxMembers || 0) > 0 ? teamMembers.length / team.maxMembers : 0;
+                          const teamLead = teamMembers.find((emp: any) => emp.hierarchyRole === 'team_lead');
+
+                          return (
+                            <div key={team.id} className="grid grid-cols-12 gap-2 p-2 ml-6 bg-green-50 rounded items-center">
+                              <div className="col-span-3 flex items-center gap-2">
+                                <Users className="h-3 w-3 text-green-600" />
+                                <span className="text-sm">{team.name}</span>
+                              </div>
+                              <div className="col-span-2">
+                                <span className="text-sm">{teamMembers.length}</span>
+                              </div>
+                              <div className="col-span-2">
+                                <span className="text-sm">{team.maxMembers}</span>
+                              </div>
+                              <div className="col-span-2">
+                                <span className="text-xs text-gray-600">
+                                  {teamLead ? teamLead.firstName + ' ' + teamLead.lastName : 'No lead assigned'}
+                                </span>
+                              </div>
+                              <div className="col-span-2">
+                                <div className="flex items-center gap-2">
+                                  <div className="w-8 h-1 bg-gray-200 rounded-full overflow-hidden">
+                                    <div 
+                                      className={`h-full rounded-full ${teamUtilization > 0.9 ? 'bg-red-500' : teamUtilization > 0.7 ? 'bg-yellow-500' : 'bg-green-500'}`}
+                                      style={{ width: `${Math.min(teamUtilization * 100, 100)}%` }}
+                                    ></div>
+                                  </div>
+                                  <span className="text-xs">{Math.round(teamUtilization * 100)}%</span>
+                                </div>
+                              </div>
+                              <div className="col-span-1">
+                                <div className={`w-2 h-2 rounded-full ${team.isActive ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  })}
+
+                  {/* Headquarters Teams */}
+                  {Array.isArray(teams) && teams.filter((team: any) => !team.branchId).length > 0 && (
+                    <div className="mt-6 space-y-2">
+                      <h4 className="font-medium text-gray-700 flex items-center gap-2">
+                        <Crown className="h-4 w-4" />
+                        Headquarters Teams
+                      </h4>
+                      {teams.filter((team: any) => !team.branchId).map((team: any) => {
+                        const teamMembers = Array.isArray(employees) ? employees.filter((emp: any) => emp.teamId === team.id) : [];
+                        const teamUtilization = (team.maxMembers || 0) > 0 ? teamMembers.length / team.maxMembers : 0;
+                        const teamLead = teamMembers.find((emp: any) => emp.hierarchyRole === 'team_lead');
+
+                        return (
+                          <div key={team.id} className="grid grid-cols-12 gap-2 p-2 bg-purple-50 rounded items-center">
+                            <div className="col-span-3 flex items-center gap-2">
+                              <Crown className="h-3 w-3 text-purple-600" />
+                              <span className="text-sm">{team.name} (HQ)</span>
+                            </div>
+                            <div className="col-span-2">
+                              <span className="text-sm">{teamMembers.length}</span>
+                            </div>
+                            <div className="col-span-2">
+                              <span className="text-sm">{team.maxMembers}</span>
+                            </div>
+                            <div className="col-span-2">
+                              <span className="text-xs text-gray-600">
+                                {teamLead ? teamLead.firstName + ' ' + teamLead.lastName : 'No lead assigned'}
+                              </span>
+                            </div>
+                            <div className="col-span-2">
+                              <div className="flex items-center gap-2">
+                                <div className="w-8 h-1 bg-gray-200 rounded-full overflow-hidden">
+                                  <div 
+                                    className={`h-full rounded-full ${teamUtilization > 0.9 ? 'bg-red-500' : teamUtilization > 0.7 ? 'bg-yellow-500' : 'bg-green-500'}`}
+                                    style={{ width: `${Math.min(teamUtilization * 100, 100)}%` }}
+                                  ></div>
+                                </div>
+                                <span className="text-xs">{Math.round(teamUtilization * 100)}%</span>
+                              </div>
+                            </div>
+                            <div className="col-span-1">
+                              <div className={`w-2 h-2 rounded-full ${team.isActive ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <Building2 className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                  <p>No branches created yet. Create your first branch to see the assignment matrix.</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           <Card data-testid="branches-management">
             <CardHeader>
               <div className="flex items-center justify-between">
@@ -1402,6 +1576,221 @@ export default function CompanyHierarchy() {
 
         {/* Teams Tab */}
         <TabsContent value="teams" className="space-y-4">
+          {/* Smart Assignment Engine & Conflict Detection */}
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <AlertCircle className="h-5 w-5 text-orange-600" />
+                Team Optimization Dashboard
+              </CardTitle>
+              <CardDescription>
+                Conflict detection, capacity analysis, and smart assignment recommendations
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {Array.isArray(teams) && teams.length > 0 ? (
+                <div className="space-y-6">
+                  {/* Conflict Detection */}
+                  <div className="p-4 border-l-4 border-red-500 bg-red-50">
+                    <h4 className="font-medium text-red-900 mb-3 flex items-center gap-2">
+                      <AlertCircle className="h-4 w-4" />
+                      Detected Issues
+                    </h4>
+                    <div className="space-y-2">
+                      {(() => {
+                        const issues = [];
+                        
+                        // Check for employees in multiple teams
+                        if (Array.isArray(employees)) {
+                          const employeesInMultipleTeams = employees.filter(emp => 
+                            emp.teamId && teams.filter(team => team.id === emp.teamId).length > 1
+                          );
+                          if (employeesInMultipleTeams.length > 0) {
+                            issues.push(`${employeesInMultipleTeams.length} employees assigned to multiple teams`);
+                          }
+                        }
+
+                        // Check for teams without managers
+                        const teamsWithoutLeads = teams.filter(team => {
+                          const teamMembers = Array.isArray(employees) ? employees.filter(emp => emp.teamId === team.id) : [];
+                          return teamMembers.length > 0 && !teamMembers.some(emp => emp.hierarchyRole === 'team_lead');
+                        });
+                        if (teamsWithoutLeads.length > 0) {
+                          issues.push(`${teamsWithoutLeads.length} active teams missing team leads`);
+                        }
+
+                        // Check for over-capacity teams
+                        const overCapacityTeams = teams.filter(team => {
+                          const teamMembers = Array.isArray(employees) ? employees.filter(emp => emp.teamId === team.id) : [];
+                          return teamMembers.length > (team.maxMembers || 0);
+                        });
+                        if (overCapacityTeams.length > 0) {
+                          issues.push(`${overCapacityTeams.length} teams exceed maximum capacity`);
+                        }
+
+                        // Check for inactive teams with members
+                        const inactiveTeamsWithMembers = teams.filter(team => {
+                          const teamMembers = Array.isArray(employees) ? employees.filter(emp => emp.teamId === team.id) : [];
+                          return !team.isActive && teamMembers.length > 0;
+                        });
+                        if (inactiveTeamsWithMembers.length > 0) {
+                          issues.push(`${inactiveTeamsWithMembers.length} inactive teams still have assigned members`);
+                        }
+
+                        return issues.length > 0 ? (
+                          issues.map((issue, index) => (
+                            <div key={index} className="flex items-center gap-2 text-sm text-red-800">
+                              <div className="w-1.5 h-1.5 bg-red-500 rounded-full"></div>
+                              {issue}
+                            </div>
+                          ))
+                        ) : (
+                          <div className="text-sm text-green-800 flex items-center gap-2">
+                            <CheckCircle className="h-4 w-4 text-green-600" />
+                            No organizational conflicts detected
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  </div>
+
+                  {/* Smart Recommendations */}
+                  <div className="p-4 border-l-4 border-blue-500 bg-blue-50">
+                    <h4 className="font-medium text-blue-900 mb-3 flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4" />
+                      Optimization Recommendations
+                    </h4>
+                    <div className="space-y-3">
+                      {(() => {
+                        const recommendations = [];
+
+                        // Suggest balancing team sizes
+                        if (Array.isArray(teams) && teams.length > 1) {
+                          const teamSizes = teams.map(team => ({
+                            team,
+                            size: Array.isArray(employees) ? employees.filter(emp => emp.teamId === team.id).length : 0,
+                            capacity: team.maxMembers || 0
+                          }));
+                          
+                          const underutilized = teamSizes.filter(t => t.capacity > 0 && t.size / t.capacity < 0.3 && t.size > 0);
+                          const optimal = teamSizes.filter(t => t.capacity > 0 && t.size / t.capacity >= 0.3 && t.size / t.capacity <= 0.8);
+                          const nearCapacity = teamSizes.filter(t => t.capacity > 0 && t.size / t.capacity > 0.8);
+
+                          if (underutilized.length > 0) {
+                            recommendations.push({
+                              type: 'balance',
+                              message: `Consider consolidating ${underutilized.length} underutilized teams or reducing their capacity`,
+                              action: 'Rebalance Teams'
+                            });
+                          }
+
+                          if (nearCapacity.length > 0 && underutilized.length > 0) {
+                            recommendations.push({
+                              type: 'redistribute',
+                              message: `Redistribute members from ${nearCapacity.length} full teams to ${underutilized.length} underutilized teams`,
+                              action: 'Auto-Suggest Moves'
+                            });
+                          }
+                        }
+
+                        // Suggest branch-team alignment
+                        if (Array.isArray(branches) && Array.isArray(teams)) {
+                          const unassignedTeams = teams.filter(team => !team.branchId);
+                          if (unassignedTeams.length > 0 && branches.length > 0) {
+                            recommendations.push({
+                              type: 'alignment',
+                              message: `${unassignedTeams.length} teams not assigned to branches - consider organizational alignment`,
+                              action: 'Assign to Branches'
+                            });
+                          }
+                        }
+
+                        return recommendations.length > 0 ? (
+                          recommendations.map((rec, index) => (
+                            <div key={index} className="flex items-center justify-between p-2 bg-blue-100 rounded">
+                              <div className="flex items-center gap-2 text-sm text-blue-800">
+                                <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
+                                {rec.message}
+                              </div>
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="h-6 text-xs bg-white"
+                                onClick={() => {
+                                  // Future implementation for auto-suggestions
+                                  console.log(`Triggered: ${rec.action}`);
+                                }}
+                              >
+                                {rec.action}
+                              </Button>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="text-sm text-blue-800 flex items-center gap-2">
+                            <CheckCircle className="h-4 w-4 text-blue-600" />
+                            Your team organization is optimally structured
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  </div>
+
+                  {/* Team Performance Matrix */}
+                  <div className="p-4 border rounded-lg bg-gray-50">
+                    <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
+                      <Users className="h-4 w-4" />
+                      Team Performance Matrix
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {teams.slice(0, 6).map((team: any) => {
+                        const teamMembers = Array.isArray(employees) ? employees.filter(emp => emp.teamId === team.id) : [];
+                        const utilization = (team.maxMembers || 0) > 0 ? teamMembers.length / team.maxMembers : 0;
+                        const hasLead = teamMembers.some(emp => emp.hierarchyRole === 'team_lead');
+                        
+                        return (
+                          <div key={team.id} className="p-3 bg-white rounded border">
+                            <div className="flex items-center justify-between mb-2">
+                              <h5 className="font-medium text-sm">{team.name}</h5>
+                              <div className={`w-2 h-2 rounded-full ${team.isActive ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                            </div>
+                            <div className="space-y-2">
+                              <div className="flex justify-between text-xs">
+                                <span>Capacity:</span>
+                                <span className={utilization > 0.9 ? 'text-red-600' : utilization > 0.7 ? 'text-yellow-600' : 'text-green-600'}>
+                                  {Math.round(utilization * 100)}%
+                                </span>
+                              </div>
+                              <div className="flex justify-between text-xs">
+                                <span>Leadership:</span>
+                                <span className={hasLead ? 'text-green-600' : 'text-red-600'}>
+                                  {hasLead ? 'Assigned' : 'Missing'}
+                                </span>
+                              </div>
+                              <div className="w-full h-1 bg-gray-200 rounded-full overflow-hidden">
+                                <div 
+                                  className={`h-full rounded-full ${utilization > 0.9 ? 'bg-red-500' : utilization > 0.7 ? 'bg-yellow-500' : 'bg-green-500'}`}
+                                  style={{ width: `${Math.min(utilization * 100, 100)}%` }}
+                                ></div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    {teams.length > 6 && (
+                      <p className="text-xs text-gray-500 mt-2">Showing top 6 teams. Total: {teams.length}</p>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <Users className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                  <p>Create teams first to see optimization insights and conflict detection.</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           <Card data-testid="teams-management">
             <CardHeader>
               <div className="flex items-center justify-between">
