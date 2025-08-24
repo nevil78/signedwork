@@ -2834,14 +2834,14 @@ export default function CompanyHierarchy() {
                         <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center gap-3">
                             <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center">
-                              {getRoleIcon(manager.hierarchyRole)}
+                              {getRoleIcon(manager.hierarchyRole || 'employee')}
                             </div>
                             <div>
                               <h4 className="font-medium text-sm">{manager.firstName} {manager.lastName}</h4>
-                              <p className="text-xs text-gray-600">{manager.hierarchyRole.replace('_', ' ')}</p>
+                              <p className="text-xs text-gray-600">{manager.hierarchyRole?.replace('_', ' ') || 'Employee'}</p>
                             </div>
                           </div>
-                          <Badge className={getRoleBadgeColor(manager.hierarchyRole)}>
+                          <Badge className={getRoleBadgeColor(manager.hierarchyRole || 'employee')}>
                             {manager.hierarchyRole === 'company_admin' ? 'Admin' :
                              manager.hierarchyRole === 'branch_manager' ? 'Manager' :
                              manager.hierarchyRole === 'team_lead' ? 'Lead' : 'Employee'}
@@ -2850,14 +2850,14 @@ export default function CompanyHierarchy() {
                         <div className="space-y-2 text-xs">
                           <div className="flex justify-between">
                             <span>Login Access:</span>
-                            <span className={manager.canLogin ? 'text-green-600' : 'text-red-600'}>
-                              {manager.canLogin ? 'Enabled' : 'Disabled'}
+                            <span className={manager.canLogin !== false ? 'text-green-600' : 'text-red-600'}>
+                              {manager.canLogin !== false ? 'Enabled' : 'Disabled'}
                             </span>
                           </div>
                           <div className="flex justify-between">
                             <span>Verification:</span>
                             <span className={manager.canVerifyWork ? 'text-green-600' : 'text-gray-500'}>
-                              {manager.canVerifyWork ? manager.verificationScope : 'None'}
+                              {manager.canVerifyWork ? (manager.verificationScope || 'Team') : 'None'}
                             </span>
                           </div>
                           <div className="flex justify-between">
