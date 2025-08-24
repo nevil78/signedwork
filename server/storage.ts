@@ -4658,6 +4658,43 @@ export class DatabaseStorage implements IStorage {
     return relation;
   }
 
+  async unassignAllEmployeesFromManager(managerId: string, companyId: string): Promise<CompanyEmployee[]> {
+    const relations = await db
+      .update(companyEmployees)
+      .set({ assignedManagerId: null, updatedAt: new Date() })
+      .where(and(
+        eq(companyEmployees.assignedManagerId, managerId),
+        eq(companyEmployees.companyId, companyId)
+      ))
+      .returning();
+    return relations;
+  }
+
+  async getCompanyManagers(companyId: string): Promise<CompanyManager[]> {
+    return await db
+      .select()
+      .from(companyManagers)
+      .where(eq(companyManagers.companyId, companyId))
+      .orderBy(companyManagers.createdAt);
+  }
+
+  async getCompanyManagerById(managerId: string): Promise<CompanyManager | undefined> {
+    const [manager] = await db
+      .select()
+      .from(companyManagers)
+      .where(eq(companyManagers.id, managerId));
+    return manager || undefined;
+  }
+
+  async updateCompanyManager(managerId: string, data: Partial<CompanyManager>): Promise<CompanyManager> {
+    const [manager] = await db
+      .update(companyManagers)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(companyManagers.id, managerId))
+      .returning();
+    return manager;
+  }
+
   // Manager-scoped Work Entry Operations
   async getWorkEntriesForManager(managerId: string, filters: {
     status?: string;

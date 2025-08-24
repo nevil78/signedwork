@@ -2615,6 +2615,145 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Company Manager Management Routes
+  app.get('/api/company/managers', requireCompany, async (req: any, res) => {
+    try {
+      const managers = await storage.getCompanyManagers(req.user.id);
+      
+      // Get permissions for each manager
+      const managersWithPermissions = await Promise.all(
+        managers.map(async (manager) => {
+          const permissions = await storage.getManagerPermissions(manager.id);
+          return {
+            ...manager,
+            permissions: permissions || {
+              canApproveWork: true,
+              canEditEmployees: false,
+              canViewAnalytics: true,
+              canInviteEmployees: false,
+            },
+          };
+        })
+      );
+
+      res.json(managersWithPermissions);
+    } catch (error) {
+      console.error("Get company managers error:", error);
+      res.status(500).json({ message: "Failed to get company managers" });
+    }
+  });
+
+  app.post('/api/company/managers', requireCompany, async (req: any, res) => {
+    try {
+      const { managerId, managerName, managerEmail, password, permissionLevel, branchId, teamId } = req.body;
+
+      // Check if manager ID already exists
+      const existingManager = await storage.getManagerByUniqueId(managerId);
+      if (existingManager) {
+        return res.status(400).json({ message: 'Manager ID already exists' });
+      }
+
+      // Hash password
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      // Create manager
+      const manager = await storage.createCompanyManager({
+        companyId: req.user.id,
+        uniqueId: managerId,
+        password: hashedPassword,
+        managerName: managerName,
+        managerEmail: managerEmail,
+        permissionLevel: permissionLevel,
+        branchId: branchId || null,
+        teamId: teamId || null,
+      });
+
+      // Create default permissions
+      await storage.createManagerPermissions({
+        managerId: manager.id,
+        canApproveWork: true,
+        canEditEmployees: permissionLevel === 'branch_manager',
+        canViewAnalytics: true,
+        canInviteEmployees: false,
+        canManageTeams: permissionLevel === 'branch_manager',
+      });
+
+      res.json({ manager, message: 'Manager created successfully' });
+    } catch (error) {
+      console.error("Create manager error:", error);
+      res.status(500).json({ message: "Failed to create manager" });
+    }
+  });
+
+  app.patch('/api/company/managers/:managerId/permissions', requireCompany, async (req: any, res) => {
+    try {
+      const { managerId } = req.params;
+      const permissions = req.body;
+
+      // Verify manager belongs to this company
+      const manager = await storage.getCompanyManagerById(managerId);
+      if (!manager || manager.companyId !== req.user.id) {
+        return res.status(404).json({ message: 'Manager not found' });
+      }
+
+      // Update permissions
+      const updatedPermissions = await storage.updateManagerPermissions(managerId, permissions);
+      
+      res.json({ permissions: updatedPermissions, message: 'Permissions updated successfully' });
+    } catch (error) {
+      console.error("Update manager permissions error:", error);
+      res.status(500).json({ message: "Failed to update manager permissions" });
+    }
+  });
+
+  app.post('/api/company/managers/:managerId/assign-employees', requireCompany, async (req: any, res) => {
+    try {
+      const { managerId } = req.params;
+      const { employeeIds } = req.body;
+
+      // Verify manager belongs to this company
+      const manager = await storage.getCompanyManagerById(managerId);
+      if (!manager || manager.companyId !== req.user.id) {
+        return res.status(404).json({ message: 'Manager not found' });
+      }
+
+      // Assign employees to manager
+      const results = await Promise.all(
+        employeeIds.map(async (employeeId: string) => {
+          return await storage.assignEmployeeToManager(employeeId, req.user.id, managerId);
+        })
+      );
+
+      res.json({ message: 'Employees assigned successfully', assignments: results.length });
+    } catch (error) {
+      console.error("Assign employees to manager error:", error);
+      res.status(500).json({ message: "Failed to assign employees to manager" });
+    }
+  });
+
+  app.patch('/api/company/managers/:managerId/deactivate', requireCompany, async (req: any, res) => {
+    try {
+      const { managerId } = req.params;
+
+      // Verify manager belongs to this company
+      const manager = await storage.getCompanyManagerById(managerId);
+      if (!manager || manager.companyId !== req.user.id) {
+        return res.status(404).json({ message: 'Manager not found' });
+      }
+
+      // Deactivate manager
+      const updatedManager = await storage.updateCompanyManager(managerId, { isActive: false });
+
+      // Unassign all employees from this manager
+      await storage.unassignAllEmployeesFromManager(managerId, req.user.id);
+      
+      res.json({ manager: updatedManager, message: 'Manager deactivated successfully' });
+    } catch (error) {
+      console.error("Deactivate manager error:", error);
+      res.status(500).json({ message: "Failed to deactivate manager" });
+    }
+  });
+
   app.post("/api/company/work-entries/:id/verify-hierarchical", requireCompany, async (req: any, res) => {
     try {
       const { id } = req.params;
