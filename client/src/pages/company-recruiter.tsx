@@ -220,10 +220,7 @@ export default function CompanyRecruiterPage() {
   // Create recruiter profile mutation
   const createProfileMutation = useMutation({
     mutationFn: async (profileData: Partial<RecruiterProfile>) => {
-      return apiRequest("/api/recruiter/profile", {
-        method: "POST",
-        body: profileData
-      });
+      return apiRequest("POST", "/api/recruiter/profile", profileData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/recruiter/profile"] });
@@ -241,10 +238,7 @@ export default function CompanyRecruiterPage() {
   // Search talent mutation
   const searchMutation = useMutation({
     mutationFn: async (filters: TalentSearchFilters) => {
-      return apiRequest("/api/recruiter/search", {
-        method: "POST",
-        body: { filters }
-      });
+      return apiRequest("POST", "/api/recruiter/search", { filters });
     },
     onSuccess: (data) => {
       queryClient.setQueryData(["/api/recruiter/search", searchFilters], data);
@@ -262,15 +256,12 @@ export default function CompanyRecruiterPage() {
   // Add to pipeline mutation
   const addToPipelineMutation = useMutation({
     mutationFn: async ({ candidateId, positionTitle }: { candidateId: string; positionTitle: string }) => {
-      return apiRequest("/api/recruiter/pipelines", {
-        method: "POST",
-        body: {
-          candidateId,
-          positionTitle,
-          companyName: recruiterProfile?.companyName || "Unknown Company",
-          stage: "sourced",
-          priority: "medium"
-        }
+      return apiRequest("POST", "/api/recruiter/pipelines", {
+        candidateId,
+        positionTitle,
+        companyName: recruiterProfile?.companyName || "Unknown Company",
+        stage: "sourced",
+        priority: "medium"
       });
     },
     onSuccess: () => {
@@ -618,10 +609,10 @@ export default function CompanyRecruiterPage() {
                       <UserSearch className="h-5 w-5" />
                       Advanced Talent Search
                     </CardTitle>
-                    <CardDescription>
+                    <p className="text-sm text-muted-foreground">
                       Search for candidates with verified work history. 
                       Remaining searches: {recruiterProfile.monthlySearchLimit - recruiterProfile.usedSearches}
-                    </CardDescription>
+                    </p>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
