@@ -2028,7 +2028,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/company/employees", requireCompany, async (req: any, res) => {
     try {
       const employees = await storage.getCompanyEmployees(req.user.id);
-      res.json(employees);
+      
+      // Enrich employee data with hierarchy roles and permissions
+      const enrichedEmployees = await Promise.all(
+        employees.map(async (emp: any) => {
+          try {
+            // Get the actual employee details
+            const employee = await storage.getEmployee(emp.employeeId);
+            if (!employee) return null;
+            
+            // Get company employee relationship with hierarchy data
+            const companyEmployee = await storage.getEmployeeCompanyRelation(emp.employeeId, req.user.id);
+            
+            return {
+              id: emp.id,
+              employeeId: emp.employeeId,
+              firstName: employee.firstName,
+              lastName: employee.lastName,
+              email: employee.email,
+              position: employee.position || companyEmployee?.position,
+              department: employee.department || companyEmployee?.department,
+              joinedAt: emp.joinedAt,
+              hierarchyRole: companyEmployee?.hierarchyRole || 'employee',
+              canLogin: companyEmployee?.canLogin !== false,
+              canVerifyWork: companyEmployee?.canVerifyWork || false,
+              canManageEmployees: companyEmployee?.canManageEmployees || false,
+              canCreateTeams: companyEmployee?.canCreateTeams || false,
+              verificationScope: companyEmployee?.verificationScope || 'none',
+              branchId: companyEmployee?.branchId,
+              teamId: companyEmployee?.teamId,
+              isCurrent: companyEmployee?.isCurrent !== false
+            };
+          } catch (error) {
+            console.error("Error enriching employee data:", error);
+            return null;
+          }
+        })
+      );
+      
+      // Filter out any null entries
+      const validEmployees = enrichedEmployees.filter(emp => emp !== null);
+      
+      res.json(validEmployees);
     } catch (error) {
       console.error("Get company employees error:", error);
       res.status(500).json({ message: "Failed to get employees" });
@@ -2215,7 +2256,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Check if employee is part of this company
-      const companyEmployee = await storage.getCompanyEmployee(employeeId, req.user.id);
+      const companyEmployee = await storage.getEmployeeCompanyRelation(employeeId, req.user.id);
       if (!companyEmployee) {
         return res.status(400).json({ 
           message: "Employee is not part of this company" 
