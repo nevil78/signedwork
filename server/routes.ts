@@ -3789,6 +3789,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Phase 3: Bulk update employees
+  app.patch("/api/employees/bulk-update", requireCompany, async (req: any, res) => {
+    try {
+      const companyId = req.user.id;
+      const { employeeIds, updates } = req.body;
+      
+      if (!employeeIds || !Array.isArray(employeeIds) || employeeIds.length === 0) {
+        return res.status(400).json({ message: "Employee IDs array is required" });
+      }
+      
+      if (!updates || typeof updates !== 'object') {
+        return res.status(400).json({ message: "Updates object is required" });
+      }
+      
+      let updatedCount = 0;
+      const errors = [];
+      
+      // Process each employee update
+      for (const employeeId of employeeIds) {
+        try {
+          const employee = await storage.getEmployeeById(employeeId);
+          if (!employee) {
+            errors.push({ employeeId, error: "Employee not found" });
+            continue;
+          }
+          
+          if (employee.companyId !== companyId) {
+            errors.push({ employeeId, error: "Employee not in your company" });
+            continue;
+          }
+          
+          await storage.updateEmployeeHierarchyRole(employeeId, companyId, updates);
+          updatedCount++;
+        } catch (error) {
+          console.error(`Error updating employee ${employeeId}:`, error);
+          errors.push({ employeeId, error: "Update failed" });
+        }
+      }
+      
+      // Emit real-time update for bulk changes
+      emitRealTimeUpdate('bulk-employee-update', {
+        companyId,
+        updatedCount,
+        totalRequested: employeeIds.length,
+        updates
+      });
+      
+      res.json({ 
+        success: true, 
+        updatedCount, 
+        totalRequested: employeeIds.length,
+        errors: errors.length > 0 ? errors : undefined
+      });
+    } catch (error) {
+      console.error("Bulk employee update error:", error);
+      res.status(500).json({ message: "Failed to update employees" });
+    }
+  });
+
   app.patch("/api/company/employees/:employeeId/hierarchy-role", requireCompany, async (req: any, res) => {
     try {
       const { employeeId } = req.params;

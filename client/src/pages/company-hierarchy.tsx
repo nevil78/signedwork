@@ -124,6 +124,28 @@ export default function CompanyHierarchy() {
   const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false);
   const [structureView, setStructureView] = useState<'list' | 'visual'>('visual'); // Default to visual for wow factor
   
+  // Phase 3: Bulk Operations State
+  const [selectedEmployees, setSelectedEmployees] = useState<string[]>([]);
+  const [isBulkOperationsOpen, setIsBulkOperationsOpen] = useState(false);
+  const [bulkOperation, setBulkOperation] = useState({
+    type: 'assign', // 'assign', 'role', 'permissions'
+    branchId: '',
+    teamId: '',
+    hierarchyRole: 'employee',
+    permissions: {
+      canVerifyWork: false,
+      canManageEmployees: false,
+      canCreateTeams: false,
+      verificationScope: 'none'
+    }
+  });
+  const [bulkFilterCriteria, setBulkFilterCriteria] = useState({
+    branch: 'all',
+    team: 'all',
+    role: 'all',
+    permissions: 'all'
+  });
+  
   const [newBranch, setNewBranch] = useState({
     name: "",
     location: "",
@@ -888,6 +910,63 @@ export default function CompanyHierarchy() {
       });
     }
   });
+
+  // Phase 3: Bulk Operations Mutations
+  const bulkUpdateEmployeesMutation = useMutation({
+    mutationFn: async ({ employeeIds, updates }: { employeeIds: string[]; updates: any }) => {
+      return apiRequest('/api/employees/bulk-update', {
+        method: 'PATCH',
+        body: JSON.stringify({ employeeIds, updates })
+      });
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/company-hierarchy'] });
+      setIsBulkOperationsOpen(false);
+      setSelectedEmployees([]);
+      toast({
+        title: "Bulk Operation Complete",
+        description: `Successfully updated ${data.updatedCount || selectedEmployees.length} employees`,
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Bulk Operation Failed",
+        description: "Some employees could not be updated",
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Phase 3: Bulk Selection Helper Functions
+  const toggleEmployeeSelection = (employeeId: string) => {
+    setSelectedEmployees(prev => 
+      prev.includes(employeeId) 
+        ? prev.filter(id => id !== employeeId)
+        : [...prev, employeeId]
+    );
+  };
+
+  const selectAllEmployees = () => {
+    if (data?.employees) {
+      setSelectedEmployees(data.employees.map((emp: any) => emp.employeeId));
+    }
+  };
+
+  const clearEmployeeSelection = () => {
+    setSelectedEmployees([]);
+  };
+
+  const handleBulkOperation = () => {
+    if (selectedEmployees.length === 0) {
+      toast({
+        title: "No Selection",
+        description: "Please select employees for bulk operation",
+        variant: "destructive"
+      });
+      return;
+    }
+    setIsBulkOperationsOpen(true);
+  };
 
   // Handle employee selection for hierarchy management
   const handleManageEmployee = (employee: any) => {
@@ -2753,9 +2832,60 @@ export default function CompanyHierarchy() {
         <TabsContent value="employees" className="space-y-4">
           <Card data-testid="employee-roles-management">
             <CardHeader>
-              <CardTitle>Employee Assignment & Role Management</CardTitle>
-              <CardDescription>
-                Assign employees to branches/teams and manage their hierarchy roles and permissions
+              <CardTitle className="flex items-center justify-between">
+                <span>Employee Assignment & Role Management</span>
+                {/* Phase 3: Bulk Operations Toolbar */}
+                {selectedEmployees.length > 0 && (
+                  <div className="flex items-center gap-2">
+                    <Badge variant="secondary" className="flex items-center gap-1">
+                      <Users className="w-3 h-3" />
+                      {selectedEmployees.length} selected
+                    </Badge>
+                    <Button 
+                      size="sm" 
+                      onClick={handleBulkOperation}
+                      className="bg-blue-600 hover:bg-blue-700"
+                      data-testid="bulk-operations-button"
+                    >
+                      <Settings className="w-4 h-4 mr-1" />
+                      Bulk Operations
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={clearEmployeeSelection}
+                      data-testid="clear-selection-button"
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                )}
+              </CardTitle>
+              <CardDescription className="flex items-center justify-between">
+                <span>Assign employees to branches/teams and manage their hierarchy roles and permissions</span>
+                {/* Phase 3: Bulk Selection Controls */}
+                <div className="flex items-center gap-2">
+                  <Button 
+                    size="sm" 
+                    variant="ghost" 
+                    onClick={selectAllEmployees}
+                    className="text-xs"
+                    data-testid="select-all-button"
+                  >
+                    Select All ({data?.employees?.length || 0})
+                  </Button>
+                  {selectedEmployees.length > 0 && (
+                    <Button 
+                      size="sm" 
+                      variant="ghost" 
+                      onClick={clearEmployeeSelection}
+                      className="text-xs"
+                      data-testid="clear-all-button"
+                    >
+                      Clear Selection
+                    </Button>
+                  )}
+                </div>
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -3102,6 +3232,13 @@ export default function CompanyHierarchy() {
                           <div key={admin.id} className="p-3 bg-yellow-100 rounded-lg border-l-4 border-yellow-500">
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-3">
+                                {/* Phase 3: Bulk Selection Checkbox */}
+                                <Checkbox
+                                  checked={selectedEmployees.includes(admin.employeeId)}
+                                  onCheckedChange={() => toggleEmployeeSelection(admin.employeeId)}
+                                  className="border-yellow-600"
+                                  data-testid={`select-employee-${admin.employeeId}`}
+                                />
                                 <Crown className="h-5 w-5 text-yellow-600" />
                                 <div>
                                   <p className="font-medium text-yellow-900">{admin.firstName} {admin.lastName}</p>
@@ -3136,6 +3273,13 @@ export default function CompanyHierarchy() {
                             <div key={manager.id} className="p-3 bg-blue-100 rounded-lg border-l-4 border-blue-500 ml-4">
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-3">
+                                  {/* Phase 3: Bulk Selection Checkbox */}
+                                  <Checkbox
+                                    checked={selectedEmployees.includes(manager.employeeId)}
+                                    onCheckedChange={() => toggleEmployeeSelection(manager.employeeId)}
+                                    className="border-blue-600"
+                                    data-testid={`select-employee-${manager.employeeId}`}
+                                  />
                                   <Building2 className="h-4 w-4 text-blue-600" />
                                   <div>
                                     <p className="font-medium text-blue-900">{manager.firstName} {manager.lastName}</p>
@@ -5732,6 +5876,230 @@ export default function CompanyHierarchy() {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Phase 3: Bulk Operations Dialog */}
+      <Dialog open={isBulkOperationsOpen} onOpenChange={setIsBulkOperationsOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Settings className="w-5 h-5 text-blue-600" />
+              Bulk Operations - {selectedEmployees.length} Employees Selected
+            </DialogTitle>
+            <DialogDescription>
+              Apply changes to multiple employees simultaneously. Changes will be applied to all selected employees.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-6">
+            {/* Operation Type Selection */}
+            <div>
+              <Label className="text-base font-medium">Operation Type</Label>
+              <Tabs value={bulkOperation.type} onValueChange={(value) => setBulkOperation({...bulkOperation, type: value})}>
+                <TabsList className="grid grid-cols-3 w-full mt-2">
+                  <TabsTrigger value="assign">Assignment</TabsTrigger>
+                  <TabsTrigger value="role">Role Changes</TabsTrigger>
+                  <TabsTrigger value="permissions">Permissions</TabsTrigger>
+                </TabsList>
+                
+                {/* Bulk Assignment */}
+                <TabsContent value="assign" className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label>Branch Assignment</Label>
+                      <Select value={bulkOperation.branchId} onValueChange={(value) => setBulkOperation({...bulkOperation, branchId: value, teamId: value === "headquarters" ? "" : bulkOperation.teamId})}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select branch" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="headquarters">Headquarters</SelectItem>
+                          {Array.isArray(branches) && branches.map((branch: any) => (
+                            <SelectItem key={branch.id} value={branch.id}>
+                              {branch.name} - {branch.location}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div>
+                      <Label>Team Assignment</Label>
+                      <Select 
+                        value={bulkOperation.teamId} 
+                        onValueChange={(value) => setBulkOperation({...bulkOperation, teamId: value})}
+                        disabled={!bulkOperation.branchId || bulkOperation.branchId === "headquarters"}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select team" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="">No Team</SelectItem>
+                          {Array.isArray(teams) && teams
+                            .filter((team: any) => team.branchId === bulkOperation.branchId)
+                            .map((team: any) => (
+                              <SelectItem key={team.id} value={team.id}>
+                                {team.name}
+                              </SelectItem>
+                            ))
+                          }
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </TabsContent>
+                
+                {/* Bulk Role Changes */}
+                <TabsContent value="role" className="space-y-4">
+                  <div>
+                    <Label>New Role</Label>
+                    <Select value={bulkOperation.hierarchyRole} onValueChange={(value) => setBulkOperation({...bulkOperation, hierarchyRole: value})}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select role" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="employee">Employee</SelectItem>
+                        <SelectItem value="team_lead">Team Lead</SelectItem>
+                        <SelectItem value="branch_manager">Branch Manager</SelectItem>
+                        <SelectItem value="company_admin">Company Admin</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </TabsContent>
+                
+                {/* Bulk Permissions */}
+                <TabsContent value="permissions" className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between p-3 border rounded">
+                        <div>
+                          <Label className="font-medium">Work Verification</Label>
+                          <p className="text-sm text-muted-foreground">Allow verifying work entries</p>
+                        </div>
+                        <Switch
+                          checked={bulkOperation.permissions.canVerifyWork}
+                          onCheckedChange={(checked) => setBulkOperation({
+                            ...bulkOperation, 
+                            permissions: {...bulkOperation.permissions, canVerifyWork: checked}
+                          })}
+                        />
+                      </div>
+                      
+                      <div className="flex items-center justify-between p-3 border rounded">
+                        <div>
+                          <Label className="font-medium">Employee Management</Label>
+                          <p className="text-sm text-muted-foreground">Manage other employees</p>
+                        </div>
+                        <Switch
+                          checked={bulkOperation.permissions.canManageEmployees}
+                          onCheckedChange={(checked) => setBulkOperation({
+                            ...bulkOperation, 
+                            permissions: {...bulkOperation.permissions, canManageEmployees: checked}
+                          })}
+                        />
+                      </div>
+                      
+                      <div className="flex items-center justify-between p-3 border rounded">
+                        <div>
+                          <Label className="font-medium">Team Creation</Label>
+                          <p className="text-sm text-muted-foreground">Create and manage teams</p>
+                        </div>
+                        <Switch
+                          checked={bulkOperation.permissions.canCreateTeams}
+                          onCheckedChange={(checked) => setBulkOperation({
+                            ...bulkOperation, 
+                            permissions: {...bulkOperation.permissions, canCreateTeams: checked}
+                          })}
+                        />
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <Label>Verification Scope</Label>
+                      <Select 
+                        value={bulkOperation.permissions.verificationScope} 
+                        onValueChange={(value) => setBulkOperation({
+                          ...bulkOperation, 
+                          permissions: {...bulkOperation.permissions, verificationScope: value}
+                        })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select scope" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">No Verification</SelectItem>
+                          <SelectItem value="team">Team Level</SelectItem>
+                          <SelectItem value="branch">Branch Level</SelectItem>
+                          <SelectItem value="company">Company-Wide</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </div>
+            
+            {/* Selected Employees Preview */}
+            <div className="p-4 bg-gray-50 rounded-lg">
+              <h4 className="font-medium mb-2">Selected Employees ({selectedEmployees.length})</h4>
+              <div className="max-h-32 overflow-y-auto">
+                <div className="flex flex-wrap gap-1">
+                  {selectedEmployees.slice(0, 10).map((empId) => {
+                    const employee = data?.employees?.find((emp: any) => emp.employeeId === empId);
+                    return employee ? (
+                      <Badge key={empId} variant="secondary" className="text-xs">
+                        {employee.firstName} {employee.lastName}
+                      </Badge>
+                    ) : null;
+                  })}
+                  {selectedEmployees.length > 10 && (
+                    <Badge variant="secondary" className="text-xs">
+                      +{selectedEmployees.length - 10} more
+                    </Badge>
+                  )}
+                </div>
+              </div>
+            </div>
+            
+            {/* Action Buttons */}
+            <div className="flex gap-3">
+              <Button 
+                onClick={() => {
+                  const updates = bulkOperation.type === 'assign' 
+                    ? { branchId: bulkOperation.branchId, teamId: bulkOperation.teamId }
+                    : bulkOperation.type === 'role'
+                    ? { hierarchyRole: bulkOperation.hierarchyRole }
+                    : { ...bulkOperation.permissions };
+                    
+                  bulkUpdateEmployeesMutation.mutate({ 
+                    employeeIds: selectedEmployees, 
+                    updates 
+                  });
+                }}
+                disabled={bulkUpdateEmployeesMutation.isPending}
+                className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+              >
+                {bulkUpdateEmployeesMutation.isPending ? (
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Applying Bulk Changes...
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4" />
+                    Apply to {selectedEmployees.length} Employees
+                  </div>
+                )}
+              </Button>
+              <Button 
+                variant="outline"
+                onClick={() => setIsBulkOperationsOpen(false)}
+                className="px-6"
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
