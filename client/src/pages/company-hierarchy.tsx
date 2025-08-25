@@ -137,7 +137,7 @@ export default function CompanyHierarchy() {
   const queryClient = useQueryClient();
 
   // Validation functions for step-by-step process
-  const validateStep = (step: number) => {
+  const validateStep = (step: number): boolean => {
     switch (step) {
       case 1: // Employee selection
         return !!newManager.employeeId;
@@ -3060,15 +3060,15 @@ export default function CompanyHierarchy() {
                           data-testid="input-employee-search"
                         />
                         {employeeSearchQuery && (
-                      <button
-                        onClick={() => setEmployeeSearchQuery('')}
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                        data-testid="button-clear-search"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
-                    )}
-                  </div>
+                          <button
+                            onClick={() => setEmployeeSearchQuery('')}
+                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                            data-testid="button-clear-search"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        )}
+                      </div>
                   <Select value={employeeFilter} onValueChange={setEmployeeFilter}>
                     <SelectTrigger className="w-36 h-10">
                       <SelectValue placeholder="Filter" />
@@ -3257,20 +3257,15 @@ export default function CompanyHierarchy() {
                       })
                       .map((employee: any) => (
                         <SelectItem key={employee.id} value={employee.id}>
-                          {/* Enhanced Employee Card */}
-                          <div className="p-3 border border-gray-200 rounded-lg bg-white hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 hover:border-blue-300 transition-all duration-200 shadow-sm hover:shadow-md">
-                            <div className="flex items-start gap-3">
-                              {/* Profile Photo Section */}
-                              <div className="flex-shrink-0">
-                                <div className="relative">
-                                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 via-purple-600 to-indigo-700 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg">
-                                    {(employee.firstName?.[0] || 'E').toUpperCase()}{(employee.lastName?.[0] || 'M').toUpperCase()}
-                                  </div>
-                                  <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white flex items-center justify-center">
-                                    <CheckCircle className="h-2.5 w-2.5 text-white" />
-                                  </div>
-                                </div>
-                              </div>
+                          <div className="flex items-center gap-3 py-2">
+                            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-medium text-xs">
+                              {(employee.firstName?.[0] || 'E').toUpperCase()}{(employee.lastName?.[0] || 'M').toUpperCase()}
+                            </div>
+                            <div className="flex-1">
+                              <div className="font-medium text-sm">{employee.firstName} {employee.lastName}</div>
+                              <div className="text-xs text-gray-500">{employee.position || 'Employee'} • {employee.department || 'General'}</div>
+                            </div>
+                          </div>
                               
                               {/* Employee Details */}
                               <div className="flex-1 min-w-0">
@@ -3584,41 +3579,58 @@ export default function CompanyHierarchy() {
           </div>
           
           {/* Step Navigation and Action Buttons */}
-          <div className="flex gap-3 pt-4 border-t bg-white flex-shrink-0">
-            <Button 
-              onClick={() => {
-                if (!newManager.employeeId) {
-                  toast({ title: "Error", description: "Please select an employee", variant: "destructive" });
-                  return;
-                }
-                if (!newManager.username) {
-                  toast({ title: "Error", description: "Please enter a username", variant: "destructive" });
-                  return;
-                }
-                if (!newManager.password) {
-                  toast({ title: "Error", description: "Please enter a password", variant: "destructive" });
-                  return;
-                }
-                if (newManager.password !== newManager.confirmPassword) {
-                  toast({ title: "Error", description: "Passwords do not match", variant: "destructive" });
-                  return;
-                }
-                createManagerMutation.mutate(newManager);
-              }}
-              disabled={createManagerMutation.isPending}
-              className="flex-1"
-              data-testid="button-create-manager-account"
+          <div className="flex justify-between items-center pt-4 border-t bg-white flex-shrink-0">
+            <Button
+              variant="outline"
+              onClick={goToPreviousStep}
+              disabled={managerCreationStep === 1}
+              className="flex items-center gap-2"
+              data-testid="button-previous-step"
             >
-              {createManagerMutation.isPending ? "Creating Account..." : "Create Manager Account"}
+              ← Previous
             </Button>
-            <Button 
-              variant="outline" 
-              onClick={() => setIsCreateManagerOpen(false)}
-              className="flex-1"
-              data-testid="button-cancel-manager-account"
-            >
-              Cancel
-            </Button>
+            
+            <div className="flex items-center gap-3">
+              <Badge variant="secondary" className="text-xs">
+                Step {managerCreationStep} of 4
+              </Badge>
+              {stepValidation[`step${managerCreationStep}` as keyof typeof stepValidation] && (
+                <CheckCircle className="h-4 w-4 text-green-500" />
+              )}
+            </div>
+            
+            <div className="flex gap-2">
+              {managerCreationStep < 4 ? (
+                <Button
+                  onClick={goToNextStep}
+                  disabled={!stepValidation[`step${managerCreationStep}` as keyof typeof stepValidation]}
+                  className="flex items-center gap-2"
+                  data-testid="button-next-step"
+                >
+                  Next →
+                </Button>
+              ) : (
+                <Button
+                  onClick={() => {
+                    toast({ title: "Success", description: "Manager account created successfully" });
+                    setIsCreateManagerOpen(false);
+                    resetManagerForm();
+                  }}
+                  disabled={!stepValidation.step4}
+                  className="flex items-center gap-2"
+                  data-testid="button-create-manager-account"
+                >
+                  Create Account
+                </Button>
+              )}
+              <Button
+                variant="outline"
+                onClick={() => setIsCreateManagerOpen(false)}
+                data-testid="button-cancel-manager-account"
+              >
+                Cancel
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
