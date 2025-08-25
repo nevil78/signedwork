@@ -1624,6 +1624,12 @@ export class DatabaseStorage implements IStorage {
         companyId: invitationCode.companyId,
         employeeId,
         isActive: true,
+        hierarchyRole: "employee", // Default role for new joiners
+        verificationScope: "none", // Default verification scope
+        canVerifyWork: false,
+        canManageEmployees: false,
+        canCreateTeams: false,
+        status: "employed",
       })
       .returning();
       
@@ -3798,7 +3804,7 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(companyEmployees)
       .where(eq(companyEmployees.teamId, teamId))
-      .orderBy(asc(companyEmployees.createdAt));
+      .orderBy(asc(companyEmployees.joinedAt));
   }
 
   // Enhanced CompanyEmployee operations with hierarchy
