@@ -3419,7 +3419,11 @@ export default function CompanyHierarchy() {
                       id="manager-username"
                       type="text"
                       value={newManager.username}
-                      onChange={(e) => setNewManager({ ...newManager, username: e.target.value })}
+                      onChange={(e) => {
+                        const newUsername = e.target.value;
+                        setNewManager({ ...newManager, username: newUsername });
+                        validateUsername(newUsername);
+                      }}
                       placeholder="manager.username"
                       className="h-12 text-base"
                       data-testid="input-manager-username"
