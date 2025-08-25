@@ -1258,8 +1258,8 @@ export default function CompanyHierarchy() {
 
   const canManageTeams = () => {
     // Emergency override: Company owners can always manage teams
-    const currentUser = user;
-    if (currentUser?.type === 'company') return true;
+    const userData = currentUser;
+    if (userData?.type === 'company') return true;
     
     const userEmployee = getCurrentUserEmployee();
     if (!userEmployee) return false;
