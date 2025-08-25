@@ -1042,9 +1042,9 @@ export default function CompanyHierarchy() {
       // Text search
       if (searchQuery) {
         const searchLower = searchQuery.toLowerCase();
-        const fullName = `${emp.employee?.firstName} ${emp.employee?.lastName}`.toLowerCase();
+        const fullName = `${emp.firstName} ${emp.lastName}`.toLowerCase();
         const position = emp.position?.toLowerCase() || "";
-        const email = emp.employee?.email?.toLowerCase() || "";
+        const email = emp.email?.toLowerCase() || "";
         
         if (!fullName.includes(searchLower) && 
             !position.includes(searchLower) && 
@@ -1097,8 +1097,8 @@ export default function CompanyHierarchy() {
       
       switch (sortBy) {
         case "name":
-          aValue = `${a.employee?.firstName} ${a.employee?.lastName}`.toLowerCase();
-          bValue = `${b.employee?.firstName} ${b.employee?.lastName}`.toLowerCase();
+          aValue = `${a.firstName} ${a.lastName}`.toLowerCase();
+          bValue = `${b.firstName} ${b.lastName}`.toLowerCase();
           break;
         case "role":
           aValue = a.hierarchyRole || "";
@@ -2982,9 +2982,9 @@ export default function CompanyHierarchy() {
                         {getRoleIcon(emp.hierarchyRole)}
                         <div className="flex-1">
                           <h4 className="font-medium">
-                            {emp.employee?.firstName} {emp.employee?.lastName}
+                            {emp.firstName} {emp.lastName}
                           </h4>
-                          <p className="text-sm text-muted-foreground">{emp.position}</p>
+                          <p className="text-sm text-muted-foreground">{emp.position || 'No position assigned'}</p>
                           <div className="flex items-center gap-2 mt-1">
                             <Badge className={getRoleBadgeColor(emp.hierarchyRole)}>
                               {emp.hierarchyRole?.replace('_', ' ') || 'employee'}
@@ -4865,7 +4865,7 @@ export default function CompanyHierarchy() {
           <DialogHeader>
             <DialogTitle>Manage Employee Assignment & Permissions</DialogTitle>
             <DialogDescription>
-              Update {selectedEmployee?.employee?.firstName} {selectedEmployee?.employee?.lastName}'s assignment, role and permissions
+              Update {selectedEmployee?.firstName} {selectedEmployee?.lastName}'s assignment, role and permissions
             </DialogDescription>
           </DialogHeader>
           {selectedEmployee && (
@@ -5349,7 +5349,7 @@ export default function CompanyHierarchy() {
           <DialogHeader>
             <DialogTitle>Manage Employee Assignment & Permissions</DialogTitle>
             <DialogDescription>
-              Update {selectedEmployee?.employee?.firstName} {selectedEmployee?.employee?.lastName}'s assignment, role and permissions
+              Update {selectedEmployee?.firstName} {selectedEmployee?.lastName}'s assignment, role and permissions
             </DialogDescription>
           </DialogHeader>
           {selectedEmployee && (
