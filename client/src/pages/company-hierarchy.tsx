@@ -3119,7 +3119,8 @@ export default function CompanyHierarchy() {
 
           </div>
           
-          <div className="flex gap-3 flex-shrink-0 pt-4 border-t">
+          {/* Action Buttons - Fixed at bottom */}
+          <div className="flex gap-3 pt-4 border-t bg-white flex-shrink-0">
             <Button 
               onClick={() => {
                 if (newManager.password !== newManager.confirmPassword) {
@@ -3142,6 +3143,7 @@ export default function CompanyHierarchy() {
               variant="outline" 
               onClick={() => setIsCreateManagerOpen(false)}
               className="flex-1"
+              data-testid="button-cancel-manager-account"
             >
               Cancel
             </Button>
