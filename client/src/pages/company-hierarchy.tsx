@@ -123,9 +123,82 @@ export default function CompanyHierarchy() {
   // Search and filter state for manager creation
   const [employeeSearchQuery, setEmployeeSearchQuery] = useState('');
   const [employeeFilter, setEmployeeFilter] = useState('all');
+  
+  // Step-by-step manager creation state
+  const [managerCreationStep, setManagerCreationStep] = useState(1);
+  const [stepValidation, setStepValidation] = useState({
+    step1: false, // Employee selection
+    step2: false, // Login credentials  
+    step3: false, // Access level & permissions
+    step4: false  // Review & confirm
+  });
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Validation functions for step-by-step process
+  const validateStep = (step: number) => {
+    switch (step) {
+      case 1: // Employee selection
+        return !!newManager.employeeId;
+      case 2: // Login credentials
+        return (
+          newManager.username.length >= 3 &&
+          newManager.password.length >= 6 &&
+          newManager.password === newManager.confirmPassword
+        );
+      case 3: // Access level & permissions
+        return !!newManager.accessLevel;
+      case 4: // Review & confirm
+        return validateStep(1) && validateStep(2) && validateStep(3);
+      default:
+        return false;
+    }
+  };
+
+  // Update step validation when manager data changes
+  useEffect(() => {
+    setStepValidation({
+      step1: validateStep(1),
+      step2: validateStep(2),
+      step3: validateStep(3),
+      step4: validateStep(4)
+    });
+  }, [newManager]);
+
+  // Navigation functions
+  const goToNextStep = () => {
+    if (validateStep(managerCreationStep) && managerCreationStep < 4) {
+      setManagerCreationStep(managerCreationStep + 1);
+    }
+  };
+
+  const goToPreviousStep = () => {
+    if (managerCreationStep > 1) {
+      setManagerCreationStep(managerCreationStep - 1);
+    }
+  };
+
+  const resetManagerForm = () => {
+    setNewManager({
+      employeeId: "",
+      username: "",
+      password: "",
+      confirmPassword: "",
+      accessLevel: "branch_manager",
+      canLogin: true,
+      permissions: {
+        canManageEmployees: true,
+        canCreateTeams: false,
+        canVerifyWork: true,
+        canViewReports: true,
+        canManageBranches: false
+      }
+    });
+    setManagerCreationStep(1);
+    setEmployeeSearchQuery('');
+    setEmployeeFilter('all');
+  };
 
   // Real-time data queries with optimized refetch intervals and performance caching
   const { data: structure, isLoading: structureLoading, refetch: refetchStructure } = useQuery({
@@ -2892,51 +2965,101 @@ export default function CompanyHierarchy() {
 
       </Tabs>
 
-      {/* Create Manager Account Dialog */}
-      <Dialog open={isCreateManagerOpen} onOpenChange={setIsCreateManagerOpen}>
-        <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col bg-gradient-to-br from-white to-gray-50">
+      {/* Create Manager Account Dialog - Step-by-Step Process */}
+      <Dialog open={isCreateManagerOpen} onOpenChange={(open) => {
+        setIsCreateManagerOpen(open);
+        if (!open) resetManagerForm();
+      }}>
+        <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col bg-gradient-to-br from-white to-gray-50">
           <DialogHeader className="flex-shrink-0 pb-4 border-b border-gray-100">
             <DialogTitle className="flex items-center gap-3 text-lg">
               <div className="p-2 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg">
                 <UserPlus className="h-5 w-5 text-white" />
               </div>
-              Create Manager Account
+              Create Manager Account - Step {managerCreationStep} of 4
             </DialogTitle>
             <DialogDescription className="text-gray-600 mt-2">
-              Promote an employee to a management role with specialized login credentials and granular permissions
+              Follow the guided process to promote an employee to a management role with specialized login credentials
             </DialogDescription>
+            
+            {/* Progress Indicator */}
+            <div className="flex items-center justify-between mt-4 px-2">
+              {[1, 2, 3, 4].map((step) => (
+                <div key={step} className="flex items-center">
+                  <div className={`
+                    w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium
+                    ${step === managerCreationStep 
+                      ? 'bg-blue-500 text-white shadow-lg' 
+                      : step < managerCreationStep 
+                        ? 'bg-green-500 text-white' 
+                        : 'bg-gray-200 text-gray-500'
+                    }
+                  `}>
+                    {step < managerCreationStep ? (
+                      <CheckCircle className="h-4 w-4" />
+                    ) : (
+                      step
+                    )}
+                  </div>
+                  <div className="ml-2 text-xs">
+                    <div className={`font-medium ${
+                      step === managerCreationStep ? 'text-blue-600' : 
+                      step < managerCreationStep ? 'text-green-600' : 'text-gray-400'
+                    }`}>
+                      {step === 1 && 'Select Employee'}
+                      {step === 2 && 'Login Setup'}
+                      {step === 3 && 'Permissions'}
+                      {step === 4 && 'Review'}
+                    </div>
+                  </div>
+                  {step < 4 && (
+                    <div className={`w-8 h-0.5 mx-2 ${
+                      step < managerCreationStep ? 'bg-green-300' : 'bg-gray-200'
+                    }`} />
+                  )}
+                </div>
+              ))}
+            </div>
           </DialogHeader>
           
           <div className="space-y-6 overflow-y-auto flex-1 pr-2 pt-4">
-            {/* Employee Selection */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="manager-employee" className="text-base font-semibold">Select Employee</Label>
-                {employees && employees.length > 0 && (
-                  <Badge variant="secondary" className="bg-blue-50 text-blue-700">
-                    {employees.filter((emp: any) => {
-                      const isRegularEmployee = emp.hierarchyRole === 'employee' || !emp.hierarchyRole;
-                      const isActive = emp.employmentStatus === 'active' || !emp.employmentStatus;
-                      const notCompanyOwner = emp.id !== employees.find((e: any) => e.isCompanyOwner)?.id;
-                      return isRegularEmployee && isActive && notCompanyOwner;
-                    }).length} Eligible
-                  </Badge>
-                )}
-              </div>
+            {/* Step 1: Employee Selection */}
+            {managerCreationStep === 1 && (
+              <div className="space-y-6">
+                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                  <h3 className="font-semibold text-blue-900 mb-2">Step 1: Employee Selection</h3>
+                  <p className="text-blue-700 text-sm">
+                    Choose an eligible employee to promote to a management role. Only active employees without existing management roles are shown.
+                  </p>
+                </div>
+                
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="manager-employee" className="text-base font-semibold">Select Employee</Label>
+                    {Array.isArray(employees) && employees.length > 0 && (
+                      <Badge variant="secondary" className="bg-blue-50 text-blue-700">
+                        {employees.filter((emp: any) => {
+                          const isRegularEmployee = emp.hierarchyRole === 'employee' || !emp.hierarchyRole;
+                          const isActive = emp.employmentStatus === 'active' || !emp.employmentStatus;
+                          const notCompanyOwner = emp.id !== employees.find((e: any) => e.isCompanyOwner)?.id;
+                          return isRegularEmployee && isActive && notCompanyOwner;
+                        }).length} Eligible
+                      </Badge>
+                    )}
+                  </div>
               
-              {/* Search and Filter Bar */}
-              <div className="space-y-2">
-                <div className="flex gap-2">
-                  <div className="flex-1 relative">
-                    <Search className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                    <Input
-                      placeholder="Search employees by name, position, or department..."
-                      value={employeeSearchQuery}
-                      onChange={(e) => setEmployeeSearchQuery(e.target.value)}
-                      className="pl-9 h-10"
-                      data-testid="input-employee-search"
-                    />
-                    {employeeSearchQuery && (
+                  <div className="space-y-2">
+                    <div className="flex gap-2">
+                      <div className="flex-1 relative">
+                        <Search className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                        <Input
+                          placeholder="Search employees by name, position, or department..."
+                          value={employeeSearchQuery}
+                          onChange={(e) => setEmployeeSearchQuery(e.target.value)}
+                          className="pl-9 h-10"
+                          data-testid="input-employee-search"
+                        />
+                        {employeeSearchQuery && (
                       <button
                         onClick={() => setEmployeeSearchQuery('')}
                         className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
@@ -2979,7 +3102,7 @@ export default function CompanyHierarchy() {
                   <div className="flex items-center gap-2 text-sm text-gray-600">
                     <Filter className="h-4 w-4" />
                     <span>
-                      Showing {employees?.filter((emp: any) => {
+                      Showing {Array.isArray(employees) ? employees.filter((emp: any) => {
                         const isRegularEmployee = emp.hierarchyRole === 'employee' || !emp.hierarchyRole;
                         const isActive = emp.employmentStatus === 'active' || !emp.employmentStatus;
                         const notCompanyOwner = emp.id !== employees.find((e: any) => e.isCompanyOwner)?.id;
@@ -3020,12 +3143,12 @@ export default function CompanyHierarchy() {
                         }
                         
                         return true;
-                      }).length || 0} of {employees?.filter((emp: any) => {
+                      }).length : 0} of {Array.isArray(employees) ? employees.filter((emp: any) => {
                         const isRegularEmployee = emp.hierarchyRole === 'employee' || !emp.hierarchyRole;
                         const isActive = emp.employmentStatus === 'active' || !emp.employmentStatus;
                         const notCompanyOwner = emp.id !== employees.find((e: any) => e.isCompanyOwner)?.id;
                         return isRegularEmployee && isActive && notCompanyOwner;
-                      }).length || 0} eligible employees
+                      }).length : 0} eligible employees
                     </span>
                     {employeeSearchQuery && (
                       <Badge variant="secondary" className="text-xs">
@@ -3043,7 +3166,7 @@ export default function CompanyHierarchy() {
               <Select 
                 value={newManager.employeeId} 
                 onValueChange={(value) => {
-                  const selectedEmployee = employees?.find((emp: any) => emp.id === value);
+                  const selectedEmployee = Array.isArray(employees) ? employees.find((emp: any) => emp.id === value) : undefined;
                   if (selectedEmployee) {
                     // Auto-generate username suggestion
                     const suggestedUsername = `${selectedEmployee.firstName?.toLowerCase() || 'manager'}.${selectedEmployee.lastName?.toLowerCase() || 'user'}`;
@@ -3059,7 +3182,7 @@ export default function CompanyHierarchy() {
               >
                 <SelectTrigger data-testid="select-manager-employee" className="h-12">
                   <SelectValue placeholder="🔍 Choose an employee to promote to manager">
-                    {newManager.employeeId && employees && (
+                    {newManager.employeeId && Array.isArray(employees) && (
                       <div className="flex items-center gap-2">
                         <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-medium text-xs">
                           {(() => {
@@ -3460,7 +3583,7 @@ export default function CompanyHierarchy() {
 
           </div>
           
-          {/* Action Buttons - Fixed at bottom */}
+          {/* Step Navigation and Action Buttons */}
           <div className="flex gap-3 pt-4 border-t bg-white flex-shrink-0">
             <Button 
               onClick={() => {
