@@ -256,11 +256,13 @@ export default function WorkDiary() {
       <EmployeeNavHeader />
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <h1 className="text-3xl font-bold mb-2">Work Diary</h1>
-        <p className="text-muted-foreground mb-6">Manage work entries across all your companies - past and present</p>
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold mb-3">Work Diary</h1>
+          <p className="text-muted-foreground mb-6">Manage work entries across all your companies - past and present</p>
+        </div>
 
-        {/* FIXED: Always show the button, regardless of loading state */}
-        <div className="mb-6 flex justify-end">
+        {/* Join Company Button - Centered at top */}
+        <div className="mb-8 flex justify-center">
           <Button 
             onClick={() => {
               setEditingCompany(null);
@@ -270,8 +272,10 @@ export default function WorkDiary() {
             }}
             data-testid="button-join-company"
             disabled={isLoading}
+            size="lg"
+            className="px-8 py-6 text-base"
           >
-            <Plus className="mr-2 h-4 w-4" />
+            <Plus className="mr-2 h-5 w-5" />
             {getButtonText()}
           </Button>
         </div>
@@ -304,63 +308,90 @@ export default function WorkDiary() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4">
-          {companies.map((company) => (
-            <Card key={company.id} className="hover:shadow-md transition-shadow cursor-pointer">
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                  <div 
-                    className="flex-1 cursor-pointer"
-                    onClick={() => navigate(`/work-diary/${company.id}`)}
-                  >
-                    <CardTitle className="text-xl flex items-center gap-2">
-                      {company.companyName}
-                      <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                    </CardTitle>
-                    {company.position && (
-                      <CardDescription className="mt-1">
-                        {company.position}
-                      </CardDescription>
-                    )}
-                    {company.startDate && (
-                      <CardDescription className="mt-1 flex items-center gap-1">
-                        <Calendar className="h-3 w-3" />
-                        {company.startDate} - {company.endDate || 'Present'}
-                        {company.isCurrent && (
-                          <span className="ml-2 px-2 py-1 text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded-full">
-                            Current
+        <div className="max-w-2xl mx-auto">
+          <div className="space-y-6">
+            {companies.map((company) => (
+              <Card key={company.id} className="hover:shadow-lg transition-all duration-200 cursor-pointer border border-gray-200 dark:border-gray-700">
+                <CardHeader className="pb-4">
+                  <div className="flex justify-between items-start">
+                    <div 
+                      className="flex-1 cursor-pointer"
+                      onClick={() => navigate(`/work-diary/${company.id}`)}
+                    >
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="rounded-full bg-blue-100 dark:bg-blue-900 p-3">
+                          <Building2 className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                        </div>
+                        <div className="flex-1">
+                          <CardTitle className="text-xl flex items-center gap-2 mb-1">
+                            {company.companyName}
+                            <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                          </CardTitle>
+                          <div className="flex items-center gap-2">
+                            <span className="px-3 py-1 text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded-full font-medium">
+                              Active
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {company.position && (
+                        <CardDescription className="text-base mb-2 ml-12">
+                          <strong>Position:</strong> {company.position}
+                        </CardDescription>
+                      )}
+                      
+                      {company.startDate && (
+                        <CardDescription className="flex items-center gap-2 ml-12">
+                          <Calendar className="h-4 w-4" />
+                          <span>
+                            {company.startDate} - {company.endDate || 'Present'}
+                            {company.isCurrent && (
+                              <span className="ml-2 text-green-600 dark:text-green-400 font-medium">
+                                (Currently employed)
+                              </span>
+                            )}
                           </span>
-                        )}
+                        </CardDescription>
+                      )}
+                      
+                      <CardDescription className="mt-3 ml-12 text-sm text-blue-600 dark:text-blue-400 font-medium">
+                        Click to view work diary →
                       </CardDescription>
-                    )}
+                    </div>
+                    
+                    <div className="flex flex-col gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEdit(company);
+                        }}
+                        className="w-20"
+                      >
+                        <Edit className="h-4 w-4 mr-1" />
+                        Edit
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleLeaveCompany(company.id);
+                        }}
+                        title="Leave Company"
+                        className="w-20 text-red-600 border-red-200 hover:bg-red-50 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-950"
+                      >
+                        <LogOut className="h-4 w-4 mr-1" />
+                        Leave
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleEdit(company);
-                      }}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleLeaveCompany(company.id);
-                      }}
-                      title="Leave Company"
-                    >
-                      <LogOut className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              </CardHeader>
-            </Card>
-          ))}
+                </CardHeader>
+              </Card>
+            ))}
+          </div>
         </div>
       )}
 
