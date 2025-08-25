@@ -3615,7 +3615,6 @@ export default function CompanyHierarchy() {
                 </div>
               </div>
             )}
-
           </div>
           
           {/* Step Navigation and Action Buttons */}
