@@ -149,6 +149,10 @@ export default function CompanyHierarchy() {
     step4: false  // Review & confirm
   });
 
+  // Derived variables for better readability
+  const passwordStrength = securityScore;
+  const usernameAvailable = usernameValidation.isAvailable;
+
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -3185,6 +3189,7 @@ export default function CompanyHierarchy() {
                           <SelectItem value="department">Has Department</SelectItem>
                         </SelectContent>
                       </Select>
+                    </div>
                   {(employeeSearchQuery || employeeFilter !== 'all') && (
                     <Button
                       variant="outline"
