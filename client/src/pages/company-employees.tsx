@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Users, Search, Filter, Building2, ChevronLeft, ChevronRight, 
   MoreVertical, Eye, UserCheck, UserX, Calendar, Mail, Phone,
-  MapPin, Briefcase, Star, User, Settings
+  MapPin, Briefcase, Star, User, Settings, Crown, Shield
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -18,6 +18,17 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
+import { apiRequest } from '@/lib/queryClient';
 import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import CompanyNavHeader from '@/components/company-nav-header';
@@ -55,6 +66,17 @@ export default function CompanyEmployees() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedTab, setSelectedTab] = useState("all");
+  const [isManageEmployeeOpen, setIsManageEmployeeOpen] = useState(false);
+  const [selectedEmployee, setSelectedEmployee] = useState<any>(null);
+  const [employeeUpdate, setEmployeeUpdate] = useState({
+    hierarchyRole: "employee",
+    branchId: "",
+    teamId: "",
+    canVerifyWork: false,
+    canManageEmployees: false,
+    canCreateTeams: false,
+    verificationScope: "none"
+  });
   const queryClient = useQueryClient();
 
   // Fetch paginated employees
@@ -91,6 +113,16 @@ export default function CompanyEmployees() {
     },
   });
 
+  // Fetch branches for management
+  const { data: branches } = useQuery({
+    queryKey: ['/api/company/branches'],
+  });
+
+  // Fetch teams for management
+  const { data: teams } = useQuery({
+    queryKey: ['/api/company/teams'],
+  });
+
   // Update employee status mutation
   const updateStatusMutation = useMutation({
     mutationFn: async ({ employeeId, isCurrent }: { employeeId: string; isCurrent: boolean }) => {
@@ -119,9 +151,41 @@ export default function CompanyEmployees() {
     },
   });
 
+  // Update employee hierarchy mutation
+  const updateEmployeeMutation = useMutation({
+    mutationFn: async (data: any) => {
+      return await apiRequest("PATCH", `/api/company/employees/${selectedEmployee.employeeId}/hierarchy`, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/company/employees/paginated'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/company/employees/stats'] });
+      setIsManageEmployeeOpen(false);
+      setSelectedEmployee(null);
+      toast({ title: "Success", description: "Employee updated successfully" });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to update employee", variant: "destructive" });
+    },
+  });
+
   const employees = employeeData?.employees || [];
   const pagination = employeeData?.pagination;
   const allEmployees = statsData?.employees || [];
+
+  // Handle employee management
+  const handleManageEmployee = (employee: CompanyEmployee) => {
+    setSelectedEmployee(employee);
+    setEmployeeUpdate({
+      hierarchyRole: (employee as any).hierarchyRole || "employee",
+      branchId: (employee as any).branchId || "",
+      teamId: (employee as any).teamId || "",
+      canVerifyWork: (employee as any).canVerifyWork || false,
+      canManageEmployees: (employee as any).canManageEmployees || false,
+      canCreateTeams: (employee as any).canCreateTeams || false,
+      verificationScope: (employee as any).verificationScope || "none"
+    });
+    setIsManageEmployeeOpen(true);
+  };
 
   const handleStatusChange = (employee: CompanyEmployee, newStatus: boolean) => {
     const statusText = newStatus ? 'Active' : 'Ex-Employee';
@@ -230,6 +294,7 @@ export default function CompanyEmployees() {
                   isLoading={isLoading}
                   onStatusChange={handleStatusChange}
                   getStatusBadge={getStatusBadge}
+                  onManageEmployee={handleManageEmployee}
                 />
               </TabsContent>
               
@@ -239,6 +304,7 @@ export default function CompanyEmployees() {
                   isLoading={isLoading}
                   onStatusChange={handleStatusChange}
                   getStatusBadge={getStatusBadge}
+                  onManageEmployee={handleManageEmployee}
                 />
               </TabsContent>
               
@@ -248,6 +314,7 @@ export default function CompanyEmployees() {
                   isLoading={isLoading}
                   onStatusChange={handleStatusChange}
                   getStatusBadge={getStatusBadge}
+                  onManageEmployee={handleManageEmployee}
                 />
               </TabsContent>
             </Tabs>
@@ -286,6 +353,196 @@ export default function CompanyEmployees() {
           </div>
         )}
       </div>
+
+      {/* Employee Management Dialog */}
+      <Dialog open={isManageEmployeeOpen} onOpenChange={setIsManageEmployeeOpen}>
+        <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Settings className="w-5 h-5 text-blue-600" />
+              Manage Employee: {selectedEmployee?.employeeName}
+            </DialogTitle>
+            <DialogDescription>
+              Configure hierarchy role, permissions, and organizational assignments for this employee.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedEmployee && (
+            <div className="space-y-6 py-4">
+              {/* Employee Info */}
+              <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-slate-100 dark:bg-slate-700 rounded-full flex items-center justify-center">
+                    <User className="h-5 w-5 text-slate-600 dark:text-slate-300" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold">{selectedEmployee.employeeName}</h3>
+                    <p className="text-sm text-muted-foreground">{selectedEmployee.employeeEmail}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Hierarchy Role */}
+              <div className="space-y-3">
+                <Label className="text-sm font-medium">Hierarchy Role</Label>
+                <Select
+                  value={employeeUpdate.hierarchyRole}
+                  onValueChange={(value) => setEmployeeUpdate(prev => ({ ...prev, hierarchyRole: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select hierarchy role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="employee">
+                      <div className="flex items-center gap-2">
+                        <User className="h-4 w-4" />
+                        Employee
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="team_lead">
+                      <div className="flex items-center gap-2">
+                        <UserCheck className="h-4 w-4" />
+                        Team Lead
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="branch_manager">
+                      <div className="flex items-center gap-2">
+                        <Shield className="h-4 w-4" />
+                        Branch Manager
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="company_admin">
+                      <div className="flex items-center gap-2">
+                        <Crown className="h-4 w-4" />
+                        Company Admin
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Branch Assignment */}
+              <div className="space-y-3">
+                <Label className="text-sm font-medium">Branch Assignment</Label>
+                <Select
+                  value={employeeUpdate.branchId}
+                  onValueChange={(value) => setEmployeeUpdate(prev => ({ ...prev, branchId: value, teamId: "" }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select branch (optional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">No Branch Assignment</SelectItem>
+                    {Array.isArray(branches) && branches.map((branch: any) => (
+                      <SelectItem key={branch.id} value={branch.id}>
+                        {branch.name} ({branch.location})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Team Assignment */}
+              <div className="space-y-3">
+                <Label className="text-sm font-medium">Team Assignment</Label>
+                <Select
+                  value={employeeUpdate.teamId}
+                  onValueChange={(value) => setEmployeeUpdate(prev => ({ ...prev, teamId: value }))}
+                  disabled={!employeeUpdate.branchId}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={employeeUpdate.branchId ? "Select team (optional)" : "Select a branch first"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">No Team Assignment</SelectItem>
+                    {Array.isArray(teams) && teams
+                      .filter((team: any) => team.branchId === employeeUpdate.branchId)
+                      .map((team: any) => (
+                        <SelectItem key={team.id} value={team.id}>
+                          {team.name}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Permissions */}
+              <div className="space-y-4">
+                <Label className="text-sm font-medium">Permissions & Capabilities</Label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex items-center justify-between p-3 border rounded-lg">
+                    <div>
+                      <p className="font-medium text-sm">Verify Work Entries</p>
+                      <p className="text-xs text-muted-foreground">Allow employee to verify work entries</p>
+                    </div>
+                    <Switch
+                      checked={employeeUpdate.canVerifyWork}
+                      onCheckedChange={(checked) => setEmployeeUpdate(prev => ({ ...prev, canVerifyWork: checked }))}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between p-3 border rounded-lg">
+                    <div>
+                      <p className="font-medium text-sm">Manage Employees</p>
+                      <p className="text-xs text-muted-foreground">Allow employee to manage other employees</p>
+                    </div>
+                    <Switch
+                      checked={employeeUpdate.canManageEmployees}
+                      onCheckedChange={(checked) => setEmployeeUpdate(prev => ({ ...prev, canManageEmployees: checked }))}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between p-3 border rounded-lg">
+                    <div>
+                      <p className="font-medium text-sm">Create Teams</p>
+                      <p className="text-xs text-muted-foreground">Allow employee to create and manage teams</p>
+                    </div>
+                    <Switch
+                      checked={employeeUpdate.canCreateTeams}
+                      onCheckedChange={(checked) => setEmployeeUpdate(prev => ({ ...prev, canCreateTeams: checked }))}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Verification Scope */}
+              <div className="space-y-3">
+                <Label className="text-sm font-medium">Verification Scope</Label>
+                <Select
+                  value={employeeUpdate.verificationScope}
+                  onValueChange={(value) => setEmployeeUpdate(prev => ({ ...prev, verificationScope: value }))}
+                  disabled={!employeeUpdate.canVerifyWork}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select verification scope" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No Verification Rights</SelectItem>
+                    <SelectItem value="team">Team Level Verification</SelectItem>
+                    <SelectItem value="branch">Branch Level Verification</SelectItem>
+                    <SelectItem value="company">Company Level Verification</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              {/* Action Buttons */}
+              <div className="flex gap-3 pt-4">
+                <Button
+                  onClick={() => updateEmployeeMutation.mutate(employeeUpdate)}
+                  disabled={updateEmployeeMutation.isPending}
+                  className="flex-1"
+                >
+                  {updateEmployeeMutation.isPending ? "Updating..." : "Update Employee"}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setIsManageEmployeeOpen(false)}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -294,12 +551,14 @@ function EmployeeList({
   employees, 
   isLoading, 
   onStatusChange, 
-  getStatusBadge 
+  getStatusBadge,
+  onManageEmployee
 }: {
   employees: CompanyEmployee[];
   isLoading: boolean;
   onStatusChange: (employee: CompanyEmployee, newStatus: boolean) => void;
   getStatusBadge: (employee: CompanyEmployee) => React.ReactNode;
+  onManageEmployee: (employee: CompanyEmployee) => void;
 }) {
   const [, navigate] = useLocation();
 
@@ -367,6 +626,15 @@ function EmployeeList({
               </div>
               
               <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onManageEmployee(employee)}
+                >
+                  <Settings className="h-4 w-4 mr-1" />
+                  Manage
+                </Button>
+                
                 <Button
                   variant="outline"
                   size="sm"
