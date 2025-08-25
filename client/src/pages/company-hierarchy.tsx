@@ -120,6 +120,22 @@ export default function CompanyHierarchy() {
     }
   });
 
+  // Phase 4: Enhanced Security & Validation State
+  const [passwordValidation, setPasswordValidation] = useState({
+    minLength: false,
+    hasUppercase: false,
+    hasLowercase: false,
+    hasNumber: false,
+    hasSpecialChar: false
+  });
+  const [usernameValidation, setUsernameValidation] = useState({
+    isAvailable: true,
+    isChecking: false,
+    minLength: false,
+    validFormat: false
+  });
+  const [securityScore, setSecurityScore] = useState(0);
+
   // Search and filter state for manager creation
   const [employeeSearchQuery, setEmployeeSearchQuery] = useState('');
   const [employeeFilter, setEmployeeFilter] = useState('all');
@@ -136,16 +152,102 @@ export default function CompanyHierarchy() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Validation functions for step-by-step process
+  // Phase 4: Enhanced Security & Validation Functions
+  const validatePassword = (password: string) => {
+    const validation = {
+      minLength: password.length >= 8,
+      hasUppercase: /[A-Z]/.test(password),
+      hasLowercase: /[a-z]/.test(password),
+      hasNumber: /\d/.test(password),
+      hasSpecialChar: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)
+    };
+    
+    setPasswordValidation(validation);
+    
+    // Calculate security score (0-100)
+    const score = Object.values(validation).reduce((acc, isValid) => acc + (isValid ? 20 : 0), 0);
+    setSecurityScore(score);
+    
+    return validation;
+  };
+
+  const validateUsername = async (username: string) => {
+    const validation = {
+      minLength: username.length >= 3,
+      validFormat: /^[a-zA-Z0-9._-]+$/.test(username),
+      isAvailable: true,
+      isChecking: false
+    };
+    
+    // Check format and length first
+    if (!validation.minLength || !validation.validFormat) {
+      setUsernameValidation(validation);
+      return validation;
+    }
+    
+    // Simulate username availability check
+    setUsernameValidation({ ...validation, isChecking: true });
+    
+    setTimeout(() => {
+      // Simulate checking against existing usernames
+      const unavailableUsernames = ['admin', 'manager', 'root', 'test', 'user'];
+      const isAvailable = !unavailableUsernames.includes(username.toLowerCase());
+      
+      setUsernameValidation({
+        ...validation,
+        isAvailable,
+        isChecking: false
+      });
+    }, 1000);
+    
+    return validation;
+  };
+
+  const getSecurityStrength = (score: number): { label: string; color: string; description: string } => {
+    if (score >= 100) return { 
+      label: 'Excellent', 
+      color: 'text-green-600', 
+      description: 'Maximum security achieved' 
+    };
+    if (score >= 80) return { 
+      label: 'Strong', 
+      color: 'text-green-600', 
+      description: 'Good security level' 
+    };
+    if (score >= 60) return { 
+      label: 'Moderate', 
+      color: 'text-yellow-600', 
+      description: 'Meets basic requirements' 
+    };
+    if (score >= 40) return { 
+      label: 'Weak', 
+      color: 'text-orange-600', 
+      description: 'Improve password strength' 
+    };
+    return { 
+      label: 'Very Weak', 
+      color: 'text-red-600', 
+      description: 'Password too simple' 
+    };
+  };
+
+  // Enhanced validation functions for step-by-step process
   const validateStep = (step: number): boolean => {
     switch (step) {
       case 1: // Employee selection
         return !!newManager.employeeId;
-      case 2: // Login credentials
+      case 2: // Login credentials with enhanced security
         return (
-          newManager.username.length >= 3 &&
-          newManager.password.length >= 6 &&
-          newManager.password === newManager.confirmPassword
+          usernameValidation.minLength &&
+          usernameValidation.validFormat &&
+          usernameValidation.isAvailable &&
+          passwordValidation.minLength &&
+          passwordValidation.hasUppercase &&
+          passwordValidation.hasLowercase &&
+          passwordValidation.hasNumber &&
+          passwordValidation.hasSpecialChar &&
+          newManager.password === newManager.confirmPassword &&
+          securityScore >= 80 // Minimum security score
         );
       case 3: // Access level & permissions
         return !!newManager.accessLevel;
@@ -3264,68 +3366,6 @@ export default function CompanyHierarchy() {
                             <div className="flex-1">
                               <div className="font-medium text-sm">{employee.firstName} {employee.lastName}</div>
                               <div className="text-xs text-gray-500">{employee.position || 'Employee'} • {employee.department || 'General'}</div>
-                            </div>
-                          </div>
-                              
-                              {/* Employee Details */}
-                              <div className="flex-1 min-w-0">
-                                {/* Name and Position */}
-                                <div className="flex items-center gap-2 mb-2">
-                                  <h4 className="font-bold text-gray-900 text-sm truncate">
-                                    {employee.firstName} {employee.lastName}
-                                  </h4>
-                                  <Badge variant="outline" className="text-xs bg-gradient-to-r from-blue-50 to-purple-50 text-blue-800 border-blue-300 font-semibold">
-                                    {employee.position || 'Employee'}
-                                  </Badge>
-                                </div>
-                                
-                                {/* Department and ID */}
-                                <div className="grid grid-cols-2 gap-2 mb-2 text-xs">
-                                  <div className="flex items-center gap-1.5 text-gray-600">
-                                    <Building2 className="h-3.5 w-3.5 text-blue-500" />
-                                    <span className="font-medium truncate">{employee.department || 'General'}</span>
-                                  </div>
-                                  <div className="flex items-center gap-1.5 text-gray-600">
-                                    <User className="h-3.5 w-3.5 text-purple-500" />
-                                    <span className="font-mono text-xs">ID: {employee.employeeId || 'N/A'}</span>
-                                  </div>
-                                </div>
-                                
-                                {/* Contact and Join Date */}
-                                <div className="grid grid-cols-1 gap-1.5 mb-2 text-xs">
-                                  {employee.email && (
-                                    <div className="flex items-center gap-1.5 text-gray-600">
-                                      <Mail className="h-3.5 w-3.5 text-green-500" />
-                                      <span className="truncate font-medium">{employee.email}</span>
-                                    </div>
-                                  )}
-                                  <div className="flex items-center gap-1.5 text-gray-600">
-                                    <Calendar className="h-3.5 w-3.5 text-orange-500" />
-                                    <span className="font-medium">
-                                      Joined: {employee.dateJoined ? new Date(employee.dateJoined).toLocaleDateString('en-US', { 
-                                        month: 'short', 
-                                        day: 'numeric',
-                                        year: 'numeric' 
-                                      }) : 'Date not available'}
-                                    </span>
-                                  </div>
-                                </div>
-                                
-                                {/* Status and Eligibility */}
-                                <div className="flex items-center justify-between pt-2 border-t border-gray-100">
-                                  <div className="flex items-center gap-1.5">
-                                    <Badge variant="secondary" className="text-xs bg-green-100 text-green-800 border-green-300">
-                                      ✓ Active
-                                    </Badge>
-                                    <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-800 border-blue-300">
-                                      💼 {employee.employmentType || 'Full-time'}
-                                    </Badge>
-                                  </div>
-                                  <Badge variant="secondary" className="text-xs bg-gradient-to-r from-emerald-100 to-green-100 text-emerald-800 border-emerald-300 font-semibold px-2">
-                                    🎯 Eligible for Promotion
-                                  </Badge>
-                                </div>
-                              </div>
                             </div>
                           </div>
                         </SelectItem>
