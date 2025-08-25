@@ -1215,7 +1215,7 @@ export default function CompanyHierarchy() {
           <p className="text-muted-foreground mt-2 text-sm lg:text-base" data-testid="page-description">
             Manage your organizational structure, branches, teams, and employee roles
           </p>
-          {user?.type === 'company' && (
+          {data?.company && (
             <div className="mt-3 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200">
               <Shield className="w-4 h-4 mr-1" />
               Company Owner - Full Management Access
