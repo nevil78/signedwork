@@ -53,6 +53,8 @@ export default function CompanyHierarchy() {
   const [isEditTeamOpen, setIsEditTeamOpen] = useState(false);
   const [isDeleteTeamOpen, setIsDeleteTeamOpen] = useState(false);
   const [isCreateManagerOpen, setIsCreateManagerOpen] = useState(false);
+  const [isEditManagerOpen, setIsEditManagerOpen] = useState(false);
+  const [isDeleteManagerOpen, setIsDeleteManagerOpen] = useState(false);
   const [isResetPasswordOpen, setIsResetPasswordOpen] = useState(false);
   const [selectedManager, setSelectedManager] = useState<any>(null);
   const [newTempPassword, setNewTempPassword] = useState<string>("");
@@ -120,6 +122,21 @@ export default function CompanyHierarchy() {
       canVerifyWork: true,
       canViewReports: true,
       canManageBranches: false
+    }
+  });
+
+  const [editManager, setEditManager] = useState({
+    managerName: "",
+    managerEmail: "",
+    permissionLevel: "branch_manager",
+    branchId: "",
+    teamId: "",
+    permissions: {
+      canApproveWork: true,
+      canEditEmployees: false,
+      canViewAnalytics: true,
+      canInviteEmployees: false,
+      canManageTeams: false
     }
   });
 
@@ -543,6 +560,53 @@ export default function CompanyHierarchy() {
     }
   });
 
+  const updateManagerMutation = useMutation({
+    mutationFn: async ({ managerId, updates }: { managerId: string; updates: any }) => {
+      return apiRequest("PATCH", `/api/company/managers/${managerId}`, updates);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/company/managers"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/company/structure"] });
+      setIsEditManagerOpen(false);
+      setSelectedManager(null);
+      toast({ 
+        title: "Success", 
+        description: "Manager updated successfully" 
+      });
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Error", 
+        description: error.message || "Failed to update manager", 
+        variant: "destructive" 
+      });
+    }
+  });
+
+  const deleteManagerMutation = useMutation({
+    mutationFn: async (managerId: string) => {
+      return apiRequest("DELETE", `/api/company/managers/${managerId}`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/company/managers"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/company/structure"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/company/employees"] });
+      setIsDeleteManagerOpen(false);
+      setSelectedManager(null);
+      toast({ 
+        title: "Success", 
+        description: "Manager account deleted successfully" 
+      });
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Error", 
+        description: error.message || "Failed to delete manager", 
+        variant: "destructive" 
+      });
+    }
+  });
+
   // Handle employee selection for hierarchy management
   const handleManageEmployee = (employee: any) => {
     setSelectedEmployee(employee);
@@ -595,6 +659,32 @@ export default function CompanyHierarchy() {
   const handleDeleteTeam = (team: any) => {
     setSelectedTeam(team);
     setIsDeleteTeamOpen(true);
+  };
+
+  // Handle manager edit
+  const handleEditManager = (manager: any) => {
+    setSelectedManager(manager);
+    setEditManager({
+      managerName: manager.managerName || "",
+      managerEmail: manager.managerEmail || "",
+      permissionLevel: manager.permissionLevel || "branch_manager",
+      branchId: manager.branchId || "",
+      teamId: manager.teamId || "",
+      permissions: {
+        canApproveWork: manager.permissions?.canApproveWork || true,
+        canEditEmployees: manager.permissions?.canEditEmployees || false,
+        canViewAnalytics: manager.permissions?.canViewAnalytics || true,
+        canInviteEmployees: manager.permissions?.canInviteEmployees || false,
+        canManageTeams: manager.permissions?.canManageTeams || false
+      }
+    });
+    setIsEditManagerOpen(true);
+  };
+
+  // Handle manager delete confirmation
+  const handleDeleteManager = (manager: any) => {
+    setSelectedManager(manager);
+    setIsDeleteManagerOpen(true);
   };
 
   // Permission system
@@ -3094,7 +3184,29 @@ export default function CompanyHierarchy() {
                         </div>
                         
                         {/* Manager Actions */}
-                        <div className="mt-4 pt-3 border-t border-gray-200 flex gap-2">
+                        <div className="mt-4 pt-3 border-t border-gray-200 space-y-2">
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleEditManager(manager)}
+                              className="flex-1 text-xs"
+                              data-testid={`button-edit-manager-${manager.uniqueId}`}
+                            >
+                              <Edit className="h-3 w-3 mr-1" />
+                              Edit
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleDeleteManager(manager)}
+                              className="flex-1 text-xs text-red-600 hover:text-red-700 hover:border-red-300"
+                              data-testid={`button-delete-manager-${manager.uniqueId}`}
+                            >
+                              <Trash2 className="h-3 w-3 mr-1" />
+                              Delete
+                            </Button>
+                          </div>
                           <Button
                             size="sm"
                             variant="outline"
@@ -3103,7 +3215,7 @@ export default function CompanyHierarchy() {
                               resetManagerPasswordMutation.mutate(manager.id);
                             }}
                             disabled={resetManagerPasswordMutation.isPending}
-                            className="flex-1 text-xs"
+                            className="w-full text-xs"
                             data-testid={`button-reset-password-${manager.uniqueId}`}
                           >
                             <Key className="h-3 w-3 mr-1" />
@@ -4916,6 +5028,215 @@ export default function CompanyHierarchy() {
               >
                 {updateEmployeeHierarchyMutation.isPending ? "Updating..." : "Update Employee"}
               </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Manager Dialog */}
+      <Dialog open={isEditManagerOpen} onOpenChange={setIsEditManagerOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Edit className="h-5 w-5 text-blue-600" />
+              Edit Manager Account
+            </DialogTitle>
+            <DialogDescription>
+              Update {selectedManager?.managerName}'s details and permissions
+            </DialogDescription>
+          </DialogHeader>
+          {selectedManager && (
+            <div className="space-y-6">
+              {/* Manager Basic Info */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="edit-manager-name">Manager Name</Label>
+                  <Input
+                    id="edit-manager-name"
+                    value={editManager.managerName}
+                    onChange={(e) => setEditManager({ ...editManager, managerName: e.target.value })}
+                    placeholder="Manager full name"
+                    data-testid="input-edit-manager-name"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-manager-email">Email Address</Label>
+                  <Input
+                    id="edit-manager-email"
+                    type="email"
+                    value={editManager.managerEmail}
+                    onChange={(e) => setEditManager({ ...editManager, managerEmail: e.target.value })}
+                    placeholder="manager@company.com"
+                    data-testid="input-edit-manager-email"
+                  />
+                </div>
+              </div>
+
+              {/* Permission Level */}
+              <div>
+                <Label htmlFor="edit-permission-level">Access Level</Label>
+                <Select value={editManager.permissionLevel} onValueChange={(value) => setEditManager({ ...editManager, permissionLevel: value })}>
+                  <SelectTrigger data-testid="select-edit-permission-level">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="company_admin">Company Admin - Full access to all features</SelectItem>
+                    <SelectItem value="branch_manager">Branch Manager - Manage specific branch</SelectItem>
+                    <SelectItem value="team_lead">Team Lead - Manage specific team</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Permissions */}
+              <div className="space-y-4">
+                <h4 className="font-medium">Permissions</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="edit-can-approve-work">Can Approve Work</Label>
+                    <Switch
+                      id="edit-can-approve-work"
+                      checked={editManager.permissions.canApproveWork}
+                      onCheckedChange={(checked) => setEditManager({ 
+                        ...editManager, 
+                        permissions: { ...editManager.permissions, canApproveWork: checked }
+                      })}
+                      data-testid="switch-edit-can-approve-work"
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="edit-can-edit-employees">Can Edit Employees</Label>
+                    <Switch
+                      id="edit-can-edit-employees"
+                      checked={editManager.permissions.canEditEmployees}
+                      onCheckedChange={(checked) => setEditManager({ 
+                        ...editManager, 
+                        permissions: { ...editManager.permissions, canEditEmployees: checked }
+                      })}
+                      data-testid="switch-edit-can-edit-employees"
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="edit-can-view-analytics">Can View Analytics</Label>
+                    <Switch
+                      id="edit-can-view-analytics"
+                      checked={editManager.permissions.canViewAnalytics}
+                      onCheckedChange={(checked) => setEditManager({ 
+                        ...editManager, 
+                        permissions: { ...editManager.permissions, canViewAnalytics: checked }
+                      })}
+                      data-testid="switch-edit-can-view-analytics"
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="edit-can-manage-teams">Can Manage Teams</Label>
+                    <Switch
+                      id="edit-can-manage-teams"
+                      checked={editManager.permissions.canManageTeams}
+                      onCheckedChange={(checked) => setEditManager({ 
+                        ...editManager, 
+                        permissions: { ...editManager.permissions, canManageTeams: checked }
+                      })}
+                      data-testid="switch-edit-can-manage-teams"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Update Summary */}
+              <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <h5 className="font-medium text-blue-900 mb-2">Update Summary</h5>
+                <div className="text-sm text-blue-800 space-y-1">
+                  <div><strong>Manager:</strong> {editManager.managerName}</div>
+                  <div><strong>Email:</strong> {editManager.managerEmail}</div>
+                  <div><strong>Access Level:</strong> {editManager.permissionLevel.replace('_', ' ')}</div>
+                  <div><strong>Active Permissions:</strong> {Object.entries(editManager.permissions).filter(([_, enabled]) => enabled).length} of {Object.keys(editManager.permissions).length}</div>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setIsEditManagerOpen(false)}
+                  className="flex-1"
+                  data-testid="button-cancel-edit-manager"
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={() => updateManagerMutation.mutate({ 
+                    managerId: selectedManager.id, 
+                    updates: {
+                      managerName: editManager.managerName,
+                      managerEmail: editManager.managerEmail,
+                      permissionLevel: editManager.permissionLevel,
+                      permissions: editManager.permissions
+                    }
+                  })}
+                  disabled={updateManagerMutation.isPending || !editManager.managerName || !editManager.managerEmail}
+                  className="flex-1"
+                  data-testid="button-confirm-edit-manager"
+                >
+                  {updateManagerMutation.isPending ? "Updating..." : "Update Manager"}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Manager Confirmation Dialog */}
+      <Dialog open={isDeleteManagerOpen} onOpenChange={setIsDeleteManagerOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <AlertTriangle className="h-5 w-5" />
+              Delete Manager Account
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete {selectedManager?.managerName}'s manager account? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          {selectedManager && (
+            <div className="space-y-4">
+              <div className="p-4 bg-red-50 rounded-lg border border-red-200">
+                <h5 className="font-medium text-red-900 mb-2">This will:</h5>
+                <ul className="text-sm text-red-800 space-y-1 list-disc list-inside">
+                  <li>Permanently delete the manager account</li>
+                  <li>Remove all login access for this manager</li>
+                  <li>Unassign all employees from this manager</li>
+                  <li>Clear all manager-specific permissions</li>
+                </ul>
+              </div>
+
+              <div className="p-3 bg-gray-50 rounded-lg border">
+                <h5 className="font-medium text-sm mb-2">Manager Details</h5>
+                <div className="text-xs space-y-1">
+                  <div><strong>Name:</strong> {selectedManager.managerName}</div>
+                  <div><strong>ID:</strong> {selectedManager.uniqueId}</div>
+                  <div><strong>Email:</strong> {selectedManager.managerEmail}</div>
+                  <div><strong>Access Level:</strong> {selectedManager.permissionLevel?.replace('_', ' ')}</div>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setIsDeleteManagerOpen(false)}
+                  className="flex-1"
+                  data-testid="button-cancel-delete-manager"
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  variant="destructive"
+                  onClick={() => deleteManagerMutation.mutate(selectedManager.id)}
+                  disabled={deleteManagerMutation.isPending}
+                  className="flex-1"
+                  data-testid="button-confirm-delete-manager"
+                >
+                  {deleteManagerMutation.isPending ? "Deleting..." : "Delete Manager"}
+                </Button>
+              </div>
             </div>
           )}
         </DialogContent>
