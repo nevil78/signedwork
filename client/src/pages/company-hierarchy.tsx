@@ -1296,7 +1296,7 @@ export default function CompanyHierarchy() {
                         .filter((emp: any) => emp.employeeId && emp.employeeId.trim() !== "")
                         .map((emp: any) => (
                         <SelectItem key={emp.employeeId} value={emp.employeeId}>
-                          {emp.employee?.firstName || "Unknown"} {emp.employee?.lastName || "Employee"} - {emp.position || "No Position"}
+                          {emp.firstName || "Unknown"} {emp.lastName || "Employee"} - {emp.position || "No Position"}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -1369,7 +1369,7 @@ export default function CompanyHierarchy() {
                         .filter((emp: any) => emp.employeeId && emp.employeeId.trim() !== "")
                         .map((emp: any) => (
                         <SelectItem key={emp.employeeId} value={emp.employeeId}>
-                          {emp.employee?.firstName || "Unknown"} {emp.employee?.lastName || "Employee"} - {emp.position || "No Position"}
+                          {emp.firstName || "Unknown"} {emp.lastName || "Employee"} - {emp.position || "No Position"}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -4589,7 +4589,7 @@ export default function CompanyHierarchy() {
                       .filter((emp: any) => emp.employeeId && emp.employeeId.trim() !== "")
                       .map((emp: any) => (
                       <SelectItem key={emp.employeeId} value={emp.employeeId}>
-                        {emp.employee?.firstName || "Unknown"} {emp.employee?.lastName || "Employee"} - {emp.position || "No Position"}
+                        {emp.firstName || "Unknown"} {emp.lastName || "Employee"} - {emp.position || "No Position"}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -4728,7 +4728,7 @@ export default function CompanyHierarchy() {
                       .filter((emp: any) => emp.employeeId && emp.employeeId.trim() !== "")
                       .map((emp: any) => (
                       <SelectItem key={emp.employeeId} value={emp.employeeId}>
-                        {emp.employee?.firstName || "Unknown"} {emp.employee?.lastName || "Employee"} - {emp.position || "No Position"}
+                        {emp.firstName || "Unknown"} {emp.lastName || "Employee"} - {emp.position || "No Position"}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -5072,7 +5072,7 @@ export default function CompanyHierarchy() {
                       .filter((emp: any) => emp.employeeId && emp.employeeId.trim() !== "")
                       .map((emp: any) => (
                       <SelectItem key={emp.employeeId} value={emp.employeeId}>
-                        {emp.employee?.firstName || "Unknown"} {emp.employee?.lastName || "Employee"} - {emp.position || "No Position"}
+                        {emp.firstName || "Unknown"} {emp.lastName || "Employee"} - {emp.position || "No Position"}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -5212,7 +5212,7 @@ export default function CompanyHierarchy() {
                       .filter((emp: any) => emp.employeeId && emp.employeeId.trim() !== "")
                       .map((emp: any) => (
                       <SelectItem key={emp.employeeId} value={emp.employeeId}>
-                        {emp.employee?.firstName || "Unknown"} {emp.employee?.lastName || "Employee"} - {emp.position || "No Position"}
+                        {emp.firstName || "Unknown"} {emp.lastName || "Employee"} - {emp.position || "No Position"}
                       </SelectItem>
                     ))}
                   </SelectContent>
