@@ -42,7 +42,7 @@ interface WorkEntry {
   client?: string;
   priority: string;
   status: string;
-  approvalStatus?: string; // Add the missing approvalStatus field
+  approvalStatus?: string;
   startDate: string;
   endDate?: string;
   estimatedHours?: number;
@@ -55,6 +55,7 @@ interface WorkEntry {
   learnings?: string;
   companyFeedback?: string;
   companyRating?: number;
+  companyId: string; // Add missing companyId property
   createdAt: string;
   updatedAt: string;
 }

@@ -14,7 +14,6 @@ import VerifyEmail from "@/pages/verify-email";
 import EmailOTPVerificationPage from "@/pages/email-otp-verification";
 import Dashboard from "@/pages/dashboard";
 import Profile from "@/pages/profile";
-import WorkDiary from "@/pages/work-diary";
 import WorkDiaryCompany from "@/pages/work-diary-company";
 import ProfessionalProfile from "@/pages/professional-profile";
 import ProfessionalWorkDiary from "@/pages/professional-work-diary";
@@ -79,7 +78,6 @@ function Router() {
       <Route path="/work-diary" component={ProfessionalWorkDiary} />
       <Route path="/work-diary/:companyId" component={WorkDiaryCompany} />
       <Route path="/legacy-profile" component={Profile} />
-      <Route path="/legacy-work-diary" component={WorkDiary} />
       <Route path="/job-discovery" component={JobDiscoveryPage} />
       <Route path="/company-dashboard" component={CompanyDashboard} />
       <Route path="/company-work-entries" component={CompanyWorkEntries} />
