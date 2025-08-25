@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { io, Socket } from "socket.io-client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -138,6 +139,14 @@ export default function CompanyHierarchy() {
     overCapacity: 90,
     turnoverRisk: 75
   });
+  
+  // Phase 5: Real-time Communication & Notifications State
+  const [socket, setSocket] = useState<Socket | null>(null);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [isNotificationsPanelOpen, setIsNotificationsPanelOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [realtimeUsers, setRealtimeUsers] = useState<any[]>([]);
+  const [isConnected, setIsConnected] = useState(false);
   
   // Phase 3: Bulk Operations State
   const [selectedEmployees, setSelectedEmployees] = useState<string[]>([]);
@@ -1057,6 +1066,86 @@ export default function CompanyHierarchy() {
     };
   }, [data]);
 
+  // Phase 5: Real-time Socket Connection & Notifications
+  useEffect(() => {
+    const newSocket = io();
+    setSocket(newSocket);
+    
+    newSocket.on('connect', () => {
+      setIsConnected(true);
+      console.log('Connected to real-time server');
+    });
+    
+    newSocket.on('disconnect', () => {
+      setIsConnected(false);
+    });
+    
+    // Real-time organization updates
+    newSocket.on('employee-hierarchy-updated', (data) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/company-hierarchy'] });
+      setNotifications(prev => [...prev, {
+        id: Date.now(),
+        type: 'employee_update',
+        title: 'Employee Updated',
+        message: `Employee hierarchy has been updated`,
+        timestamp: new Date(),
+        read: false
+      }]);
+      setUnreadCount(prev => prev + 1);
+    });
+    
+    newSocket.on('bulk-employee-update', (data) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/company-hierarchy'] });
+      setNotifications(prev => [...prev, {
+        id: Date.now(),
+        type: 'bulk_update',
+        title: 'Bulk Operation Complete',
+        message: `${data.updatedCount} employees updated successfully`,
+        timestamp: new Date(),
+        read: false
+      }]);
+      setUnreadCount(prev => prev + 1);
+    });
+    
+    newSocket.on('organization-structure-changed', (data) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/company-hierarchy'] });
+      setNotifications(prev => [...prev, {
+        id: Date.now(),
+        type: 'structure_change',
+        title: 'Organization Updated',
+        message: `${data.type} "${data.name}" has been ${data.action}`,
+        timestamp: new Date(),
+        read: false
+      }]);
+      setUnreadCount(prev => prev + 1);
+    });
+    
+    // Real-time user presence
+    newSocket.on('users-online', (users) => {
+      setRealtimeUsers(users);
+    });
+    
+    return () => {
+      newSocket.close();
+      setSocket(null);
+    };
+  }, [queryClient]);
+
+  // Phase 5: Notification handlers
+  const markNotificationAsRead = (id: number) => {
+    setNotifications(prev => 
+      prev.map(notif => 
+        notif.id === id ? { ...notif, read: true } : notif
+      )
+    );
+    setUnreadCount(prev => Math.max(0, prev - 1));
+  };
+
+  const clearAllNotifications = () => {
+    setNotifications([]);
+    setUnreadCount(0);
+  };
+
   // Handle employee selection for hierarchy management
   const handleManageEmployee = (employee: any) => {
     setSelectedEmployee(employee);
@@ -1379,9 +1468,16 @@ export default function CompanyHierarchy() {
             <Building2 className="h-6 w-6 lg:h-8 lg:w-8 text-blue-600" />
             <span className="hidden sm:inline">Company Hierarchy Management</span>
             <span className="sm:hidden">Hierarchy</span>
+            {/* Phase 5: Real-time Connection Status */}
+            <div className="flex items-center gap-2 ml-3">
+              <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
+              <span className={`text-xs font-medium ${isConnected ? 'text-green-600' : 'text-red-600'}`}>
+                {isConnected ? 'Live' : 'Offline'}
+              </span>
+            </div>
           </h1>
           <p className="text-muted-foreground mt-2 text-sm lg:text-base" data-testid="page-description">
-            Manage your organizational structure, branches, teams, and employee roles
+            Enterprise-grade organizational management with real-time collaboration and AI insights
           </p>
           {data?.company && (
             <div className="mt-3 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200">
@@ -1391,14 +1487,92 @@ export default function CompanyHierarchy() {
           )}
         </div>
         
-        {/* Real-time Status & Performance Controls */}
+        {/* Phase 5: Enterprise Real-time Controls */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
+          {/* Phase 5: Real-time Users Online */}
+          {realtimeUsers.length > 0 && (
+            <div className="flex items-center gap-2 px-3 py-1 bg-blue-50 border border-blue-200 rounded-full">
+              <Users className="w-4 h-4 text-blue-600" />
+              <span className="text-sm font-medium text-blue-700">{realtimeUsers.length} active</span>
+            </div>
+          )}
+          
+          {/* Phase 5: Notification Center */}
+          <div className="relative">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsNotificationsPanelOpen(!isNotificationsPanelOpen)}
+              className="relative"
+              data-testid="notifications-button"
+            >
+              <Clock className="w-4 h-4" />
+              {unreadCount > 0 && (
+                <Badge className="absolute -top-1 -right-1 w-5 h-5 p-0 flex items-center justify-center bg-red-500 text-white text-xs">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </Badge>
+              )}
+            </Button>
+            
+            {/* Phase 5: Live Notification Panel */}
+            {isNotificationsPanelOpen && (
+              <div className="absolute right-0 top-full mt-2 w-80 bg-white border border-gray-200 rounded-lg shadow-xl z-50">
+                <div className="p-4 border-b flex items-center justify-between bg-gradient-to-r from-blue-50 to-purple-50">
+                  <h3 className="font-semibold text-gray-800">Live Notifications</h3>
+                  {notifications.length > 0 && (
+                    <Button variant="ghost" size="sm" onClick={clearAllNotifications} className="text-xs hover:bg-white">
+                      Clear all
+                    </Button>
+                  )}
+                </div>
+                <div className="max-h-64 overflow-y-auto">
+                  {notifications.length === 0 ? (
+                    <div className="p-6 text-center">
+                      <Clock className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                      <p className="text-gray-500 text-sm">No notifications yet</p>
+                      <p className="text-gray-400 text-xs">Real-time updates will appear here</p>
+                    </div>
+                  ) : (
+                    notifications.slice(0, 10).map((notification) => (
+                      <div
+                        key={notification.id}
+                        className={`p-3 border-b cursor-pointer hover:bg-gray-50 transition-colors ${!notification.read ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''}`}
+                        onClick={() => markNotificationAsRead(notification.id)}
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className={`w-2 h-2 rounded-full mt-2 ${
+                            notification.type === 'employee_update' ? 'bg-blue-500' :
+                            notification.type === 'bulk_update' ? 'bg-green-500' :
+                            notification.type === 'structure_change' ? 'bg-orange-500' :
+                            'bg-gray-500'
+                          }`}></div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-900">{notification.title}</p>
+                            <p className="text-xs text-gray-600 mt-1">{notification.message}</p>
+                            <p className="text-xs text-gray-400 mt-1">
+                              {notification.timestamp.toLocaleString()}
+                            </p>
+                          </div>
+                          {!notification.read && (
+                            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+          
           {/* Live Update Status */}
           <div className="flex items-center gap-2 px-2 lg:px-3 py-1.5 lg:py-2 bg-green-50 border border-green-200 rounded-lg">
-            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+            <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
             <div className="text-xs">
-              <div className="font-medium text-green-900">Live Updates</div>
-              <div className="text-green-700 hidden sm:block">
+              <div className={`font-medium ${isConnected ? 'text-green-900' : 'text-red-900'}`}>
+                {isConnected ? 'Live Updates' : 'Disconnected'}
+              </div>
+              <div className={`${isConnected ? 'text-green-700' : 'text-red-700'} hidden sm:block`}>
                 Last: {lastUpdateTime.toLocaleTimeString()} ({updateCount} updates)
               </div>
             </div>
