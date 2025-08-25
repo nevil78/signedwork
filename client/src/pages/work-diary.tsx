@@ -74,7 +74,7 @@ export default function WorkDiary() {
     },
   });
 
-  const { data: companies = [], isLoading } = useQuery<EmployeeCompany[]>({
+  const { data: companies = [], isLoading, refetch } = useQuery<EmployeeCompany[]>({
     queryKey: ['/api/employee-companies'],
   });
 
@@ -109,8 +109,9 @@ export default function WorkDiary() {
       }
       return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/employee-companies'] });
+    onSuccess: async () => {
+      // Force immediate refresh of companies
+      await queryClient.refetchQueries({ queryKey: ['/api/employee-companies'] });
       toast({
         title: "Success",
         description: "Successfully joined the company",
@@ -137,8 +138,9 @@ export default function WorkDiary() {
       if (!response.ok) throw new Error('Failed to create company');
       return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/employee-companies'] });
+    onSuccess: async () => {
+      // Force immediate refresh of companies
+      await queryClient.refetchQueries({ queryKey: ['/api/employee-companies'] });
       toast({
         title: "Success",
         description: "Company added successfully",
@@ -165,8 +167,9 @@ export default function WorkDiary() {
       if (!response.ok) throw new Error('Failed to update company');
       return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/employee-companies'] });
+    onSuccess: async () => {
+      // Force immediate refresh of companies
+      await queryClient.refetchQueries({ queryKey: ['/api/employee-companies'] });
       toast({
         title: "Success",
         description: "Company updated successfully",
@@ -193,8 +196,9 @@ export default function WorkDiary() {
       if (!response.ok) throw new Error('Failed to leave company');
       return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/employee-companies'] });
+    onSuccess: async () => {
+      // Force immediate refresh of companies
+      await queryClient.refetchQueries({ queryKey: ['/api/employee-companies'] });
       toast({
         title: "Success",
         description: "You have successfully left the company",
