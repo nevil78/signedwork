@@ -575,7 +575,6 @@ export default function WorkDiary() {
           )}
         </DialogContent>
       </Dialog>
-      </div>
     </div>
   );
 }
