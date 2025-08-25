@@ -2889,7 +2889,7 @@ export default function CompanyHierarchy() {
 
       {/* Create Manager Account Dialog */}
       <Dialog open={isCreateManagerOpen} onOpenChange={setIsCreateManagerOpen}>
-        <DialogContent className="max-w-lg max-h-[90vh] flex flex-col">
+        <DialogContent className="max-w-lg max-h-[85vh] flex flex-col">
           <DialogHeader className="flex-shrink-0">
             <DialogTitle className="flex items-center gap-2">
               <ShieldCheck className="h-5 w-5 text-indigo-600" />
@@ -3123,12 +3123,20 @@ export default function CompanyHierarchy() {
           <div className="flex gap-3 pt-4 border-t bg-white flex-shrink-0">
             <Button 
               onClick={() => {
-                if (newManager.password !== newManager.confirmPassword) {
-                  toast({ title: "Error", description: "Passwords do not match", variant: "destructive" });
+                if (!newManager.employeeId) {
+                  toast({ title: "Error", description: "Please select an employee", variant: "destructive" });
                   return;
                 }
-                if (!newManager.employeeId || !newManager.username || !newManager.password) {
-                  toast({ title: "Error", description: "Please fill in all required fields", variant: "destructive" });
+                if (!newManager.username) {
+                  toast({ title: "Error", description: "Please enter a username", variant: "destructive" });
+                  return;
+                }
+                if (!newManager.password) {
+                  toast({ title: "Error", description: "Please enter a password", variant: "destructive" });
+                  return;
+                }
+                if (newManager.password !== newManager.confirmPassword) {
+                  toast({ title: "Error", description: "Passwords do not match", variant: "destructive" });
                   return;
                 }
                 createManagerMutation.mutate(newManager);
