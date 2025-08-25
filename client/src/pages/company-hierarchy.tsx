@@ -5224,6 +5224,7 @@ export default function CompanyHierarchy() {
                 </Button>
               </div>
             </div>
+          </div>
           )}
         </DialogContent>
       </Dialog>
@@ -5531,16 +5532,97 @@ export default function CompanyHierarchy() {
         </DialogContent>
       </Dialog>
 
-                            <Badge variant="secondary">{analyticsData.verification.canCreateTeams} employees</Badge>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-                </TabsContent>
+      {/* Analytics Dialog */}
+      <Dialog open={isAnalyticsOpen} onOpenChange={setIsAnalyticsOpen}>
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <BarChart3 className="w-5 h-5 text-blue-600" />
+              Company Analytics Dashboard
+            </DialogTitle>
+            <DialogDescription>
+              Comprehensive insights into your company's organizational structure and performance metrics
+            </DialogDescription>
+          </DialogHeader>
+          {analyticsData ? (
+            <Tabs defaultValue="overview" className="w-full">
+              <TabsList className="grid grid-cols-4 w-full">
+                <TabsTrigger value="overview">Overview</TabsTrigger>
+                <TabsTrigger value="hierarchy">Hierarchy</TabsTrigger>
+                <TabsTrigger value="capacity">Capacity</TabsTrigger>
+                <TabsTrigger value="verification">Verification</TabsTrigger>
+              </TabsList>
 
-                {/* Capacity & Utilization Tab */}
-                <TabsContent value="capacity" className="space-y-6">
+              {/* Overview Tab */}
+              <TabsContent value="overview" className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <Card>
+                    <CardContent className="p-6">
+                      <div className="flex items-center space-x-2">
+                        <Building2 className="w-4 h-4 text-blue-600" />
+                        <div>
+                          <p className="text-xs text-muted-foreground">Total Branches</p>
+                          <p className="text-2xl font-semibold">{analyticsData.overview.totalBranches}</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="p-6">
+                      <div className="flex items-center space-x-2">
+                        <Users className="w-4 h-4 text-green-600" />
+                        <div>
+                          <p className="text-xs text-muted-foreground">Total Teams</p>
+                          <p className="text-2xl font-semibold">{analyticsData.overview.totalTeams}</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="p-6">
+                      <div className="flex items-center space-x-2">
+                        <User className="w-4 h-4 text-purple-600" />
+                        <div>
+                          <p className="text-xs text-muted-foreground">Total Employees</p>
+                          <p className="text-2xl font-semibold">{analyticsData.overview.totalEmployees}</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="p-6">
+                      <div className="flex items-center space-x-2">
+                        <TrendingUp className="w-4 h-4 text-orange-600" />
+                        <div>
+                          <p className="text-xs text-muted-foreground">Avg Team Size</p>
+                          <p className="text-2xl font-semibold">{analyticsData.overview.avgTeamSize}</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Employee Distribution by Branch</CardTitle>
+                    <CardDescription>How your workforce is distributed across branches</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <BarChart data={analyticsData.overview.employeeDistribution}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" />
+                        <YAxis />
+                        <Tooltip />
+                        <Bar dataKey="employees" fill="#3b82f6" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* Capacity & Utilization Tab */}
+              <TabsContent value="capacity" className="space-y-6">
                   <div className="grid grid-cols-1 gap-6">
                     {/* Team Utilization */}
                     <Card>
@@ -5631,7 +5713,6 @@ export default function CompanyHierarchy() {
                   </div>
                 </TabsContent>
               </Tabs>
-
               <div className="flex justify-end">
                 <Button 
                   variant="outline"
