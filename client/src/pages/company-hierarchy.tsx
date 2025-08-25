@@ -3149,7 +3149,7 @@ export default function CompanyHierarchy() {
                     className="text-xs"
                     data-testid="select-all-button"
                   >
-                    Select All ({data?.employees?.length || 0})
+                    Select All ({employees?.length || 0})
                   </Button>
                   {selectedEmployees.length > 0 && (
                     <Button 
