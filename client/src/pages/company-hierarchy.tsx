@@ -3175,16 +3175,16 @@ export default function CompanyHierarchy() {
                         )}
                       </div>
                       <Select value={employeeFilter} onValueChange={setEmployeeFilter}>
-                    <SelectTrigger className="w-36 h-10">
-                      <SelectValue placeholder="Filter" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Employees</SelectItem>
-                      <SelectItem value="recent">Recent Hires</SelectItem>
-                      <SelectItem value="senior">Senior Staff</SelectItem>
-                      <SelectItem value="department">Has Department</SelectItem>
-                    </SelectContent>
-                  </Select>
+                        <SelectTrigger className="w-36 h-10">
+                          <SelectValue placeholder="Filter" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Employees</SelectItem>
+                          <SelectItem value="recent">Recent Hires</SelectItem>
+                          <SelectItem value="senior">Senior Staff</SelectItem>
+                          <SelectItem value="department">Has Department</SelectItem>
+                        </SelectContent>
+                      </Select>
                   {(employeeSearchQuery || employeeFilter !== 'all') && (
                     <Button
                       variant="outline"
