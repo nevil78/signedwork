@@ -3619,7 +3619,8 @@ export default function CompanyHierarchy() {
               </div>
             )}
           </div>
-          
+            )}
+
           {/* Step Navigation and Action Buttons */}
           <div className="flex justify-between items-center pt-4 border-t bg-white flex-shrink-0">
             <Button
