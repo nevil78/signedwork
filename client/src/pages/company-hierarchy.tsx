@@ -76,6 +76,7 @@ import {
 import { apiRequest } from "@/lib/queryClient";
 import VisualOrgChart from "@/components/VisualOrgChart";
 import { useLocation } from "wouter";
+import CompanyNavHeader from "@/components/company-nav-header";
 
 export default function CompanyHierarchy() {
   const [, setLocation] = useLocation();
@@ -1462,7 +1463,9 @@ export default function CompanyHierarchy() {
   };
 
   return (
-    <div className="container mx-auto p-6 space-y-6" data-testid="company-hierarchy-page">
+    <div className="min-h-screen bg-background">
+      <CompanyNavHeader />
+      <div className="container mx-auto p-6 space-y-6" data-testid="company-hierarchy-page">
       {/* Back Button */}
       <div className="flex items-center gap-4 mb-4">
         <Button 
@@ -6696,6 +6699,7 @@ export default function CompanyHierarchy() {
           </div>
         </DialogContent>
       </Dialog>
+      </div>
     </div>
   );
 }
