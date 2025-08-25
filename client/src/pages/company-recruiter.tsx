@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import { Link } from 'wouter';
+import { useAuth } from '@/hooks/useAuth';
 import {
   Card,
   CardContent,
@@ -50,7 +51,8 @@ import {
   User, LogOut, Briefcase, ChevronRight, FileText, Clock,
   CheckCircle, XCircle, AlertCircle, Heart, ThumbsUp, Download,
   Search, Filter, UserCheck, UserX, UserPlus, Trophy,
-  Mail, Phone, MapPin, ExternalLink, Archive, Target
+  Mail, Phone, MapPin, ExternalLink, Archive, Target,
+  TrendingUp, BarChart3, Plus, UserSearch
 } from 'lucide-react';
 import type { JobApplication, JobListing, Employee } from '@shared/schema';
 import CompanyNavHeader from '@/components/company-nav-header';
@@ -62,10 +64,80 @@ interface ApplicationWithDetails extends JobApplication {
 
 type ApplicationStatus = 'applied' | 'viewed' | 'shortlisted' | 'interviewed' | 'offered' | 'hired' | 'rejected' | 'withdrawn';
 
+// Recruiter interfaces
+interface RecruiterProfile {
+  id: string;
+  userId: string;
+  userType: string;
+  recruiterType: string;
+  companyName?: string;
+  agencyName?: string;
+  specializations: string[];
+  experienceLevel?: string;
+  activePositions: number;
+  successfulPlacements: number;
+  averageTimeToHire: number;
+  subscriptionTier: string;
+  subscriptionStatus: string;
+  monthlySearchLimit: number;
+  monthlyContactLimit: number;
+  usedSearches: number;
+  usedContacts: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface TalentSearchFilters {
+  keywords?: string;
+  skills?: string[];
+  experienceLevel?: string[];
+  location?: string;
+  availability?: string[];
+  verifiedOnly?: boolean;
+  minYearsExperience?: number;
+  maxYearsExperience?: number;
+  industry?: string[];
+  workType?: string[];
+  education?: string[];
+}
+
+interface CandidateResult {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  headline?: string;
+  location?: string;
+  experienceLevel?: string;
+  skills: string[];
+  verifiedWorkHistory: boolean;
+  totalExperience: number;
+  latestRole: string;
+  latestCompany: string;
+  availabilityStatus?: string;
+  profilePhoto?: string;
+}
+
+interface CandidatePipeline {
+  id: string;
+  candidateId: string;
+  positionTitle: string;
+  companyName: string;
+  stage: string;
+  priority: string;
+  notes?: string;
+  nextFollowUp?: string;
+  candidate: CandidateResult;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export default function CompanyRecruiterPage() {
+  const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [selectedTab, setSelectedTab] = useState<ApplicationStatus | 'all'>('all');
+  const [selectedTab, setSelectedTab] = useState<ApplicationStatus | 'all' | 'talent-search' | 'pipeline' | 'analytics'>('all');
   const [selectedApplication, setSelectedApplication] = useState<ApplicationWithDetails | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [jobFilter, setJobFilter] = useState<string>('all');
@@ -73,6 +145,10 @@ export default function CompanyRecruiterPage() {
   const [newStatus, setNewStatus] = useState<ApplicationStatus>('viewed');
   const [notes, setNotes] = useState('');
   const [rejectionReason, setRejectionReason] = useState('');
+  
+  // New state for advanced recruitment features
+  const [searchFilters, setSearchFilters] = useState<TalentSearchFilters>({});
+  const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
 
   // Get all job applications for this company
   const { data: applications = [], isLoading: applicationsLoading } = useQuery<ApplicationWithDetails[]>({
@@ -82,6 +158,33 @@ export default function CompanyRecruiterPage() {
   // Get company jobs for filtering
   const { data: companyJobs = [] } = useQuery<JobListing[]>({
     queryKey: ['/api/company/jobs'],
+  });
+
+  // Fetch recruiter profile
+  const { data: recruiterProfile, isLoading: isLoadingProfile } = useQuery<RecruiterProfile>({
+    queryKey: ["/api/recruiter/profile"],
+    enabled: !!user
+  });
+
+  // Fetch talent search results
+  const { data: searchResults, isLoading: isSearching } = useQuery<{
+    results: CandidateResult[];
+    remainingSearches: number;
+  }>({
+    queryKey: ["/api/recruiter/search", searchFilters],
+    enabled: false, // Manual trigger
+  });
+
+  // Fetch candidate pipelines
+  const { data: pipelines = [], isLoading: isLoadingPipelines } = useQuery<CandidatePipeline[]>({
+    queryKey: ["/api/recruiter/pipelines"],
+    enabled: !!recruiterProfile
+  });
+
+  // Fetch recruitment analytics
+  const { data: analytics } = useQuery({
+    queryKey: ["/api/recruiter/analytics"],
+    enabled: !!recruiterProfile
   });
 
   // Update application status mutation
@@ -111,6 +214,68 @@ export default function CompanyRecruiterPage() {
         description: error.message,
         variant: "destructive" 
       });
+    }
+  });
+
+  // Create recruiter profile mutation
+  const createProfileMutation = useMutation({
+    mutationFn: async (profileData: Partial<RecruiterProfile>) => {
+      return apiRequest("/api/recruiter/profile", {
+        method: "POST",
+        body: profileData
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/recruiter/profile"] });
+      toast({ title: "Recruiter profile created successfully!" });
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Failed to create profile", 
+        description: error.message,
+        variant: "destructive" 
+      });
+    }
+  });
+
+  // Search talent mutation
+  const searchMutation = useMutation({
+    mutationFn: async (filters: TalentSearchFilters) => {
+      return apiRequest("/api/recruiter/search", {
+        method: "POST",
+        body: { filters }
+      });
+    },
+    onSuccess: (data) => {
+      queryClient.setQueryData(["/api/recruiter/search", searchFilters], data);
+      toast({ title: `Found ${data.results.length} candidates` });
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Search failed", 
+        description: error.message,
+        variant: "destructive" 
+      });
+    }
+  });
+
+  // Add to pipeline mutation
+  const addToPipelineMutation = useMutation({
+    mutationFn: async ({ candidateId, positionTitle }: { candidateId: string; positionTitle: string }) => {
+      return apiRequest("/api/recruiter/pipelines", {
+        method: "POST",
+        body: {
+          candidateId,
+          positionTitle,
+          companyName: recruiterProfile?.companyName || "Unknown Company",
+          stage: "sourced",
+          priority: "medium"
+        }
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/recruiter/pipelines"] });
+      toast({ title: "Candidate added to pipeline!" });
     }
   });
 
@@ -303,25 +468,28 @@ export default function CompanyRecruiterPage() {
         </div>
 
         {/* Applications Tabs */}
-        <Tabs value={selectedTab} onValueChange={(value) => setSelectedTab(value as ApplicationStatus | 'all')} className="space-y-6">
+        <Tabs value={selectedTab} onValueChange={(value) => setSelectedTab(value as ApplicationStatus | 'all' | 'talent-search' | 'pipeline' | 'analytics')} className="space-y-6">
           <TabsList className="grid grid-cols-4 lg:grid-cols-8 w-full">
             <TabsTrigger value="all" className="text-xs" data-testid="tab-all">
-              All ({statusCounts.all})
+              Applications ({statusCounts.all})
             </TabsTrigger>
-            <TabsTrigger value="applied" className="text-xs" data-testid="tab-new">
-              New ({statusCounts.applied})
+            <TabsTrigger value="talent-search" className="text-xs flex items-center gap-1" data-testid="tab-talent-search">
+              <UserSearch className="h-3 w-3" />
+              Talent Search
             </TabsTrigger>
-            <TabsTrigger value="viewed" className="text-xs" data-testid="tab-viewed">
-              Viewed ({statusCounts.viewed})
+            <TabsTrigger value="pipeline" className="text-xs flex items-center gap-1" data-testid="tab-pipeline">
+              <Users className="h-3 w-3" />
+              Pipeline ({pipelines.length})
+            </TabsTrigger>
+            <TabsTrigger value="analytics" className="text-xs flex items-center gap-1" data-testid="tab-analytics">
+              <BarChart3 className="h-3 w-3" />
+              Analytics
             </TabsTrigger>
             <TabsTrigger value="shortlisted" className="text-xs" data-testid="tab-shortlisted">
               Shortlisted ({statusCounts.shortlisted})
             </TabsTrigger>
             <TabsTrigger value="interviewed" className="text-xs" data-testid="tab-interviewed">
               Interviewed ({statusCounts.interviewed})
-            </TabsTrigger>
-            <TabsTrigger value="offered" className="text-xs" data-testid="tab-offered">
-              Offered ({statusCounts.offered})
             </TabsTrigger>
             <TabsTrigger value="hired" className="text-xs" data-testid="tab-hired">
               Hired ({statusCounts.hired})
@@ -331,7 +499,8 @@ export default function CompanyRecruiterPage() {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value={selectedTab} className="space-y-4">
+          {/* Applications Tab Content */}
+          <TabsContent value="all" className="space-y-4">
             {applicationsLoading ? (
               <div className="space-y-4">
                 {[...Array(5)].map((_, i) => (
@@ -352,10 +521,7 @@ export default function CompanyRecruiterPage() {
                     No applications found
                   </h3>
                   <p className="text-gray-600 dark:text-gray-400">
-                    {selectedTab === 'all' 
-                      ? "No applications match your search criteria."
-                      : `No ${selectedTab} applications at this time.`
-                    }
+                    No applications match your search criteria.
                   </p>
                 </CardContent>
               </Card>
@@ -379,109 +545,26 @@ export default function CompanyRecruiterPage() {
                               </p>
                             </div>
                           </div>
-
                           <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400 mb-3">
                             <span className="flex items-center gap-1">
                               <Mail className="h-4 w-4" />
                               {application.employee.email}
                             </span>
-                            {application.employee.phone && (
-                              <span className="flex items-center gap-1">
-                                <Phone className="h-4 w-4" />
-                                {application.employee.phone}
-                              </span>
-                            )}
-                            {application.employee.location && (
-                              <span className="flex items-center gap-1">
-                                <MapPin className="h-4 w-4" />
-                                {application.employee.location}
-                              </span>
-                            )}
                           </div>
-
-                          <div className="flex items-center gap-2 mb-4">
-                            <Badge className={`${getStatusBadgeColor(application.status)} text-xs flex items-center gap-1`}>
-                              {getStatusIcon(application.status)}
-                              {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
-                            </Badge>
-                            <span className="text-xs text-gray-500">
-                              Applied {new Date(application.appliedAt).toLocaleDateString()}
-                            </span>
-                          </div>
-
-                          {application.coverLetter && (
-                            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 line-clamp-2">
-                              {application.coverLetter}
-                            </p>
-                          )}
-
-                          {application.companyNotes && (
-                            <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg mb-4">
-                              <p className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">Company Notes:</p>
-                              <p className="text-sm text-gray-600 dark:text-gray-400">{application.companyNotes}</p>
-                            </div>
-                          )}
                         </div>
-
-                        <div className="flex flex-col gap-2 ml-4">
-                          {/* Quick Action Buttons */}
-                          {application.status !== 'hired' && application.status !== 'rejected' && (
-                            <div className="flex flex-col gap-2">
-                              {getAvailableActions(application.status as ApplicationStatus).map((action) => (
-                                <Button
-                                  key={action.status}
-                                  size="sm"
-                                  variant={action.color === 'red' ? 'destructive' : 'outline'}
-                                  onClick={() => handleStatusChange(application, action.status)}
-                                  className="text-xs whitespace-nowrap"
-                                  data-testid={`button-${action.status}-${application.id}`}
-                                >
-                                  <action.icon className="h-3 w-3 mr-1" />
-                                  {action.label}
-                                </Button>
-                              ))}
-                              
-                              {/* Manual Status Update Button */}
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleManualStatusChange(application)}
-                                className="text-xs whitespace-nowrap"
-                                data-testid={`button-update-status-${application.id}`}
-                              >
-                                <AlertCircle className="h-3 w-3 mr-1" />
-                                Update Status
-                              </Button>
-                            </div>
-                          )}
-
-                          {/* View Shared Documents Link */}
+                        <div className="flex items-center gap-2">
+                          <Badge className={getStatusBadgeColor(application.status)}>
+                            {getStatusIcon(application.status)}
+                            <span className="ml-1 capitalize">{application.status}</span>
+                          </Badge>
                           <Button
+                            variant="outline"
                             size="sm"
-                            variant="ghost"
-                            asChild
-                            className="text-xs"
-                            data-testid={`button-view-shared-docs-${application.id}`}
+                            onClick={() => setSelectedApplication(application)}
                           >
-                            <Link href={`/company-shared-documents/${application.id}`}>
-                              <FileText className="h-3 w-3 mr-1" />
-                              View Attachments
-                            </Link>
+                            <Eye className="h-4 w-4 mr-1" />
+                            View
                           </Button>
-
-                          {/* Download Resume */}
-                          {application.resumeUrl && (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => window.open(application.resumeUrl, '_blank')}
-                              className="text-xs"
-                              data-testid={`button-download-resume-${application.id}`}
-                            >
-                              <Download className="h-3 w-3 mr-1" />
-                              Resume
-                            </Button>
-                          )}
                         </div>
                       </div>
                     </CardContent>
@@ -490,6 +573,325 @@ export default function CompanyRecruiterPage() {
               </div>
             )}
           </TabsContent>
+
+          {/* Talent Search Tab */}
+          <TabsContent value="talent-search" className="space-y-4">
+            {!recruiterProfile ? (
+              <Card>
+                <CardContent className="p-12 text-center">
+                  <UserSearch className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
+                    Set Up Recruiter Profile
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-400 mb-6">
+                    Create your recruiter profile to access advanced talent search with verified work history.
+                  </p>
+                  <Button 
+                    onClick={() => createProfileMutation.mutate({
+                      userType: 'company',
+                      recruiterType: 'internal',
+                      companyName: user?.companyName || 'Company',
+                      specializations: [],
+                      activePositions: 0,
+                      successfulPlacements: 0,
+                      averageTimeToHire: 0,
+                      subscriptionTier: 'freemium',
+                      subscriptionStatus: 'active',
+                      monthlySearchLimit: 50,
+                      monthlyContactLimit: 25,
+                      usedSearches: 0,
+                      usedContacts: 0,
+                      isActive: true
+                    })}
+                    disabled={createProfileMutation.isPending}
+                  >
+                    {createProfileMutation.isPending ? "Creating..." : "Create Recruiter Profile"}
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-6">
+                {/* Search Controls */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <UserSearch className="h-5 w-5" />
+                      Advanced Talent Search
+                    </CardTitle>
+                    <CardDescription>
+                      Search for candidates with verified work history. 
+                      Remaining searches: {recruiterProfile.monthlySearchLimit - recruiterProfile.usedSearches}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <Input
+                        placeholder="Keywords, roles, companies..."
+                        value={searchFilters.keywords || ''}
+                        onChange={(e) => setSearchFilters(prev => ({ ...prev, keywords: e.target.value }))}
+                      />
+                      <Input
+                        placeholder="Location"
+                        value={searchFilters.location || ''}
+                        onChange={(e) => setSearchFilters(prev => ({ ...prev, location: e.target.value }))}
+                      />
+                      <div className="flex gap-2">
+                        <Input
+                          type="number"
+                          placeholder="Min years"
+                          value={searchFilters.minYearsExperience || ''}
+                          onChange={(e) => setSearchFilters(prev => ({ ...prev, minYearsExperience: Number(e.target.value) }))}
+                        />
+                        <Input
+                          type="number"
+                          placeholder="Max years"
+                          value={searchFilters.maxYearsExperience || ''}
+                          onChange={(e) => setSearchFilters(prev => ({ ...prev, maxYearsExperience: Number(e.target.value) }))}
+                        />
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={searchFilters.verifiedOnly || false}
+                          onChange={(e) => setSearchFilters(prev => ({ ...prev, verifiedOnly: e.target.checked }))}
+                        />
+                        <span className="text-sm">Verified work history only</span>
+                      </label>
+                      <Button
+                        onClick={() => searchMutation.mutate(searchFilters)}
+                        disabled={searchMutation.isPending || (recruiterProfile.usedSearches >= recruiterProfile.monthlySearchLimit)}
+                      >
+                        {searchMutation.isPending ? "Searching..." : "Search Talent"}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Search Results */}
+                {searchResults?.results && (
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">Search Results ({searchResults.results.length})</h3>
+                    {searchResults.results.map((candidate) => (
+                      <Card key={candidate.id}>
+                        <CardContent className="p-6">
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1">
+                              <h4 className="font-semibold">{candidate.firstName} {candidate.lastName}</h4>
+                              <p className="text-sm text-gray-600">{candidate.headline}</p>
+                              <p className="text-sm text-gray-500">{candidate.location}</p>
+                              <div className="flex items-center gap-2 mt-2">
+                                <Badge variant={candidate.verifiedWorkHistory ? "default" : "secondary"}>
+                                  {candidate.verifiedWorkHistory ? "Verified" : "Unverified"}
+                                </Badge>
+                                <span className="text-sm text-gray-500">{candidate.totalExperience} years experience</span>
+                              </div>
+                            </div>
+                            <div className="flex gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => addToPipelineMutation.mutate({ 
+                                  candidateId: candidate.id, 
+                                  positionTitle: "Open Position" 
+                                })}
+                              >
+                                <Plus className="h-4 w-4 mr-1" />
+                                Add to Pipeline
+                              </Button>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </TabsContent>
+
+          {/* Pipeline Tab */}
+          <TabsContent value="pipeline" className="space-y-4">
+            {isLoadingPipelines ? (
+              <Card>
+                <CardContent className="p-12 text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+                  <p className="mt-4 text-gray-600">Loading pipeline...</p>
+                </CardContent>
+              </Card>
+            ) : pipelines.length === 0 ? (
+              <Card>
+                <CardContent className="p-12 text-center">
+                  <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
+                    No Candidates in Pipeline
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    Start building your candidate pipeline by searching for talent and adding promising candidates.
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-4">
+                {pipelines.map((pipeline) => (
+                  <Card key={pipeline.id}>
+                    <CardContent className="p-6">
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <h4 className="font-semibold">
+                            {pipeline.candidate.firstName} {pipeline.candidate.lastName}
+                          </h4>
+                          <p className="text-sm text-gray-600">{pipeline.positionTitle}</p>
+                          <div className="flex items-center gap-2 mt-2">
+                            <Badge variant="outline">{pipeline.stage}</Badge>
+                            <Badge variant={pipeline.priority === 'high' ? 'destructive' : pipeline.priority === 'medium' ? 'default' : 'secondary'}>
+                              {pipeline.priority} priority
+                            </Badge>
+                          </div>
+                          {pipeline.notes && (
+                            <p className="text-sm text-gray-500 mt-2">{pipeline.notes}</p>
+                          )}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          {new Date(pipeline.updatedAt).toLocaleDateString()}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          {/* Analytics Tab */}
+          <TabsContent value="analytics" className="space-y-4">
+            {analytics ? (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm font-medium">Total Searches</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{recruiterProfile?.usedSearches || 0}</div>
+                    <p className="text-xs text-muted-foreground">
+                      of {recruiterProfile?.monthlySearchLimit || 50} this month
+                    </p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm font-medium">Candidates in Pipeline</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{pipelines.length}</div>
+                    <p className="text-xs text-muted-foreground">
+                      Active candidates
+                    </p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm font-medium">Contacts Used</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{recruiterProfile?.usedContacts || 0}</div>
+                    <p className="text-xs text-muted-foreground">
+                      of {recruiterProfile?.monthlyContactLimit || 25} this month
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+            ) : (
+              <Card>
+                <CardContent className="p-12 text-center">
+                  <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
+                    Analytics Coming Soon
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    Detailed recruitment analytics will be available once you have some activity.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
+          {/* Status-specific tab contents - reuse the same content structure for specific statuses */}
+          {['applied', 'viewed', 'shortlisted', 'interviewed', 'offered', 'hired', 'rejected'].map(status => (
+            <TabsContent key={status} value={status} className="space-y-4">
+              {applicationsLoading ? (
+                <div className="space-y-4">
+                  {[...Array(3)].map((_, i) => (
+                    <Card key={i} className="animate-pulse">
+                      <CardContent className="p-6">
+                        <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-2"></div>
+                        <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : filteredApplications.filter(app => app.status === status).length === 0 ? (
+                <Card>
+                  <CardContent className="p-12 text-center">
+                    <Archive className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
+                      No {status} applications
+                    </h3>
+                    <p className="text-gray-600 dark:text-gray-400">
+                      No applications with {status} status at this time.
+                    </p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="space-y-4">
+                  {filteredApplications.filter(app => app.status === status).map((application) => (
+                    <Card key={application.id} className="hover:shadow-md transition-shadow">
+                      <CardContent className="p-6">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-3">
+                              <div className="h-10 w-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold">
+                                {application.employee.firstName?.[0]}{application.employee.lastName?.[0]}
+                              </div>
+                              <div>
+                                <h3 className="font-semibold text-gray-900 dark:text-gray-100">
+                                  {application.employee.firstName} {application.employee.lastName}
+                                </h3>
+                                <p className="text-sm text-gray-600 dark:text-gray-400">
+                                  Applied for {application.job.title}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400 mb-3">
+                              <span className="flex items-center gap-1">
+                                <Mail className="h-4 w-4" />
+                                {application.employee.email}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge className={getStatusBadgeColor(application.status)}>
+                              {getStatusIcon(application.status)}
+                              <span className="ml-1 capitalize">{application.status}</span>
+                            </Badge>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setSelectedApplication(application)}
+                            >
+                              <Eye className="h-4 w-4 mr-1" />
+                              View
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+          ))}
         </Tabs>
 
         {/* Status Change Dialog */}

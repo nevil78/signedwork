@@ -286,6 +286,25 @@ export default function CompanyDashboard() {
               </CardHeader>
             </Card>
 
+            {/* Premium Recruitment Card */}
+            <Card 
+              className="cursor-pointer hover:shadow-md hover:border-purple-200 transition-all duration-200" 
+              onClick={() => navigate('/company-recruiter')}
+              data-testid="premium-recruitment-card"
+            >
+              <CardHeader className="pb-4">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-8 h-8 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center">
+                    <UserSearch className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                  </div>
+                  <CardTitle className="text-base font-semibold">Premium Recruitment</CardTitle>
+                </div>
+                <CardDescription className="text-sm">
+                  Advanced talent search with verified work history, candidate pipelines, and analytics
+                </CardDescription>
+              </CardHeader>
+            </Card>
+
             {/* Work Verification Card */}
             <Card 
               className="cursor-pointer hover:shadow-md hover:border-green-200 transition-all duration-200" 
