@@ -5545,6 +5545,7 @@ export default function CompanyHierarchy() {
             </DialogDescription>
           </DialogHeader>
           {analyticsData ? (
+            <div className="space-y-6">
             <Tabs defaultValue="overview" className="w-full">
               <TabsList className="grid grid-cols-4 w-full">
                 <TabsTrigger value="overview">Overview</TabsTrigger>
