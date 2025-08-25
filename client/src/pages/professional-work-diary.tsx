@@ -424,27 +424,31 @@ export default function ProfessionalWorkDiary() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Company Selection */}
         {!selectedCompany ? (
-          <div className="max-w-4xl mx-auto">
-            <Card>
-              <CardHeader className="text-center">
-                <div className="flex justify-between items-start mb-4">
-                  <div className="flex-1">
-                    <CardTitle className="text-2xl">Select Company</CardTitle>
-                    <p className="text-gray-600">Choose a company to manage your work diary</p>
-                  </div>
-                  {companies && companies.length > 0 && (
-                    <Button
-                      onClick={() => setIsJoinDialogOpen(true)}
-                      className="ml-4"
-                      data-testid="button-join-another-company"
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Join Another Company
-                    </Button>
-                  )}
-                </div>
-              </CardHeader>
-              <CardContent>
+          <div className="max-w-6xl mx-auto">
+            {/* Action Button Section - Outside the main content */}
+            <div className="flex justify-end mb-6">
+              {companies && companies.length > 0 && (
+                <Button
+                  onClick={() => setIsJoinDialogOpen(true)}
+                  className="bg-blue-600 hover:bg-blue-700"
+                  data-testid="button-join-another-company"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Join Another Company
+                </Button>
+              )}
+            </div>
+
+            {/* Main Content Section - Clean white container */}
+            <div className="bg-white rounded-lg shadow-sm border p-8">
+              {/* Page Title - Centered */}
+              <div className="text-center mb-8">
+                <h2 className="text-3xl font-bold text-gray-900 mb-3">Select Company</h2>
+                <p className="text-gray-600 text-lg">Choose a company to manage your work diary</p>
+              </div>
+
+              {/* Content Area */}
+              <div>
                 {companiesLoading ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {[1, 2, 3].map((i) => (
@@ -466,30 +470,54 @@ export default function ProfessionalWorkDiary() {
                     ))}
                   </div>
                 ) : companies && companies.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                     {companies.map((company) => (
                       <Card 
                         key={company.id} 
-                        className="cursor-pointer hover:shadow-lg transition-shadow border-2 hover:border-primary"
+                        className="group hover:shadow-xl transition-all duration-300 cursor-pointer bg-gradient-to-br from-white to-gray-50 border-2 hover:border-blue-200"
                         onClick={() => setSelectedCompany(company.id)}
                         data-testid={`company-card-${company.id}`}
                       >
-                        <CardContent className="p-6 text-center">
-                          <div className="flex justify-center items-center mb-4">
-                            <Building2 className="h-12 w-12 text-primary" />
-                            <div className="ml-2">
-                              {company.isActive === false ? (
-                                <Badge variant="secondary" className="text-xs">Ex-Employee</Badge>
-                              ) : (
-                                <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 text-xs">Active</Badge>
+                        <CardContent className="p-0">
+                          <div className="p-6">
+                            {/* Company Header */}
+                            <div className="flex items-center justify-between mb-4">
+                              <div className="flex items-center gap-3">
+                                <div className="rounded-full bg-gradient-to-br from-blue-500 to-blue-600 p-3 shadow-lg">
+                                  <Building2 className="h-6 w-6 text-white" />
+                                </div>
+                                {company.isActive === false ? (
+                                  <span className="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded-full font-medium border border-gray-200">
+                                    Ex-Employee
+                                  </span>
+                                ) : (
+                                  <span className="px-3 py-1 text-xs bg-green-100 text-green-700 rounded-full font-medium border border-green-200">
+                                    Active
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            
+                            {/* Company Name */}
+                            <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">
+                              {company.companyName || company.name}
+                            </h3>
+                            
+                            {/* Company Details */}
+                            <div className="space-y-2 mb-4">
+                              {company.position && (
+                                <p className="text-sm text-gray-600">
+                                  <span className="font-medium">Position:</span> {company.position}
+                                </p>
                               )}
                             </div>
+                            
+                            {/* Call to Action */}
+                            <div className="flex items-center gap-2 text-sm font-medium text-blue-600 group-hover:text-blue-700">
+                              <BookOpen className="h-4 w-4" />
+                              <span>View Work Diary</span>
+                            </div>
                           </div>
-                          <h3 className="text-lg font-semibold text-gray-900 mb-2">{company.companyName || company.name}</h3>
-                          {company.position && (
-                            <p className="text-xs text-gray-500 mb-1">{company.position}</p>
-                          )}
-                          <p className="text-sm text-gray-600">Click to view work diary</p>
                         </CardContent>
                       </Card>
                     ))}
@@ -505,8 +533,8 @@ export default function ProfessionalWorkDiary() {
                     </Button>
                   </div>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           </div>
         ) : (
           <div>
