@@ -2152,7 +2152,7 @@ export default function CompanyHierarchy() {
                       <div className="col-span-1">Status</div>
                     </div>
 
-                    {/* Branch Rows */}
+                  {/* Branch Rows */}
                   {branches.map((branch: any) => {
                     const branchEmployees = Array.isArray(employees) ? employees.filter((emp: any) => emp.branchId === branch.id) : [];
                     const branchTeams = Array.isArray(teams) ? teams.filter((team: any) => team.branchId === branch.id) : [];
@@ -2292,6 +2292,7 @@ export default function CompanyHierarchy() {
                       })}
                     </div>
                   )}
+                  </div>
                 </div>
               ) : (
                 <div className="text-center py-8 text-gray-500">
