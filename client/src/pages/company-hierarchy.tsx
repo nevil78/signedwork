@@ -48,7 +48,8 @@ import {
   BarChart3,
   TrendingUp,
   TrendingDown,
-  Target
+  Target,
+  ArrowLeft
 } from "lucide-react";
 import { 
   BarChart, 
@@ -67,8 +68,10 @@ import {
 } from "recharts";
 import { apiRequest } from "@/lib/queryClient";
 import VisualOrgChart from "@/components/VisualOrgChart";
+import { useLocation } from "wouter";
 
 export default function CompanyHierarchy() {
+  const [, setLocation] = useLocation();
   const [isCreateBranchOpen, setIsCreateBranchOpen] = useState(false);
   const [isCreateTeamOpen, setIsCreateTeamOpen] = useState(false);
   const [isManageEmployeeOpen, setIsManageEmployeeOpen] = useState(false);
@@ -1166,6 +1169,19 @@ export default function CompanyHierarchy() {
 
   return (
     <div className="container mx-auto p-6 space-y-6" data-testid="company-hierarchy-page">
+      {/* Back Button */}
+      <div className="flex items-center gap-4 mb-4">
+        <Button 
+          variant="outline" 
+          onClick={() => setLocation('/company-dashboard')}
+          className="flex items-center gap-2"
+          data-testid="back-button"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Dashboard
+        </Button>
+      </div>
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
