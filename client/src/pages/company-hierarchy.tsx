@@ -2890,18 +2890,20 @@ export default function CompanyHierarchy() {
 
       {/* Create Manager Account Dialog */}
       <Dialog open={isCreateManagerOpen} onOpenChange={setIsCreateManagerOpen}>
-        <DialogContent className="max-w-lg max-h-[85vh] flex flex-col">
-          <DialogHeader className="flex-shrink-0">
-            <DialogTitle className="flex items-center gap-2">
-              <ShieldCheck className="h-5 w-5 text-indigo-600" />
+        <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col bg-gradient-to-br from-white to-gray-50">
+          <DialogHeader className="flex-shrink-0 pb-4 border-b border-gray-100">
+            <DialogTitle className="flex items-center gap-3 text-lg">
+              <div className="p-2 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg">
+                <UserPlus className="h-5 w-5 text-white" />
+              </div>
               Create Manager Account
             </DialogTitle>
-            <DialogDescription>
-              Create a sub-account with login credentials and specialized permissions for a selected employee
+            <DialogDescription className="text-gray-600 mt-2">
+              Promote an employee to a management role with specialized login credentials and granular permissions
             </DialogDescription>
           </DialogHeader>
           
-          <div className="space-y-6 overflow-y-auto flex-1 pr-2">
+          <div className="space-y-6 overflow-y-auto flex-1 pr-2 pt-4">
             {/* Employee Selection */}
             <div className="space-y-3">
               <Label htmlFor="manager-employee">Select Employee</Label>
@@ -2927,8 +2929,31 @@ export default function CompanyHierarchy() {
                   }
                 }}
               >
-                <SelectTrigger data-testid="select-manager-employee">
-                  <SelectValue placeholder="Choose an employee to promote" />
+                <SelectTrigger data-testid="select-manager-employee" className="h-12">
+                  <SelectValue placeholder="🔍 Choose an employee to promote to manager">
+                    {newManager.employeeId && employees && (
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-medium text-xs">
+                          {(() => {
+                            const emp = employees.find((e: any) => e.id === newManager.employeeId);
+                            return emp ? `${(emp.firstName?.[0] || 'E').toUpperCase()}${(emp.lastName?.[0] || 'M').toUpperCase()}` : 'EM';
+                          })()}
+                        </div>
+                        <span className="font-medium">
+                          {(() => {
+                            const emp = employees.find((e: any) => e.id === newManager.employeeId);
+                            return emp ? `${emp.firstName} ${emp.lastName}` : 'Selected Employee';
+                          })()}
+                        </span>
+                        <Badge variant="outline" className="text-xs">
+                          {(() => {
+                            const emp = employees.find((e: any) => e.id === newManager.employeeId);
+                            return emp?.position || 'Employee';
+                          })()}
+                        </Badge>
+                      </div>
+                    )}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {Array.isArray(employees) && employees.length > 0 ? (
@@ -2942,47 +2967,65 @@ export default function CompanyHierarchy() {
                       })
                       .map((employee: any) => (
                         <SelectItem key={employee.id} value={employee.id}>
-                          <div className="flex flex-col gap-1 py-1">
-                            <div className="flex items-center gap-2">
-                              <User className="h-4 w-4 text-blue-600" />
-                              <span className="font-medium text-gray-900">
-                                {employee.firstName} {employee.lastName}
-                              </span>
-                              <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
-                                {employee.position || 'Employee'}
-                              </Badge>
-                            </div>
-                            <div className="flex items-center gap-3 text-xs text-gray-600 ml-6">
-                              <div className="flex items-center gap-1">
-                                <Building2 className="h-3 w-3" />
-                                <span>{employee.department || 'General'}</span>
+                          <div className="flex items-start gap-3 py-2 px-1 rounded-md hover:bg-gray-50 transition-colors">
+                            {/* Profile Avatar */}
+                            <div className="flex-shrink-0 mt-1">
+                              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-medium text-sm">
+                                {(employee.firstName?.[0] || 'E').toUpperCase()}{(employee.lastName?.[0] || 'M').toUpperCase()}
                               </div>
-                              {employee.email && (
-                                <div className="flex items-center gap-1">
-                                  <Mail className="h-3 w-3" />
-                                  <span>{employee.email}</span>
-                                </div>
-                              )}
-                              <div className="flex items-center gap-1">
-                                <Calendar className="h-3 w-3" />
-                                <span>
-                                  {employee.dateJoined ? new Date(employee.dateJoined).toLocaleDateString() : 'Date not set'}
+                            </div>
+                            
+                            {/* Employee Information */}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="font-semibold text-gray-900 text-sm">
+                                  {employee.firstName} {employee.lastName}
                                 </span>
+                                <Badge variant="outline" className="text-xs bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 border-blue-200 font-medium">
+                                  {employee.position || 'Employee'}
+                                </Badge>
                               </div>
-                            </div>
-                            <div className="flex items-center gap-2 ml-6">
-                              <Badge variant="secondary" className="text-xs bg-green-50 text-green-700 border-green-200">
-                                ✓ Eligible for Promotion
-                              </Badge>
+                              
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-4 text-xs text-gray-600">
+                                  <div className="flex items-center gap-1">
+                                    <Building2 className="h-3 w-3 text-gray-400" />
+                                    <span className="font-medium">{employee.department || 'General Department'}</span>
+                                  </div>
+                                  {employee.email && (
+                                    <div className="flex items-center gap-1">
+                                      <Mail className="h-3 w-3 text-gray-400" />
+                                      <span className="truncate max-w-32">{employee.email}</span>
+                                    </div>
+                                  )}
+                                </div>
+                                
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-1 text-xs text-gray-500">
+                                    <Calendar className="h-3 w-3 text-gray-400" />
+                                    <span>
+                                      Joined {employee.dateJoined ? new Date(employee.dateJoined).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : 'Date not set'}
+                                    </span>
+                                  </div>
+                                  
+                                  <Badge variant="secondary" className="text-xs bg-gradient-to-r from-green-50 to-emerald-50 text-green-700 border-green-200 font-medium px-2">
+                                    <CheckCircle className="h-3 w-3 mr-1" />
+                                    Promotion Ready
+                                  </Badge>
+                                </div>
+                              </div>
                             </div>
                           </div>
                         </SelectItem>
                       ))
                   ) : (
                     <SelectItem value="none" disabled>
-                      <div className="flex items-center gap-2 text-gray-500">
-                        <AlertCircle className="h-4 w-4" />
-                        <span>No employees available for promotion</span>
+                      <div className="flex items-center justify-center gap-2 text-gray-500 py-4">
+                        <AlertCircle className="h-5 w-5 text-gray-400" />
+                        <div className="text-center">
+                          <div className="font-medium">No employees available for promotion</div>
+                          <div className="text-xs mt-1">All eligible employees may already have manager accounts</div>
+                        </div>
                       </div>
                     </SelectItem>
                   )}
