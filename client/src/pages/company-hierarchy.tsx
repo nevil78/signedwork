@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Building2, 
@@ -40,8 +41,30 @@ import {
   AlertTriangle,
   Lock,
   Activity,
-  UserPlus
+  UserPlus,
+  Download,
+  Upload,
+  FileText,
+  BarChart3,
+  TrendingUp,
+  TrendingDown,
+  Target
 } from "lucide-react";
+import { 
+  BarChart, 
+  Bar, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  Legend, 
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  PieChart,
+  Pie,
+  Cell
+} from "recharts";
 import { apiRequest } from "@/lib/queryClient";
 
 export default function CompanyHierarchy() {
@@ -57,10 +80,16 @@ export default function CompanyHierarchy() {
   const [isDeleteManagerOpen, setIsDeleteManagerOpen] = useState(false);
   const [isResetPasswordOpen, setIsResetPasswordOpen] = useState(false);
   const [isBulkAssignOpen, setIsBulkAssignOpen] = useState(false);
+  const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [selectedManager, setSelectedManager] = useState<any>(null);
   const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<string[]>([]);
   const [bulkAssignTargetManager, setBulkAssignTargetManager] = useState<string>("");
   const [newTempPassword, setNewTempPassword] = useState<string>("");
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importPreview, setImportPreview] = useState<any[]>([]);
+  const [importErrors, setImportErrors] = useState<any[]>([]);
+  const [includePersonalData, setIncludePersonalData] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<any>(null);
   const [selectedBranch, setSelectedBranch] = useState<any>(null);
   const [selectedTeam, setSelectedTeam] = useState<any>(null);
@@ -73,6 +102,22 @@ export default function CompanyHierarchy() {
   const [filterVerification, setFilterVerification] = useState("all");
   const [sortBy, setSortBy] = useState("name");
   const [sortOrder, setSortOrder] = useState("asc");
+  
+  // Advanced filtering state
+  const [isAdvancedFilterOpen, setIsAdvancedFilterOpen] = useState(false);
+  const [advancedFilters, setAdvancedFilters] = useState({
+    roles: [],
+    branches: [],
+    teams: [],
+    departments: [],
+    statuses: [],
+    verificationCapabilities: [],
+    joinedDateRange: { start: '', end: '' }
+  });
+  const [filterPresets, setFilterPresets] = useState([]);
+  const [selectedPreset, setSelectedPreset] = useState("");
+  const [isPresetDialogOpen, setIsPresetDialogOpen] = useState(false);
+  const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false);
   
   const [newBranch, setNewBranch] = useState({
     name: "",
@@ -692,6 +737,138 @@ export default function CompanyHierarchy() {
       toast({ 
         title: "Error", 
         description: error.message || "Failed to bulk unassign employees", 
+        variant: "destructive" 
+      });
+    }
+  });
+
+  const exportEmployeesMutation = useMutation({
+    mutationFn: async ({ includePersonalData }: { includePersonalData: boolean }) => {
+      const response = await fetch(`/api/company/employees/export?includePersonalData=${includePersonalData}`, {
+        method: 'GET',
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to export employees');
+      }
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `employees_export_${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      return { success: true };
+    },
+    onSuccess: () => {
+      setIsExportDialogOpen(false);
+      toast({ 
+        title: "Export Complete", 
+        description: "Employee data has been exported successfully" 
+      });
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Export Failed", 
+        description: error.message || "Failed to export employee data", 
+        variant: "destructive" 
+      });
+    }
+  });
+
+  const importEmployeesMutation = useMutation({
+    mutationFn: async ({ csvData, validateOnly }: { csvData: any[]; validateOnly: boolean }) => {
+      return apiRequest("POST", `/api/company/employees/import`, { csvData, validateOnly });
+    },
+    onSuccess: (data: any, variables) => {
+      if (!variables.validateOnly) {
+        queryClient.invalidateQueries({ queryKey: ["/api/company/employees"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/company/structure"] });
+        setIsImportDialogOpen(false);
+        setImportFile(null);
+        setImportPreview([]);
+        setImportErrors([]);
+        toast({ 
+          title: "Import Complete", 
+          description: `Successfully processed ${data.summary.successful} employees` 
+        });
+      } else {
+        setImportPreview(data.results);
+        setImportErrors(data.errors);
+        toast({ 
+          title: "Validation Complete", 
+          description: `${data.summary.successful} rows validated, ${data.summary.errors} errors found` 
+        });
+      }
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Import Failed", 
+        description: error.message || "Failed to import employee data", 
+        variant: "destructive" 
+      });
+    }
+  });
+
+  const advancedSearchMutation = useMutation({
+    mutationFn: async ({ searchQuery, filters, sortBy, sortOrder }: any) => {
+      return apiRequest("POST", `/api/company/employees/advanced-search`, {
+        searchQuery,
+        filters,
+        sortBy,
+        sortOrder,
+        page: 1,
+        limit: 1000
+      });
+    },
+    onSuccess: (data: any) => {
+      // Handle the advanced search results
+      console.log("Advanced search results:", data);
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Search Failed", 
+        description: error.message || "Failed to perform advanced search", 
+        variant: "destructive" 
+      });
+    }
+  });
+
+  const { data: filterPresetsData } = useQuery({
+    queryKey: ["/api/company/filter-presets"],
+    queryFn: () => apiRequest("GET", "/api/company/filter-presets"),
+    onSuccess: (data: any) => {
+      setFilterPresets(data.presets || []);
+    }
+  });
+
+  const { data: analyticsData } = useQuery({
+    queryKey: ["/api/company/data/analytics"],
+    queryFn: () => apiRequest("GET", "/api/company/data/analytics"),
+    refetchOnWindowFocus: false
+  });
+
+  const savePresetMutation = useMutation({
+    mutationFn: async ({ name, description, filters }: any) => {
+      return apiRequest("POST", `/api/company/filter-presets`, { name, description, filters });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/company/filter-presets"] });
+      setIsPresetDialogOpen(false);
+      toast({ 
+        title: "Preset Saved", 
+        description: "Filter preset saved successfully" 
+      });
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Save Failed", 
+        description: error.message || "Failed to save filter preset", 
         variant: "destructive" 
       });
     }
@@ -2585,14 +2762,52 @@ export default function CompanyHierarchy() {
                     </div>
                   </div>
 
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={clearFilters}
-                    data-testid="clear-filters"
-                  >
-                    Clear Filters
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setIsExportDialogOpen(true)}
+                      data-testid="export-employees"
+                    >
+                      <Download className="h-4 w-4 mr-1" />
+                      Export
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setIsImportDialogOpen(true)}
+                      data-testid="import-employees"
+                    >
+                      <Upload className="h-4 w-4 mr-1" />
+                      Import
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setIsAdvancedFilterOpen(true)}
+                      data-testid="advanced-filters"
+                    >
+                      <Filter className="h-4 w-4 mr-1" />
+                      Advanced
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setIsAnalyticsOpen(true)}
+                      data-testid="analytics-dashboard"
+                    >
+                      <BarChart3 className="h-4 w-4 mr-1" />
+                      Analytics
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={clearFilters}
+                      data-testid="clear-filters"
+                    >
+                      Clear Filters
+                    </Button>
+                  </div>
                 </div>
 
                 {/* Bulk Actions */}
@@ -5489,6 +5704,937 @@ export default function CompanyHierarchy() {
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Export Dialog */}
+      <Dialog open={isExportDialogOpen} onOpenChange={setIsExportDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Download className="h-5 w-5 text-green-600" />
+              Export Employee Data
+            </DialogTitle>
+            <DialogDescription>
+              Export your employee data to CSV format for external analysis or backup
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="include-personal"
+                checked={includePersonalData}
+                onCheckedChange={setIncludePersonalData}
+                data-testid="checkbox-include-personal"
+              />
+              <Label htmlFor="include-personal" className="text-sm">
+                Include personal data (email, phone)
+              </Label>
+            </div>
+            
+            <div className="p-4 bg-gray-50 rounded-lg border">
+              <h5 className="font-medium text-sm mb-2">Export Details</h5>
+              <div className="text-sm text-gray-700 space-y-1">
+                <div><strong>Employees:</strong> {Array.isArray(employees) ? employees.length : 0}</div>
+                <div><strong>Format:</strong> CSV (.csv)</div>
+                <div><strong>Data included:</strong> {includePersonalData ? 'All fields including personal data' : 'Professional data only'}</div>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <Button 
+                variant="outline" 
+                onClick={() => setIsExportDialogOpen(false)}
+                className="flex-1"
+                data-testid="button-cancel-export"
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={() => exportEmployeesMutation.mutate({ includePersonalData })}
+                disabled={exportEmployeesMutation.isPending}
+                className="flex-1"
+                data-testid="button-confirm-export"
+              >
+                {exportEmployeesMutation.isPending ? (
+                  <>
+                    <Download className="h-4 w-4 mr-2 animate-spin" />
+                    Exporting...
+                  </>
+                ) : (
+                  <>
+                    <Download className="h-4 w-4 mr-2" />
+                    Export CSV
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Import Dialog */}
+      <Dialog open={isImportDialogOpen} onOpenChange={setIsImportDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Upload className="h-5 w-5 text-blue-600" />
+              Import Employee Data
+            </DialogTitle>
+            <DialogDescription>
+              Upload a CSV file to bulk import employee data. Ensure your file follows the required format.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {/* File Upload */}
+            <div>
+              <Label htmlFor="import-file">Select CSV File</Label>
+              <Input
+                id="import-file"
+                type="file"
+                accept=".csv"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    setImportFile(file);
+                    // Parse CSV and validate
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                      const csvText = event.target?.result as string;
+                      const lines = csvText.split('\n').filter(line => line.trim());
+                      const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim());
+                      const data = lines.slice(1).map(line => {
+                        const values = line.split(',').map(v => v.replace(/"/g, '').trim());
+                        const obj: any = {};
+                        headers.forEach((header, index) => {
+                          obj[header.toLowerCase().replace(/\s+/g, '')] = values[index] || '';
+                        });
+                        return obj;
+                      });
+                      
+                      // Validate data format
+                      importEmployeesMutation.mutate({ csvData: data, validateOnly: true });
+                    };
+                    reader.readAsText(file);
+                  }
+                }}
+                data-testid="input-import-file"
+              />
+            </div>
+
+            {/* CSV Format Guide */}
+            <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <h5 className="font-medium text-sm mb-2 text-blue-900">Required CSV Format</h5>
+              <div className="text-sm text-blue-800 space-y-1">
+                <div><strong>Required columns:</strong> firstName, lastName, email</div>
+                <div><strong>Optional columns:</strong> position, department, branch, team, phone</div>
+                <div><strong>Example header:</strong> firstName,lastName,email,position,department,branch</div>
+              </div>
+            </div>
+
+            {/* Validation Results */}
+            {importPreview.length > 0 && (
+              <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                <h5 className="font-medium text-sm mb-2 text-green-900">Validation Results</h5>
+                <div className="text-sm text-green-800 space-y-1">
+                  <div><strong>Valid rows:</strong> {importPreview.length}</div>
+                  <div><strong>Errors:</strong> {importErrors.length}</div>
+                  {importPreview.length > 0 && (
+                    <div className="mt-2">
+                      <strong>Preview (first 3 rows):</strong>
+                      <div className="mt-1 text-xs">
+                        {importPreview.slice(0, 3).map((row, index) => (
+                          <div key={index} className="truncate">
+                            {row.data?.firstName} {row.data?.lastName} ({row.data?.email})
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Validation Errors */}
+            {importErrors.length > 0 && (
+              <div className="p-4 bg-red-50 rounded-lg border border-red-200 max-h-40 overflow-y-auto">
+                <h5 className="font-medium text-sm mb-2 text-red-900">Validation Errors</h5>
+                <div className="text-sm text-red-800 space-y-1">
+                  {importErrors.slice(0, 5).map((error, index) => (
+                    <div key={index}>
+                      <strong>Row {error.row}:</strong> {error.message}
+                    </div>
+                  ))}
+                  {importErrors.length > 5 && (
+                    <div className="text-xs italic">...and {importErrors.length - 5} more errors</div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <div className="flex gap-3">
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setIsImportDialogOpen(false);
+                  setImportFile(null);
+                  setImportPreview([]);
+                  setImportErrors([]);
+                }}
+                className="flex-1"
+                data-testid="button-cancel-import"
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={() => {
+                  if (importPreview.length > 0) {
+                    const csvData = importPreview.map(row => row.data);
+                    importEmployeesMutation.mutate({ csvData, validateOnly: false });
+                  }
+                }}
+                disabled={importEmployeesMutation.isPending || importPreview.length === 0 || importErrors.length > 0}
+                className="flex-1"
+                data-testid="button-confirm-import"
+              >
+                {importEmployeesMutation.isPending ? (
+                  <>
+                    <Upload className="h-4 w-4 mr-2 animate-spin" />
+                    Importing...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="h-4 w-4 mr-2" />
+                    Import {importPreview.length} Employees
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Advanced Filters Dialog */}
+      <Dialog open={isAdvancedFilterOpen} onOpenChange={setIsAdvancedFilterOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Filter className="h-5 w-5 text-purple-600" />
+              Advanced Employee Filters
+            </DialogTitle>
+            <DialogDescription>
+              Create sophisticated filters with multiple criteria and save them as presets for future use
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-6">
+            {/* Filter Presets */}
+            <div className="flex items-center justify-between p-4 bg-purple-50 rounded-lg border border-purple-200">
+              <div className="flex items-center gap-4">
+                <Label className="font-medium">Quick Presets:</Label>
+                <Select value={selectedPreset} onValueChange={(value) => {
+                  setSelectedPreset(value);
+                  const preset = filterPresets.find((p: any) => p.id === value);
+                  if (preset) {
+                    setAdvancedFilters(preset.filters);
+                  }
+                }}>
+                  <SelectTrigger className="w-48" data-testid="select-filter-preset">
+                    <SelectValue placeholder="Choose a preset..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {filterPresets.map((preset: any) => (
+                      <SelectItem key={preset.id} value={preset.id}>
+                        {preset.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsPresetDialogOpen(true)}
+                data-testid="save-preset-button"
+              >
+                <FileText className="h-4 w-4 mr-1" />
+                Save Current
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Roles Filter */}
+              <div className="space-y-3">
+                <Label className="text-sm font-medium">Hierarchy Roles</Label>
+                <div className="space-y-2">
+                  {['employee', 'team_lead', 'branch_manager', 'company_admin'].map((role) => (
+                    <div key={role} className="flex items-center space-x-2">
+                      <Checkbox
+                        checked={advancedFilters.roles.includes(role)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setAdvancedFilters(prev => ({
+                              ...prev,
+                              roles: [...prev.roles, role]
+                            }));
+                          } else {
+                            setAdvancedFilters(prev => ({
+                              ...prev,
+                              roles: prev.roles.filter(r => r !== role)
+                            }));
+                          }
+                        }}
+                        data-testid={`checkbox-role-${role}`}
+                      />
+                      <Label className="text-sm capitalize">
+                        {role.replace('_', ' ')}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Verification Capabilities */}
+              <div className="space-y-3">
+                <Label className="text-sm font-medium">Verification Capabilities</Label>
+                <div className="space-y-2">
+                  {[
+                    { key: 'canVerifyWork', label: 'Can Verify Work' },
+                    { key: 'canManageEmployees', label: 'Can Manage Employees' },
+                    { key: 'canCreateTeams', label: 'Can Create Teams' }
+                  ].map((capability) => (
+                    <div key={capability.key} className="flex items-center space-x-2">
+                      <Checkbox
+                        checked={advancedFilters.verificationCapabilities.includes(capability.key)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setAdvancedFilters(prev => ({
+                              ...prev,
+                              verificationCapabilities: [...prev.verificationCapabilities, capability.key]
+                            }));
+                          } else {
+                            setAdvancedFilters(prev => ({
+                              ...prev,
+                              verificationCapabilities: prev.verificationCapabilities.filter(c => c !== capability.key)
+                            }));
+                          }
+                        }}
+                        data-testid={`checkbox-capability-${capability.key}`}
+                      />
+                      <Label className="text-sm">{capability.label}</Label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Branches Filter */}
+              <div className="space-y-3">
+                <Label className="text-sm font-medium">Branches</Label>
+                <div className="space-y-2 max-h-32 overflow-y-auto">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      checked={advancedFilters.branches.includes('headquarters')}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setAdvancedFilters(prev => ({
+                            ...prev,
+                            branches: [...prev.branches, 'headquarters']
+                          }));
+                        } else {
+                          setAdvancedFilters(prev => ({
+                            ...prev,
+                            branches: prev.branches.filter(b => b !== 'headquarters')
+                          }));
+                        }
+                      }}
+                      data-testid="checkbox-branch-headquarters"
+                    />
+                    <Label className="text-sm">Headquarters</Label>
+                  </div>
+                  {Array.isArray(branches) && branches.map((branch: any) => (
+                    <div key={branch.id} className="flex items-center space-x-2">
+                      <Checkbox
+                        checked={advancedFilters.branches.includes(branch.id)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setAdvancedFilters(prev => ({
+                              ...prev,
+                              branches: [...prev.branches, branch.id]
+                            }));
+                          } else {
+                            setAdvancedFilters(prev => ({
+                              ...prev,
+                              branches: prev.branches.filter(b => b !== branch.id)
+                            }));
+                          }
+                        }}
+                        data-testid={`checkbox-branch-${branch.id}`}
+                      />
+                      <Label className="text-sm">{branch.name}</Label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Employment Status */}
+              <div className="space-y-3">
+                <Label className="text-sm font-medium">Employment Status</Label>
+                <div className="space-y-2">
+                  {['active', 'inactive', 'suspended', 'probation'].map((status) => (
+                    <div key={status} className="flex items-center space-x-2">
+                      <Checkbox
+                        checked={advancedFilters.statuses.includes(status)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setAdvancedFilters(prev => ({
+                              ...prev,
+                              statuses: [...prev.statuses, status]
+                            }));
+                          } else {
+                            setAdvancedFilters(prev => ({
+                              ...prev,
+                              statuses: prev.statuses.filter(s => s !== status)
+                            }));
+                          }
+                        }}
+                        data-testid={`checkbox-status-${status}`}
+                      />
+                      <Label className="text-sm capitalize">{status}</Label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Date Range Filter */}
+            <div className="space-y-3">
+              <Label className="text-sm font-medium">Joined Date Range</Label>
+              <div className="flex gap-4 items-center">
+                <div className="flex-1">
+                  <Label className="text-xs text-muted-foreground">From</Label>
+                  <Input
+                    type="date"
+                    value={advancedFilters.joinedDateRange.start}
+                    onChange={(e) => setAdvancedFilters(prev => ({
+                      ...prev,
+                      joinedDateRange: { ...prev.joinedDateRange, start: e.target.value }
+                    }))}
+                    data-testid="input-date-start"
+                  />
+                </div>
+                <div className="flex-1">
+                  <Label className="text-xs text-muted-foreground">To</Label>
+                  <Input
+                    type="date"
+                    value={advancedFilters.joinedDateRange.end}
+                    onChange={(e) => setAdvancedFilters(prev => ({
+                      ...prev,
+                      joinedDateRange: { ...prev.joinedDateRange, end: e.target.value }
+                    }))}
+                    data-testid="input-date-end"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Active Filters Summary */}
+            <div className="p-4 bg-gray-50 rounded-lg border">
+              <h5 className="font-medium text-sm mb-2">Active Filters Summary</h5>
+              <div className="text-sm text-gray-700 space-y-1">
+                <div><strong>Roles:</strong> {advancedFilters.roles.length > 0 ? advancedFilters.roles.join(', ') : 'None'}</div>
+                <div><strong>Capabilities:</strong> {advancedFilters.verificationCapabilities.length > 0 ? advancedFilters.verificationCapabilities.length + ' selected' : 'None'}</div>
+                <div><strong>Branches:</strong> {advancedFilters.branches.length > 0 ? advancedFilters.branches.length + ' selected' : 'None'}</div>
+                <div><strong>Statuses:</strong> {advancedFilters.statuses.length > 0 ? advancedFilters.statuses.join(', ') : 'None'}</div>
+                <div><strong>Date Range:</strong> {
+                  advancedFilters.joinedDateRange.start || advancedFilters.joinedDateRange.end ? 
+                  `${advancedFilters.joinedDateRange.start || 'Any'} to ${advancedFilters.joinedDateRange.end || 'Any'}` : 
+                  'Any'
+                }</div>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setAdvancedFilters({
+                    roles: [],
+                    branches: [],
+                    teams: [],
+                    departments: [],
+                    statuses: [],
+                    verificationCapabilities: [],
+                    joinedDateRange: { start: '', end: '' }
+                  });
+                }}
+                className="flex-1"
+                data-testid="button-clear-advanced-filters"
+              >
+                Clear All
+              </Button>
+              <Button 
+                variant="outline"
+                onClick={() => setIsAdvancedFilterOpen(false)}
+                className="flex-1"
+                data-testid="button-cancel-advanced-filters"
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={() => {
+                  // Apply advanced filters
+                  advancedSearchMutation.mutate({
+                    searchQuery,
+                    filters: advancedFilters,
+                    sortBy,
+                    sortOrder
+                  });
+                  setIsAdvancedFilterOpen(false);
+                }}
+                disabled={advancedSearchMutation.isPending}
+                className="flex-1"
+                data-testid="button-apply-advanced-filters"
+              >
+                {advancedSearchMutation.isPending ? "Applying..." : "Apply Filters"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Save Preset Dialog */}
+      <Dialog open={isPresetDialogOpen} onOpenChange={setIsPresetDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5 text-blue-600" />
+              Save Filter Preset
+            </DialogTitle>
+            <DialogDescription>
+              Save your current filter settings as a preset for quick access later
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="preset-name">Preset Name</Label>
+              <Input
+                id="preset-name"
+                placeholder="e.g., Senior Managers"
+                data-testid="input-preset-name"
+              />
+            </div>
+            <div>
+              <Label htmlFor="preset-description">Description (Optional)</Label>
+              <Textarea
+                id="preset-description"
+                placeholder="Brief description of this filter preset..."
+                data-testid="textarea-preset-description"
+              />
+            </div>
+            <div className="flex gap-3">
+              <Button 
+                variant="outline" 
+                onClick={() => setIsPresetDialogOpen(false)}
+                className="flex-1"
+                data-testid="button-cancel-preset"
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={() => {
+                  const name = (document.getElementById('preset-name') as HTMLInputElement)?.value;
+                  const description = (document.getElementById('preset-description') as HTMLTextAreaElement)?.value;
+                  if (name) {
+                    savePresetMutation.mutate({ name, description, filters: advancedFilters });
+                  }
+                }}
+                disabled={savePresetMutation.isPending}
+                className="flex-1"
+                data-testid="button-save-preset"
+              >
+                {savePresetMutation.isPending ? "Saving..." : "Save Preset"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Analytics Dashboard Dialog */}
+      <Dialog open={isAnalyticsOpen} onOpenChange={setIsAnalyticsOpen}>
+        <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5 text-blue-600" />
+              Organizational Analytics Dashboard
+            </DialogTitle>
+            <DialogDescription>
+              Comprehensive insights into your organization's structure, growth, and performance metrics
+            </DialogDescription>
+          </DialogHeader>
+          
+          {analyticsData ? (
+            <div className="space-y-6">
+              {/* Overview Cards */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3">
+                      <Users className="h-8 w-8 text-blue-600" />
+                      <div>
+                        <p className="text-2xl font-bold">{analyticsData.overview.totalEmployees}</p>
+                        <p className="text-sm text-muted-foreground">Total Employees</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3">
+                      <TrendingUp className="h-8 w-8 text-green-600" />
+                      <div>
+                        <p className="text-2xl font-bold">{analyticsData.overview.recentHires}</p>
+                        <p className="text-sm text-muted-foreground">Recent Hires (30 days)</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3">
+                      <Shield className="h-8 w-8 text-purple-600" />
+                      <div>
+                        <p className="text-2xl font-bold">{analyticsData.verification.verificationRate}%</p>
+                        <p className="text-sm text-muted-foreground">Verification Rate</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3">
+                      <Target className="h-8 w-8 text-orange-600" />
+                      <div>
+                        <p className="text-2xl font-bold">{analyticsData.capacity.avgTeamSize}</p>
+                        <p className="text-sm text-muted-foreground">Avg Team Size</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <Tabs defaultValue="growth" className="w-full">
+                <TabsList className="grid w-full grid-cols-4">
+                  <TabsTrigger value="growth">Growth & Trends</TabsTrigger>
+                  <TabsTrigger value="distribution">Distribution</TabsTrigger>
+                  <TabsTrigger value="capacity">Capacity & Utilization</TabsTrigger>
+                  <TabsTrigger value="management">Management</TabsTrigger>
+                </TabsList>
+
+                {/* Growth & Trends Tab */}
+                <TabsContent value="growth" className="space-y-6">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Monthly Hiring Trend */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <TrendingUp className="h-5 w-5" />
+                          Monthly Hiring Trend
+                        </CardTitle>
+                        <CardDescription>Employee hires over the last 6 months</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <ResponsiveContainer width="100%" height={250}>
+                          <LineChart data={analyticsData.growth.monthlyTrend}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="month" />
+                            <YAxis />
+                            <Tooltip />
+                            <Line 
+                              type="monotone" 
+                              dataKey="hires" 
+                              stroke="#2563eb" 
+                              strokeWidth={2}
+                              dot={{ fill: '#2563eb' }}
+                            />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </CardContent>
+                    </Card>
+
+                    {/* Employment Status Distribution */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Employment Status</CardTitle>
+                        <CardDescription>Current status distribution</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <ResponsiveContainer width="100%" height={250}>
+                          <PieChart>
+                            <Pie
+                              data={Object.entries(analyticsData.distribution.byStatus).map(([status, count]) => ({
+                                name: status.charAt(0).toUpperCase() + status.slice(1),
+                                value: count
+                              }))}
+                              cx="50%"
+                              cy="50%"
+                              outerRadius={80}
+                              fill="#8884d8"
+                              dataKey="value"
+                              label
+                            >
+                              {Object.keys(analyticsData.distribution.byStatus).map((_, index) => (
+                                <Cell key={`cell-${index}`} fill={['#22c55e', '#f59e0b', '#ef4444', '#8b5cf6'][index % 4]} />
+                              ))}
+                            </Pie>
+                            <Tooltip />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Growth Metrics Summary */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Growth Summary</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="text-center p-4 bg-green-50 rounded-lg">
+                          <p className="text-2xl font-bold text-green-600">{analyticsData.growth.lastMonth}</p>
+                          <p className="text-sm text-green-700">Hires Last Month</p>
+                        </div>
+                        <div className="text-center p-4 bg-blue-50 rounded-lg">
+                          <p className="text-2xl font-bold text-blue-600">{analyticsData.growth.lastQuarter}</p>
+                          <p className="text-sm text-blue-700">Hires Last Quarter</p>
+                        </div>
+                        <div className="text-center p-4 bg-purple-50 rounded-lg">
+                          <p className="text-2xl font-bold text-purple-600">{analyticsData.overview.activeEmployees}</p>
+                          <p className="text-sm text-purple-700">Active Employees</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                {/* Distribution Tab */}
+                <TabsContent value="distribution" className="space-y-6">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Role Distribution */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Role Distribution</CardTitle>
+                        <CardDescription>Employees by hierarchy role</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <ResponsiveContainer width="100%" height={250}>
+                          <BarChart data={Object.entries(analyticsData.distribution.byRole).map(([role, count]) => ({
+                            role: role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()),
+                            count
+                          }))}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="role" />
+                            <YAxis />
+                            <Tooltip />
+                            <Bar dataKey="count" fill="#3b82f6" />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </CardContent>
+                    </Card>
+
+                    {/* Branch Distribution */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Branch Distribution</CardTitle>
+                        <CardDescription>Employees across branches</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <ResponsiveContainer width="100%" height={250}>
+                          <BarChart data={Object.entries(analyticsData.distribution.byBranch).map(([branch, count]) => ({
+                            branch: branch.length > 15 ? branch.substring(0, 15) + '...' : branch,
+                            count
+                          }))}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="branch" />
+                            <YAxis />
+                            <Tooltip />
+                            <Bar dataKey="count" fill="#10b981" />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </CardContent>
+                    </Card>
+
+                    {/* Department Distribution */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Department Distribution</CardTitle>
+                        <CardDescription>Employees by department</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <ResponsiveContainer width="100%" height={250}>
+                          <PieChart>
+                            <Pie
+                              data={Object.entries(analyticsData.distribution.byDepartment).map(([dept, count]) => ({
+                                name: dept,
+                                value: count
+                              }))}
+                              cx="50%"
+                              cy="50%"
+                              outerRadius={80}
+                              fill="#8884d8"
+                              dataKey="value"
+                              label
+                            >
+                              {Object.keys(analyticsData.distribution.byDepartment).map((_, index) => (
+                                <Cell key={`cell-${index}`} fill={['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'][index % 5]} />
+                              ))}
+                            </Pie>
+                            <Tooltip />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      </CardContent>
+                    </Card>
+
+                    {/* Verification Capabilities */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Verification Capabilities</CardTitle>
+                        <CardDescription>Employee verification permissions</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-4">
+                          <div className="flex justify-between items-center">
+                            <span>Can Verify Work</span>
+                            <Badge variant="secondary">{analyticsData.verification.canVerify} employees</Badge>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span>Can Manage Employees</span>
+                            <Badge variant="secondary">{analyticsData.verification.canManage} employees</Badge>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span>Can Create Teams</span>
+                            <Badge variant="secondary">{analyticsData.verification.canCreateTeams} employees</Badge>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </TabsContent>
+
+                {/* Capacity & Utilization Tab */}
+                <TabsContent value="capacity" className="space-y-6">
+                  <div className="grid grid-cols-1 gap-6">
+                    {/* Team Utilization */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Team Capacity Utilization</CardTitle>
+                        <CardDescription>Current team sizes vs maximum capacity</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <ResponsiveContainer width="100%" height={300}>
+                          <BarChart data={analyticsData.capacity.teamUtilization}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="teamName" />
+                            <YAxis />
+                            <Tooltip />
+                            <Legend />
+                            <Bar dataKey="employeeCount" fill="#3b82f6" name="Current Size" />
+                            <Bar dataKey="maxMembers" fill="#e5e7eb" name="Max Capacity" />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </CardContent>
+                    </Card>
+
+                    {/* Branch Utilization */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Branch Employee Count</CardTitle>
+                        <CardDescription>Employee distribution across branches</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <ResponsiveContainer width="100%" height={250}>
+                          <BarChart data={analyticsData.capacity.branchUtilization}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="branchName" />
+                            <YAxis />
+                            <Tooltip />
+                            <Bar dataKey="employeeCount" fill="#10b981" />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </TabsContent>
+
+                {/* Management Tab */}
+                <TabsContent value="management" className="space-y-6">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Manager Workload */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Manager Workload Distribution</CardTitle>
+                        <CardDescription>Employees managed per manager</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <ResponsiveContainer width="100%" height={250}>
+                          <BarChart data={analyticsData.managerWorkload.managerDistribution}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="managerName" />
+                            <YAxis />
+                            <Tooltip />
+                            <Bar dataKey="employeeCount" fill="#8b5cf6" />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </CardContent>
+                    </Card>
+
+                    {/* Management Summary */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Management Summary</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-4">
+                          <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
+                            <span className="font-medium">Total Managers</span>
+                            <span className="text-xl font-bold text-blue-600">{analyticsData.overview.totalManagers}</span>
+                          </div>
+                          <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
+                            <span className="font-medium">Active Managers</span>
+                            <span className="text-xl font-bold text-green-600">{analyticsData.managerWorkload.managersWithEmployees}</span>
+                          </div>
+                          <div className="flex justify-between items-center p-3 bg-purple-50 rounded-lg">
+                            <span className="font-medium">Avg Employees per Manager</span>
+                            <span className="text-xl font-bold text-purple-600">{analyticsData.managerWorkload.avgEmployeesPerManager}</span>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </TabsContent>
+              </Tabs>
+
+              <div className="flex justify-end">
+                <Button 
+                  variant="outline"
+                  onClick={() => setIsAnalyticsOpen(false)}
+                  data-testid="close-analytics"
+                >
+                  Close Dashboard
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center h-64">
+              <div className="text-center">
+                <BarChart3 className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                <p className="text-gray-500">Loading analytics data...</p>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

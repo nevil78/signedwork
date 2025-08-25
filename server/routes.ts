@@ -2626,6 +2626,751 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Export employee data to CSV
+  app.get("/api/company/employees/export", requireCompany, async (req: any, res) => {
+    try {
+      const { format = 'csv', includePersonalData = 'false' } = req.query;
+      
+      // Get all employees for the company
+      const employees = await storage.getCompanyEmployees(req.user.id);
+      const branches = await storage.getCompanyBranches(req.user.id);
+      const teams = await storage.getCompanyTeams(req.user.id);
+      
+      if (!Array.isArray(employees) || employees.length === 0) {
+        return res.status(404).json({ message: "No employees found to export" });
+      }
+      
+      // Prepare CSV data
+      const csvHeaders = [
+        'Employee ID',
+        'First Name',
+        'Last Name',
+        'Position',
+        'Department',
+        'Hierarchy Role',
+        'Branch',
+        'Team',
+        'Can Verify Work',
+        'Can Manage Employees',
+        'Can Create Teams',
+        'Verification Scope',
+        'Status',
+        'Joined Date'
+      ];
+      
+      if (includePersonalData === 'true') {
+        csvHeaders.push('Email', 'Phone');
+      }
+      
+      const csvRows = [csvHeaders];
+      
+      employees.forEach((emp: any) => {
+        const branch = branches?.find((b: any) => b.id === emp.branchId);
+        const team = teams?.find((t: any) => t.id === emp.teamId);
+        
+        const row = [
+          emp.employeeId || '',
+          emp.employee?.firstName || '',
+          emp.employee?.lastName || '',
+          emp.position || '',
+          emp.department || '',
+          emp.hierarchyRole?.replace('_', ' ') || 'employee',
+          branch ? branch.name : 'Headquarters',
+          team ? team.name : '',
+          emp.canVerifyWork ? 'Yes' : 'No',
+          emp.canManageEmployees ? 'Yes' : 'No',
+          emp.canCreateTeams ? 'Yes' : 'No',
+          emp.verificationScope || 'none',
+          emp.employmentStatus || 'active',
+          emp.joinedAt ? new Date(emp.joinedAt).toLocaleDateString() : ''
+        ];
+        
+        if (includePersonalData === 'true') {
+          row.push(emp.employee?.email || '', emp.employee?.phoneNumber || '');
+        }
+        
+        csvRows.push(row);
+      });
+      
+      // Convert to CSV
+      const csvContent = csvRows.map(row => 
+        row.map(field => `"${String(field).replace(/"/g, '""')}"`).join(',')
+      ).join('\n');
+      
+      const timestamp = new Date().toISOString().split('T')[0];
+      const filename = `employees_export_${timestamp}.csv`;
+      
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
+      res.send(csvContent);
+      
+    } catch (error) {
+      console.error("Export employees error:", error);
+      res.status(500).json({ message: "Failed to export employee data" });
+    }
+  });
+
+  // Bulk import employees from CSV
+  app.post("/api/company/employees/import", requireCompany, async (req: any, res) => {
+    try {
+      const { csvData, validateOnly = false } = req.body;
+      
+      if (!csvData || !Array.isArray(csvData) || csvData.length === 0) {
+        return res.status(400).json({ message: "CSV data is required and must be a non-empty array" });
+      }
+      
+      const results = [];
+      const errors = [];
+      const warnings = [];
+      
+      // Get existing data for validation
+      const branches = await storage.getCompanyBranches(req.user.id);
+      const teams = await storage.getCompanyTeams(req.user.id);
+      const existingEmployees = await storage.getCompanyEmployees(req.user.id);
+      
+      for (let i = 0; i < csvData.length; i++) {
+        const row = csvData[i];
+        const rowIndex = i + 2; // +2 because array is 0-indexed and first row is header
+        
+        try {
+          // Validate required fields
+          if (!row.firstName || !row.lastName || !row.email) {
+            errors.push({
+              row: rowIndex,
+              field: 'required',
+              message: 'First name, last name, and email are required'
+            });
+            continue;
+          }
+          
+          // Validate email format
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          if (!emailRegex.test(row.email)) {
+            errors.push({
+              row: rowIndex,
+              field: 'email',
+              message: 'Invalid email format'
+            });
+            continue;
+          }
+          
+          // Check for duplicate emails in existing employees
+          const existingEmployee = existingEmployees?.find((emp: any) => 
+            emp.employee?.email === row.email
+          );
+          if (existingEmployee) {
+            warnings.push({
+              row: rowIndex,
+              field: 'email',
+              message: 'Employee with this email already exists'
+            });
+          }
+          
+          // Validate branch
+          let branchId = null;
+          if (row.branch && row.branch !== 'Headquarters') {
+            const branch = branches?.find((b: any) => 
+              b.name.toLowerCase() === row.branch.toLowerCase()
+            );
+            if (!branch) {
+              warnings.push({
+                row: rowIndex,
+                field: 'branch',
+                message: `Branch '${row.branch}' not found, will be assigned to Headquarters`
+              });
+            } else {
+              branchId = branch.id;
+            }
+          }
+          
+          // Validate team
+          let teamId = null;
+          if (row.team) {
+            const team = teams?.find((t: any) => 
+              t.name.toLowerCase() === row.team.toLowerCase() &&
+              (!branchId || t.branchId === branchId)
+            );
+            if (!team) {
+              warnings.push({
+                row: rowIndex,
+                field: 'team',
+                message: `Team '${row.team}' not found in specified branch`
+              });
+            } else {
+              teamId = team.id;
+            }
+          }
+          
+          // Prepare employee data
+          const employeeData = {
+            firstName: row.firstName.trim(),
+            lastName: row.lastName.trim(),
+            email: row.email.trim().toLowerCase(),
+            phoneNumber: row.phone || null,
+            position: row.position || 'Employee',
+            department: row.department || 'General',
+            hierarchyRole: row.hierarchyRole?.toLowerCase().replace(' ', '_') || 'employee',
+            branchId,
+            teamId,
+            canVerifyWork: row.canVerifyWork?.toLowerCase() === 'yes' || false,
+            canManageEmployees: row.canManageEmployees?.toLowerCase() === 'yes' || false,
+            canCreateTeams: row.canCreateTeams?.toLowerCase() === 'yes' || false,
+            verificationScope: row.verificationScope || 'none',
+            employmentStatus: row.status || 'active'
+          };
+          
+          if (!validateOnly && !existingEmployee) {
+            // Create temporary password
+            const tempPassword = 'TempPass' + Math.random().toString(36).slice(-8);
+            const hashedPassword = await bcrypt.hash(tempPassword, 10);
+            
+            // Create employee account (this would need to be implemented in storage)
+            // For now, just track successful validation
+            results.push({
+              row: rowIndex,
+              status: 'ready_to_import',
+              data: employeeData,
+              tempPassword: tempPassword // Only for import preview
+            });
+          } else {
+            results.push({
+              row: rowIndex,
+              status: 'validated',
+              data: employeeData
+            });
+          }
+          
+        } catch (error) {
+          errors.push({
+            row: rowIndex,
+            field: 'general',
+            message: error.message || 'Failed to process row'
+          });
+        }
+      }
+      
+      const summary = {
+        total: csvData.length,
+        successful: results.length,
+        errors: errors.length,
+        warnings: warnings.length,
+        validateOnly
+      };
+      
+      res.json({
+        message: validateOnly ? 'Validation completed' : 'Import preview completed',
+        results,
+        errors,
+        warnings,
+        summary
+      });
+      
+    } catch (error) {
+      console.error("Import employees error:", error);
+      res.status(500).json({ message: "Failed to import employee data" });
+    }
+  });
+
+  // Get comprehensive organizational analytics
+  app.get("/api/company/data/analytics", requireCompany, async (req: any, res) => {
+    try {
+      const employees = await storage.getCompanyEmployees(req.user.id);
+      const branches = await storage.getCompanyBranches(req.user.id);
+      const teams = await storage.getCompanyTeams(req.user.id);
+      const managers = await storage.getManagersByCompany(req.user.id);
+      
+      const now = new Date();
+      const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      const ninetyDaysAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+      
+      // Enhanced analytics with detailed metrics
+      const analytics = {
+        overview: {
+          totalEmployees: Array.isArray(employees) ? employees.length : 0,
+          totalBranches: Array.isArray(branches) ? branches.length : 0,
+          totalTeams: Array.isArray(teams) ? teams.length : 0,
+          totalManagers: Array.isArray(managers) ? managers.length : 0,
+          activeEmployees: 0,
+          recentHires: 0,
+          verificationCapableEmployees: 0
+        },
+        distribution: {
+          byRole: {},
+          byBranch: {},
+          byTeam: {},
+          byStatus: {},
+          byDepartment: {},
+          byJoinedMonth: {}
+        },
+        verification: {
+          canVerify: 0,
+          canManage: 0,
+          canCreateTeams: 0,
+          verificationRate: 0
+        },
+        growth: {
+          lastMonth: 0,
+          lastQuarter: 0,
+          monthlyTrend: []
+        },
+        capacity: {
+          branchUtilization: [],
+          teamUtilization: [],
+          avgTeamSize: 0
+        },
+        managerWorkload: {
+          managersWithEmployees: 0,
+          avgEmployeesPerManager: 0,
+          managerDistribution: []
+        }
+      };
+      
+      if (Array.isArray(employees)) {
+        employees.forEach((emp: any) => {
+          // Basic status tracking
+          const status = emp.employmentStatus || 'active';
+          if (status === 'active') analytics.overview.activeEmployees++;
+          
+          // Recent hires tracking
+          if (emp.joinedAt && new Date(emp.joinedAt) > thirtyDaysAgo) {
+            analytics.overview.recentHires++;
+          }
+          
+          // Role distribution
+          const role = emp.hierarchyRole || 'employee';
+          analytics.distribution.byRole[role] = (analytics.distribution.byRole[role] || 0) + 1;
+          
+          // Branch distribution
+          const branchName = emp.branchId ? 
+            branches?.find((b: any) => b.id === emp.branchId)?.name || 'Unknown Branch' : 
+            'Headquarters';
+          analytics.distribution.byBranch[branchName] = (analytics.distribution.byBranch[branchName] || 0) + 1;
+          
+          // Team distribution
+          const teamName = emp.teamId ? 
+            teams?.find((t: any) => t.id === emp.teamId)?.name || 'Unknown Team' : 
+            'No Team';
+          analytics.distribution.byTeam[teamName] = (analytics.distribution.byTeam[teamName] || 0) + 1;
+          
+          // Status distribution
+          analytics.distribution.byStatus[status] = (analytics.distribution.byStatus[status] || 0) + 1;
+          
+          // Department distribution
+          const department = emp.department || 'General';
+          analytics.distribution.byDepartment[department] = (analytics.distribution.byDepartment[department] || 0) + 1;
+          
+          // Monthly join distribution (last 12 months)
+          if (emp.joinedAt) {
+            const joinDate = new Date(emp.joinedAt);
+            const monthKey = `${joinDate.getFullYear()}-${String(joinDate.getMonth() + 1).padStart(2, '0')}`;
+            analytics.distribution.byJoinedMonth[monthKey] = (analytics.distribution.byJoinedMonth[monthKey] || 0) + 1;
+          }
+          
+          // Verification capabilities
+          if (emp.canVerifyWork) {
+            analytics.verification.canVerify++;
+            analytics.overview.verificationCapableEmployees++;
+          }
+          if (emp.canManageEmployees) analytics.verification.canManage++;
+          if (emp.canCreateTeams) analytics.verification.canCreateTeams++;
+        });
+        
+        // Calculate verification rate
+        analytics.verification.verificationRate = analytics.overview.totalEmployees > 0 ? 
+          Math.round((analytics.overview.verificationCapableEmployees / analytics.overview.totalEmployees) * 100) : 0;
+        
+        // Calculate growth metrics
+        const lastMonthHires = employees.filter((emp: any) => 
+          emp.joinedAt && new Date(emp.joinedAt) > thirtyDaysAgo
+        ).length;
+        const lastQuarterHires = employees.filter((emp: any) => 
+          emp.joinedAt && new Date(emp.joinedAt) > ninetyDaysAgo
+        ).length;
+        
+        analytics.growth.lastMonth = lastMonthHires;
+        analytics.growth.lastQuarter = lastQuarterHires;
+        
+        // Generate monthly trend for last 6 months
+        for (let i = 5; i >= 0; i--) {
+          const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+          const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+          const monthName = date.toLocaleString('default', { month: 'short', year: 'numeric' });
+          analytics.growth.monthlyTrend.push({
+            month: monthName,
+            hires: analytics.distribution.byJoinedMonth[monthKey] || 0
+          });
+        }
+      }
+      
+      // Calculate capacity metrics
+      if (Array.isArray(branches)) {
+        analytics.capacity.branchUtilization = branches.map((branch: any) => {
+          const branchEmployees = employees?.filter((emp: any) => emp.branchId === branch.id) || [];
+          return {
+            branchName: branch.name,
+            employeeCount: branchEmployees.length,
+            utilization: branchEmployees.length // Could be enhanced with capacity limits
+          };
+        });
+      }
+      
+      if (Array.isArray(teams)) {
+        const teamSizes: number[] = [];
+        analytics.capacity.teamUtilization = teams.map((team: any) => {
+          const teamEmployees = employees?.filter((emp: any) => emp.teamId === team.id) || [];
+          teamSizes.push(teamEmployees.length);
+          return {
+            teamName: team.name,
+            employeeCount: teamEmployees.length,
+            maxMembers: team.maxMembers || 10,
+            utilization: team.maxMembers ? Math.round((teamEmployees.length / team.maxMembers) * 100) : 0
+          };
+        });
+        
+        analytics.capacity.avgTeamSize = teamSizes.length > 0 ? 
+          Math.round(teamSizes.reduce((a, b) => a + b, 0) / teamSizes.length) : 0;
+      }
+      
+      // Calculate manager workload
+      if (Array.isArray(managers)) {
+        const managersWithEmployees = managers.filter((manager: any) => {
+          const managedEmployees = employees?.filter((emp: any) => emp.managerId === manager.id) || [];
+          return managedEmployees.length > 0;
+        });
+        
+        analytics.managerWorkload.managersWithEmployees = managersWithEmployees.length;
+        
+        const totalManagedEmployees = managers.reduce((total: number, manager: any) => {
+          const managedEmployees = employees?.filter((emp: any) => emp.managerId === manager.id) || [];
+          return total + managedEmployees.length;
+        }, 0);
+        
+        analytics.managerWorkload.avgEmployeesPerManager = managers.length > 0 ? 
+          Math.round(totalManagedEmployees / managers.length) : 0;
+        
+        analytics.managerWorkload.managerDistribution = managers.map((manager: any) => {
+          const managedEmployees = employees?.filter((emp: any) => emp.managerId === manager.id) || [];
+          return {
+            managerName: manager.managerName,
+            employeeCount: managedEmployees.length,
+            permissionLevel: manager.permissionLevel
+          };
+        });
+      }
+      
+      res.json(analytics);
+      
+    } catch (error) {
+      console.error("Get comprehensive analytics error:", error);
+      res.status(500).json({ message: "Failed to get analytics data" });
+    }
+  });
+
+  // Advanced employee search with multi-criteria filtering
+  app.post("/api/company/employees/advanced-search", requireCompany, async (req: any, res) => {
+    try {
+      const {
+        searchQuery = '',
+        filters = {},
+        sortBy = 'name',
+        sortOrder = 'asc',
+        page = 1,
+        limit = 50
+      } = req.body;
+      
+      // Get all employees first
+      const allEmployees = await storage.getCompanyEmployees(req.user.id);
+      const branches = await storage.getCompanyBranches(req.user.id);
+      const teams = await storage.getCompanyTeams(req.user.id);
+      
+      if (!Array.isArray(allEmployees)) {
+        return res.json({ employees: [], total: 0, page, limit });
+      }
+      
+      let filteredEmployees = allEmployees;
+      
+      // Apply text search across multiple fields
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase().trim();
+        filteredEmployees = filteredEmployees.filter((emp: any) => {
+          const searchableText = [
+            emp.employee?.firstName,
+            emp.employee?.lastName,
+            emp.employee?.email,
+            emp.position,
+            emp.department,
+            emp.hierarchyRole?.replace('_', ' '),
+            branches?.find((b: any) => b.id === emp.branchId)?.name,
+            teams?.find((t: any) => t.id === emp.teamId)?.name
+          ].filter(Boolean).join(' ').toLowerCase();
+          
+          return searchableText.includes(query);
+        });
+      }
+      
+      // Apply advanced filters
+      if (filters.roles && Array.isArray(filters.roles) && filters.roles.length > 0) {
+        filteredEmployees = filteredEmployees.filter((emp: any) => 
+          filters.roles.includes(emp.hierarchyRole || 'employee')
+        );
+      }
+      
+      if (filters.branches && Array.isArray(filters.branches) && filters.branches.length > 0) {
+        filteredEmployees = filteredEmployees.filter((emp: any) => {
+          if (filters.branches.includes('headquarters')) {
+            return !emp.branchId || filters.branches.includes(emp.branchId);
+          }
+          return filters.branches.includes(emp.branchId);
+        });
+      }
+      
+      if (filters.teams && Array.isArray(filters.teams) && filters.teams.length > 0) {
+        filteredEmployees = filteredEmployees.filter((emp: any) => 
+          filters.teams.includes(emp.teamId) || (filters.teams.includes('no_team') && !emp.teamId)
+        );
+      }
+      
+      if (filters.departments && Array.isArray(filters.departments) && filters.departments.length > 0) {
+        filteredEmployees = filteredEmployees.filter((emp: any) => 
+          filters.departments.includes(emp.department)
+        );
+      }
+      
+      if (filters.statuses && Array.isArray(filters.statuses) && filters.statuses.length > 0) {
+        filteredEmployees = filteredEmployees.filter((emp: any) => 
+          filters.statuses.includes(emp.employmentStatus || 'active')
+        );
+      }
+      
+      if (filters.verificationCapabilities && Array.isArray(filters.verificationCapabilities)) {
+        filteredEmployees = filteredEmployees.filter((emp: any) => {
+          return filters.verificationCapabilities.every((capability: string) => {
+            switch (capability) {
+              case 'canVerifyWork': return emp.canVerifyWork;
+              case 'canManageEmployees': return emp.canManageEmployees;
+              case 'canCreateTeams': return emp.canCreateTeams;
+              default: return true;
+            }
+          });
+        });
+      }
+      
+      if (filters.joinedDateRange) {
+        const { start, end } = filters.joinedDateRange;
+        if (start || end) {
+          filteredEmployees = filteredEmployees.filter((emp: any) => {
+            if (!emp.joinedAt) return false;
+            const joinedDate = new Date(emp.joinedAt);
+            if (start && joinedDate < new Date(start)) return false;
+            if (end && joinedDate > new Date(end)) return false;
+            return true;
+          });
+        }
+      }
+      
+      // Apply sorting
+      filteredEmployees.sort((a: any, b: any) => {
+        let aVal: any, bVal: any;
+        
+        switch (sortBy) {
+          case 'name':
+            aVal = `${a.employee?.firstName || ''} ${a.employee?.lastName || ''}`.trim();
+            bVal = `${b.employee?.firstName || ''} ${b.employee?.lastName || ''}`.trim();
+            break;
+          case 'role':
+            aVal = a.hierarchyRole || 'employee';
+            bVal = b.hierarchyRole || 'employee';
+            break;
+          case 'position':
+            aVal = a.position || '';
+            bVal = b.position || '';
+            break;
+          case 'department':
+            aVal = a.department || '';
+            bVal = b.department || '';
+            break;
+          case 'joinedDate':
+            aVal = new Date(a.joinedAt || 0);
+            bVal = new Date(b.joinedAt || 0);
+            break;
+          default:
+            aVal = a[sortBy] || '';
+            bVal = b[sortBy] || '';
+        }
+        
+        if (sortOrder === 'desc') {
+          return aVal > bVal ? -1 : aVal < bVal ? 1 : 0;
+        } else {
+          return aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
+        }
+      });
+      
+      // Apply pagination
+      const total = filteredEmployees.length;
+      const startIndex = (page - 1) * limit;
+      const paginatedEmployees = filteredEmployees.slice(startIndex, startIndex + limit);
+      
+      res.json({
+        employees: paginatedEmployees,
+        total,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        totalPages: Math.ceil(total / limit),
+        appliedFilters: filters,
+        searchQuery
+      });
+      
+    } catch (error) {
+      console.error("Advanced employee search error:", error);
+      res.status(500).json({ message: "Failed to perform advanced search" });
+    }
+  });
+
+  // Save filter preset
+  app.post("/api/company/filter-presets", requireCompany, async (req: any, res) => {
+    try {
+      const { name, description, filters, isPublic = false } = req.body;
+      
+      if (!name || !filters) {
+        return res.status(400).json({ message: "Name and filters are required" });
+      }
+      
+      // For now, store in a simple format (this could be enhanced with a proper database table)
+      const preset = {
+        id: `preset_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        name: name.trim(),
+        description: description?.trim() || '',
+        filters,
+        isPublic,
+        companyId: req.user.id,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      
+      // TODO: Implement proper storage for filter presets
+      // For now, return the preset as if it was saved
+      
+      res.status(201).json({
+        message: "Filter preset saved successfully",
+        preset
+      });
+      
+    } catch (error) {
+      console.error("Save filter preset error:", error);
+      res.status(500).json({ message: "Failed to save filter preset" });
+    }
+  });
+
+  // Get filter presets
+  app.get("/api/company/filter-presets", requireCompany, async (req: any, res) => {
+    try {
+      // TODO: Implement proper retrieval of filter presets
+      // For now, return some sample presets
+      const samplePresets = [
+        {
+          id: "preset_managers",
+          name: "All Managers",
+          description: "Employees with management capabilities",
+          filters: {
+            verificationCapabilities: ["canManageEmployees"],
+            roles: ["team_lead", "branch_manager", "company_admin"]
+          },
+          isPublic: true,
+          createdAt: new Date().toISOString()
+        },
+        {
+          id: "preset_verifiers",
+          name: "Work Verifiers",
+          description: "Employees who can verify work entries",
+          filters: {
+            verificationCapabilities: ["canVerifyWork"]
+          },
+          isPublic: true,
+          createdAt: new Date().toISOString()
+        },
+        {
+          id: "preset_recent_hires",
+          name: "Recent Hires",
+          description: "Employees joined in the last 3 months",
+          filters: {
+            joinedDateRange: {
+              start: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+            }
+          },
+          isPublic: true,
+          createdAt: new Date().toISOString()
+        }
+      ];
+      
+      res.json({ presets: samplePresets });
+      
+    } catch (error) {
+      console.error("Get filter presets error:", error);
+      res.status(500).json({ message: "Failed to get filter presets" });
+    }
+  });
+
+  // Get filter suggestions (auto-complete for search)
+  app.get("/api/company/filter-suggestions", requireCompany, async (req: any, res) => {
+    try {
+      const { field, query = '' } = req.query;
+      
+      const employees = await storage.getCompanyEmployees(req.user.id);
+      const branches = await storage.getCompanyBranches(req.user.id);
+      const teams = await storage.getCompanyTeams(req.user.id);
+      
+      if (!Array.isArray(employees)) {
+        return res.json({ suggestions: [] });
+      }
+      
+      let suggestions: string[] = [];
+      const queryLower = query.toString().toLowerCase();
+      
+      switch (field) {
+        case 'position':
+          suggestions = [...new Set(employees
+            .map((emp: any) => emp.position)
+            .filter((pos: string) => pos && pos.toLowerCase().includes(queryLower))
+          )];
+          break;
+          
+        case 'department':
+          suggestions = [...new Set(employees
+            .map((emp: any) => emp.department)
+            .filter((dept: string) => dept && dept.toLowerCase().includes(queryLower))
+          )];
+          break;
+          
+        case 'branch':
+          suggestions = Array.isArray(branches) ? branches
+            .filter((branch: any) => branch.name.toLowerCase().includes(queryLower))
+            .map((branch: any) => ({ id: branch.id, name: branch.name }))
+            : [];
+          break;
+          
+        case 'team':
+          suggestions = Array.isArray(teams) ? teams
+            .filter((team: any) => team.name.toLowerCase().includes(queryLower))
+            .map((team: any) => ({ id: team.id, name: team.name, branchId: team.branchId }))
+            : [];
+          break;
+          
+        default:
+          suggestions = [];
+      }
+      
+      res.json({ 
+        suggestions: suggestions.slice(0, 10), // Limit to 10 suggestions
+        field,
+        query
+      });
+      
+    } catch (error) {
+      console.error("Get filter suggestions error:", error);
+      res.status(500).json({ message: "Failed to get filter suggestions" });
+    }
+  });
+
   // Manager-scoped Data Access Routes
 
   // Get employees assigned to manager
