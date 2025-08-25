@@ -2912,7 +2912,20 @@ export default function CompanyHierarchy() {
               )}
               <Select 
                 value={newManager.employeeId} 
-                onValueChange={(value) => setNewManager({ ...newManager, employeeId: value })}
+                onValueChange={(value) => {
+                  const selectedEmployee = employees?.find((emp: any) => emp.id === value);
+                  if (selectedEmployee) {
+                    // Auto-generate username suggestion
+                    const suggestedUsername = `${selectedEmployee.firstName?.toLowerCase() || 'manager'}.${selectedEmployee.lastName?.toLowerCase() || 'user'}`;
+                    setNewManager({ 
+                      ...newManager, 
+                      employeeId: value,
+                      username: suggestedUsername
+                    });
+                  } else {
+                    setNewManager({ ...newManager, employeeId: value });
+                  }
+                }}
               >
                 <SelectTrigger data-testid="select-manager-employee">
                   <SelectValue placeholder="Choose an employee to promote" />
@@ -2995,7 +3008,10 @@ export default function CompanyHierarchy() {
                   data-testid="input-manager-username"
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  Unique username for manager login system
+                  {newManager.employeeId 
+                    ? "Auto-generated from employee name (you can edit this)"
+                    : "Unique username for manager login system"
+                  }
                 </p>
               </div>
 
@@ -3152,15 +3168,52 @@ export default function CompanyHierarchy() {
               </div>
             </div>
 
-            {/* Validation Summary */}
+            {/* Enhanced Account Summary */}
             {newManager.employeeId && newManager.username && newManager.password && (
-              <div className="p-3 bg-green-50 rounded-lg border border-green-200">
-                <h5 className="font-medium text-green-800 text-sm mb-2">Account Summary</h5>
-                <div className="text-xs space-y-1 text-green-700">
-                  <div>Employee: {employees?.find((e: any) => e.id === newManager.employeeId)?.firstName} {employees?.find((e: any) => e.id === newManager.employeeId)?.lastName}</div>
-                  <div>Username: {newManager.username}</div>
-                  <div>Access Level: {newManager.accessLevel.replace('_', ' ')}</div>
-                  <div>Password: {newManager.password === newManager.confirmPassword ? 'Matching ✓' : 'Not matching ✗'}</div>
+              <div className="p-4 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg border border-green-200">
+                <h5 className="font-medium text-gray-800 text-sm mb-3 flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4 text-green-600" />
+                  Manager Account Summary
+                </h5>
+                <div className="grid grid-cols-2 gap-3 text-xs">
+                  <div className="space-y-2">
+                    <div className="flex flex-col">
+                      <span className="text-gray-500">Employee</span>
+                      <span className="font-medium text-gray-900">
+                        {employees?.find((e: any) => e.id === newManager.employeeId)?.firstName} {employees?.find((e: any) => e.id === newManager.employeeId)?.lastName}
+                      </span>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-gray-500">Position</span>
+                      <span className="font-medium text-gray-900">
+                        {employees?.find((e: any) => e.id === newManager.employeeId)?.position || 'Employee'}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex flex-col">
+                      <span className="text-gray-500">Username</span>
+                      <span className="font-medium text-gray-900">{newManager.username}</span>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-gray-500">Access Level</span>
+                      <span className="font-medium text-gray-900">{newManager.accessLevel.replace('_', ' ')}</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-3 pt-3 border-t border-gray-200">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-gray-500">Password Status</span>
+                    <span className={`font-medium ${newManager.password === newManager.confirmPassword ? 'text-green-600' : 'text-red-600'}`}>
+                      {newManager.password === newManager.confirmPassword ? '✓ Passwords Match' : '✗ Passwords Don\'t Match'}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs mt-1">
+                    <span className="text-gray-500">Permissions</span>
+                    <span className="font-medium text-blue-600">
+                      {Object.values(newManager.permissions).filter(Boolean).length} of 4 enabled
+                    </span>
+                  </div>
                 </div>
               </div>
             )}
