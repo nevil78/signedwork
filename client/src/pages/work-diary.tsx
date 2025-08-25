@@ -261,8 +261,8 @@ export default function WorkDiary() {
           <p className="text-muted-foreground mb-6">Manage work entries across all your companies - past and present</p>
         </div>
 
-        {/* Join Company Button - Centered at top */}
-        <div className="mb-8 flex justify-center">
+        {/* Join Company Button - Outside the content box */}
+        <div className="mb-8 flex justify-end">
           <Button 
             onClick={() => {
               setEditingCompany(null);
@@ -273,9 +273,9 @@ export default function WorkDiary() {
             data-testid="button-join-company"
             disabled={isLoading}
             size="lg"
-            className="px-8 py-6 text-base"
+            className="px-6 py-3"
           >
-            <Plus className="mr-2 h-5 w-5" />
+            <Plus className="mr-2 h-4 w-4" />
             {getButtonText()}
           </Button>
         </div>
