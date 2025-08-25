@@ -120,6 +120,10 @@ export default function CompanyHierarchy() {
     }
   });
 
+  // Search and filter state for manager creation
+  const [employeeSearchQuery, setEmployeeSearchQuery] = useState('');
+  const [employeeFilter, setEmployeeFilter] = useState('all');
+
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -2905,13 +2909,137 @@ export default function CompanyHierarchy() {
           
           <div className="space-y-6 overflow-y-auto flex-1 pr-2 pt-4">
             {/* Employee Selection */}
-            <div className="space-y-3">
-              <Label htmlFor="manager-employee">Select Employee</Label>
-              {employees && employees.length > 0 && (
-                <p className="text-sm text-gray-600">
-                  Found {employees.length} employee(s) to promote to manager
-                </p>
-              )}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="manager-employee" className="text-base font-semibold">Select Employee</Label>
+                {employees && employees.length > 0 && (
+                  <Badge variant="secondary" className="bg-blue-50 text-blue-700">
+                    {employees.filter((emp: any) => {
+                      const isRegularEmployee = emp.hierarchyRole === 'employee' || !emp.hierarchyRole;
+                      const isActive = emp.employmentStatus === 'active' || !emp.employmentStatus;
+                      const notCompanyOwner = emp.id !== employees.find((e: any) => e.isCompanyOwner)?.id;
+                      return isRegularEmployee && isActive && notCompanyOwner;
+                    }).length} Eligible
+                  </Badge>
+                )}
+              </div>
+              
+              {/* Search and Filter Bar */}
+              <div className="space-y-2">
+                <div className="flex gap-2">
+                  <div className="flex-1 relative">
+                    <Search className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                    <Input
+                      placeholder="Search employees by name, position, or department..."
+                      value={employeeSearchQuery}
+                      onChange={(e) => setEmployeeSearchQuery(e.target.value)}
+                      className="pl-9 h-10"
+                      data-testid="input-employee-search"
+                    />
+                    {employeeSearchQuery && (
+                      <button
+                        onClick={() => setEmployeeSearchQuery('')}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        data-testid="button-clear-search"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
+                  <Select value={employeeFilter} onValueChange={setEmployeeFilter}>
+                    <SelectTrigger className="w-36 h-10">
+                      <SelectValue placeholder="Filter" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Employees</SelectItem>
+                      <SelectItem value="recent">Recent Hires</SelectItem>
+                      <SelectItem value="senior">Senior Staff</SelectItem>
+                      <SelectItem value="department">Has Department</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {(employeeSearchQuery || employeeFilter !== 'all') && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setEmployeeSearchQuery('');
+                        setEmployeeFilter('all');
+                      }}
+                      className="h-10 px-3"
+                      data-testid="button-reset-filters"
+                    >
+                      <X className="h-4 w-4 mr-1" />
+                      Clear
+                    </Button>
+                  )}
+                </div>
+                
+                {/* Search Results Indicator */}
+                {(employeeSearchQuery || employeeFilter !== 'all') && (
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <Filter className="h-4 w-4" />
+                    <span>
+                      Showing {employees?.filter((emp: any) => {
+                        const isRegularEmployee = emp.hierarchyRole === 'employee' || !emp.hierarchyRole;
+                        const isActive = emp.employmentStatus === 'active' || !emp.employmentStatus;
+                        const notCompanyOwner = emp.id !== employees.find((e: any) => e.isCompanyOwner)?.id;
+                        
+                        if (!isRegularEmployee || !isActive || !notCompanyOwner) return false;
+                        
+                        if (employeeSearchQuery) {
+                          const query = employeeSearchQuery.toLowerCase();
+                          const fullName = `${emp.firstName || ''} ${emp.lastName || ''}`.toLowerCase();
+                          const position = (emp.position || '').toLowerCase();
+                          const department = (emp.department || '').toLowerCase();
+                          const email = (emp.email || '').toLowerCase();
+                          
+                          if (!fullName.includes(query) && 
+                              !position.includes(query) && 
+                              !department.includes(query) && 
+                              !email.includes(query)) {
+                            return false;
+                          }
+                        }
+                        
+                        if (employeeFilter === 'recent') {
+                          const joinDate = emp.dateJoined ? new Date(emp.dateJoined) : null;
+                          const threeMonthsAgo = new Date();
+                          threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+                          return joinDate && joinDate > threeMonthsAgo;
+                        }
+                        
+                        if (employeeFilter === 'senior') {
+                          const joinDate = emp.dateJoined ? new Date(emp.dateJoined) : null;
+                          const oneYearAgo = new Date();
+                          oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+                          return joinDate && joinDate < oneYearAgo;
+                        }
+                        
+                        if (employeeFilter === 'department') {
+                          return emp.department && emp.department !== 'General';
+                        }
+                        
+                        return true;
+                      }).length || 0} of {employees?.filter((emp: any) => {
+                        const isRegularEmployee = emp.hierarchyRole === 'employee' || !emp.hierarchyRole;
+                        const isActive = emp.employmentStatus === 'active' || !emp.employmentStatus;
+                        const notCompanyOwner = emp.id !== employees.find((e: any) => e.isCompanyOwner)?.id;
+                        return isRegularEmployee && isActive && notCompanyOwner;
+                      }).length || 0} eligible employees
+                    </span>
+                    {employeeSearchQuery && (
+                      <Badge variant="secondary" className="text-xs">
+                        Search: "{employeeSearchQuery}"
+                      </Badge>
+                    )}
+                    {employeeFilter !== 'all' && (
+                      <Badge variant="secondary" className="text-xs">
+                        Filter: {employeeFilter.replace('_', ' ')}
+                      </Badge>
+                    )}
+                  </div>
+                )}
+              </div>
               <Select 
                 value={newManager.employeeId} 
                 onValueChange={(value) => {
@@ -2963,7 +3091,46 @@ export default function CompanyHierarchy() {
                         const isRegularEmployee = emp.hierarchyRole === 'employee' || !emp.hierarchyRole;
                         const isActive = emp.employmentStatus === 'active' || !emp.employmentStatus;
                         const notCompanyOwner = emp.id !== employees.find((e: any) => e.isCompanyOwner)?.id;
-                        return isRegularEmployee && isActive && notCompanyOwner;
+                        
+                        // Basic eligibility check
+                        if (!isRegularEmployee || !isActive || !notCompanyOwner) return false;
+                        
+                        // Search query filter
+                        if (employeeSearchQuery) {
+                          const query = employeeSearchQuery.toLowerCase();
+                          const fullName = `${emp.firstName || ''} ${emp.lastName || ''}`.toLowerCase();
+                          const position = (emp.position || '').toLowerCase();
+                          const department = (emp.department || '').toLowerCase();
+                          const email = (emp.email || '').toLowerCase();
+                          
+                          if (!fullName.includes(query) && 
+                              !position.includes(query) && 
+                              !department.includes(query) && 
+                              !email.includes(query)) {
+                            return false;
+                          }
+                        }
+                        
+                        // Filter by category
+                        if (employeeFilter === 'recent') {
+                          const joinDate = emp.dateJoined ? new Date(emp.dateJoined) : null;
+                          const threeMonthsAgo = new Date();
+                          threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+                          return joinDate && joinDate > threeMonthsAgo;
+                        }
+                        
+                        if (employeeFilter === 'senior') {
+                          const joinDate = emp.dateJoined ? new Date(emp.dateJoined) : null;
+                          const oneYearAgo = new Date();
+                          oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+                          return joinDate && joinDate < oneYearAgo;
+                        }
+                        
+                        if (employeeFilter === 'department') {
+                          return emp.department && emp.department !== 'General';
+                        }
+                        
+                        return true;
                       })
                       .map((employee: any) => (
                         <SelectItem key={employee.id} value={employee.id}>
