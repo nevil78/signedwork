@@ -156,10 +156,10 @@ export default function CompanyHierarchy() {
   const [isMFASetupOpen, setIsMFASetupOpen] = useState(false);
   const [complianceReport, setComplianceReport] = useState<any>(null);
   
-  // Phase 5: Fetch Security Metrics
+  // Phase 5: Fetch Security Metrics - moved after currentUser declaration
   const { data: securityData, refetch: refetchSecurity } = useQuery({
     queryKey: ['/api/security/dashboard'],
-    enabled: isSecurityDashboardOpen && !!data?.company
+    enabled: isSecurityDashboardOpen && !!currentUser
   });
   
   // Phase 3: Bulk Operations State
@@ -916,11 +916,15 @@ export default function CompanyHierarchy() {
 
   const { data: filterPresetsData } = useQuery({
     queryKey: ["/api/company/filter-presets"],
-    queryFn: () => apiRequest("GET", "/api/company/filter-presets"),
-    onSuccess: (data: any) => {
-      setFilterPresets(data.presets || []);
-    }
+    queryFn: () => apiRequest("GET", "/api/company/filter-presets")
   });
+
+  // Handle filter presets data change
+  useEffect(() => {
+    if (filterPresetsData) {
+      setFilterPresets(filterPresetsData.presets || []);
+    }
+  }, [filterPresetsData]);
 
   const { data: analyticsData } = useQuery({
     queryKey: ["/api/company/data/analytics"],
@@ -952,10 +956,7 @@ export default function CompanyHierarchy() {
   // Phase 3: Bulk Operations Mutations
   const bulkUpdateEmployeesMutation = useMutation({
     mutationFn: async ({ employeeIds, updates }: { employeeIds: string[]; updates: any }) => {
-      return apiRequest('/api/employees/bulk-update', {
-        method: 'PATCH',
-        body: JSON.stringify({ employeeIds, updates })
-      });
+      return apiRequest('PATCH', '/api/employees/bulk-update', { employeeIds, updates });
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['/api/company-hierarchy'] });
@@ -985,7 +986,7 @@ export default function CompanyHierarchy() {
   };
 
   const selectAllEmployees = () => {
-    if (employees) {
+    if (employees && Array.isArray(employees)) {
       setSelectedEmployees(employees.map((emp: any) => emp.employeeId));
     }
   };
@@ -1273,8 +1274,8 @@ export default function CompanyHierarchy() {
     if (!targetEmployee) return false;
     
     // Emergency override: Company owners can always manage employees (for initial setup)
-    const currentUser = user;
-    if (currentUser?.type === 'company') return true;
+    const userData = currentUser;
+    if (userData?.type === 'company') return true;
     
     if (!userEmployee) return false;
     
@@ -2218,7 +2219,13 @@ export default function CompanyHierarchy() {
                   </CardContent>
                 </Card>
               ) : structure ? (
-                <VisualOrgChart data={structure} />
+                <VisualOrgChart data={{ 
+                  company: structure?.company || {}, 
+                  branches: Array.isArray(branches) ? branches : [], 
+                  teams: Array.isArray(teams) ? teams : [], 
+                  employees: Array.isArray(employees) ? employees : [], 
+                  managers: Array.isArray(managers) ? managers : [] 
+                }} />
               ) : (
                 <Card>
                   <CardContent className="py-12">
@@ -3149,7 +3156,7 @@ export default function CompanyHierarchy() {
                     className="text-xs"
                     data-testid="select-all-button"
                   >
-                    Select All ({employees?.length || 0})
+                    Select All ({Array.isArray(employees) ? employees.length : 0})
                   </Button>
                   {selectedEmployees.length > 0 && (
                     <Button 
@@ -4995,7 +5002,7 @@ export default function CompanyHierarchy() {
               ) : (
                 <Button
                   onClick={() => {
-                    createManager.mutate(newManager);
+                    createManagerMutation.mutate(newManager);
                   }}
                   disabled={!stepValidation.step4}
                   className="flex items-center gap-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none"
@@ -6632,7 +6639,7 @@ export default function CompanyHierarchy() {
               <div className="max-h-32 overflow-y-auto">
                 <div className="flex flex-wrap gap-1">
                   {selectedEmployees.slice(0, 10).map((empId) => {
-                    const employee = data?.employees?.find((emp: any) => emp.employeeId === empId);
+                    const employee = Array.isArray(employees) ? employees.find((emp: any) => emp.employeeId === empId) : null;
                     return employee ? (
                       <Badge key={empId} variant="secondary" className="text-xs">
                         {employee.firstName} {employee.lastName}
