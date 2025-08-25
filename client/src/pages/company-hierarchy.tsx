@@ -35,6 +35,7 @@ import {
   ShieldCheck,
   Key,
   Mail,
+  Calendar,
   Clock,
   AlertTriangle,
   Lock,
@@ -2919,21 +2920,57 @@ export default function CompanyHierarchy() {
                 <SelectContent>
                   {Array.isArray(employees) && employees.length > 0 ? (
                     employees
-                      .filter((emp: any) => emp.hierarchyRole === 'employee' || !emp.hierarchyRole)
+                      .filter((emp: any) => {
+                        // Smart filtering for eligible employees
+                        const isRegularEmployee = emp.hierarchyRole === 'employee' || !emp.hierarchyRole;
+                        const isActive = emp.employmentStatus === 'active' || !emp.employmentStatus;
+                        const notCompanyOwner = emp.id !== employees.find((e: any) => e.isCompanyOwner)?.id;
+                        return isRegularEmployee && isActive && notCompanyOwner;
+                      })
                       .map((employee: any) => (
                         <SelectItem key={employee.id} value={employee.id}>
-                          <div className="flex items-center gap-2">
-                            <User className="h-4 w-4" />
-                            <span>{employee.firstName} {employee.lastName}</span>
-                            <Badge variant="outline" className="text-xs ml-2">
-                              {employee.position || 'Employee'}
-                            </Badge>
+                          <div className="flex flex-col gap-1 py-1">
+                            <div className="flex items-center gap-2">
+                              <User className="h-4 w-4 text-blue-600" />
+                              <span className="font-medium text-gray-900">
+                                {employee.firstName} {employee.lastName}
+                              </span>
+                              <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                                {employee.position || 'Employee'}
+                              </Badge>
+                            </div>
+                            <div className="flex items-center gap-3 text-xs text-gray-600 ml-6">
+                              <div className="flex items-center gap-1">
+                                <Building2 className="h-3 w-3" />
+                                <span>{employee.department || 'General'}</span>
+                              </div>
+                              {employee.email && (
+                                <div className="flex items-center gap-1">
+                                  <Mail className="h-3 w-3" />
+                                  <span>{employee.email}</span>
+                                </div>
+                              )}
+                              <div className="flex items-center gap-1">
+                                <Calendar className="h-3 w-3" />
+                                <span>
+                                  {employee.dateJoined ? new Date(employee.dateJoined).toLocaleDateString() : 'Date not set'}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 ml-6">
+                              <Badge variant="secondary" className="text-xs bg-green-50 text-green-700 border-green-200">
+                                ✓ Eligible for Promotion
+                              </Badge>
+                            </div>
                           </div>
                         </SelectItem>
                       ))
                   ) : (
                     <SelectItem value="none" disabled>
-                      <span className="text-gray-500">No employees available</span>
+                      <div className="flex items-center gap-2 text-gray-500">
+                        <AlertCircle className="h-4 w-4" />
+                        <span>No employees available for promotion</span>
+                      </div>
                     </SelectItem>
                   )}
                 </SelectContent>
