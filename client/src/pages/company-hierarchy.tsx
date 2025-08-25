@@ -976,12 +976,20 @@ export default function CompanyHierarchy() {
   };
 
   const canManageBranches = () => {
+    // Emergency override: Company owners can always manage branches
+    const currentUser = user;
+    if (currentUser?.type === 'company') return true;
+    
     const userEmployee = getCurrentUserEmployee();
     if (!userEmployee) return false;
     return userEmployee.hierarchyRole === 'company_admin' || userEmployee.canManageEmployees;
   };
 
   const canManageTeams = () => {
+    // Emergency override: Company owners can always manage teams
+    const currentUser = user;
+    if (currentUser?.type === 'company') return true;
+    
     const userEmployee = getCurrentUserEmployee();
     if (!userEmployee) return false;
     return userEmployee.hierarchyRole === 'company_admin' || 
@@ -991,7 +999,13 @@ export default function CompanyHierarchy() {
 
   const canManageEmployee = (targetEmployee: any) => {
     const userEmployee = getCurrentUserEmployee();
-    if (!userEmployee || !targetEmployee) return false;
+    if (!targetEmployee) return false;
+    
+    // Emergency override: Company owners can always manage employees (for initial setup)
+    const currentUser = user;
+    if (currentUser?.type === 'company') return true;
+    
+    if (!userEmployee) return false;
     
     // Company admin can manage everyone
     if (userEmployee.hierarchyRole === 'company_admin') return true;
@@ -1006,6 +1020,10 @@ export default function CompanyHierarchy() {
   };
 
   const canEditBranch = (branch: any) => {
+    // Emergency override: Company owners can always edit branches
+    const currentUser = user;
+    if (currentUser?.type === 'company') return true;
+    
     const userEmployee = getCurrentUserEmployee();
     if (!userEmployee) return false;
     
@@ -1019,6 +1037,10 @@ export default function CompanyHierarchy() {
   };
 
   const canEditTeam = (team: any) => {
+    // Emergency override: Company owners can always edit teams
+    const currentUser = user;
+    if (currentUser?.type === 'company') return true;
+    
     const userEmployee = getCurrentUserEmployee();
     if (!userEmployee) return false;
     
@@ -1193,6 +1215,12 @@ export default function CompanyHierarchy() {
           <p className="text-muted-foreground mt-2 text-sm lg:text-base" data-testid="page-description">
             Manage your organizational structure, branches, teams, and employee roles
           </p>
+          {user?.type === 'company' && (
+            <div className="mt-3 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200">
+              <Shield className="w-4 h-4 mr-1" />
+              Company Owner - Full Management Access
+            </div>
+          )}
         </div>
         
         {/* Real-time Status & Performance Controls */}
