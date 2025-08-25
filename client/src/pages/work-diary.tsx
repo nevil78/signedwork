@@ -4,7 +4,7 @@ import { useLocation, Link } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, Building2, Calendar, Clock, ChevronRight, Edit, LogOut, User, BookOpen } from 'lucide-react';
+import { Plus, Building2, Calendar, Clock, ChevronRight, Edit, LogOut, User, BookOpen, Loader2 } from 'lucide-react';
 import EmployeeNavHeader from '@/components/employee-nav-header';
 import {
   Dialog,
@@ -273,8 +273,12 @@ export default function WorkDiary() {
         </div>
 
         {isLoading ? (
-        <div className="text-center py-8">
-          <p className="text-muted-foreground">Loading companies...</p>
+        <div className="flex flex-col items-center justify-center py-16">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mb-4">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+          <p className="text-muted-foreground">Loading your companies...</p>
+          <p className="text-sm text-muted-foreground/70 mt-2">Please wait while we fetch your work history</p>
         </div>
       ) : companies.length === 0 ? (
         <Card className="border-dashed">
