@@ -3622,6 +3622,7 @@ export default function CompanyHierarchy() {
                   </div>
                 </div>
               </div>
+            </div>
             )}
 
             {/* Step 2: Enhanced Login Credentials with Security Validation */}
