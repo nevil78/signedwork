@@ -3618,8 +3618,367 @@ export default function CompanyHierarchy() {
                 </div>
               </div>
             )}
-          </div>
+
+            {/* Step 2: Enhanced Login Credentials with Security Validation */}
+            {managerCreationStep === 2 && (
+              <div className="space-y-6">
+                <div className="bg-indigo-50 p-4 rounded-lg border border-indigo-200">
+                  <h3 className="font-semibold text-indigo-900 mb-2">Step 2: Login Setup</h3>
+                  <p className="text-indigo-700 text-sm">
+                    Create secure login credentials with enterprise-grade password requirements and real-time validation.
+                  </p>
+                </div>
+
+                {/* Username Setup */}
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="manager-username" className="text-base font-semibold">Manager Username</Label>
+                    <Input
+                      id="manager-username"
+                      type="text"
+                      value={newManager.username}
+                      onChange={(e) => setNewManager({ ...newManager, username: e.target.value })}
+                      placeholder="manager.username"
+                      className="h-12 text-base"
+                      data-testid="input-manager-username"
+                    />
+                    <div className="flex items-center gap-2 mt-2">
+                      {usernameAvailable === true && (
+                        <Badge variant="secondary" className="bg-green-50 text-green-700 border-green-200">
+                          <CheckCircle className="h-3 w-3 mr-1" />
+                          Available
+                        </Badge>
+                      )}
+                      {usernameAvailable === false && (
+                        <Badge variant="secondary" className="bg-red-50 text-red-700 border-red-200">
+                          <AlertCircle className="h-3 w-3 mr-1" />
+                          Not Available
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Password Setup */}
+                  <div>
+                    <Label htmlFor="manager-password" className="text-base font-semibold">Password</Label>
+                    <Input
+                      id="manager-password"
+                      type="password"
+                      value={newManager.password}
+                      onChange={(e) => setNewManager({ ...newManager, password: e.target.value })}
+                      placeholder="••••••••••"
+                      className="h-12 text-base"
+                      data-testid="input-manager-password"
+                    />
+                    
+                    {/* Password Strength Indicator */}
+                    {newManager.password && (
+                      <div className="mt-3 space-y-2">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-gray-600">Password Strength</span>
+                          <span className={`font-semibold ${
+                            passwordStrength >= 80 ? 'text-green-600' : 
+                            passwordStrength >= 60 ? 'text-yellow-600' : 'text-red-600'
+                          }`}>
+                            {passwordStrength}%
+                          </span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div 
+                            className={`h-2 rounded-full transition-all duration-300 ${
+                              passwordStrength >= 80 ? 'bg-green-500' :
+                              passwordStrength >= 60 ? 'bg-yellow-500' : 'bg-red-500'
+                            }`}
+                            style={{ width: `${passwordStrength}%` }}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Confirm Password */}
+                  <div>
+                    <Label htmlFor="manager-confirm-password" className="text-base font-semibold">Confirm Password</Label>
+                    <Input
+                      id="manager-confirm-password"
+                      type="password"
+                      value={newManager.confirmPassword}
+                      onChange={(e) => setNewManager({ ...newManager, confirmPassword: e.target.value })}
+                      placeholder="••••••••••"
+                      className="h-12 text-base"
+                      data-testid="input-manager-confirm-password"
+                    />
+                    {newManager.confirmPassword && (
+                      <div className="mt-2">
+                        {newManager.password === newManager.confirmPassword ? (
+                          <Badge variant="secondary" className="bg-green-50 text-green-700 border-green-200">
+                            <CheckCircle className="h-3 w-3 mr-1" />
+                            Passwords Match
+                          </Badge>
+                        ) : (
+                          <Badge variant="secondary" className="bg-red-50 text-red-700 border-red-200">
+                            <AlertCircle className="h-3 w-3 mr-1" />
+                            Passwords Don't Match
+                          </Badge>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
             )}
+
+            {/* Step 3: Permissions & Access Level */}
+            {managerCreationStep === 3 && (
+              <div className="space-y-6">
+                <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
+                  <h3 className="font-semibold text-purple-900 mb-2">Step 3: Permissions & Access</h3>
+                  <p className="text-purple-700 text-sm">
+                    Configure the manager's access level and specific permissions for organizational management.
+                  </p>
+                </div>
+
+                {/* Access Level Selection */}
+                <div className="space-y-3">
+                  <Label htmlFor="access-level" className="text-base font-semibold">Access Level</Label>
+                  <Select 
+                    value={newManager.accessLevel} 
+                    onValueChange={(value) => setNewManager({ ...newManager, accessLevel: value })}
+                  >
+                    <SelectTrigger data-testid="select-access-level" className="h-12">
+                      <SelectValue placeholder="Choose access level" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="team_lead">
+                        <div className="flex items-center gap-2">
+                          <UserCheck className="h-4 w-4 text-green-600" />
+                          <div>
+                            <div className="font-medium">Team Lead</div>
+                            <div className="text-xs text-gray-500">Manage specific team members</div>
+                          </div>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="branch_manager">
+                        <div className="flex items-center gap-2">
+                          <Shield className="h-4 w-4 text-blue-600" />
+                          <div>
+                            <div className="font-medium">Branch Manager</div>
+                            <div className="text-xs text-gray-500">Manage entire branch operations</div>
+                          </div>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="company_admin">
+                        <div className="flex items-center gap-2">
+                          <Crown className="h-4 w-4 text-yellow-600" />
+                          <div>
+                            <div className="font-medium">Company Admin</div>
+                            <div className="text-xs text-gray-500">Full company access</div>
+                          </div>
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Permissions Grid */}
+                <div className="p-4 bg-gray-50 rounded-lg space-y-4">
+                  <h4 className="font-medium text-gray-900 flex items-center gap-2">
+                    <Settings className="h-4 w-4" />
+                    Manager Permissions
+                  </h4>
+                  
+                  <div className="grid grid-cols-1 gap-4">
+                    <div className="flex items-center justify-between p-3 bg-white rounded-lg border">
+                      <div>
+                        <Label htmlFor="can-manage-employees" className="text-sm font-medium">
+                          Manage Employees
+                        </Label>
+                        <p className="text-xs text-gray-600">Edit employee roles and assignments</p>
+                      </div>
+                      <Switch
+                        id="can-manage-employees"
+                        checked={newManager.permissions.canManageEmployees}
+                        onCheckedChange={(checked) => 
+                          setNewManager({ 
+                            ...newManager, 
+                            permissions: { ...newManager.permissions, canManageEmployees: checked }
+                          })
+                        }
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 bg-white rounded-lg border">
+                      <div>
+                        <Label htmlFor="can-create-teams" className="text-sm font-medium">
+                          Create Teams
+                        </Label>
+                        <p className="text-xs text-gray-600">Add new teams and organizational units</p>
+                      </div>
+                      <Switch
+                        id="can-create-teams"
+                        checked={newManager.permissions.canCreateTeams}
+                        onCheckedChange={(checked) => 
+                          setNewManager({ 
+                            ...newManager, 
+                            permissions: { ...newManager.permissions, canCreateTeams: checked }
+                          })
+                        }
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 bg-white rounded-lg border">
+                      <div>
+                        <Label htmlFor="can-verify-work" className="text-sm font-medium">
+                          Verify Work
+                        </Label>
+                        <p className="text-xs text-gray-600">Approve and verify work entries</p>
+                      </div>
+                      <Switch
+                        id="can-verify-work"
+                        checked={newManager.permissions.canVerifyWork}
+                        onCheckedChange={(checked) => 
+                          setNewManager({ 
+                            ...newManager, 
+                            permissions: { ...newManager.permissions, canVerifyWork: checked }
+                          })
+                        }
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 bg-white rounded-lg border">
+                      <div>
+                        <Label htmlFor="can-view-reports" className="text-sm font-medium">
+                          View Reports
+                        </Label>
+                        <p className="text-xs text-gray-600">Access analytics and performance reports</p>
+                      </div>
+                      <Switch
+                        id="can-view-reports"
+                        checked={newManager.permissions.canViewReports}
+                        onCheckedChange={(checked) => 
+                          setNewManager({ 
+                            ...newManager, 
+                            permissions: { ...newManager.permissions, canViewReports: checked }
+                          })
+                        }
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Step 4: Review & Confirmation */}
+            {managerCreationStep === 4 && (
+              <div className="space-y-6">
+                <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                  <h3 className="font-semibold text-green-900 mb-2">Step 4: Review & Confirm</h3>
+                  <p className="text-green-700 text-sm">
+                    Review all manager account details before creation. Ensure all information is correct.
+                  </p>
+                </div>
+
+                {/* Enhanced Account Summary */}
+                <div className="p-6 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg border border-green-200">
+                  <h4 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                    <CheckCircle className="h-5 w-5 text-green-600" />
+                    Manager Account Summary
+                  </h4>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-3">
+                      <div className="flex flex-col">
+                        <span className="text-sm text-gray-500 mb-1">Selected Employee</span>
+                        <span className="font-medium text-gray-900">
+                          {employees?.find((e: any) => e.id === newManager.employeeId)?.firstName} {employees?.find((e: any) => e.id === newManager.employeeId)?.lastName}
+                        </span>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-sm text-gray-500 mb-1">Current Position</span>
+                        <span className="font-medium text-gray-900">
+                          {employees?.find((e: any) => e.id === newManager.employeeId)?.position || 'Employee'}
+                        </span>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-sm text-gray-500 mb-1">Department</span>
+                        <span className="font-medium text-gray-900">
+                          {employees?.find((e: any) => e.id === newManager.employeeId)?.department || 'General'}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-3">
+                      <div className="flex flex-col">
+                        <span className="text-sm text-gray-500 mb-1">Manager Username</span>
+                        <span className="font-medium text-gray-900">{newManager.username}</span>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-sm text-gray-500 mb-1">Access Level</span>
+                        <span className="font-medium text-gray-900">
+                          {newManager.accessLevel.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                        </span>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-sm text-gray-500 mb-1">Permissions Enabled</span>
+                        <span className="font-medium text-blue-600">
+                          {Object.values(newManager.permissions).filter(Boolean).length} of 4 permissions
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-600">Password Security</span>
+                        <Badge variant={passwordStrength >= 80 ? "default" : "secondary"} className={
+                          passwordStrength >= 80 ? "bg-green-500" : "bg-red-500"
+                        }>
+                          {passwordStrength >= 80 ? '✓ Strong' : '✗ Weak'}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-600">Password Match</span>
+                        <Badge variant={newManager.password === newManager.confirmPassword ? "default" : "secondary"} className={
+                          newManager.password === newManager.confirmPassword ? "bg-green-500" : "bg-red-500"
+                        }>
+                          {newManager.password === newManager.confirmPassword ? '✓ Match' : '✗ Mismatch'}
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Security Checklist */}
+                <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                  <h5 className="font-medium text-yellow-900 mb-2 flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4" />
+                    Security Checklist
+                  </h5>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className={`h-4 w-4 ${passwordStrength >= 80 ? 'text-green-600' : 'text-gray-400'}`} />
+                      <span className={passwordStrength >= 80 ? 'text-green-700' : 'text-gray-600'}>
+                        Password meets security requirements (80%+ strength)
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className={`h-4 w-4 ${newManager.password === newManager.confirmPassword ? 'text-green-600' : 'text-gray-400'}`} />
+                      <span className={newManager.password === newManager.confirmPassword ? 'text-green-700' : 'text-gray-600'}>
+                        Password confirmation matches
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className={`h-4 w-4 ${newManager.username.length >= 3 ? 'text-green-600' : 'text-gray-400'}`} />
+                      <span className={newManager.username.length >= 3 ? 'text-green-700' : 'text-gray-600'}>
+                        Username is valid and available
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Step Navigation and Action Buttons */}
           <div className="flex justify-between items-center pt-4 border-t bg-white flex-shrink-0">
