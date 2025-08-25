@@ -54,7 +54,9 @@ import {
   Brain,
   Zap,
   Lightbulb,
-  Gauge
+  Gauge,
+  Fingerprint,
+  CheckCircle2
 } from "lucide-react";
 import { 
   BarChart, 
@@ -147,6 +149,18 @@ export default function CompanyHierarchy() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [realtimeUsers, setRealtimeUsers] = useState<any[]>([]);
   const [isConnected, setIsConnected] = useState(false);
+  
+  // Phase 5: Enterprise Security State
+  const [isSecurityDashboardOpen, setIsSecurityDashboardOpen] = useState(false);
+  const [securityMetrics, setSecurityMetrics] = useState<any>(null);
+  const [isMFASetupOpen, setIsMFASetupOpen] = useState(false);
+  const [complianceReport, setComplianceReport] = useState<any>(null);
+  
+  // Phase 5: Fetch Security Metrics
+  const { data: securityData, refetch: refetchSecurity } = useQuery({
+    queryKey: ['/api/security/dashboard'],
+    enabled: isSecurityDashboardOpen && !!data?.company
+  });
   
   // Phase 3: Bulk Operations State
   const [selectedEmployees, setSelectedEmployees] = useState<string[]>([]);
@@ -3307,6 +3321,18 @@ export default function CompanyHierarchy() {
                     >
                       <BarChart3 className="h-4 w-4 mr-1" />
                       Analytics
+                    </Button>
+                    
+                    {/* Phase 5: Enterprise Security Dashboard */}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setIsSecurityDashboardOpen(true)}
+                      className="bg-gradient-to-r from-red-600 to-pink-600 text-white border-red-600 hover:from-red-700 hover:to-pink-700"
+                      data-testid="security-dashboard"
+                    >
+                      <Shield className="h-4 w-4 mr-1" />
+                      Security
                     </Button>
                     <Button
                       variant="outline"
