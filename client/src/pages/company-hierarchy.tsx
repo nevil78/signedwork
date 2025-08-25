@@ -53,6 +53,9 @@ export default function CompanyHierarchy() {
   const [isEditTeamOpen, setIsEditTeamOpen] = useState(false);
   const [isDeleteTeamOpen, setIsDeleteTeamOpen] = useState(false);
   const [isCreateManagerOpen, setIsCreateManagerOpen] = useState(false);
+  const [isResetPasswordOpen, setIsResetPasswordOpen] = useState(false);
+  const [selectedManager, setSelectedManager] = useState<any>(null);
+  const [newTempPassword, setNewTempPassword] = useState<string>("");
   const [selectedEmployee, setSelectedEmployee] = useState<any>(null);
   const [selectedBranch, setSelectedBranch] = useState<any>(null);
   const [selectedTeam, setSelectedTeam] = useState<any>(null);
@@ -515,6 +518,28 @@ export default function CompanyHierarchy() {
     },
     onError: (error: any) => {
       toast({ title: "Error", description: error.message || "Failed to create manager account", variant: "destructive" });
+    }
+  });
+
+  const resetManagerPasswordMutation = useMutation({
+    mutationFn: async (managerId: string) => {
+      return apiRequest(`/api/company/managers/${managerId}/reset-password`, "POST");
+    },
+    onSuccess: (data: any) => {
+      setNewTempPassword(data.tempPassword);
+      setIsResetPasswordOpen(true);
+      queryClient.invalidateQueries({ queryKey: ["/api/company/managers"] });
+      toast({ 
+        title: "Password Reset Successful", 
+        description: "New temporary password generated for manager" 
+      });
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Error", 
+        description: error.message || "Failed to reset manager password", 
+        variant: "destructive" 
+      });
     }
   });
 
@@ -3067,6 +3092,24 @@ export default function CompanyHierarchy() {
                             </div>
                           )}
                         </div>
+                        
+                        {/* Manager Actions */}
+                        <div className="mt-4 pt-3 border-t border-gray-200 flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setSelectedManager(manager);
+                              resetManagerPasswordMutation.mutate(manager.id);
+                            }}
+                            disabled={resetManagerPasswordMutation.isPending}
+                            className="flex-1 text-xs"
+                            data-testid={`button-reset-password-${manager.uniqueId}`}
+                          >
+                            <Key className="h-3 w-3 mr-1" />
+                            {resetManagerPasswordMutation.isPending && selectedManager?.id === manager.id ? 'Resetting...' : 'Reset Password'}
+                          </Button>
+                        </div>
                       </Card>
                     ))}
                   </div>
@@ -3085,6 +3128,80 @@ export default function CompanyHierarchy() {
         </TabsContent>
 
       </Tabs>
+
+      {/* Password Reset Success Dialog */}
+      <Dialog open={isResetPasswordOpen} onOpenChange={setIsResetPasswordOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Key className="h-5 w-5 text-green-600" />
+              Password Reset Successful
+            </DialogTitle>
+            <DialogDescription>
+              New temporary password has been generated for {selectedManager?.managerName}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="bg-gray-50 p-4 rounded-lg border">
+              <Label className="text-sm font-medium text-gray-700">Manager Details</Label>
+              <div className="mt-2 space-y-1 text-sm">
+                <div><strong>Name:</strong> {selectedManager?.managerName}</div>
+                <div><strong>ID:</strong> {selectedManager?.uniqueId}</div>
+                <div><strong>Email:</strong> {selectedManager?.managerEmail}</div>
+              </div>
+            </div>
+            
+            <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+              <Label className="text-sm font-medium text-yellow-800">New Temporary Password</Label>
+              <div className="mt-2 p-2 bg-white border rounded font-mono text-lg text-center select-all">
+                {newTempPassword}
+              </div>
+              <p className="mt-2 text-xs text-yellow-700">
+                📋 Click to select and copy this password. The manager should change it on their next login.
+              </p>
+            </div>
+            
+            <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="h-4 w-4 text-blue-600 mt-0.5" />
+                <div className="text-sm text-blue-800">
+                  <strong>Next Steps:</strong>
+                  <ul className="mt-1 space-y-1 text-xs">
+                    <li>• Share this password securely with the manager</li>
+                    <li>• Manager should login and change password immediately</li>
+                    <li>• This temporary password expires after first use</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="flex gap-2 pt-4">
+            <Button 
+              onClick={() => {
+                navigator.clipboard.writeText(newTempPassword);
+                toast({ title: "Copied!", description: "Password copied to clipboard" });
+              }}
+              className="flex-1"
+            >
+              <Key className="h-4 w-4 mr-2" />
+              Copy Password
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setIsResetPasswordOpen(false);
+                setSelectedManager(null);
+                setNewTempPassword("");
+              }}
+              className="flex-1"
+            >
+              Done
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Create Manager Account Dialog - Step-by-Step Process */}
       <Dialog open={isCreateManagerOpen} onOpenChange={(open) => {
