@@ -311,8 +311,9 @@ export default function CompanyRecruiterPage() {
 
   // Filter applications based on tab, search, and job filter
   const filteredApplications = applications.filter((app: ApplicationWithDetails) => {
-    // Status filter
-    if (selectedTab !== 'all' && app.status !== selectedTab) return false;
+    // Status filter - now handles both tab and dropdown selection
+    const statusFilter = selectedTab === 'talent-search' || selectedTab === 'pipeline' || selectedTab === 'analytics' ? 'all' : selectedTab;
+    if (statusFilter !== 'all' && app.status !== statusFilter) return false;
     
     // Search filter
     if (searchTerm) {
@@ -414,23 +415,27 @@ export default function CompanyRecruiterPage() {
                 Manage job applications and track recruitment progress
               </p>
             </div>
-            <div className="flex items-center space-x-6">
-              <div className="text-center">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <div className="text-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
                 <div className="text-2xl font-bold text-blue-600">{statusCounts.all}</div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">Total</div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">Total Applications</div>
               </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-yellow-600">{statusCounts.shortlisted}</div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">Shortlisted</div>
+              <div className="text-center p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
+                <div className="text-2xl font-bold text-orange-600">{statusCounts.applied + statusCounts.viewed}</div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">New & Pending</div>
               </div>
-              <div className="text-center">
+              <div className="text-center p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+                <div className="text-2xl font-bold text-yellow-600">{statusCounts.shortlisted + statusCounts.interviewed}</div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">In Progress</div>
+              </div>
+              <div className="text-center p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
                 <div className="text-2xl font-bold text-green-600">{statusCounts.hired}</div>
                 <div className="text-sm text-gray-600 dark:text-gray-400">Hired</div>
               </div>
             </div>
           </div>
 
-          {/* Search and Filter Controls */}
+          {/* Enhanced Search and Filter Controls */}
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
@@ -455,38 +460,42 @@ export default function CompanyRecruiterPage() {
                 ))}
               </SelectContent>
             </Select>
+            <Select value={selectedTab === 'all' ? 'all' : selectedTab} onValueChange={(value) => setSelectedTab(value as ApplicationStatus | 'all')}>
+              <SelectTrigger className="w-full sm:w-48" data-testid="select-status-filter">
+                <SelectValue placeholder="Filter by status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Statuses</SelectItem>
+                <SelectItem value="applied">New Applications ({statusCounts.applied})</SelectItem>
+                <SelectItem value="viewed">Viewed ({statusCounts.viewed})</SelectItem>
+                <SelectItem value="shortlisted">Shortlisted ({statusCounts.shortlisted})</SelectItem>
+                <SelectItem value="interviewed">Interviewed ({statusCounts.interviewed})</SelectItem>
+                <SelectItem value="offered">Offered ({statusCounts.offered})</SelectItem>
+                <SelectItem value="hired">Hired ({statusCounts.hired})</SelectItem>
+                <SelectItem value="rejected">Rejected ({statusCounts.rejected})</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
-        {/* Applications Tabs */}
+        {/* Main Feature Tabs - Simplified to 4 core functions */}
         <Tabs value={selectedTab} onValueChange={(value) => setSelectedTab(value as ApplicationStatus | 'all' | 'talent-search' | 'pipeline' | 'analytics')} className="space-y-6">
-          <TabsList className="grid grid-cols-4 lg:grid-cols-8 w-full">
-            <TabsTrigger value="all" className="text-xs" data-testid="tab-all">
+          <TabsList className="grid grid-cols-4 w-full">
+            <TabsTrigger value="all" className="flex items-center gap-2" data-testid="tab-all">
+              <Briefcase className="h-4 w-4" />
               Applications ({statusCounts.all})
             </TabsTrigger>
-            <TabsTrigger value="talent-search" className="text-xs flex items-center gap-1" data-testid="tab-talent-search">
-              <UserSearch className="h-3 w-3" />
+            <TabsTrigger value="talent-search" className="flex items-center gap-2" data-testid="tab-talent-search">
+              <UserSearch className="h-4 w-4" />
               Talent Search
             </TabsTrigger>
-            <TabsTrigger value="pipeline" className="text-xs flex items-center gap-1" data-testid="tab-pipeline">
-              <Users className="h-3 w-3" />
+            <TabsTrigger value="pipeline" className="flex items-center gap-2" data-testid="tab-pipeline">
+              <Users className="h-4 w-4" />
               Pipeline ({pipelines.length})
             </TabsTrigger>
-            <TabsTrigger value="analytics" className="text-xs flex items-center gap-1" data-testid="tab-analytics">
-              <BarChart3 className="h-3 w-3" />
+            <TabsTrigger value="analytics" className="flex items-center gap-2" data-testid="tab-analytics">
+              <BarChart3 className="h-4 w-4" />
               Analytics
-            </TabsTrigger>
-            <TabsTrigger value="shortlisted" className="text-xs" data-testid="tab-shortlisted">
-              Shortlisted ({statusCounts.shortlisted})
-            </TabsTrigger>
-            <TabsTrigger value="interviewed" className="text-xs" data-testid="tab-interviewed">
-              Interviewed ({statusCounts.interviewed})
-            </TabsTrigger>
-            <TabsTrigger value="hired" className="text-xs" data-testid="tab-hired">
-              Hired ({statusCounts.hired})
-            </TabsTrigger>
-            <TabsTrigger value="rejected" className="text-xs" data-testid="tab-rejected">
-              Rejected ({statusCounts.rejected})
             </TabsTrigger>
           </TabsList>
 
@@ -524,38 +533,51 @@ export default function CompanyRecruiterPage() {
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-3">
-                            <div className="h-10 w-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold">
+                            <div className="h-12 w-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold text-lg">
                               {application.employee.firstName?.[0]}{application.employee.lastName?.[0]}
                             </div>
-                            <div>
-                              <h3 className="font-semibold text-gray-900 dark:text-gray-100">
+                            <div className="flex-1">
+                              <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-lg">
                                 {application.employee.firstName} {application.employee.lastName}
                               </h3>
                               <p className="text-sm text-gray-600 dark:text-gray-400">
                                 Applied for {application.job.title}
                               </p>
+                              <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-400 mt-1">
+                                <Mail className="h-4 w-4" />
+                                {application.employee.email}
+                              </div>
                             </div>
                           </div>
-                          <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400 mb-3">
-                            <span className="flex items-center gap-1">
-                              <Mail className="h-4 w-4" />
-                              {application.employee.email}
-                            </span>
-                          </div>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-col items-end gap-2">
                           <Badge className={getStatusBadgeColor(application.status)}>
                             {getStatusIcon(application.status)}
                             <span className="ml-1 capitalize">{application.status}</span>
                           </Badge>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setSelectedApplication(application)}
-                          >
-                            <Eye className="h-4 w-4 mr-1" />
-                            View
-                          </Button>
+                          <div className="flex gap-1">
+                            {getAvailableActions(application.status as ApplicationStatus).slice(0, 2).map((action) => (
+                              <Button
+                                key={action.status}
+                                variant={action.color === 'red' ? 'destructive' : 'default'}
+                                size="sm"
+                                onClick={() => handleStatusChange(application, action.status)}
+                                className="text-xs px-2"
+                              >
+                                <action.icon className="h-3 w-3 mr-1" />
+                                {action.label}
+                              </Button>
+                            ))}
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setSelectedApplication(application)}
+                              className="text-xs px-2"
+                            >
+                              <Eye className="h-3 w-3 mr-1" />
+                              View
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     </CardContent>
