@@ -56,7 +56,10 @@ export default function CompanyHierarchy() {
   const [isEditManagerOpen, setIsEditManagerOpen] = useState(false);
   const [isDeleteManagerOpen, setIsDeleteManagerOpen] = useState(false);
   const [isResetPasswordOpen, setIsResetPasswordOpen] = useState(false);
+  const [isBulkAssignOpen, setIsBulkAssignOpen] = useState(false);
   const [selectedManager, setSelectedManager] = useState<any>(null);
+  const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<string[]>([]);
+  const [bulkAssignTargetManager, setBulkAssignTargetManager] = useState<string>("");
   const [newTempPassword, setNewTempPassword] = useState<string>("");
   const [selectedEmployee, setSelectedEmployee] = useState<any>(null);
   const [selectedBranch, setSelectedBranch] = useState<any>(null);
@@ -602,6 +605,93 @@ export default function CompanyHierarchy() {
       toast({ 
         title: "Error", 
         description: error.message || "Failed to delete manager", 
+        variant: "destructive" 
+      });
+    }
+  });
+
+  const toggleManagerStatusMutation = useMutation({
+    mutationFn: async ({ managerId, isActive }: { managerId: string; isActive: boolean }) => {
+      return apiRequest("PATCH", `/api/company/managers/${managerId}/status`, { isActive });
+    },
+    onSuccess: (data: any, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/company/managers"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/company/structure"] });
+      toast({ 
+        title: "Success", 
+        description: `Manager ${variables.isActive ? 'enabled' : 'disabled'} successfully` 
+      });
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Error", 
+        description: error.message || "Failed to update manager status", 
+        variant: "destructive" 
+      });
+    }
+  });
+
+  const bulkAssignMutation = useMutation({
+    mutationFn: async ({ managerId, employeeIds }: { managerId: string; employeeIds: string[] }) => {
+      return apiRequest("POST", `/api/company/managers/${managerId}/bulk-assign`, { employeeIds });
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/company/employees"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/company/structure"] });
+      setSelectedEmployeeIds([]);
+      toast({ 
+        title: "Bulk Assignment Complete", 
+        description: `${data.summary.successful} employees assigned successfully` 
+      });
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Error", 
+        description: error.message || "Failed to bulk assign employees", 
+        variant: "destructive" 
+      });
+    }
+  });
+
+  const bulkReassignMutation = useMutation({
+    mutationFn: async ({ fromManagerId, toManagerId, employeeIds }: { fromManagerId: string; toManagerId: string; employeeIds: string[] }) => {
+      return apiRequest("POST", `/api/company/managers/bulk-reassign`, { fromManagerId, toManagerId, employeeIds });
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/company/employees"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/company/structure"] });
+      setSelectedEmployeeIds([]);
+      toast({ 
+        title: "Bulk Reassignment Complete", 
+        description: `${data.summary.successful} employees reassigned successfully` 
+      });
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Error", 
+        description: error.message || "Failed to bulk reassign employees", 
+        variant: "destructive" 
+      });
+    }
+  });
+
+  const bulkUnassignMutation = useMutation({
+    mutationFn: async ({ employeeIds }: { employeeIds: string[] }) => {
+      return apiRequest("POST", `/api/company/managers/bulk-unassign`, { employeeIds });
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/company/employees"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/company/structure"] });
+      setSelectedEmployeeIds([]);
+      toast({ 
+        title: "Bulk Unassignment Complete", 
+        description: `${data.summary.successful} employees unassigned successfully` 
+      });
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Error", 
+        description: error.message || "Failed to bulk unassign employees", 
         variant: "destructive" 
       });
     }
@@ -2504,6 +2594,66 @@ export default function CompanyHierarchy() {
                     Clear Filters
                   </Button>
                 </div>
+
+                {/* Bulk Actions */}
+                {selectedEmployeeIds.length > 0 && (
+                  <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <span className="text-sm font-medium text-blue-900">
+                          {selectedEmployeeIds.length} employees selected
+                        </span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setSelectedEmployeeIds([])}
+                          data-testid="clear-selection"
+                        >
+                          Clear Selection
+                        </Button>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setIsBulkAssignOpen(true)}
+                          data-testid="bulk-assign-button"
+                        >
+                          <UserPlus className="h-4 w-4 mr-1" />
+                          Assign to Manager
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => bulkUnassignMutation.mutate({ employeeIds: selectedEmployeeIds })}
+                          disabled={bulkUnassignMutation.isPending}
+                          data-testid="bulk-unassign-button"
+                        >
+                          <X className="h-4 w-4 mr-1" />
+                          {bulkUnassignMutation.isPending ? "Unassigning..." : "Remove from Managers"}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Select All */}
+                <div className="flex items-center gap-2 py-2 border-b">
+                  <Checkbox
+                    checked={getFilteredEmployees().length > 0 && selectedEmployeeIds.length === getFilteredEmployees().length}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        setSelectedEmployeeIds(getFilteredEmployees().map((emp: any) => emp.employeeId));
+                      } else {
+                        setSelectedEmployeeIds([]);
+                      }
+                    }}
+                    data-testid="select-all-employees"
+                  />
+                  <span className="text-sm text-muted-foreground">
+                    Select all {getFilteredEmployees().length} employees
+                  </span>
+                </div>
               </div>
 
               {employeesLoading ? (
@@ -2511,8 +2661,21 @@ export default function CompanyHierarchy() {
               ) : getFilteredEmployees().length > 0 ? (
                 <div className="space-y-3" data-testid="employees-list">
                   {getFilteredEmployees().map((emp: any) => (
-                    <div key={emp.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors" data-testid={`employee-${emp.id}`}>
+                    <div key={emp.id} className={`flex items-center justify-between p-4 border rounded-lg transition-colors ${
+                      selectedEmployeeIds.includes(emp.employeeId) ? 'bg-blue-50 border-blue-300' : 'hover:bg-gray-50'
+                    }`} data-testid={`employee-${emp.id}`}>
                       <div className="flex items-center gap-4">
+                        <Checkbox
+                          checked={selectedEmployeeIds.includes(emp.employeeId)}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setSelectedEmployeeIds([...selectedEmployeeIds, emp.employeeId]);
+                            } else {
+                              setSelectedEmployeeIds(selectedEmployeeIds.filter(id => id !== emp.employeeId));
+                            }
+                          }}
+                          data-testid={`checkbox-employee-${emp.id}`}
+                        />
                         {getRoleIcon(emp.hierarchyRole)}
                         <div className="flex-1">
                           <h4 className="font-medium">
@@ -3138,7 +3301,9 @@ export default function CompanyHierarchy() {
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {managers.map((manager: any) => (
-                      <Card key={manager.id} className="p-4 border border-indigo-200 hover:border-indigo-400 hover:shadow-lg transform hover:scale-102 transition-all duration-300 bg-gradient-to-br from-white to-indigo-50/30 hover:from-indigo-50/50 hover:to-purple-50/30">
+                      <Card key={manager.id} className={`p-4 border transition-all duration-300 transform hover:scale-102 ${manager.isActive 
+                        ? 'border-indigo-200 hover:border-indigo-400 hover:shadow-lg bg-gradient-to-br from-white to-indigo-50/30 hover:from-indigo-50/50 hover:to-purple-50/30' 
+                        : 'border-gray-300 bg-gradient-to-br from-gray-50 to-gray-100/50 opacity-75'}`}>
                         <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center gap-3">
                             <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center">
@@ -3157,11 +3322,25 @@ export default function CompanyHierarchy() {
                           </Badge>
                         </div>
                         <div className="space-y-2 text-xs">
-                          <div className="flex justify-between">
+                          <div className="flex justify-between items-center">
                             <span>Login Access:</span>
-                            <span className={manager.isActive ? 'text-green-600' : 'text-red-600'}>
-                              {manager.isActive ? 'Enabled' : 'Disabled'}
-                            </span>
+                            <div className="flex items-center gap-2">
+                              <span className={manager.isActive ? 'text-green-600' : 'text-red-600'}>
+                                {manager.isActive ? 'Enabled' : 'Disabled'}
+                              </span>
+                              <Switch
+                                checked={manager.isActive}
+                                onCheckedChange={(checked) => 
+                                  toggleManagerStatusMutation.mutate({ 
+                                    managerId: manager.id, 
+                                    isActive: checked 
+                                  })
+                                }
+                                disabled={toggleManagerStatusMutation.isPending}
+                                className="scale-75"
+                                data-testid={`switch-manager-status-${manager.uniqueId}`}
+                              />
+                            </div>
                           </div>
                           <div className="flex justify-between">
                             <span>Email:</span>
@@ -5239,6 +5418,77 @@ export default function CompanyHierarchy() {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk Assignment Dialog */}
+      <Dialog open={isBulkAssignOpen} onOpenChange={setIsBulkAssignOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserPlus className="h-5 w-5 text-blue-600" />
+              Bulk Assign Employees
+            </DialogTitle>
+            <DialogDescription>
+              Assign {selectedEmployeeIds.length} selected employees to a manager
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="bulk-target-manager">Select Manager</Label>
+              <Select value={bulkAssignTargetManager} onValueChange={setBulkAssignTargetManager}>
+                <SelectTrigger data-testid="select-bulk-target-manager">
+                  <SelectValue placeholder="Choose a manager..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {Array.isArray(managers) && managers.filter((manager: any) => manager.isActive).map((manager: any) => (
+                    <SelectItem key={manager.id} value={manager.id}>
+                      {manager.managerName} ({manager.permissionLevel?.replace('_', ' ')})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="p-4 bg-gray-50 rounded-lg border">
+              <h5 className="font-medium text-sm mb-2">Assignment Summary</h5>
+              <div className="text-sm text-gray-700 space-y-1">
+                <div><strong>Employees:</strong> {selectedEmployeeIds.length} selected</div>
+                {bulkAssignTargetManager && (
+                  <div><strong>Manager:</strong> {managers?.find((m: any) => m.id === bulkAssignTargetManager)?.managerName}</div>
+                )}
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setIsBulkAssignOpen(false);
+                  setBulkAssignTargetManager("");
+                }}
+                className="flex-1"
+                data-testid="button-cancel-bulk-assign"
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={() => {
+                  bulkAssignMutation.mutate({ 
+                    managerId: bulkAssignTargetManager, 
+                    employeeIds: selectedEmployeeIds 
+                  });
+                  setIsBulkAssignOpen(false);
+                  setBulkAssignTargetManager("");
+                }}
+                disabled={bulkAssignMutation.isPending || !bulkAssignTargetManager}
+                className="flex-1"
+                data-testid="button-confirm-bulk-assign"
+              >
+                {bulkAssignMutation.isPending ? "Assigning..." : "Assign Employees"}
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

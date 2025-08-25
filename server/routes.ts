@@ -2371,6 +2371,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Toggle manager status (enable/disable)
+  app.patch("/api/company/managers/:managerId/status", requireCompany, async (req: any, res) => {
+    try {
+      const { managerId } = req.params;
+      const { isActive } = req.body;
+      
+      if (typeof isActive !== 'boolean') {
+        return res.status(400).json({ message: "isActive must be a boolean value" });
+      }
+      
+      // Verify manager belongs to this company
+      const manager = await storage.getManager(managerId);
+      if (!manager || manager.companyId !== req.user.id) {
+        return res.status(404).json({ message: "Manager not found" });
+      }
+      
+      // Update manager status
+      const updatedManager = await storage.updateManager(managerId, { isActive });
+      
+      // If disabling the manager, also update their session status
+      if (!isActive) {
+        // Force logout by updating their session token or invalidating sessions
+        // This would require session management updates - for now just update the status
+      }
+      
+      const { password: _, ...managerResponse } = updatedManager;
+      res.json({
+        message: `Manager ${isActive ? 'enabled' : 'disabled'} successfully`,
+        manager: managerResponse
+      });
+    } catch (error) {
+      console.error("Toggle manager status error:", error);
+      res.status(500).json({ message: "Failed to update manager status" });
+    }
+  });
+
   // Delete/deactivate manager
   app.delete("/api/company/managers/:managerId", requireCompany, async (req: any, res) => {
     try {
@@ -2449,6 +2485,144 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Assign employee to manager error:", error);
       res.status(500).json({ message: "Failed to assign employee to manager" });
+    }
+  });
+
+  // Bulk assign employees to manager
+  app.post("/api/company/managers/:managerId/bulk-assign", requireCompany, async (req: any, res) => {
+    try {
+      const { managerId } = req.params;
+      const { employeeIds } = req.body;
+      
+      if (!Array.isArray(employeeIds) || employeeIds.length === 0) {
+        return res.status(400).json({ message: "Employee IDs array is required and must not be empty" });
+      }
+      
+      // Verify manager belongs to this company
+      const manager = await storage.getManager(managerId);
+      if (!manager || manager.companyId !== req.user.id) {
+        return res.status(404).json({ message: "Manager not found" });
+      }
+      
+      const results = [];
+      const errors = [];
+      
+      for (const employeeId of employeeIds) {
+        try {
+          const updatedEmployee = await storage.assignEmployeeToManager(employeeId, req.user.id, managerId);
+          results.push({ employeeId, status: "success", employee: updatedEmployee });
+        } catch (error) {
+          errors.push({ employeeId, status: "error", message: error.message });
+        }
+      }
+      
+      res.json({
+        message: `Bulk assignment completed: ${results.length} successful, ${errors.length} failed`,
+        results,
+        errors,
+        summary: {
+          total: employeeIds.length,
+          successful: results.length,
+          failed: errors.length
+        }
+      });
+    } catch (error) {
+      console.error("Bulk assign employees error:", error);
+      res.status(500).json({ message: "Failed to bulk assign employees" });
+    }
+  });
+
+  // Bulk reassign employees from one manager to another
+  app.post("/api/company/managers/bulk-reassign", requireCompany, async (req: any, res) => {
+    try {
+      const { fromManagerId, toManagerId, employeeIds } = req.body;
+      
+      if (!fromManagerId || !toManagerId) {
+        return res.status(400).json({ message: "Both fromManagerId and toManagerId are required" });
+      }
+      
+      if (!Array.isArray(employeeIds) || employeeIds.length === 0) {
+        return res.status(400).json({ message: "Employee IDs array is required and must not be empty" });
+      }
+      
+      // Verify both managers belong to this company
+      const [fromManager, toManager] = await Promise.all([
+        storage.getManager(fromManagerId),
+        storage.getManager(toManagerId)
+      ]);
+      
+      if (!fromManager || fromManager.companyId !== req.user.id) {
+        return res.status(404).json({ message: "Source manager not found" });
+      }
+      
+      if (!toManager || toManager.companyId !== req.user.id) {
+        return res.status(404).json({ message: "Target manager not found" });
+      }
+      
+      const results = [];
+      const errors = [];
+      
+      for (const employeeId of employeeIds) {
+        try {
+          const updatedEmployee = await storage.assignEmployeeToManager(employeeId, req.user.id, toManagerId);
+          results.push({ employeeId, status: "success", employee: updatedEmployee });
+        } catch (error) {
+          errors.push({ employeeId, status: "error", message: error.message });
+        }
+      }
+      
+      res.json({
+        message: `Bulk reassignment completed: ${results.length} successful, ${errors.length} failed`,
+        results,
+        errors,
+        summary: {
+          total: employeeIds.length,
+          successful: results.length,
+          failed: errors.length,
+          fromManager: fromManager.managerName,
+          toManager: toManager.managerName
+        }
+      });
+    } catch (error) {
+      console.error("Bulk reassign employees error:", error);
+      res.status(500).json({ message: "Failed to bulk reassign employees" });
+    }
+  });
+
+  // Bulk unassign employees from managers
+  app.post("/api/company/managers/bulk-unassign", requireCompany, async (req: any, res) => {
+    try {
+      const { employeeIds } = req.body;
+      
+      if (!Array.isArray(employeeIds) || employeeIds.length === 0) {
+        return res.status(400).json({ message: "Employee IDs array is required and must not be empty" });
+      }
+      
+      const results = [];
+      const errors = [];
+      
+      for (const employeeId of employeeIds) {
+        try {
+          await storage.unassignEmployeeFromManager(employeeId, req.user.id);
+          results.push({ employeeId, status: "success" });
+        } catch (error) {
+          errors.push({ employeeId, status: "error", message: error.message });
+        }
+      }
+      
+      res.json({
+        message: `Bulk unassignment completed: ${results.length} successful, ${errors.length} failed`,
+        results,
+        errors,
+        summary: {
+          total: employeeIds.length,
+          successful: results.length,
+          failed: errors.length
+        }
+      });
+    } catch (error) {
+      console.error("Bulk unassign employees error:", error);
+      res.status(500).json({ message: "Failed to bulk unassign employees" });
     }
   });
 
