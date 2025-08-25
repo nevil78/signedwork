@@ -156,8 +156,15 @@ export default function CompanyHierarchy() {
   const [securityMetrics, setSecurityMetrics] = useState<any>(null);
   const [isMFASetupOpen, setIsMFASetupOpen] = useState(false);
   const [complianceReport, setComplianceReport] = useState<any>(null);
+
+  // Current User Query - Must be declared FIRST before using in other queries
+  const { data: currentUser } = useQuery({
+    queryKey: ["/api/auth/user"],
+    staleTime: 600000, // User data rarely changes, cache for 10 minutes
+    gcTime: 1800000, // Keep user data for 30 minutes
+  });
   
-  // Phase 5: Fetch Security Metrics - moved after currentUser declaration
+  // Phase 5: Fetch Security Metrics - now after currentUser declaration
   const { data: securityData, refetch: refetchSecurity } = useQuery({
     queryKey: ['/api/security/dashboard'],
     enabled: isSecurityDashboardOpen && !!currentUser
@@ -474,12 +481,6 @@ export default function CompanyHierarchy() {
     refetchInterval: 45000, // Manager accounts change less frequently
     staleTime: 25000,
     gcTime: 600000,
-  });
-
-  const { data: currentUser } = useQuery({
-    queryKey: ["/api/auth/user"],
-    staleTime: 600000, // User data rarely changes, cache for 10 minutes
-    gcTime: 1800000, // Keep user data for 30 minutes
   });
 
   // Performance monitoring and optimization state
