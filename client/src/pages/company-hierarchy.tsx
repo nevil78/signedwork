@@ -1271,13 +1271,13 @@ export default function CompanyHierarchy() {
   };
 
   const canManageEmployee = (targetEmployee: any) => {
-    const userEmployee = getCurrentUserEmployee();
     if (!targetEmployee) return false;
     
-    // Emergency override: Company owners can always manage employees (for initial setup)
+    // Company owners can always manage employees
     const userData = currentUser;
     if (userData?.type === 'company') return true;
     
+    const userEmployee = getCurrentUserEmployee();
     if (!userEmployee) return false;
     
     // Company admin can manage everyone
