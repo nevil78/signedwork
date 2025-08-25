@@ -444,7 +444,6 @@ export default function CompanyHierarchy() {
   // Mutations
   const createBranchMutation = useMutation({
     mutationFn: async (branchData: any) => {
-      console.log("Mutation function called with:", branchData);
       // Clean up the data before sending to API
       const cleanBranchData = {
         name: branchData.name,
@@ -455,8 +454,7 @@ export default function CompanyHierarchy() {
           ? { managerEmployeeId: branchData.managerEmployeeId } 
           : {})
       };
-      console.log("Sending cleaned data:", cleanBranchData);
-      return apiRequest("/api/company/branches", "POST", cleanBranchData);
+      return apiRequest("POST", "/api/company/branches", cleanBranchData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/company/branches"] });
@@ -465,15 +463,14 @@ export default function CompanyHierarchy() {
       setNewBranch({ name: "", location: "", description: "", managerEmployeeId: "no_manager" });
       toast({ title: "Success", description: "Branch created successfully" });
     },
-    onError: (error) => {
-      console.error("Branch creation error:", error);
+    onError: () => {
       toast({ title: "Error", description: "Failed to create branch", variant: "destructive" });
     }
   });
 
   const createTeamMutation = useMutation({
     mutationFn: async (teamData: any) => {
-      return apiRequest("/api/company/teams", "POST", teamData);
+      return apiRequest("POST", "/api/company/teams", teamData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/company/teams"] });
@@ -489,7 +486,7 @@ export default function CompanyHierarchy() {
 
   const updateEmployeeHierarchyMutation = useMutation({
     mutationFn: async ({ employeeId, updates }: { employeeId: string; updates: any }) => {
-      return apiRequest(`/api/company/employees/${employeeId}/hierarchy-role`, "PATCH", updates);
+      return apiRequest("PATCH", `/api/company/employees/${employeeId}/hierarchy-role`, updates);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/company/employees"] });
@@ -572,7 +569,7 @@ export default function CompanyHierarchy() {
 
   const createManagerMutation = useMutation({
     mutationFn: async (managerData: any) => {
-      return apiRequest("/api/company/managers", "POST", managerData);
+      return apiRequest("POST", "/api/company/managers", managerData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/company/employees"] });
@@ -1305,55 +1302,14 @@ export default function CompanyHierarchy() {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2">
-                  <Button 
-                    onClick={() => {
-                      console.log("=== BRANCH CREATION DEBUG ===");
-                      console.log("newBranch data:", newBranch);
-                      console.log("name:", newBranch.name);
-                      console.log("location:", newBranch.location);
-                      console.log("managerEmployeeId:", newBranch.managerEmployeeId);
-                      
-                      const isDisabled = !newBranch.name || !newBranch.location || createBranchMutation.isPending;
-                      console.log("Button should be disabled?", isDisabled);
-                      
-                      if (isDisabled) {
-                        console.log("BUTTON IS DISABLED - cannot create branch");
-                        return;
-                      }
-                      
-                      console.log("Calling mutation...");
-                      try {
-                        createBranchMutation.mutate(newBranch);
-                      } catch (error) {
-                        console.error("Error calling mutation:", error);
-                      }
-                    }}
-                    disabled={!newBranch.name || !newBranch.location || createBranchMutation.isPending}
-                    className="w-full"
-                    data-testid="button-confirm-create-branch"
-                  >
-                    {createBranchMutation.isPending ? "Creating..." : "Create Branch"}
-                  </Button>
-                  
-                  <Button 
-                    onClick={() => {
-                      console.log("=== DIRECT API TEST ===");
-                      // Direct API test bypassing form validation
-                      const testData = {
-                        name: "Test Branch",
-                        location: "Test Location", 
-                        description: "Test Description"
-                      };
-                      console.log("Testing with:", testData);
-                      createBranchMutation.mutate(testData);
-                    }}
-                    variant="outline"
-                    className="w-full"
-                  >
-                    🔧 Direct API Test
-                  </Button>
-                </div>
+                <Button 
+                  onClick={() => createBranchMutation.mutate(newBranch)}
+                  disabled={!newBranch.name || !newBranch.location || createBranchMutation.isPending}
+                  className="w-full"
+                  data-testid="button-confirm-create-branch"
+                >
+                  {createBranchMutation.isPending ? "Creating..." : "Create Branch"}
+                </Button>
               </div>
             </DialogContent>
           </Dialog>

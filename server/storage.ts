@@ -3684,40 +3684,32 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createCompanyBranch(branchData: InsertCompanyBranch): Promise<CompanyBranch> {
-    try {
-      console.log("Creating branch with data:", branchData);
-      // Generate unique branch ID
-      let branchId = generateBranchId();
-      console.log("Generated branchId:", branchId);
-      let attempts = 0;
-      const maxAttempts = 10;
-    
-      while (attempts < maxAttempts) {
-        const existing = await db.select().from(companyBranches).where(eq(companyBranches.branchId, branchId));
-        if (existing.length === 0) {
-          break;
-        }
-        branchId = generateBranchId();
-        attempts++;
+    // Generate unique branch ID
+    let branchId = generateBranchId();
+    let attempts = 0;
+    const maxAttempts = 10;
+  
+    while (attempts < maxAttempts) {
+      const existing = await db.select().from(companyBranches).where(eq(companyBranches.branchId, branchId));
+      if (existing.length === 0) {
+        break;
       }
-      
-      if (attempts >= maxAttempts) {
-        throw new Error("Failed to generate unique branch ID");
-      }
-
-      const [branch] = await db
-        .insert(companyBranches)
-        .values({
-          ...branchData,
-          branchId,
-        })
-        .returning();
-      console.log("Branch created successfully:", branch);
-      return branch;
-    } catch (error) {
-      console.error("Error in createCompanyBranch:", error);
-      throw error;
+      branchId = generateBranchId();
+      attempts++;
     }
+    
+    if (attempts >= maxAttempts) {
+      throw new Error("Failed to generate unique branch ID");
+    }
+
+    const [branch] = await db
+      .insert(companyBranches)
+      .values({
+        ...branchData,
+        branchId,
+      })
+      .returning();
+    return branch;
   }
 
   async updateCompanyBranch(branchId: string, data: Partial<CompanyBranch>): Promise<CompanyBranch> {
