@@ -523,7 +523,7 @@ export default function CompanyHierarchy() {
 
   const resetManagerPasswordMutation = useMutation({
     mutationFn: async (managerId: string) => {
-      return apiRequest(`/api/company/managers/${managerId}/reset-password`, "POST", {});
+      return apiRequest("POST", `/api/company/managers/${managerId}/reset-password`, {});
     },
     onSuccess: (data: any) => {
       setNewTempPassword(data.tempPassword);
