@@ -6499,5 +6499,289 @@ This message was sent through the Signedwork contact form.
     }
   });
 
+  // ========== RECRUITER API ENDPOINTS ==========
+
+  // Create or get recruiter profile
+  app.post('/api/recruiter/profile', requireAuth, async (req: any, res) => {
+    try {
+      const { userType = req.user.type, ...profileData } = req.body;
+      
+      // Check if profile already exists
+      const existingProfile = await storage.getRecruiterProfile(req.user.id, userType);
+      if (existingProfile) {
+        return res.status(400).json({ message: "Recruiter profile already exists" });
+      }
+
+      const profile = await storage.createRecruiterProfile({
+        userId: req.user.id,
+        userType,
+        ...profileData
+      });
+      
+      res.status(201).json(profile);
+    } catch (error) {
+      console.error('Error creating recruiter profile:', error);
+      res.status(500).json({ message: 'Failed to create recruiter profile' });
+    }
+  });
+
+  app.get('/api/recruiter/profile', requireAuth, async (req: any, res) => {
+    try {
+      const profile = await storage.getRecruiterProfile(req.user.id, req.user.type);
+      if (!profile) {
+        return res.status(404).json({ message: "Recruiter profile not found" });
+      }
+      res.json(profile);
+    } catch (error) {
+      console.error('Error fetching recruiter profile:', error);
+      res.status(500).json({ message: 'Failed to fetch recruiter profile' });
+    }
+  });
+
+  app.put('/api/recruiter/profile/:id', requireAuth, async (req: any, res) => {
+    try {
+      const profile = await storage.updateRecruiterProfile(req.params.id, req.body);
+      res.json(profile);
+    } catch (error) {
+      console.error('Error updating recruiter profile:', error);
+      res.status(500).json({ message: 'Failed to update recruiter profile' });
+    }
+  });
+
+  // Advanced talent search
+  app.post('/api/recruiter/search', requireAuth, async (req: any, res) => {
+    try {
+      const { filters } = req.body;
+      
+      // Check if user has recruiter profile
+      const recruiterProfile = await storage.getRecruiterProfile(req.user.id, req.user.type);
+      if (!recruiterProfile) {
+        return res.status(403).json({ message: "Recruiter profile required" });
+      }
+
+      // Check search limits (freemium enforcement)
+      if (recruiterProfile.usedSearches >= recruiterProfile.monthlySearchLimit) {
+        return res.status(429).json({ 
+          message: "Monthly search limit reached",
+          limit: recruiterProfile.monthlySearchLimit,
+          used: recruiterProfile.usedSearches
+        });
+      }
+
+      const results = await storage.searchTalent(filters);
+      
+      // Increment usage
+      await storage.updateRecruiterProfile(recruiterProfile.id, {
+        usedSearches: recruiterProfile.usedSearches + 1
+      });
+
+      // Record analytics
+      await storage.recordRecruitmentMetric({
+        recruiterId: recruiterProfile.id,
+        metricType: 'searches_performed',
+        metricValue: 1
+      });
+
+      res.json({
+        results,
+        remainingSearches: recruiterProfile.monthlySearchLimit - recruiterProfile.usedSearches - 1
+      });
+    } catch (error) {
+      console.error('Error searching talent:', error);
+      res.status(500).json({ message: 'Failed to search talent' });
+    }
+  });
+
+  // Candidate pipeline operations
+  app.get('/api/recruiter/pipelines', requireAuth, async (req: any, res) => {
+    try {
+      const recruiterProfile = await storage.getRecruiterProfile(req.user.id, req.user.type);
+      if (!recruiterProfile) {
+        return res.status(403).json({ message: "Recruiter profile required" });
+      }
+
+      const pipelines = await storage.getCandidatePipelines(recruiterProfile.id);
+      res.json(pipelines);
+    } catch (error) {
+      console.error('Error fetching pipelines:', error);
+      res.status(500).json({ message: 'Failed to fetch pipelines' });
+    }
+  });
+
+  app.post('/api/recruiter/pipelines', requireAuth, async (req: any, res) => {
+    try {
+      const recruiterProfile = await storage.getRecruiterProfile(req.user.id, req.user.type);
+      if (!recruiterProfile) {
+        return res.status(403).json({ message: "Recruiter profile required" });
+      }
+
+      const pipeline = await storage.createCandidatePipeline({
+        recruiterId: recruiterProfile.id,
+        ...req.body
+      });
+      
+      res.status(201).json(pipeline);
+    } catch (error) {
+      console.error('Error creating pipeline:', error);
+      res.status(500).json({ message: 'Failed to create pipeline' });
+    }
+  });
+
+  app.put('/api/recruiter/pipelines/:id', requireAuth, async (req: any, res) => {
+    try {
+      const pipeline = await storage.updateCandidatePipeline(req.params.id, req.body);
+      res.json(pipeline);
+    } catch (error) {
+      console.error('Error updating pipeline:', error);
+      res.status(500).json({ message: 'Failed to update pipeline' });
+    }
+  });
+
+  app.put('/api/recruiter/pipelines/:id/stage', requireAuth, async (req: any, res) => {
+    try {
+      const { stage } = req.body;
+      const pipeline = await storage.updateCandidateStage(req.params.id, stage);
+      res.json(pipeline);
+    } catch (error) {
+      console.error('Error updating pipeline stage:', error);
+      res.status(500).json({ message: 'Failed to update pipeline stage' });
+    }
+  });
+
+  app.delete('/api/recruiter/pipelines/:id', requireAuth, async (req: any, res) => {
+    try {
+      await storage.deleteCandidatePipeline(req.params.id);
+      res.json({ message: 'Pipeline deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting pipeline:', error);
+      res.status(500).json({ message: 'Failed to delete pipeline' });
+    }
+  });
+
+  // Candidate interactions
+  app.get('/api/recruiter/pipelines/:pipelineId/interactions', requireAuth, async (req: any, res) => {
+    try {
+      const interactions = await storage.getCandidateInteractions(req.params.pipelineId);
+      res.json(interactions);
+    } catch (error) {
+      console.error('Error fetching interactions:', error);
+      res.status(500).json({ message: 'Failed to fetch interactions' });
+    }
+  });
+
+  app.post('/api/recruiter/pipelines/:pipelineId/interactions', requireAuth, async (req: any, res) => {
+    try {
+      const recruiterProfile = await storage.getRecruiterProfile(req.user.id, req.user.type);
+      if (!recruiterProfile) {
+        return res.status(403).json({ message: "Recruiter profile required" });
+      }
+
+      const interaction = await storage.createCandidateInteraction({
+        pipelineId: req.params.pipelineId,
+        recruiterId: recruiterProfile.id,
+        ...req.body
+      });
+      
+      res.status(201).json(interaction);
+    } catch (error) {
+      console.error('Error creating interaction:', error);
+      res.status(500).json({ message: 'Failed to create interaction' });
+    }
+  });
+
+  app.put('/api/recruiter/interactions/:id', requireAuth, async (req: any, res) => {
+    try {
+      const interaction = await storage.updateCandidateInteraction(req.params.id, req.body);
+      res.json(interaction);
+    } catch (error) {
+      console.error('Error updating interaction:', error);
+      res.status(500).json({ message: 'Failed to update interaction' });
+    }
+  });
+
+  // Recruitment analytics
+  app.get('/api/recruiter/analytics', requireAuth, async (req: any, res) => {
+    try {
+      const recruiterProfile = await storage.getRecruiterProfile(req.user.id, req.user.type);
+      if (!recruiterProfile) {
+        return res.status(403).json({ message: "Recruiter profile required" });
+      }
+
+      const { start, end } = req.query;
+      const dateRange = start && end ? { start: start as string, end: end as string } : undefined;
+      
+      const analytics = await storage.getRecruitmentAnalytics(recruiterProfile.id, dateRange);
+      res.json(analytics);
+    } catch (error) {
+      console.error('Error fetching analytics:', error);
+      res.status(500).json({ message: 'Failed to fetch analytics' });
+    }
+  });
+
+  // Saved searches
+  app.get('/api/recruiter/saved-searches', requireAuth, async (req: any, res) => {
+    try {
+      const recruiterProfile = await storage.getRecruiterProfile(req.user.id, req.user.type);
+      if (!recruiterProfile) {
+        return res.status(403).json({ message: "Recruiter profile required" });
+      }
+
+      const searches = await storage.getSavedSearches(recruiterProfile.id);
+      res.json(searches);
+    } catch (error) {
+      console.error('Error fetching saved searches:', error);
+      res.status(500).json({ message: 'Failed to fetch saved searches' });
+    }
+  });
+
+  app.post('/api/recruiter/saved-searches', requireAuth, async (req: any, res) => {
+    try {
+      const recruiterProfile = await storage.getRecruiterProfile(req.user.id, req.user.type);
+      if (!recruiterProfile) {
+        return res.status(403).json({ message: "Recruiter profile required" });
+      }
+
+      const search = await storage.createSavedSearch({
+        recruiterId: recruiterProfile.id,
+        ...req.body
+      });
+      
+      res.status(201).json(search);
+    } catch (error) {
+      console.error('Error creating saved search:', error);
+      res.status(500).json({ message: 'Failed to create saved search' });
+    }
+  });
+
+  app.post('/api/recruiter/saved-searches/:id/execute', requireAuth, async (req: any, res) => {
+    try {
+      const results = await storage.executeSavedSearch(req.params.id);
+      res.json(results);
+    } catch (error) {
+      console.error('Error executing saved search:', error);
+      res.status(500).json({ message: 'Failed to execute saved search' });
+    }
+  });
+
+  app.put('/api/recruiter/saved-searches/:id', requireAuth, async (req: any, res) => {
+    try {
+      const search = await storage.updateSavedSearch(req.params.id, req.body);
+      res.json(search);
+    } catch (error) {
+      console.error('Error updating saved search:', error);
+      res.status(500).json({ message: 'Failed to update saved search' });
+    }
+  });
+
+  app.delete('/api/recruiter/saved-searches/:id', requireAuth, async (req: any, res) => {
+    try {
+      await storage.deleteSavedSearch(req.params.id);
+      res.json({ message: 'Saved search deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting saved search:', error);
+      res.status(500).json({ message: 'Failed to delete saved search' });
+    }
+  });
+
   return httpServer;
 }

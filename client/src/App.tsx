@@ -24,6 +24,7 @@ import CompanyWorkEntries from "@/pages/company-work-entries";
 import CompanyEmployeeProfile from "@/pages/company-employee-profile";
 import CompanyJobsPage from "@/pages/company-jobs";
 import CompanyRecruiterPage from "@/pages/company-recruiter";
+import RecruiterDashboard from "@/pages/recruiter-dashboard";
 import CompanySharedDocumentsPage from "@/pages/company-shared-documents";
 import CompanyEmployeeWorkDiary from "@/pages/company-employee-work-diary";
 import CompanyEmployees from "@/pages/company-employees";
@@ -85,6 +86,7 @@ function Router() {
       <Route path="/company-work-entries" component={CompanyWorkEntries} />
       <Route path="/company-jobs" component={CompanyJobsPage} />
       <Route path="/company-recruiter" component={CompanyRecruiterPage} />
+      <Route path="/recruiter-dashboard" component={RecruiterDashboard} />
       <Route path="/company-shared-documents/:applicationId" component={CompanySharedDocumentsPage} />
       <Route path="/company-employees" component={CompanyEmployees} />
 {/* /company-managers route removed - functionality consolidated into /company-hierarchy */}

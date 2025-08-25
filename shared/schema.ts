@@ -1310,3 +1310,141 @@ export const contactFormSchema = z.object({
 });
 
 export type ContactFormData = z.infer<typeof contactFormSchema>;
+
+// Recruiter functionality tables
+export const recruiterProfiles = pgTable("recruiter_profiles", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(), // References either company.id or employee.id
+  userType: text("user_type").notNull(), // 'company' or 'employee' (independent recruiters)
+  recruiterType: text("recruiter_type").notNull().default("internal"), // internal, external, agency
+  companyName: text("company_name"),
+  agencyName: text("agency_name"),
+  specializations: text("specializations").array(), // industries/roles they focus on
+  experienceLevel: text("experience_level"), // junior, senior, lead, director
+  activePositions: integer("active_positions").default(0),
+  successfulPlacements: integer("successful_placements").default(0),
+  averageTimeToHire: integer("average_time_to_hire").default(30), // days
+  subscriptionTier: text("subscription_tier").default("free"), // free, basic, pro, enterprise
+  subscriptionStatus: text("subscription_status").default("active"), // active, inactive, trial
+  subscriptionExpiry: timestamp("subscription_expiry"),
+  monthlySearchLimit: integer("monthly_search_limit").default(50),
+  monthlyContactLimit: integer("monthly_contact_limit").default(25),
+  usedSearches: integer("used_searches").default(0),
+  usedContacts: integer("used_contacts").default(0),
+  lastResetDate: timestamp("last_reset_date").defaultNow(),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("recruiter_profiles_user_id_idx").on(table.userId),
+  index("recruiter_profiles_user_type_idx").on(table.userType),
+  index("recruiter_profiles_subscription_tier_idx").on(table.subscriptionTier),
+]);
+
+export const candidatePipelines = pgTable("candidate_pipelines", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  recruiterId: varchar("recruiter_id").notNull().references(() => recruiterProfiles.id, { onDelete: "cascade" }),
+  candidateId: varchar("candidate_id").notNull().references(() => employees.id, { onDelete: "cascade" }),
+  positionTitle: text("position_title").notNull(),
+  companyName: text("company_name").notNull(),
+  stage: text("stage").notNull().default("sourced"), // sourced, contacted, screening, interview, final_round, offer, hired, rejected
+  priority: text("priority").default("medium"), // low, medium, high, urgent
+  source: text("source"), // linkedin, referral, direct_search, job_board
+  expectedSalary: text("expected_salary"),
+  currentSalary: text("current_salary"),
+  noticePeriod: text("notice_period"),
+  location: text("location"),
+  workType: text("work_type"), // remote, hybrid, onsite
+  skills: text("skills").array(),
+  matchScore: integer("match_score"), // 1-100 algorithm-based matching score
+  notes: text("notes"),
+  nextFollowUp: timestamp("next_follow_up"),
+  stageUpdatedAt: timestamp("stage_updated_at").defaultNow(),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("candidate_pipelines_recruiter_id_idx").on(table.recruiterId),
+  index("candidate_pipelines_candidate_id_idx").on(table.candidateId),
+  index("candidate_pipelines_stage_idx").on(table.stage),
+  index("candidate_pipelines_priority_idx").on(table.priority),
+  index("candidate_pipelines_next_follow_up_idx").on(table.nextFollowUp),
+]);
+
+export const candidateInteractions = pgTable("candidate_interactions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  pipelineId: varchar("pipeline_id").notNull().references(() => candidatePipelines.id, { onDelete: "cascade" }),
+  recruiterId: varchar("recruiter_id").notNull().references(() => recruiterProfiles.id, { onDelete: "cascade" }),
+  candidateId: varchar("candidate_id").notNull().references(() => employees.id, { onDelete: "cascade" }),
+  interactionType: text("interaction_type").notNull(), // email, call, message, interview, meeting, note
+  title: text("title").notNull(),
+  content: text("content"),
+  outcome: text("outcome"), // positive, neutral, negative, no_response
+  scheduledAt: timestamp("scheduled_at"),
+  duration: integer("duration"), // minutes for calls/meetings
+  attendees: text("attendees").array(), // for interviews/meetings
+  followUpRequired: boolean("follow_up_required").default(false),
+  followUpDate: timestamp("follow_up_date"),
+  attachments: jsonb("attachments"), // file references, email threads, etc.
+  metadata: jsonb("metadata"), // additional structured data
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("candidate_interactions_pipeline_id_idx").on(table.pipelineId),
+  index("candidate_interactions_recruiter_id_idx").on(table.recruiterId),
+  index("candidate_interactions_candidate_id_idx").on(table.candidateId),
+  index("candidate_interactions_type_idx").on(table.interactionType),
+  index("candidate_interactions_scheduled_at_idx").on(table.scheduledAt),
+]);
+
+export const recruitmentAnalytics = pgTable("recruitment_analytics", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  recruiterId: varchar("recruiter_id").notNull().references(() => recruiterProfiles.id, { onDelete: "cascade" }),
+  metricType: text("metric_type").notNull(), // searches_performed, contacts_made, interviews_conducted, hires_made
+  metricValue: integer("metric_value").notNull(),
+  dateRecorded: timestamp("date_recorded").defaultNow(),
+  metadata: jsonb("metadata"), // additional context like position_type, industry, etc.
+}, (table) => [
+  index("recruitment_analytics_recruiter_id_idx").on(table.recruiterId),
+  index("recruitment_analytics_metric_type_idx").on(table.metricType),
+  index("recruitment_analytics_date_idx").on(table.dateRecorded),
+]);
+
+export const savedSearches = pgTable("saved_searches", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  recruiterId: varchar("recruiter_id").notNull().references(() => recruiterProfiles.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  description: text("description"),
+  searchCriteria: jsonb("search_criteria").notNull(), // filters, keywords, etc.
+  alertsEnabled: boolean("alerts_enabled").default(false),
+  alertFrequency: text("alert_frequency").default("daily"), // daily, weekly, monthly
+  lastExecuted: timestamp("last_executed"),
+  resultsCount: integer("results_count").default(0),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("saved_searches_recruiter_id_idx").on(table.recruiterId),
+  index("saved_searches_alerts_enabled_idx").on(table.alertsEnabled),
+]);
+
+// Type exports for recruiter functionality
+export type RecruiterProfile = typeof recruiterProfiles.$inferSelect;
+export type CandidatePipeline = typeof candidatePipelines.$inferSelect;
+export type CandidateInteraction = typeof candidateInteractions.$inferSelect;
+export type RecruitmentAnalytic = typeof recruitmentAnalytics.$inferSelect;
+export type SavedSearch = typeof savedSearches.$inferSelect;
+
+// Insert schemas for recruiter functionality
+export const insertRecruiterProfileSchema = createInsertSchema(recruiterProfiles);
+export const insertCandidatePipelineSchema = createInsertSchema(candidatePipelines);
+export const insertCandidateInteractionSchema = createInsertSchema(candidateInteractions);
+export const insertRecruitmentAnalyticSchema = createInsertSchema(recruitmentAnalytics);
+export const insertSavedSearchSchema = createInsertSchema(savedSearches);
+
+// Insert types for recruiter functionality
+export type InsertRecruiterProfile = z.infer<typeof insertRecruiterProfileSchema>;
+export type InsertCandidatePipeline = z.infer<typeof insertCandidatePipelineSchema>;
+export type InsertCandidateInteraction = z.infer<typeof insertCandidateInteractionSchema>;
+export type InsertRecruitmentAnalytic = z.infer<typeof insertRecruitmentAnalyticSchema>;
+export type InsertSavedSearch = z.infer<typeof insertSavedSearchSchema>;

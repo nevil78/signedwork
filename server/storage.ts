@@ -2,6 +2,7 @@ import {
   employees, companies, experiences, educations, certifications, projects, endorsements, workEntries, employeeCompanies,
   companyInvitationCodes, companyEmployees, companyBranches, companyTeams, companyManagers, managerPermissions, jobListings, jobApplications, savedJobs, jobAlerts, profileViews, admins, emailVerifications, userFeedback, loginSessions,
   skills, skillTrends, userSkillPreferences, skillAnalytics, pendingUsers,
+  recruiterProfiles, candidatePipelines, candidateInteractions, recruitmentAnalytics, savedSearches,
   type Employee, type Company, type InsertEmployee, type InsertCompany,
   type Experience, type Education, type Certification, type Project, type Endorsement, type WorkEntry, type EmployeeCompany,
   type InsertExperience, type InsertEducation, type InsertCertification, 
@@ -15,7 +16,9 @@ import {
   type Skill, type SkillTrend, type UserSkillPreference, type SkillAnalytic,
   type InsertSkill, type InsertSkillTrend, type InsertUserSkillPreference, type InsertSkillAnalytic,
   type PendingUser, type InsertPendingUser,
-  type UserFeedback, type InsertFeedback
+  type UserFeedback, type InsertFeedback,
+  type RecruiterProfile, type CandidatePipeline, type CandidateInteraction, type RecruitmentAnalytic, type SavedSearch,
+  type InsertRecruiterProfile, type InsertCandidatePipeline, type InsertCandidateInteraction, type InsertRecruitmentAnalytic, type InsertSavedSearch
 } from "@shared/schema";
 
 type EmailVerification = typeof emailVerifications.$inferSelect;
@@ -630,6 +633,53 @@ export interface IStorage {
       ongoingTasks: number;
     };
   }>;
+
+  // Recruiter Profile operations
+  getRecruiterProfile(userId: string, userType: string): Promise<RecruiterProfile | undefined>;
+  createRecruiterProfile(profile: InsertRecruiterProfile): Promise<RecruiterProfile>;
+  updateRecruiterProfile(id: string, data: Partial<RecruiterProfile>): Promise<RecruiterProfile>;
+  deleteRecruiterProfile(id: string): Promise<void>;
+  getRecruiterProfiles(): Promise<RecruiterProfile[]>;
+
+  // Advanced Talent Search operations
+  searchTalent(filters: TalentSearchFilters): Promise<(Employee & { 
+    verifiedWorkHistory: boolean;
+    totalExperience: number; 
+    latestRole: string;
+    latestCompany: string;
+  })[]>;
+
+  // Candidate Pipeline operations
+  getCandidatePipelines(recruiterId: string): Promise<(CandidatePipeline & { candidate: Employee })[]>;
+  getCandidatePipeline(id: string): Promise<CandidatePipeline | undefined>;
+  createCandidatePipeline(pipeline: InsertCandidatePipeline): Promise<CandidatePipeline>;
+  updateCandidatePipeline(id: string, data: Partial<CandidatePipeline>): Promise<CandidatePipeline>;
+  deleteCandidatePipeline(id: string): Promise<void>;
+  updateCandidateStage(pipelineId: string, stage: string): Promise<CandidatePipeline>;
+
+  // Candidate Interaction operations
+  getCandidateInteractions(pipelineId: string): Promise<CandidateInteraction[]>;
+  createCandidateInteraction(interaction: InsertCandidateInteraction): Promise<CandidateInteraction>;
+  updateCandidateInteraction(id: string, data: Partial<CandidateInteraction>): Promise<CandidateInteraction>;
+  deleteCandidateInteraction(id: string): Promise<void>;
+
+  // Recruitment Analytics operations
+  getRecruitmentAnalytics(recruiterId: string, dateRange?: { start: string; end: string }): Promise<{
+    totalSearches: number;
+    totalContacts: number;
+    totalInterviews: number;
+    totalHires: number;
+    pipelineBreakdown: { stage: string; count: number }[];
+    performanceMetrics: { avgTimeToHire: number; conversionRate: number };
+  }>;
+  recordRecruitmentMetric(metric: InsertRecruitmentAnalytic): Promise<RecruitmentAnalytic>;
+
+  // Saved Search operations
+  getSavedSearches(recruiterId: string): Promise<SavedSearch[]>;
+  createSavedSearch(search: InsertSavedSearch): Promise<SavedSearch>;
+  updateSavedSearch(id: string, data: Partial<SavedSearch>): Promise<SavedSearch>;
+  deleteSavedSearch(id: string): Promise<void>;
+  executeSavedSearch(searchId: string): Promise<Employee[]>;
 }
 
 export interface JobSearchFilters {
@@ -641,6 +691,22 @@ export interface JobSearchFilters {
   salaryMin?: number;
   salaryMax?: number;
   companyId?: string;
+}
+
+export interface TalentSearchFilters {
+  keywords?: string;
+  skills?: string[];
+  experienceLevel?: string[];
+  location?: string;
+  availability?: string[];
+  verifiedOnly?: boolean;
+  minYearsExperience?: number;
+  maxYearsExperience?: number;
+  industry?: string[];
+  salaryRange?: { min?: number; max?: number };
+  workType?: string[];
+  education?: string[];
+  certifications?: string[];
 }
 
 export class DatabaseStorage implements IStorage {
@@ -4828,6 +4894,392 @@ export class DatabaseStorage implements IStorage {
         ongoingTasks: pending,
       },
     };
+  }
+
+  // Recruiter Profile operations
+  async getRecruiterProfile(userId: string, userType: string): Promise<RecruiterProfile | undefined> {
+    const [profile] = await db
+      .select()
+      .from(recruiterProfiles)
+      .where(and(
+        eq(recruiterProfiles.userId, userId),
+        eq(recruiterProfiles.userType, userType)
+      ));
+    return profile || undefined;
+  }
+
+  async createRecruiterProfile(profileData: InsertRecruiterProfile): Promise<RecruiterProfile> {
+    const [profile] = await db
+      .insert(recruiterProfiles)
+      .values(profileData)
+      .returning();
+    return profile;
+  }
+
+  async updateRecruiterProfile(id: string, data: Partial<RecruiterProfile>): Promise<RecruiterProfile> {
+    const [profile] = await db
+      .update(recruiterProfiles)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(recruiterProfiles.id, id))
+      .returning();
+    return profile;
+  }
+
+  async deleteRecruiterProfile(id: string): Promise<void> {
+    await db.delete(recruiterProfiles).where(eq(recruiterProfiles.id, id));
+  }
+
+  async getRecruiterProfiles(): Promise<RecruiterProfile[]> {
+    return await db.select().from(recruiterProfiles).where(eq(recruiterProfiles.isActive, true));
+  }
+
+  // Advanced Talent Search operations
+  async searchTalent(filters: TalentSearchFilters): Promise<(Employee & { 
+    verifiedWorkHistory: boolean;
+    totalExperience: number; 
+    latestRole: string;
+    latestCompany: string;
+  })[]> {
+    let query = db
+      .select({
+        ...getTableColumns(employees),
+        verifiedWorkHistory: sql<boolean>`CASE WHEN EXISTS(
+          SELECT 1 FROM ${workEntries} WHERE ${workEntries.employeeId} = ${employees.id} 
+          AND ${workEntries.approvalStatus} = 'company_approved'
+        ) THEN true ELSE false END`,
+        totalExperience: sql<number>`COALESCE((
+          SELECT COUNT(DISTINCT ${experiences.company}) 
+          FROM ${experiences} 
+          WHERE ${experiences.employeeId} = ${employees.id}
+        ), 0)`,
+        latestRole: sql<string>`COALESCE((
+          SELECT ${experiences.title} 
+          FROM ${experiences} 
+          WHERE ${experiences.employeeId} = ${employees.id} 
+          ORDER BY ${experiences.startDate} DESC 
+          LIMIT 1
+        ), '')`,
+        latestCompany: sql<string>`COALESCE((
+          SELECT ${experiences.company} 
+          FROM ${experiences} 
+          WHERE ${experiences.employeeId} = ${employees.id} 
+          ORDER BY ${experiences.startDate} DESC 
+          LIMIT 1
+        ), '')`
+      })
+      .from(employees);
+
+    const conditions = [eq(employees.isActive, true)];
+
+    if (filters.keywords) {
+      conditions.push(
+        or(
+          ilike(employees.firstName, `%${filters.keywords}%`),
+          ilike(employees.lastName, `%${filters.keywords}%`),
+          ilike(employees.headline, `%${filters.keywords}%`),
+          ilike(employees.summary, `%${filters.keywords}%`)
+        )!
+      );
+    }
+
+    if (filters.skills && filters.skills.length > 0) {
+      conditions.push(
+        or(...filters.skills.map(skill => 
+          sql`${employees.skills} @> ARRAY[${skill}]`
+        ))
+      );
+    }
+
+    if (filters.experienceLevel && filters.experienceLevel.length > 0) {
+      conditions.push(sql`${employees.experienceLevel} = ANY(${filters.experienceLevel})`);
+    }
+
+    if (filters.location) {
+      conditions.push(
+        or(
+          ilike(employees.location, `%${filters.location}%`),
+          ilike(employees.city, `%${filters.location}%`),
+          ilike(employees.state, `%${filters.location}%`),
+          ilike(employees.country, `%${filters.location}%`)
+        )!
+      );
+    }
+
+    if (filters.availability && filters.availability.length > 0) {
+      conditions.push(sql`${employees.availabilityStatus} = ANY(${filters.availability})`);
+    }
+
+    if (filters.workType && filters.workType.length > 0) {
+      conditions.push(sql`${employees.preferredWorkType} = ANY(${filters.workType})`);
+    }
+
+    if (filters.verifiedOnly) {
+      conditions.push(sql`EXISTS(
+        SELECT 1 FROM ${workEntries} WHERE ${workEntries.employeeId} = ${employees.id} 
+        AND ${workEntries.approvalStatus} = 'company_approved'
+      )`);
+    }
+
+    query = query.where(and(...conditions));
+    return await query.orderBy(desc(employees.updatedAt));
+  }
+
+  // Candidate Pipeline operations
+  async getCandidatePipelines(recruiterId: string): Promise<(CandidatePipeline & { candidate: Employee })[]> {
+    return await db
+      .select({
+        ...getTableColumns(candidatePipelines),
+        candidate: getTableColumns(employees)
+      })
+      .from(candidatePipelines)
+      .innerJoin(employees, eq(candidatePipelines.candidateId, employees.id))
+      .where(and(
+        eq(candidatePipelines.recruiterId, recruiterId),
+        eq(candidatePipelines.isActive, true)
+      ))
+      .orderBy(desc(candidatePipelines.updatedAt));
+  }
+
+  async getCandidatePipeline(id: string): Promise<CandidatePipeline | undefined> {
+    const [pipeline] = await db
+      .select()
+      .from(candidatePipelines)
+      .where(eq(candidatePipelines.id, id));
+    return pipeline || undefined;
+  }
+
+  async createCandidatePipeline(pipelineData: InsertCandidatePipeline): Promise<CandidatePipeline> {
+    const [pipeline] = await db
+      .insert(candidatePipelines)
+      .values(pipelineData)
+      .returning();
+    return pipeline;
+  }
+
+  async updateCandidatePipeline(id: string, data: Partial<CandidatePipeline>): Promise<CandidatePipeline> {
+    const [pipeline] = await db
+      .update(candidatePipelines)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(candidatePipelines.id, id))
+      .returning();
+    return pipeline;
+  }
+
+  async deleteCandidatePipeline(id: string): Promise<void> {
+    await db.delete(candidatePipelines).where(eq(candidatePipelines.id, id));
+  }
+
+  async updateCandidateStage(pipelineId: string, stage: string): Promise<CandidatePipeline> {
+    const [pipeline] = await db
+      .update(candidatePipelines)
+      .set({ 
+        stage, 
+        stageUpdatedAt: new Date(),
+        updatedAt: new Date() 
+      })
+      .where(eq(candidatePipelines.id, pipelineId))
+      .returning();
+    return pipeline;
+  }
+
+  // Candidate Interaction operations
+  async getCandidateInteractions(pipelineId: string): Promise<CandidateInteraction[]> {
+    return await db
+      .select()
+      .from(candidateInteractions)
+      .where(eq(candidateInteractions.pipelineId, pipelineId))
+      .orderBy(desc(candidateInteractions.createdAt));
+  }
+
+  async createCandidateInteraction(interactionData: InsertCandidateInteraction): Promise<CandidateInteraction> {
+    const [interaction] = await db
+      .insert(candidateInteractions)
+      .values(interactionData)
+      .returning();
+    return interaction;
+  }
+
+  async updateCandidateInteraction(id: string, data: Partial<CandidateInteraction>): Promise<CandidateInteraction> {
+    const [interaction] = await db
+      .update(candidateInteractions)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(candidateInteractions.id, id))
+      .returning();
+    return interaction;
+  }
+
+  async deleteCandidateInteraction(id: string): Promise<void> {
+    await db.delete(candidateInteractions).where(eq(candidateInteractions.id, id));
+  }
+
+  // Recruitment Analytics operations
+  async getRecruitmentAnalytics(recruiterId: string, dateRange?: { start: string; end: string }): Promise<{
+    totalSearches: number;
+    totalContacts: number;
+    totalInterviews: number;
+    totalHires: number;
+    pipelineBreakdown: { stage: string; count: number }[];
+    performanceMetrics: { avgTimeToHire: number; conversionRate: number };
+  }> {
+    const conditions = [eq(recruitmentAnalytics.recruiterId, recruiterId)];
+    
+    if (dateRange) {
+      conditions.push(
+        and(
+          sql`${recruitmentAnalytics.dateRecorded} >= ${dateRange.start}`,
+          sql`${recruitmentAnalytics.dateRecorded} <= ${dateRange.end}`
+        )!
+      );
+    }
+
+    // Get metric totals
+    const metricTotals = await db
+      .select({
+        metricType: recruitmentAnalytics.metricType,
+        total: sql<number>`SUM(${recruitmentAnalytics.metricValue})`
+      })
+      .from(recruitmentAnalytics)
+      .where(and(...conditions))
+      .groupBy(recruitmentAnalytics.metricType);
+
+    // Get pipeline breakdown
+    const pipelineBreakdown = await db
+      .select({
+        stage: candidatePipelines.stage,
+        count: count()
+      })
+      .from(candidatePipelines)
+      .where(eq(candidatePipelines.recruiterId, recruiterId))
+      .groupBy(candidatePipelines.stage);
+
+    // Calculate performance metrics
+    const totalContacts = metricTotals.find(m => m.metricType === 'contacts_made')?.total || 0;
+    const totalHires = metricTotals.find(m => m.metricType === 'hires_made')?.total || 0;
+    const conversionRate = totalContacts > 0 ? (totalHires / totalContacts) * 100 : 0;
+
+    return {
+      totalSearches: metricTotals.find(m => m.metricType === 'searches_performed')?.total || 0,
+      totalContacts,
+      totalInterviews: metricTotals.find(m => m.metricType === 'interviews_conducted')?.total || 0,
+      totalHires,
+      pipelineBreakdown: pipelineBreakdown.map(p => ({ stage: p.stage, count: p.count })),
+      performanceMetrics: {
+        avgTimeToHire: 30, // This would need more complex calculation
+        conversionRate
+      }
+    };
+  }
+
+  async recordRecruitmentMetric(metricData: InsertRecruitmentAnalytic): Promise<RecruitmentAnalytic> {
+    const [metric] = await db
+      .insert(recruitmentAnalytics)
+      .values(metricData)
+      .returning();
+    return metric;
+  }
+
+  // Saved Search operations
+  async getSavedSearches(recruiterId: string): Promise<SavedSearch[]> {
+    return await db
+      .select()
+      .from(savedSearches)
+      .where(and(
+        eq(savedSearches.recruiterId, recruiterId),
+        eq(savedSearches.isActive, true)
+      ))
+      .orderBy(desc(savedSearches.updatedAt));
+  }
+
+  async createSavedSearch(searchData: InsertSavedSearch): Promise<SavedSearch> {
+    const [search] = await db
+      .insert(savedSearches)
+      .values(searchData)
+      .returning();
+    return search;
+  }
+
+  async updateSavedSearch(id: string, data: Partial<SavedSearch>): Promise<SavedSearch> {
+    const [search] = await db
+      .update(savedSearches)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(savedSearches.id, id))
+      .returning();
+    return search;
+  }
+
+  async deleteSavedSearch(id: string): Promise<void> {
+    await db.delete(savedSearches).where(eq(savedSearches.id, id));
+  }
+
+  async executeSavedSearch(searchId: string): Promise<Employee[]> {
+    const [search] = await db
+      .select()
+      .from(savedSearches)
+      .where(eq(savedSearches.id, searchId));
+    
+    if (!search) {
+      throw new Error('Saved search not found');
+    }
+
+    const criteria = search.searchCriteria as TalentSearchFilters;
+    const results = await this.searchTalent(criteria);
+    
+    // Update last executed and results count
+    await db
+      .update(savedSearches)
+      .set({ 
+        lastExecuted: new Date(),
+        resultsCount: results.length,
+        updatedAt: new Date()
+      })
+      .where(eq(savedSearches.id, searchId));
+
+    return results.map(r => ({
+      id: r.id,
+      employeeId: r.employeeId,
+      firstName: r.firstName,
+      lastName: r.lastName,
+      email: r.email,
+      phone: r.phone,
+      countryCode: r.countryCode,
+      password: r.password,
+      profilePhoto: r.profilePhoto,
+      headline: r.headline,
+      summary: r.summary,
+      location: r.location,
+      website: r.website,
+      currentPosition: r.currentPosition,
+      currentCompany: r.currentCompany,
+      industry: r.industry,
+      experienceLevel: r.experienceLevel,
+      salaryExpectation: r.salaryExpectation,
+      availabilityStatus: r.availabilityStatus,
+      noticePeriod: r.noticePeriod,
+      preferredWorkType: r.preferredWorkType,
+      skills: r.skills,
+      languages: r.languages,
+      specializations: r.specializations,
+      address: r.address,
+      city: r.city,
+      state: r.state,
+      zipCode: r.zipCode,
+      country: r.country,
+      dateOfBirth: r.dateOfBirth,
+      gender: r.gender,
+      nationality: r.nationality,
+      maritalStatus: r.maritalStatus,
+      hobbies: r.hobbies,
+      certifications: r.certifications,
+      achievements: r.achievements,
+      portfolioUrl: r.portfolioUrl,
+      githubUrl: r.githubUrl,
+      linkedinUrl: r.linkedinUrl,
+      twitterUrl: r.twitterUrl,
+      emailVerified: r.emailVerified,
+      isActive: r.isActive,
+      createdAt: r.createdAt,
+      updatedAt: r.updatedAt
+    }));
   }
 }
 
