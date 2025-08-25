@@ -3447,7 +3447,11 @@ export default function CompanyHierarchy() {
                       id="manager-password"
                       type="password"
                       value={newManager.password}
-                      onChange={(e) => setNewManager({ ...newManager, password: e.target.value })}
+                      onChange={(e) => {
+                        const newPassword = e.target.value;
+                        setNewManager({ ...newManager, password: newPassword });
+                        validatePassword(newPassword);
+                      }}
                       placeholder="••••••••••"
                       className="h-12 text-base"
                       data-testid="input-manager-password"
@@ -3485,7 +3489,12 @@ export default function CompanyHierarchy() {
                       id="manager-confirm-password"
                       type="password"
                       value={newManager.confirmPassword}
-                      onChange={(e) => setNewManager({ ...newManager, confirmPassword: e.target.value })}
+                      onChange={(e) => {
+                        const newConfirmPassword = e.target.value;
+                        setNewManager({ ...newManager, confirmPassword: newConfirmPassword });
+                        // Re-validate password to update password match status
+                        validatePassword(newManager.password);
+                      }}
                       placeholder="••••••••••"
                       className="h-12 text-base"
                       data-testid="input-manager-confirm-password"
