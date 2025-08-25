@@ -125,7 +125,7 @@ export default function CompanyHierarchy() {
     name: "",
     location: "",
     description: "",
-    managerEmployeeId: ""
+    managerEmployeeId: "no_manager" // Default to no manager
   });
   const [editBranch, setEditBranch] = useState({
     name: "",
@@ -444,13 +444,23 @@ export default function CompanyHierarchy() {
   // Mutations
   const createBranchMutation = useMutation({
     mutationFn: async (branchData: any) => {
-      return apiRequest("/api/company/branches", "POST", branchData);
+      // Clean up the data before sending to API
+      const cleanBranchData = {
+        name: branchData.name,
+        location: branchData.location,
+        description: branchData.description,
+        // Only include managerEmployeeId if it's a valid value (not empty or "no_manager")
+        ...(branchData.managerEmployeeId && branchData.managerEmployeeId !== "no_manager" && branchData.managerEmployeeId.trim() !== "" 
+          ? { managerEmployeeId: branchData.managerEmployeeId } 
+          : {})
+      };
+      return apiRequest("/api/company/branches", "POST", cleanBranchData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/company/branches"] });
       queryClient.invalidateQueries({ queryKey: ["/api/company/structure"] });
       setIsCreateBranchOpen(false);
-      setNewBranch({ name: "", location: "", description: "", managerEmployeeId: "" });
+      setNewBranch({ name: "", location: "", description: "", managerEmployeeId: "no_manager" });
       toast({ title: "Success", description: "Branch created successfully" });
     },
     onError: () => {
