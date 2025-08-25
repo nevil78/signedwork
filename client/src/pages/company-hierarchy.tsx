@@ -66,6 +66,7 @@ import {
   Cell
 } from "recharts";
 import { apiRequest } from "@/lib/queryClient";
+import VisualOrgChart from "@/components/VisualOrgChart";
 
 export default function CompanyHierarchy() {
   const [isCreateBranchOpen, setIsCreateBranchOpen] = useState(false);
@@ -118,6 +119,7 @@ export default function CompanyHierarchy() {
   const [selectedPreset, setSelectedPreset] = useState("");
   const [isPresetDialogOpen, setIsPresetDialogOpen] = useState(false);
   const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false);
+  const [structureView, setStructureView] = useState<'list' | 'visual'>('visual'); // Default to visual for wow factor
   
   const [newBranch, setNewBranch] = useState({
     name: "",
@@ -1521,16 +1523,42 @@ export default function CompanyHierarchy() {
                 <span className="text-gray-500">All Levels</span>
               </div>
               <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" onClick={() => setSearchQuery("")}>
-                  <Search className="h-4 w-4 mr-1" />
-                  Search Org
-                </Button>
-                <Input
-                  placeholder="Find employee, team, or branch..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-64"
-                />
+                {/* View Toggle */}
+                <div className="flex items-center bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
+                  <Button
+                    variant={structureView === 'visual' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setStructureView('visual')}
+                    className="h-8 px-3 text-xs"
+                  >
+                    <Building2 className="h-4 w-4 mr-1" />
+                    Visual Chart
+                  </Button>
+                  <Button
+                    variant={structureView === 'list' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setStructureView('list')}
+                    className="h-8 px-3 text-xs"
+                  >
+                    <Users className="h-4 w-4 mr-1" />
+                    List View
+                  </Button>
+                </div>
+                
+                {structureView === 'list' && (
+                  <>
+                    <Button variant="outline" size="sm" onClick={() => setSearchQuery("")}>
+                      <Search className="h-4 w-4 mr-1" />
+                      Search Org
+                    </Button>
+                    <Input
+                      placeholder="Find employee, team, or branch..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-64"
+                    />
+                  </>
+                )}
               </div>
             </div>
             
@@ -1762,34 +1790,62 @@ export default function CompanyHierarchy() {
             </Card>
           )}
 
-          {/* Interactive Structure Visualization */}
-          <Card data-testid="structure-visualization">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="flex items-center gap-2">
-                    <Building2 className="h-5 w-5" />
-                    Interactive Organization Chart
-                  </CardTitle>
-                  <CardDescription>
-                    Visual hierarchy with real-time capacity and health indicators
-                  </CardDescription>
-                </div>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm">
-                    <Eye className="h-4 w-4 mr-2" />
-                    Full Screen
-                  </Button>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
+          {/* Conditional Structure Visualization */}
+          {structureView === 'visual' ? (
+            // Visual Organization Chart
+            <div data-testid="visual-org-chart">
               {structureLoading ? (
-                <div className="text-center py-8" data-testid="structure-loading">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                  Loading organizational structure...
-                </div>
+                <Card>
+                  <CardContent className="py-12">
+                    <div className="text-center" data-testid="structure-loading">
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                      <p className="text-lg">Loading organizational structure...</p>
+                      <p className="text-sm text-gray-500 mt-2">Preparing your visual organization chart</p>
+                    </div>
+                  </CardContent>
+                </Card>
               ) : structure ? (
+                <VisualOrgChart data={structure} />
+              ) : (
+                <Card>
+                  <CardContent className="py-12">
+                    <div className="text-center text-gray-500">
+                      <Building2 className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                      <p>No organizational data available</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          ) : (
+            // Traditional List View
+            <Card data-testid="structure-visualization">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <Building2 className="h-5 w-5" />
+                      Interactive Organization Chart
+                    </CardTitle>
+                    <CardDescription>
+                      Visual hierarchy with real-time capacity and health indicators
+                    </CardDescription>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm">
+                      <Eye className="h-4 w-4 mr-2" />
+                      Full Screen
+                    </Button>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {structureLoading ? (
+                  <div className="text-center py-8" data-testid="structure-loading">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                    Loading organizational structure...
+                  </div>
+                ) : structure ? (
                 <div className="space-y-6" data-testid="structure-tree">
                   {/* Company Headquarters */}
                   <div className="relative">
@@ -2037,6 +2093,7 @@ export default function CompanyHierarchy() {
               )}
             </CardContent>
           </Card>
+          )}
         </TabsContent>
 
         {/* Branches Tab */}
