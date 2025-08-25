@@ -2435,7 +2435,7 @@ export default function CompanyHierarchy() {
             </CardHeader>
             <CardContent>
               {Array.isArray(teams) && teams.length > 0 ? (
-                <div className="space-y-6">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   {/* Conflict Detection */}
                   <div className="p-4 border-l-4 border-red-500 bg-red-50">
                     <h4 className="font-medium text-red-900 mb-3 flex items-center gap-2">
@@ -3087,7 +3087,7 @@ export default function CompanyHierarchy() {
             </CardHeader>
             <CardContent>
               {Array.isArray(employees) && employees.filter(emp => ['company_admin', 'branch_manager', 'team_lead'].includes(emp.hierarchyRole)).length > 0 ? (
-                <div className="space-y-6">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   {/* Permission Scope Visualization */}
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     {/* Manager Hierarchy */}
@@ -3887,7 +3887,7 @@ export default function CompanyHierarchy() {
           <div className="space-y-6 overflow-y-auto flex-1 pr-2 pt-4">
             {/* Step 1: Employee Selection */}
             {managerCreationStep === 1 && (
-              <div className="space-y-6">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
                   <h3 className="font-semibold text-blue-900 mb-2">Step 1: Employee Selection</h3>
                   <p className="text-blue-700 text-sm">
@@ -4156,7 +4156,7 @@ export default function CompanyHierarchy() {
 
             {/* Step 2: Enhanced Login Credentials with Security Validation */}
             {managerCreationStep === 2 && (
-              <div className="space-y-6">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="bg-indigo-50 p-4 rounded-lg border border-indigo-200">
                   <h3 className="font-semibold text-indigo-900 mb-2">Step 2: Login Setup</h3>
                   <p className="text-indigo-700 text-sm">
@@ -4278,7 +4278,7 @@ export default function CompanyHierarchy() {
 
             {/* Step 3: Permissions & Access Level */}
             {managerCreationStep === 3 && (
-              <div className="space-y-6">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
                   <h3 className="font-semibold text-purple-900 mb-2">Step 3: Permissions & Access</h3>
                   <p className="text-purple-700 text-sm">
@@ -4418,7 +4418,7 @@ export default function CompanyHierarchy() {
 
             {/* Step 4: Review & Confirmation */}
             {managerCreationStep === 4 && (
-              <div className="space-y-6">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="bg-green-50 p-4 rounded-lg border border-green-200">
                   <h3 className="font-semibold text-green-900 mb-2">Step 4: Review & Confirm</h3>
                   <p className="text-green-700 text-sm">
@@ -4889,138 +4889,252 @@ export default function CompanyHierarchy() {
 
       {/* Employee Hierarchy Management Dialog */}
       <Dialog open={isManageEmployeeOpen} onOpenChange={setIsManageEmployeeOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-5xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Manage Employee Assignment & Permissions</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <Users className="w-5 h-5 text-blue-600" />
+              Phase 2: Comprehensive Employee Management
+            </DialogTitle>
             <DialogDescription>
-              Update {selectedEmployee?.firstName} {selectedEmployee?.lastName}'s assignment, role and permissions
+              Complete assignment, permissions, and organizational management for {selectedEmployee?.firstName} {selectedEmployee?.lastName}
             </DialogDescription>
           </DialogHeader>
           {selectedEmployee && (
-            <div className="space-y-6">
-              {/* Employee Info Section */}
-              <div className="p-4 bg-blue-50 rounded-lg border">
-                <div className="flex items-center gap-3">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Column 1: Employee Profile & Info */}
+              <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+                <div className="flex items-center gap-3 mb-4">
                   {getRoleIcon(selectedEmployee.hierarchyRole)}
                   <div>
-                    <h4 className="font-medium">{selectedEmployee.employee?.firstName} {selectedEmployee.employee?.lastName}</h4>
-                    <p className="text-sm text-muted-foreground">{selectedEmployee.position}</p>
-                    <p className="text-xs text-muted-foreground">Employee ID: {selectedEmployee.employeeId}</p>
+                    <h4 className="font-medium text-lg">{selectedEmployee.firstName} {selectedEmployee.lastName}</h4>
+                    <p className="text-sm text-muted-foreground">{selectedEmployee.email}</p>
+                    <p className="text-xs text-muted-foreground">ID: {selectedEmployee.employeeId}</p>
+                  </div>
+                </div>
+                
+                {/* Current Assignment Status */}
+                <div className="space-y-2">
+                  <h5 className="font-medium text-sm text-blue-900">Current Status</h5>
+                  <div className="text-xs space-y-1 bg-white p-2 rounded border">
+                    <div className="flex items-center gap-2">
+                      <Building2 className="w-3 h-3 text-blue-600" />
+                      <span>Branch: {selectedEmployee.branchId ? branches?.find((b: any) => b.id === selectedEmployee.branchId)?.name || "Unknown" : "Headquarters"}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Users className="w-3 h-3 text-green-600" />
+                      <span>Team: {selectedEmployee.teamId ? teams?.find((t: any) => t.id === selectedEmployee.teamId)?.name || "Unknown" : "No Team"}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Shield className="w-3 h-3 text-purple-600" />
+                      <span>Role: {selectedEmployee.hierarchyRole?.replace('_', ' ')}</span>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* Assignment Section */}
+              {/* Column 2: Assignment Management */}
               <div className="space-y-4">
-                <h4 className="font-medium">Organizational Assignment</h4>
+                <div className="p-4 bg-gradient-to-r from-emerald-50 to-green-50 rounded-lg border border-emerald-200">
+                  <h4 className="font-medium flex items-center gap-2 mb-4">
+                    <Target className="w-4 h-4 text-emerald-600" />
+                    Smart Assignment System
+                  </h4>
                 
-                <div>
-                  <Label htmlFor="employee-branch">Branch Assignment</Label>
-                  <Select value={employeeUpdate.branchId} onValueChange={(value) => setEmployeeUpdate({ ...employeeUpdate, branchId: value, teamId: value ? employeeUpdate.teamId : "" })}>
-                    <SelectTrigger data-testid="select-employee-branch">
-                      <SelectValue placeholder="Select branch (optional)" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="headquarters">Headquarters (No Branch)</SelectItem>
-                      {Array.isArray(branches) && branches
-                        .filter((branch: any) => branch.id && branch.id.trim() !== "")
-                        .map((branch: any) => (
-                        <SelectItem key={branch.id} value={branch.id}>
-                          {branch.name} - {branch.location}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label htmlFor="employee-team">Team Assignment</Label>
-                  <Select 
-                    value={employeeUpdate.teamId} 
-                    onValueChange={(value) => setEmployeeUpdate({ ...employeeUpdate, teamId: value })}
-                    disabled={!employeeUpdate.branchId && Array.isArray(teams) && teams.filter((t: any) => !t.branchId).length === 0}
-                  >
-                    <SelectTrigger data-testid="select-employee-team">
-                      <SelectValue placeholder="Select team (optional)" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="no_team">No Team</SelectItem>
-                      {Array.isArray(teams) && teams
-                        .filter((team: any) => 
-                          employeeUpdate.branchId ? 
-                            team.branchId === employeeUpdate.branchId : 
-                            !team.branchId
-                        )
-                        .filter((team: any) => team.id && team.id.trim() !== "")
-                        .map((team: any) => (
-                          <SelectItem key={team.id} value={team.id}>
-                            {team.name} {team.branchId ? "" : "(HQ)"}
+                  <div className="space-y-3">
+                    <div>
+                      <Label htmlFor="employee-branch" className="flex items-center gap-2">
+                        <Building2 className="w-4 h-4 text-blue-600" />
+                        Branch Assignment
+                      </Label>
+                      <Select value={employeeUpdate.branchId} onValueChange={(value) => setEmployeeUpdate({ ...employeeUpdate, branchId: value, teamId: value === "headquarters" ? "" : employeeUpdate.teamId })}>
+                        <SelectTrigger data-testid="select-employee-branch" className="mt-1">
+                          <SelectValue placeholder="Select branch location" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="headquarters">
+                            <div className="flex items-center gap-2">
+                              <Crown className="w-4 h-4 text-yellow-600" />
+                              Headquarters (Main Office)
+                            </div>
                           </SelectItem>
-                        ))
-                      }
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {employeeUpdate.branchId ? 
-                      "Only teams in the selected branch are available" : 
-                      "Only headquarters teams are available when no branch is selected"
-                    }
-                  </p>
+                          {Array.isArray(branches) && branches
+                            .filter((branch: any) => branch.id && branch.id.trim() !== "")
+                            .map((branch: any) => (
+                            <SelectItem key={branch.id} value={branch.id}>
+                              <div className="flex items-center gap-2">
+                                <Building2 className="w-4 h-4 text-blue-600" />
+                                {branch.name} - {branch.location}
+                                <span className="text-xs text-muted-foreground ml-auto">{branch.employeeCount || 0} members</span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {employeeUpdate.branchId && employeeUpdate.branchId !== "headquarters" && (
+                        <p className="text-xs text-emerald-600 mt-1 flex items-center gap-1">
+                          <CheckCircle className="w-3 h-3" />
+                          Branch capacity available
+                        </p>
+                      )}
+                    </div>
+
+                    <div>
+                      <Label htmlFor="employee-team" className="flex items-center gap-2">
+                        <Users className="w-4 h-4 text-green-600" />
+                        Team Assignment
+                      </Label>
+                      <Select 
+                        value={employeeUpdate.teamId} 
+                        onValueChange={(value) => setEmployeeUpdate({ ...employeeUpdate, teamId: value })}
+                        disabled={!employeeUpdate.branchId || employeeUpdate.branchId === "headquarters"}
+                      >
+                        <SelectTrigger data-testid="select-employee-team" className="mt-1">
+                          <SelectValue placeholder="Select team within branch" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="no_team">
+                            <div className="flex items-center gap-2">
+                              <X className="w-4 h-4 text-gray-400" />
+                              No Team Assignment
+                            </div>
+                          </SelectItem>
+                          {Array.isArray(teams) && teams
+                            .filter((team: any) => team.branchId === employeeUpdate.branchId)
+                            .filter((team: any) => team.id && team.id.trim() !== "")
+                            .map((team: any) => (
+                              <SelectItem key={team.id} value={team.id}>
+                                <div className="flex items-center gap-2">
+                                  <Users className="w-4 h-4 text-green-600" />
+                                  {team.name}
+                                  <span className="text-xs text-muted-foreground ml-auto">{team.memberCount || 0}/{team.maxMembers || 10}</span>
+                                </div>
+                              </SelectItem>
+                            ))
+                          }
+                        </SelectContent>
+                      </Select>
+                      {!employeeUpdate.branchId || employeeUpdate.branchId === "headquarters" ? (
+                        <p className="text-xs text-yellow-600 mt-1 flex items-center gap-1">
+                          <AlertTriangle className="w-3 h-3" />
+                          Select a branch first to assign teams
+                        </p>
+                      ) : (
+                        <p className="text-xs text-emerald-600 mt-1 flex items-center gap-1">
+                          <CheckCircle className="w-3 h-3" />
+                          Teams available in selected branch
+                        </p>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              {/* Role & Permissions Section */}
+              {/* Column 3: Role & Permissions */}
               <div className="space-y-4">
-                <h4 className="font-medium">Role & Hierarchy</h4>
+                <div className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border border-purple-200">
+                  <h4 className="font-medium flex items-center gap-2 mb-4">
+                    <Shield className="w-4 h-4 text-purple-600" />
+                    Role & Authority Management
+                  </h4>
                 
-                <div>
-                  <Label htmlFor="hierarchy-role">Hierarchy Role</Label>
-                  <Select value={employeeUpdate.hierarchyRole} onValueChange={(value) => setEmployeeUpdate({ ...employeeUpdate, hierarchyRole: value })}>
-                    <SelectTrigger data-testid="select-hierarchy-role">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="employee">Employee</SelectItem>
-                      <SelectItem value="team_lead">Team Lead</SelectItem>
-                      <SelectItem value="branch_manager">Branch Manager</SelectItem>
-                      <SelectItem value="company_admin">Company Admin</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <div className="space-y-3">
+                    <div>
+                      <Label htmlFor="hierarchy-role" className="flex items-center gap-2">
+                        <Crown className="w-4 h-4 text-yellow-600" />
+                        Hierarchy Role
+                      </Label>
+                      <Select value={employeeUpdate.hierarchyRole} onValueChange={(value) => setEmployeeUpdate({ ...employeeUpdate, hierarchyRole: value })}>
+                        <SelectTrigger data-testid="select-hierarchy-role" className="mt-1">
+                          <SelectValue placeholder="Select role level" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="employee">
+                            <div className="flex items-center gap-2">
+                              <User className="w-4 h-4 text-gray-600" />
+                              Employee - Standard Access
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="team_lead">
+                            <div className="flex items-center gap-2">
+                              <Users className="w-4 h-4 text-blue-600" />
+                              Team Lead - Team Management
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="branch_manager">
+                            <div className="flex items-center gap-2">
+                              <Shield className="w-4 h-4 text-green-600" />
+                              Branch Manager - Branch Control
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="company_admin">
+                            <div className="flex items-center gap-2">
+                              <Crown className="w-4 h-4 text-purple-600" />
+                              Company Admin - Full Access
+                            </div>
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+
+              {/* Permissions Section */}
+              <div className="p-4 bg-gradient-to-r from-orange-50 to-red-50 rounded-lg border border-orange-200 mt-4">
+                <h4 className="font-medium flex items-center gap-2 mb-4">
+                  <Key className="w-4 h-4 text-orange-600" />
+                  Advanced Permissions
+                </h4>
+                <div className="space-y-3">
+                
+                  <div className="flex items-center justify-between p-3 bg-white rounded border">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4 text-green-600" />
+                      <div>
+                        <Label htmlFor="can-verify-work" className="font-medium">Work Verification Rights</Label>
+                        <p className="text-xs text-muted-foreground">Allow employee to verify work entries</p>
+                      </div>
+                    </div>
+                    <Switch
+                      id="can-verify-work"
+                      checked={employeeUpdate.canVerifyWork}
+                      onCheckedChange={(checked) => setEmployeeUpdate({ ...employeeUpdate, canVerifyWork: checked })}
+                      data-testid="switch-can-verify-work"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 bg-white rounded border">
+                    <div className="flex items-center gap-2">
+                      <Shield className="w-4 h-4 text-blue-600" />
+                      <div>
+                        <Label htmlFor="can-manage-employees" className="font-medium">Employee Management</Label>
+                        <p className="text-xs text-muted-foreground">Allow managing other employees</p>
+                      </div>
+                    </div>
+                    <Switch
+                      id="can-manage-employees"
+                      checked={employeeUpdate.canManageEmployees}
+                      onCheckedChange={(checked) => setEmployeeUpdate({ ...employeeUpdate, canManageEmployees: checked })}
+                      data-testid="switch-can-manage-employees"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 bg-white rounded border">
+                    <div className="flex items-center gap-2">
+                      <UserPlus className="w-4 h-4 text-purple-600" />
+                      <div>
+                        <Label htmlFor="can-create-teams" className="font-medium">Team Creation Rights</Label>
+                        <p className="text-xs text-muted-foreground">Allow creating and managing teams</p>
+                      </div>
+                    </div>
+                    <Switch
+                      id="can-create-teams"
+                      checked={employeeUpdate.canCreateTeams}
+                      onCheckedChange={(checked) => setEmployeeUpdate({ ...employeeUpdate, canCreateTeams: checked })}
+                      data-testid="switch-can-create-teams"
+                    />
+                  </div>
                 </div>
               </div>
-
-              <div className="space-y-3">
-                <h4 className="font-medium">Permissions & Authority</h4>
-                
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="can-verify-work">Can Verify Work</Label>
-                  <Switch
-                    id="can-verify-work"
-                    checked={employeeUpdate.canVerifyWork}
-                    onCheckedChange={(checked) => setEmployeeUpdate({ ...employeeUpdate, canVerifyWork: checked })}
-                    data-testid="switch-can-verify-work"
-                  />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="can-manage-employees">Can Manage Employees</Label>
-                  <Switch
-                    id="can-manage-employees"
-                    checked={employeeUpdate.canManageEmployees}
-                    onCheckedChange={(checked) => setEmployeeUpdate({ ...employeeUpdate, canManageEmployees: checked })}
-                    data-testid="switch-can-manage-employees"
-                  />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="can-create-teams">Can Create Teams</Label>
-                  <Switch
-                    id="can-create-teams"
-                    checked={employeeUpdate.canCreateTeams}
-                    onCheckedChange={(checked) => setEmployeeUpdate({ ...employeeUpdate, canCreateTeams: checked })}
-                    data-testid="switch-can-create-teams"
-                  />
-                </div>
 
                 <div>
                   <Label htmlFor="verification-scope">Verification Scope</Label>
@@ -5373,52 +5487,100 @@ export default function CompanyHierarchy() {
 
       {/* Employee Hierarchy Management Dialog */}
       <Dialog open={isManageEmployeeOpen} onOpenChange={setIsManageEmployeeOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-5xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Manage Employee Assignment & Permissions</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <Users className="w-5 h-5 text-blue-600" />
+              Phase 2: Comprehensive Employee Management
+            </DialogTitle>
             <DialogDescription>
-              Update {selectedEmployee?.firstName} {selectedEmployee?.lastName}'s assignment, role and permissions
+              Complete assignment, permissions, and organizational management for {selectedEmployee?.firstName} {selectedEmployee?.lastName}
             </DialogDescription>
           </DialogHeader>
           {selectedEmployee && (
-            <div className="space-y-6">
-              {/* Employee Info Section */}
-              <div className="p-4 bg-blue-50 rounded-lg border">
-                <div className="flex items-center gap-3">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Column 1: Employee Profile & Info */}
+              <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+                <div className="flex items-center gap-3 mb-4">
                   {getRoleIcon(selectedEmployee.hierarchyRole)}
                   <div>
-                    <h4 className="font-medium">{selectedEmployee.employee?.firstName} {selectedEmployee.employee?.lastName}</h4>
-                    <p className="text-sm text-muted-foreground">{selectedEmployee.position}</p>
-                    <p className="text-xs text-muted-foreground">Employee ID: {selectedEmployee.employeeId}</p>
+                    <h4 className="font-medium text-lg">{selectedEmployee.firstName} {selectedEmployee.lastName}</h4>
+                    <p className="text-sm text-muted-foreground">{selectedEmployee.email}</p>
+                    <p className="text-xs text-muted-foreground">ID: {selectedEmployee.employeeId}</p>
+                  </div>
+                </div>
+                
+                {/* Current Assignment Status */}
+                <div className="space-y-2">
+                  <h5 className="font-medium text-sm text-blue-900">Current Status</h5>
+                  <div className="text-xs space-y-1 bg-white p-2 rounded border">
+                    <div className="flex items-center gap-2">
+                      <Building2 className="w-3 h-3 text-blue-600" />
+                      <span>Branch: {selectedEmployee.branchId ? branches?.find((b: any) => b.id === selectedEmployee.branchId)?.name || "Unknown" : "Headquarters"}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Users className="w-3 h-3 text-green-600" />
+                      <span>Team: {selectedEmployee.teamId ? teams?.find((t: any) => t.id === selectedEmployee.teamId)?.name || "Unknown" : "No Team"}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Shield className="w-3 h-3 text-purple-600" />
+                      <span>Role: {selectedEmployee.hierarchyRole?.replace('_', ' ')}</span>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* Assignment Section */}
+              {/* Column 2: Assignment Management */}
               <div className="space-y-4">
-                <h4 className="font-medium">Organizational Assignment</h4>
+                <div className="p-4 bg-gradient-to-r from-emerald-50 to-green-50 rounded-lg border border-emerald-200">
+                  <h4 className="font-medium flex items-center gap-2 mb-4">
+                    <Target className="w-4 h-4 text-emerald-600" />
+                    Smart Assignment System
+                  </h4>
                 
-                <div>
-                  <Label htmlFor="employee-branch">Branch Assignment</Label>
-                  <Select value={employeeUpdate.branchId} onValueChange={(value) => setEmployeeUpdate({ ...employeeUpdate, branchId: value, teamId: value ? employeeUpdate.teamId : "" })}>
-                    <SelectTrigger data-testid="select-employee-branch">
-                      <SelectValue placeholder="Select branch (optional)" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="headquarters">Headquarters (No Branch)</SelectItem>
-                      {Array.isArray(branches) && branches
-                        .filter((branch: any) => branch.id && branch.id.trim() !== "")
-                        .map((branch: any) => (
-                        <SelectItem key={branch.id} value={branch.id}>
-                          {branch.name} - {branch.location}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                  <div className="space-y-3">
+                    <div>
+                      <Label htmlFor="employee-branch" className="flex items-center gap-2">
+                        <Building2 className="w-4 h-4 text-blue-600" />
+                        Branch Assignment
+                      </Label>
+                      <Select value={employeeUpdate.branchId} onValueChange={(value) => setEmployeeUpdate({ ...employeeUpdate, branchId: value, teamId: value === "headquarters" ? "" : employeeUpdate.teamId })}>
+                        <SelectTrigger data-testid="select-employee-branch" className="mt-1">
+                          <SelectValue placeholder="Select branch location" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="headquarters">
+                            <div className="flex items-center gap-2">
+                              <Crown className="w-4 h-4 text-yellow-600" />
+                              Headquarters (Main Office)
+                            </div>
+                          </SelectItem>
+                          {Array.isArray(branches) && branches
+                            .filter((branch: any) => branch.id && branch.id.trim() !== "")
+                            .map((branch: any) => (
+                            <SelectItem key={branch.id} value={branch.id}>
+                              <div className="flex items-center gap-2">
+                                <Building2 className="w-4 h-4 text-blue-600" />
+                                {branch.name} - {branch.location}
+                                <span className="text-xs text-muted-foreground ml-auto">{branch.employeeCount || 0} members</span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {employeeUpdate.branchId && employeeUpdate.branchId !== "headquarters" && (
+                        <p className="text-xs text-emerald-600 mt-1 flex items-center gap-1">
+                          <CheckCircle className="w-3 h-3" />
+                          Branch capacity available
+                        </p>
+                      )}
+                    </div>
 
-                <div>
-                  <Label htmlFor="employee-team">Team Assignment</Label>
+                    <div>
+                      <Label htmlFor="employee-team" className="flex items-center gap-2">
+                        <Users className="w-4 h-4 text-green-600" />
+                        Team Assignment
+                      </Label>
                   <Select 
                     value={employeeUpdate.teamId} 
                     onValueChange={(value) => setEmployeeUpdate({ ...employeeUpdate, teamId: value })}
@@ -5464,38 +5626,63 @@ export default function CompanyHierarchy() {
                 </div>
               </div>
 
-              <div className="space-y-3">
-                <h4 className="font-medium">Permissions & Authority</h4>
+              {/* Permissions Section */}
+              <div className="p-4 bg-gradient-to-r from-orange-50 to-red-50 rounded-lg border border-orange-200 mt-4">
+                <h4 className="font-medium flex items-center gap-2 mb-4">
+                  <Key className="w-4 h-4 text-orange-600" />
+                  Advanced Permissions
+                </h4>
+                <div className="space-y-3">
                 
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="can-verify-work">Can Verify Work</Label>
-                  <Switch
-                    id="can-verify-work"
-                    checked={employeeUpdate.canVerifyWork}
-                    onCheckedChange={(checked) => setEmployeeUpdate({ ...employeeUpdate, canVerifyWork: checked })}
-                    data-testid="switch-can-verify-work"
-                  />
-                </div>
+                  <div className="flex items-center justify-between p-3 bg-white rounded border">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4 text-green-600" />
+                      <div>
+                        <Label htmlFor="can-verify-work" className="font-medium">Work Verification Rights</Label>
+                        <p className="text-xs text-muted-foreground">Allow employee to verify work entries</p>
+                      </div>
+                    </div>
+                    <Switch
+                      id="can-verify-work"
+                      checked={employeeUpdate.canVerifyWork}
+                      onCheckedChange={(checked) => setEmployeeUpdate({ ...employeeUpdate, canVerifyWork: checked })}
+                      data-testid="switch-can-verify-work"
+                    />
+                  </div>
 
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="can-manage-employees">Can Manage Employees</Label>
-                  <Switch
-                    id="can-manage-employees"
-                    checked={employeeUpdate.canManageEmployees}
-                    onCheckedChange={(checked) => setEmployeeUpdate({ ...employeeUpdate, canManageEmployees: checked })}
-                    data-testid="switch-can-manage-employees"
-                  />
-                </div>
+                  <div className="flex items-center justify-between p-3 bg-white rounded border">
+                    <div className="flex items-center gap-2">
+                      <Shield className="w-4 h-4 text-blue-600" />
+                      <div>
+                        <Label htmlFor="can-manage-employees" className="font-medium">Employee Management</Label>
+                        <p className="text-xs text-muted-foreground">Allow managing other employees</p>
+                      </div>
+                    </div>
+                    <Switch
+                      id="can-manage-employees"
+                      checked={employeeUpdate.canManageEmployees}
+                      onCheckedChange={(checked) => setEmployeeUpdate({ ...employeeUpdate, canManageEmployees: checked })}
+                      data-testid="switch-can-manage-employees"
+                    />
+                  </div>
 
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="can-create-teams">Can Create Teams</Label>
-                  <Switch
-                    id="can-create-teams"
-                    checked={employeeUpdate.canCreateTeams}
-                    onCheckedChange={(checked) => setEmployeeUpdate({ ...employeeUpdate, canCreateTeams: checked })}
-                    data-testid="switch-can-create-teams"
-                  />
+                  <div className="flex items-center justify-between p-3 bg-white rounded border">
+                    <div className="flex items-center gap-2">
+                      <UserPlus className="w-4 h-4 text-purple-600" />
+                      <div>
+                        <Label htmlFor="can-create-teams" className="font-medium">Team Creation Rights</Label>
+                        <p className="text-xs text-muted-foreground">Allow creating and managing teams</p>
+                      </div>
+                    </div>
+                    <Switch
+                      id="can-create-teams"
+                      checked={employeeUpdate.canCreateTeams}
+                      onCheckedChange={(checked) => setEmployeeUpdate({ ...employeeUpdate, canCreateTeams: checked })}
+                      data-testid="switch-can-create-teams"
+                    />
+                  </div>
                 </div>
+              </div>
 
                 <div>
                   <Label htmlFor="verification-scope">Verification Scope</Label>
@@ -5556,7 +5743,7 @@ export default function CompanyHierarchy() {
             </DialogDescription>
           </DialogHeader>
           {selectedManager && (
-            <div className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Manager Basic Info */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -6389,7 +6576,7 @@ export default function CompanyHierarchy() {
           </DialogHeader>
           
           {analyticsData ? (
-            <div className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Overview Cards */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <Card>
