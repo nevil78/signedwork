@@ -985,8 +985,8 @@ export default function CompanyHierarchy() {
   };
 
   const selectAllEmployees = () => {
-    if (data?.employees) {
-      setSelectedEmployees(data.employees.map((emp: any) => emp.employeeId));
+    if (employees) {
+      setSelectedEmployees(employees.map((emp: any) => emp.employeeId));
     }
   };
 
@@ -1008,22 +1008,22 @@ export default function CompanyHierarchy() {
 
   // Phase 4: Advanced Analytics Calculations
   const calculateAdvancedMetrics = useMemo(() => {
-    if (!data?.employees || !Array.isArray(data.employees)) return null;
+    if (!employees || !Array.isArray(employees)) return null;
     
-    const totalEmployees = data.employees.length;
-    const activeEmployees = data.employees.filter((emp: any) => emp.isCurrent !== false).length;
-    const companyAdmins = data.employees.filter((emp: any) => emp.hierarchyRole === 'company_admin').length;
-    const branchManagers = data.employees.filter((emp: any) => emp.hierarchyRole === 'branch_manager').length;
-    const teamLeads = data.employees.filter((emp: any) => emp.hierarchyRole === 'team_lead').length;
-    const regularEmployees = data.employees.filter((emp: any) => emp.hierarchyRole === 'employee').length;
+    const totalEmployees = employees.length;
+    const activeEmployees = employees.filter((emp: any) => emp.isCurrent !== false).length;
+    const companyAdmins = employees.filter((emp: any) => emp.hierarchyRole === 'company_admin').length;
+    const branchManagers = employees.filter((emp: any) => emp.hierarchyRole === 'branch_manager').length;
+    const teamLeads = employees.filter((emp: any) => emp.hierarchyRole === 'team_lead').length;
+    const regularEmployees = employees.filter((emp: any) => emp.hierarchyRole === 'employee').length;
     
     // Performance Metrics
     const performanceScore = Math.round(((activeEmployees / totalEmployees) * 100) || 0);
     const managementRatio = Math.round(((companyAdmins + branchManagers + teamLeads) / totalEmployees * 100) || 0);
     
     // Capacity Analysis
-    const totalBranches = Array.isArray(data.branches) ? data.branches.length : 0;
-    const totalTeams = Array.isArray(data.teams) ? data.teams.length : 0;
+    const totalBranches = Array.isArray(branches) ? branches.length : 0;
+    const totalTeams = Array.isArray(teams) ? teams.length : 0;
     const avgEmployeesPerBranch = totalBranches > 0 ? Math.round(totalEmployees / totalBranches) : 0;
     const avgEmployeesPerTeam = totalTeams > 0 ? Math.round(totalEmployees / totalTeams) : 0;
     
