@@ -2889,7 +2889,7 @@ export default function CompanyHierarchy() {
 
       {/* Create Manager Account Dialog */}
       <Dialog open={isCreateManagerOpen} onOpenChange={setIsCreateManagerOpen}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-hidden">
+        <DialogContent className="max-w-lg max-h-[90vh] flex flex-col">
           <DialogHeader className="flex-shrink-0">
             <DialogTitle className="flex items-center gap-2">
               <ShieldCheck className="h-5 w-5 text-indigo-600" />
@@ -2900,7 +2900,7 @@ export default function CompanyHierarchy() {
             </DialogDescription>
           </DialogHeader>
           
-          <div className="space-y-6 overflow-y-auto flex-1 pr-2 max-h-[calc(90vh-120px)]">
+          <div className="space-y-6 overflow-y-auto flex-1 pr-2">
             {/* Employee Selection */}
             <div className="space-y-3">
               <Label htmlFor="manager-employee">Select Employee</Label>
