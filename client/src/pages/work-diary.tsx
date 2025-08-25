@@ -318,90 +318,84 @@ export default function WorkDiary() {
             </div>
           </div>
         ) : (
-          <div className="bg-white rounded-lg shadow-sm border p-6">
-            <h2 className="text-lg font-semibold mb-6 text-center">Select Company</h2>
-            <p className="text-sm text-muted-foreground text-center mb-8">Choose a company to manage your work diary</p>
-            
-            <div className="max-w-2xl mx-auto space-y-4">
+          <div className="space-y-8">
+            {/* Companies Grid */}
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {companies.map((company) => (
-                <Card key={company.id} className="hover:shadow-md transition-all duration-200 cursor-pointer border-gray-200 dark:border-gray-700">
-                  <CardHeader className="pb-4">
-                    <div className="flex justify-between items-start">
-                      <div 
-                        className="flex-1 cursor-pointer"
-                        onClick={() => navigate(`/work-diary/${company.id}`)}
-                      >
-                        <div className="flex items-center gap-3 mb-3">
-                          <div className="rounded-full bg-blue-100 dark:bg-blue-900 p-3">
-                            <Building2 className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                <Card key={company.id} className="group hover:shadow-xl transition-all duration-300 cursor-pointer bg-gradient-to-br from-white to-gray-50 border-2 hover:border-blue-200">
+                  <CardContent className="p-0">
+                    <div 
+                      className="p-6"
+                      onClick={() => navigate(`/work-diary/${company.id}`)}
+                    >
+                      {/* Company Header */}
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="rounded-full bg-gradient-to-br from-blue-500 to-blue-600 p-3 shadow-lg">
+                            <Building2 className="h-6 w-6 text-white" />
                           </div>
-                          <div className="flex-1">
-                            <CardTitle className="text-xl flex items-center gap-2 mb-1">
-                              {company.companyName}
-                              <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                            </CardTitle>
-                            <div className="flex items-center gap-2">
-                              <span className="px-3 py-1 text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded-full font-medium">
-                                Active
-                              </span>
-                            </div>
-                          </div>
+                          <span className="px-3 py-1 text-xs bg-green-100 text-green-700 rounded-full font-medium border border-green-200">
+                            Active
+                          </span>
                         </div>
-                        
+                        <ChevronRight className="h-5 w-5 text-gray-400 group-hover:text-blue-500 transition-colors" />
+                      </div>
+                      
+                      {/* Company Name */}
+                      <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">
+                        {company.companyName}
+                      </h3>
+                      
+                      {/* Company Details */}
+                      <div className="space-y-2 mb-4">
                         {company.position && (
-                          <CardDescription className="text-base mb-2 ml-12">
-                            <strong>Position:</strong> {company.position}
-                          </CardDescription>
+                          <p className="text-sm text-gray-600">
+                            <span className="font-medium">Position:</span> {company.position}
+                          </p>
                         )}
                         
                         {company.startDate && (
-                          <CardDescription className="flex items-center gap-2 ml-12">
+                          <div className="flex items-center gap-2 text-sm text-gray-600">
                             <Calendar className="h-4 w-4" />
                             <span>
                               {company.startDate} - {company.endDate || 'Present'}
-                              {company.isCurrent && (
-                                <span className="ml-2 text-green-600 dark:text-green-400 font-medium">
-                                  (Currently employed)
-                                </span>
-                              )}
                             </span>
-                          </CardDescription>
+                          </div>
                         )}
-                        
-                        <CardDescription className="mt-3 ml-12 text-sm text-blue-600 dark:text-blue-400 font-medium">
-                          Click to view work diary →
-                        </CardDescription>
                       </div>
                       
-                      <div className="flex flex-col gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleEdit(company);
-                          }}
-                          className="w-20"
-                        >
-                          <Edit className="h-4 w-4 mr-1" />
-                          Edit
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleLeaveCompany(company.id);
-                          }}
-                          title="Leave Company"
-                          className="w-20 text-red-600 border-red-200 hover:bg-red-50 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-950"
-                        >
-                          <LogOut className="h-4 w-4 mr-1" />
-                          Leave
-                        </Button>
+                      {/* Call to Action */}
+                      <div className="flex items-center gap-2 text-sm font-medium text-blue-600 group-hover:text-blue-700">
+                        <BookOpen className="h-4 w-4" />
+                        <span>View Work Diary</span>
                       </div>
                     </div>
-                  </CardHeader>
+                    
+                    {/* Action Buttons */}
+                    <div className="flex border-t border-gray-100 bg-gray-50/50">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEdit(company);
+                        }}
+                        className="flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition-all"
+                      >
+                        <Edit className="h-4 w-4" />
+                        Edit
+                      </button>
+                      <div className="w-px bg-gray-200"></div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleLeaveCompany(company.id);
+                        }}
+                        className="flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium text-gray-600 hover:text-red-600 hover:bg-red-50 transition-all"
+                      >
+                        <LogOut className="h-4 w-4" />
+                        Leave
+                      </button>
+                    </div>
+                  </CardContent>
                 </Card>
               ))}
             </div>
