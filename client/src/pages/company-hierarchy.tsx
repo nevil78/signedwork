@@ -1183,25 +1183,26 @@ export default function CompanyHierarchy() {
       </div>
 
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2" data-testid="page-title">
-            <Building2 className="h-8 w-8 text-blue-600" />
-            Company Hierarchy Management
+          <h1 className="text-2xl lg:text-3xl font-bold flex items-center gap-2" data-testid="page-title">
+            <Building2 className="h-6 w-6 lg:h-8 lg:w-8 text-blue-600" />
+            <span className="hidden sm:inline">Company Hierarchy Management</span>
+            <span className="sm:hidden">Hierarchy</span>
           </h1>
-          <p className="text-muted-foreground mt-2" data-testid="page-description">
+          <p className="text-muted-foreground mt-2 text-sm lg:text-base" data-testid="page-description">
             Manage your organizational structure, branches, teams, and employee roles
           </p>
         </div>
         
         {/* Real-time Status & Performance Controls */}
-        <div className="flex items-center gap-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
           {/* Live Update Status */}
-          <div className="flex items-center gap-2 px-3 py-2 bg-green-50 border border-green-200 rounded-lg">
+          <div className="flex items-center gap-2 px-2 lg:px-3 py-1.5 lg:py-2 bg-green-50 border border-green-200 rounded-lg">
             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
             <div className="text-xs">
               <div className="font-medium text-green-900">Live Updates</div>
-              <div className="text-green-700">
+              <div className="text-green-700 hidden sm:block">
                 Last: {lastUpdateTime.toLocaleTimeString()} ({updateCount} updates)
               </div>
             </div>
@@ -1209,7 +1210,7 @@ export default function CompanyHierarchy() {
 
           {/* Performance Toggle */}
           <div className="flex items-center gap-2">
-            <Label htmlFor="optimized-view" className="text-xs">Optimized View</Label>
+            <Label htmlFor="optimized-view" className="text-xs hidden sm:inline">Optimized View</Label>
             <Switch
               id="optimized-view"
               checked={isOptimizedView}
@@ -1528,27 +1529,29 @@ export default function CompanyHierarchy() {
 
       {/* Main Content Tabs */}
       <Tabs defaultValue="structure" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-5" data-testid="hierarchy-tabs">
-          <TabsTrigger value="structure">Structure</TabsTrigger>
-          <TabsTrigger value="branches">Branches</TabsTrigger>
-          <TabsTrigger value="teams">Teams</TabsTrigger>
-          <TabsTrigger value="employees">Employee Roles</TabsTrigger>
-          <TabsTrigger value="managers">Manager Accounts</TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto">
+          <TabsList className="grid w-full grid-cols-5 min-w-[640px] sm:min-w-0" data-testid="hierarchy-tabs">
+            <TabsTrigger value="structure" className="text-xs sm:text-sm">Structure</TabsTrigger>
+            <TabsTrigger value="branches" className="text-xs sm:text-sm">Branches</TabsTrigger>
+            <TabsTrigger value="teams" className="text-xs sm:text-sm">Teams</TabsTrigger>
+            <TabsTrigger value="employees" className="text-xs sm:text-sm">Employee Roles</TabsTrigger>
+            <TabsTrigger value="managers" className="text-xs sm:text-sm">Manager Accounts</TabsTrigger>
+          </TabsList>
+        </div>
 
         {/* Structure Tab */}
         <TabsContent value="structure" className="space-y-4">
           {/* Smart Navigation Breadcrumb */}
           <Card className="p-3 mb-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-sm">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+              <div className="flex items-center gap-2 text-xs sm:text-sm">
                 <Building2 className="h-4 w-4 text-blue-600" />
-                <span className="text-gray-600">Current View:</span>
+                <span className="text-gray-600 hidden sm:inline">Current View:</span>
                 <span className="font-medium">Company Structure</span>
-                <ChevronRight className="h-4 w-4 text-gray-400" />
-                <span className="text-gray-500">All Levels</span>
+                <ChevronRight className="h-4 w-4 text-gray-400 hidden sm:inline" />
+                <span className="text-gray-500 hidden sm:inline">All Levels</span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
                 {/* View Toggle */}
                 <div className="flex items-center bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
                   <Button
@@ -1581,7 +1584,7 @@ export default function CompanyHierarchy() {
                       placeholder="Find employee, team, or branch..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-64"
+                      className="w-full sm:w-64"
                     />
                   </>
                 )}
@@ -1590,8 +1593,8 @@ export default function CompanyHierarchy() {
             
             {/* Quick Jump Buttons */}
             {(Array.isArray(branches) && branches.length > 0) || (Array.isArray(teams) && teams.length > 0) ? (
-              <div className="flex items-center gap-2 mt-3 pt-3 border-t">
-                <span className="text-xs text-gray-500 mr-2">Quick Jump:</span>
+              <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t">
+                <span className="text-xs text-gray-500 mr-2 hidden sm:inline">Quick Jump:</span>
                 {Array.isArray(branches) && branches.slice(0, 3).map((branch: any) => (
                   <Button 
                     key={branch.id}
@@ -2139,16 +2142,17 @@ export default function CompanyHierarchy() {
               {Array.isArray(branches) && branches.length > 0 ? (
                 <div className="space-y-4">
                   {/* Matrix Header */}
-                  <div className="grid grid-cols-12 gap-2 text-xs font-medium text-gray-600 border-b pb-2">
-                    <div className="col-span-3">Branch/Team</div>
-                    <div className="col-span-2">Total Staff</div>
-                    <div className="col-span-2">Capacity</div>
-                    <div className="col-span-2">Managers</div>
-                    <div className="col-span-2">Utilization</div>
-                    <div className="col-span-1">Status</div>
-                  </div>
+                  <div className="overflow-x-auto">
+                    <div className="grid grid-cols-12 gap-2 text-xs font-medium text-gray-600 border-b pb-2 min-w-[800px]">
+                      <div className="col-span-3">Branch/Team</div>
+                      <div className="col-span-2">Total Staff</div>
+                      <div className="col-span-2">Capacity</div>
+                      <div className="col-span-2">Managers</div>
+                      <div className="col-span-2">Utilization</div>
+                      <div className="col-span-1">Status</div>
+                    </div>
 
-                  {/* Branch Rows */}
+                    {/* Branch Rows */}
                   {branches.map((branch: any) => {
                     const branchEmployees = Array.isArray(employees) ? employees.filter((emp: any) => emp.branchId === branch.id) : [];
                     const branchTeams = Array.isArray(teams) ? teams.filter((team: any) => team.branchId === branch.id) : [];
@@ -2159,7 +2163,7 @@ export default function CompanyHierarchy() {
                     return (
                       <div key={branch.id} className="space-y-2">
                         {/* Branch Row */}
-                        <div className="grid grid-cols-12 gap-2 p-3 bg-blue-50 rounded-lg items-center">
+                        <div className="grid grid-cols-12 gap-2 p-3 bg-blue-50 rounded-lg items-center min-w-[800px]">
                           <div className="col-span-3 flex items-center gap-2">
                             <Building2 className="h-4 w-4 text-blue-600" />
                             <div>
@@ -2752,14 +2756,14 @@ export default function CompanyHierarchy() {
                 </div>
 
                 {/* Filter Controls */}
-                <div className="flex flex-wrap gap-4">
+                <div className="flex flex-wrap gap-2 sm:gap-4">
                   <div className="flex items-center gap-2">
                     <Filter className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm text-muted-foreground">Filters:</span>
+                    <span className="text-xs sm:text-sm text-muted-foreground hidden sm:inline">Filters:</span>
                   </div>
                   
                   <Select value={filterRole} onValueChange={setFilterRole}>
-                    <SelectTrigger className="w-[140px]" data-testid="filter-role">
+                    <SelectTrigger className="w-[100px] sm:w-[140px]" data-testid="filter-role">
                       <SelectValue placeholder="All Roles" />
                     </SelectTrigger>
                     <SelectContent>
@@ -2772,7 +2776,7 @@ export default function CompanyHierarchy() {
                   </Select>
 
                   <Select value={filterBranch} onValueChange={setFilterBranch}>
-                    <SelectTrigger className="w-[160px]" data-testid="filter-branch">
+                    <SelectTrigger className="w-[120px] sm:w-[160px]" data-testid="filter-branch">
                       <SelectValue placeholder="All Branches" />
                     </SelectTrigger>
                     <SelectContent>
