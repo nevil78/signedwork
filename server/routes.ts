@@ -3457,10 +3457,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/company/branches", requireCompany, async (req: any, res) => {
     try {
+      console.log("Branch creation request body:", req.body);
       const branchData = {
         ...req.body,
         companyId: req.user.id,
       };
+      console.log("Processed branch data:", branchData);
       const branch = await storage.createCompanyBranch(branchData);
       
       emitRealTimeUpdate('branch-created', {
