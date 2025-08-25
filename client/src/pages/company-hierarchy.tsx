@@ -1251,7 +1251,7 @@ export default function CompanyHierarchy() {
 
   const canManageBranches = () => {
     // Emergency override: Company owners can always manage branches
-    const userData = currentUser;
+    const userData = currentUser as any;
     if (userData?.type === 'company') return true;
     
     const userEmployee = getCurrentUserEmployee();
@@ -1261,7 +1261,7 @@ export default function CompanyHierarchy() {
 
   const canManageTeams = () => {
     // Emergency override: Company owners can always manage teams
-    const userData = currentUser;
+    const userData = currentUser as any;
     if (userData?.type === 'company') return true;
     
     const userEmployee = getCurrentUserEmployee();
@@ -1274,14 +1274,14 @@ export default function CompanyHierarchy() {
   const canManageEmployee = (targetEmployee: any) => {
     console.log('🔍 DEBUG canManageEmployee:', { 
       targetEmployee: targetEmployee?.id, 
-      currentUser: currentUser?.type,
+      currentUser: (currentUser as any)?.type,
       userData: currentUser 
     });
     
     if (!targetEmployee) return false;
     
     // Company owners can always manage employees
-    const userData = currentUser;
+    const userData = currentUser as any;
     if (userData?.type === 'company') {
       console.log('✅ Company owner access granted');
       return true;
@@ -1304,7 +1304,7 @@ export default function CompanyHierarchy() {
 
   const canEditBranch = (branch: any) => {
     // Emergency override: Company owners can always edit branches
-    const userData = currentUser;
+    const userData = currentUser as any;
     if (userData?.type === 'company') return true;
     
     const userEmployee = getCurrentUserEmployee();
@@ -1321,7 +1321,7 @@ export default function CompanyHierarchy() {
 
   const canEditTeam = (team: any) => {
     // Emergency override: Company owners can always edit teams
-    const userData = currentUser;
+    const userData = currentUser as any;
     if (userData?.type === 'company') return true;
     
     const userEmployee = getCurrentUserEmployee();
@@ -1414,12 +1414,12 @@ export default function CompanyHierarchy() {
           bValue = b.position || "";
           break;
         case "branch":
-          aValue = a.branchId ? (Array.isArray(branches) ? branches.find((br: any) => br.id === a.branchId)?.name || "" : "") : "Headquarters";
-          bValue = b.branchId ? (Array.isArray(branches) ? branches.find((br: any) => br.id === b.branchId)?.name || "" : "") : "Headquarters";
+          aValue = a.branchId ? (Array.isArray(branches) ? (branches as any[]).find((br: any) => br.id === a.branchId)?.name || "" : "") : "Headquarters";
+          bValue = b.branchId ? (Array.isArray(branches) ? (branches as any[]).find((br: any) => br.id === b.branchId)?.name || "" : "") : "Headquarters";
           break;
         case "team":
-          aValue = a.teamId ? (Array.isArray(teams) ? teams.find((t: any) => t.id === a.teamId)?.name || "" : "") : "";
-          bValue = b.teamId ? (Array.isArray(teams) ? teams.find((t: any) => t.id === b.teamId)?.name || "" : "") : "";
+          aValue = a.teamId ? (Array.isArray(teams) ? (teams as any[]).find((t: any) => t.id === a.teamId)?.name || "" : "") : "";
+          bValue = b.teamId ? (Array.isArray(teams) ? (teams as any[]).find((t: any) => t.id === b.teamId)?.name || "" : "") : "";
           break;
         default:
           aValue = a[sortBy] || "";
@@ -2233,7 +2233,7 @@ export default function CompanyHierarchy() {
                 </Card>
               ) : structure ? (
                 <VisualOrgChart data={{ 
-                  company: structure?.company || {}, 
+                  company: (structure as any)?.company || {}, 
                   branches: Array.isArray(branches) ? branches : [], 
                   teams: Array.isArray(teams) ? teams : [], 
                   employees: Array.isArray(employees) ? employees : [], 
@@ -3467,12 +3467,12 @@ export default function CompanyHierarchy() {
                           <div className="flex flex-col items-end">
                             <span>
                               {emp.branchId ? 
-                                (Array.isArray(branches) ? branches.find((b: any) => b.id === emp.branchId)?.name || "Unknown Branch" : "Unknown Branch")
+                                (Array.isArray(branches) ? (branches as any[]).find((b: any) => b.id === emp.branchId)?.name || "Unknown Branch" : "Unknown Branch")
                                 : "Headquarters"}
                             </span>
                             {emp.teamId && (
                               <span className="text-xs">
-                                Team: {Array.isArray(teams) ? teams.find((t: any) => t.id === emp.teamId)?.name || "Unknown Team" : "Unknown Team"}
+                                Team: {Array.isArray(teams) ? (teams as any[]).find((t: any) => t.id === emp.teamId)?.name || "Unknown Team" : "Unknown Team"}
                               </span>
                             )}
                           </div>
@@ -3574,7 +3574,7 @@ export default function CompanyHierarchy() {
 
                         {/* Branch Managers */}
                         {Array.isArray(employees) && employees.filter(emp => emp.hierarchyRole === 'branch_manager').map((manager: any) => {
-                          const managerBranch = Array.isArray(branches) ? branches.find(b => b.id === manager.branchId) : null;
+                          const managerBranch = Array.isArray(branches) ? (branches as any[]).find(b => b.id === manager.branchId) : null;
                           const branchTeams = Array.isArray(teams) ? teams.filter(team => team.branchId === manager.branchId) : [];
                           const branchEmployees = Array.isArray(employees) ? employees.filter(emp => emp.branchId === manager.branchId) : [];
 
@@ -3618,9 +3618,9 @@ export default function CompanyHierarchy() {
 
                         {/* Team Leads */}
                         {Array.isArray(employees) && employees.filter(emp => emp.hierarchyRole === 'team_lead').map((lead: any) => {
-                          const leadTeam = Array.isArray(teams) ? teams.find(t => t.id === lead.teamId) : null;
+                          const leadTeam = Array.isArray(teams) ? (teams as any[]).find(t => t.id === lead.teamId) : null;
                           const teamMembers = Array.isArray(employees) ? employees.filter(emp => emp.teamId === lead.teamId) : [];
-                          const leadBranch = Array.isArray(branches) ? branches.find(b => b.id === lead.branchId) : null;
+                          const leadBranch = Array.isArray(branches) ? (branches as any[]).find(b => b.id === lead.branchId) : null;
 
                           return (
                             <div key={lead.id} className="p-3 bg-green-100 rounded-lg border-l-4 border-green-500 ml-8">

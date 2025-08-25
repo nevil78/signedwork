@@ -1,0 +1,143 @@
+
+> rest-express@1.0.0 dev
+6:08:02 PM [express] serving on port 5000s
+6:10:40 PM [express] POST /api/auth/login 200 in 2821ms :: {"message":"Login successful","user":{"id…
+Session debug: {
+  sessionId: 'uMC6dy34SnsxkeNL6OMrAf0v5VThDuox',
+  hasSession: true,
+  sessionUser: {
+    id: '8f392d4a-2259-44f6-b79d-ad9d6ff249f1',
+    email: 'arham@gmail.com',
+    type: 'company'
+  },
+  sessionCookie: 'sessionId=s%3AuMC6dy34SnsxkeNL6OMrAf0v5VThDuox.whnDv03vG7M7oIeeL1W8FVXZplMj2BOaVpRo7DNsvl8'
+}
+Session valid for user: 8f392d4a-2259-44f6-b79d-ad9d6ff249f1 (company)
+Session debug: {
+  sessionId: 'uMC6dy34SnsxkeNL6OMrAf0v5VThDuox',
+  hasSession: true,
+  sessionUser: {
+    id: '8f392d4a-2259-44f6-b79d-ad9d6ff249f1',
+    email: 'arham@gmail.com',
+    type: 'company'
+  },
+  sessionCookie: 'sessionId=s%3AuMC6dy34SnsxkeNL6OMrAf0v5VThDuox.whnDv03vG7M7oIeeL1W8FVXZplMj2BOaVpRo7DNsvl8'
+}
+Session valid for user: 8f392d4a-2259-44f6-b79d-ad9d6ff249f1 (company)
+Session debug: {
+  sessionId: 'uMC6dy34SnsxkeNL6OMrAf0v5VThDuox',
+  hasSession: true,
+  sessionUser: {
+    id: '8f392d4a-2259-44f6-b79d-ad9d6ff249f1',
+    email: 'arham@gmail.com',
+    type: 'company'
+  },
+  sessionCookie: 'sessionId=s%3AuMC6dy34SnsxkeNL6OMrAf0v5VThDuox.whnDv03vG7M7oIeeL1W8FVXZplMj2BOaVpRo7DNsvl8'
+}
+Session valid for user: 8f392d4a-2259-44f6-b79d-ad9d6ff249f1 (company)
+6:10:49 PM [express] GET /api/auth/session-status 200 in 44ms :: {"authenticated":true,"userId":"8f3…
+Session valid for user: 8f392d4a-2259-44f6-b79d-ad9d6ff249f1 (company)
+6:10:49 PM [express] GET /api/auth/user 304 in 145ms :: {"user":{"id":"8f392d4a-2259-44f6-b79d-ad9d6…
+6:10:49 PM [express] GET /api/company/employees 200 in 232ms :: [{"id":"f69f0f52-b8aa-47c3-a06f-8e4f…
+[Phase 5 Enterprise] User connected: _uaOIISMxspNZfzVAAAB
+User joined company room: 8f392d4a-2259-44f6-b79d-ad9d6ff249f1
+User joined company room: 8f392d4a-2259-44f6-b79d-ad9d6ff249f1
+User 8f392d4a-2259-44f6-b79d-ad9d6ff249f1 joined their room
+[Phase 5 Enterprise] User disconnected: _uaOIISMxspNZfzVAAAB
+Session debug: {
+  sessionId: 'uMC6dy34SnsxkeNL6OMrAf0v5VThDuox',
+  hasSession: true,
+  sessionUser: {
+    id: '8f392d4a-2259-44f6-b79d-ad9d6ff249f1',
+    email: 'arham@gmail.com',
+    type: 'company'
+  },
+  sessionCookie: 'sessionId=s%3AuMC6dy34SnsxkeNL6OMrAf0v5VThDuox.whnDv03vG7M7oIeeL1W8FVXZplMj2BOaVpRo7DNsvl8'
+}
+Session valid for user: 8f392d4a-2259-44f6-b79d-ad9d6ff249f1 (company)
+Session debug: {
+  sessionId: 'uMC6dy34SnsxkeNL6OMrAf0v5VThDuox',
+  hasSession: true,
+  sessionUser: {
+    id: '8f392d4a-2259-44f6-b79d-ad9d6ff249f1',
+    email: 'arham@gmail.com',
+    type: 'company'
+  },
+  sessionCookie: 'sessionId=s%3AuMC6dy34SnsxkeNL6OMrAf0v5VThDuox.whnDv03vG7M7oIeeL1W8FVXZplMj2BOaVpRo7DNsvl8'
+}
+Session valid for user: 8f392d4a-2259-44f6-b79d-ad9d6ff249f1 (company)
+Session debug: {
+  sessionId: 'uMC6dy34SnsxkeNL6OMrAf0v5VThDuox',
+  hasSession: true,
+  sessionUser: {
+    id: '8f392d4a-2259-44f6-b79d-ad9d6ff249f1',
+    email: 'arham@gmail.com',
+    type: 'company'
+  },
+  sessionCookie: 'sessionId=s%3AuMC6dy34SnsxkeNL6OMrAf0v5VThDuox.whnDv03vG7M7oIeeL1W8FVXZplMj2BOaVpRo7DNsvl8'
+}
+Session valid for user: 8f392d4a-2259-44f6-b79d-ad9d6ff249f1 (company)
+Session debug: {
+  sessionId: 'uMC6dy34SnsxkeNL6OMrAf0v5VThDuox',
+  hasSession: true,
+  sessionUser: {
+    id: '8f392d4a-2259-44f6-b79d-ad9d6ff249f1',
+    email: 'arham@gmail.com',
+    type: 'company'
+  },
+  sessionCookie: 'sessionId=s%3AuMC6dy34SnsxkeNL6OMrAf0v5VThDuox.whnDv03vG7M7oIeeL1W8FVXZplMj2BOaVpRo7DNsvl8'
+}
+Session valid for user: 8f392d4a-2259-44f6-b79d-ad9d6ff249f1 (company)
+Session debug: {
+  sessionId: 'uMC6dy34SnsxkeNL6OMrAf0v5VThDuox',
+  hasSession: true,
+  sessionUser: {
+    id: '8f392d4a-2259-44f6-b79d-ad9d6ff249f1',
+    email: 'arham@gmail.com',
+    type: 'company'
+  },
+  sessionCookie: 'sessionId=s%3AuMC6dy34SnsxkeNL6OMrAf0v5VThDuox.whnDv03vG7M7oIeeL1W8FVXZplMj2BOaVpRo7DNsvl8'
+}
+Session valid for user: 8f392d4a-2259-44f6-b79d-ad9d6ff249f1 (company)
+6:10:52 PM [express] GET /api/company/filter-presets 200 in 53ms :: {"presets":[{"id":"preset_manage…
+6:10:52 PM [express] GET /api/company/branches 304 in 90ms :: [{"id":"1b0ac2e4-ca87-4e88-b7e2-5ec89c…
+6:10:52 PM [express] GET /api/company/teams 304 in 89ms :: [{"id":"dbce3ec3-df78-4a0c-96c1-536226799…
+6:10:52 PM [express] GET /api/company/managers 304 in 109ms :: [{"id":"2385877a-7d09-4253-adf3-1972b…
+6:10:52 PM [express] GET /api/company/structure 200 in 254ms :: {"company":{"id":"8f392d4a-2259-44f6…
+Session debug: {
+  sessionId: 'uMC6dy34SnsxkeNL6OMrAf0v5VThDuox',
+  hasSession: true,
+  sessionUser: {
+    id: '8f392d4a-2259-44f6-b79d-ad9d6ff249f1',
+    email: 'arham@gmail.com',
+    type: 'company'
+  },
+  sessionCookie: 'sessionId=s%3AuMC6dy34SnsxkeNL6OMrAf0v5VThDuox.whnDv03vG7M7oIeeL1W8FVXZplMj2BOaVpRo7DNsvl8'
+}
+Session valid for user: 8f392d4a-2259-44f6-b79d-ad9d6ff249f1 (company)
+[Phase 5 Enterprise] User connected: JKNHyJGNE84gXYHEAAAD
+6:10:52 PM [express] GET /api/company/data/analytics 304 in 135ms :: {"overview":{"totalEmployees":3…
+Session debug: {
+  sessionId: 'uMC6dy34SnsxkeNL6OMrAf0v5VThDuox',
+  hasSession: true,
+  sessionUser: {
+    id: '8f392d4a-2259-44f6-b79d-ad9d6ff249f1',
+    email: 'arham@gmail.com',
+    type: 'company'
+  },
+  sessionCookie: 'sessionId=s%3AuMC6dy34SnsxkeNL6OMrAf0v5VThDuox.whnDv03vG7M7oIeeL1W8FVXZplMj2BOaVpRo7DNsvl8'
+}
+Session valid for user: 8f392d4a-2259-44f6-b79d-ad9d6ff249f1 (company)
+Session debug: {
+  sessionId: 'uMC6dy34SnsxkeNL6OMrAf0v5VThDuox',
+  hasSession: true,
+  sessionUser: {
+    id: '8f392d4a-2259-44f6-b79d-ad9d6ff249f1',
+    email: 'arham@gmail.com',
+    type: 'company'
+  },
+  sessionCookie: 'sessionId=s%3AuMC6dy34SnsxkeNL6OMrAf0v5VThDuox.whnDv03vG7M7oIeeL1W8FVXZplMj2BOaVpRo7DNsvl8'
+}
+Session valid for user: 8f392d4a-2259-44f6-b79d-ad9d6ff249f1 (company)
+6:11:23 PM [express] GET /api/company/structure 304 in 250ms :: {"company":{"id":"8f392d4a-2259-44f6…
+6:11:24 PM [express] GET /api/company/employees 304 in 2418ms :: [{"id":"f69f0f52-b8aa-47c3-a06f-8e4…
