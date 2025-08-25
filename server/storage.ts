@@ -2129,7 +2129,25 @@ export class DatabaseStorage implements IStorage {
   // Company employee access with privacy controls
   async getEmployeeCompanyRelation(employeeId: string, companyId: string): Promise<CompanyEmployee | null> {
     const [relation] = await db
-      .select()
+      .select({
+        id: companyEmployees.id,
+        companyId: companyEmployees.companyId,
+        employeeId: companyEmployees.employeeId,
+        branchId: companyEmployees.branchId,
+        teamId: companyEmployees.teamId,
+        assignedManagerId: companyEmployees.assignedManagerId,
+        position: companyEmployees.position,
+        department: companyEmployees.department,
+        hierarchyRole: companyEmployees.hierarchyRole,
+        canVerifyWork: companyEmployees.canVerifyWork,
+        canManageEmployees: companyEmployees.canManageEmployees,
+        canCreateTeams: companyEmployees.canCreateTeams,
+        verificationScope: companyEmployees.verificationScope,
+        joinedAt: companyEmployees.joinedAt,
+        leftAt: companyEmployees.leftAt,
+        status: companyEmployees.status,
+        isActive: companyEmployees.isActive
+      })
       .from(companyEmployees)
       .where(
         and(

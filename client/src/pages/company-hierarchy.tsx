@@ -335,6 +335,13 @@ export default function CompanyHierarchy() {
     gcTime: 300000,
   });
 
+  const { data: managers, isLoading: managersLoading, refetch: refetchManagers } = useQuery({
+    queryKey: ["/api/company/managers"],
+    refetchInterval: 45000, // Manager accounts change less frequently
+    staleTime: 25000,
+    gcTime: 600000,
+  });
+
   const { data: currentUser } = useQuery({
     queryKey: ["/api/auth/user"],
     staleTime: 600000, // User data rarely changes, cache for 10 minutes
@@ -486,6 +493,7 @@ export default function CompanyHierarchy() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/company/employees"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/company/managers"] });
       queryClient.invalidateQueries({ queryKey: ["/api/company/structure"] });
       setIsCreateManagerOpen(false);
       setNewManager({
@@ -3011,47 +3019,53 @@ export default function CompanyHierarchy() {
               </div>
             </CardHeader>
             <CardContent>
-              {Array.isArray(employees) && employees.filter((emp: any) => emp.hierarchyRole !== 'employee').length > 0 ? (
+              {Array.isArray(managers) && managers.length > 0 ? (
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {employees.filter((emp: any) => emp.hierarchyRole !== 'employee').map((manager: any) => (
+                    {managers.map((manager: any) => (
                       <Card key={manager.id} className="p-4 border border-indigo-200 hover:border-indigo-400 hover:shadow-lg transform hover:scale-102 transition-all duration-300 bg-gradient-to-br from-white to-indigo-50/30 hover:from-indigo-50/50 hover:to-purple-50/30">
                         <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center gap-3">
                             <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center">
-                              {getRoleIcon(manager.hierarchyRole || 'employee')}
+                              {getRoleIcon(manager.permissionLevel || 'team_lead')}
                             </div>
                             <div>
-                              <h4 className="font-medium text-sm">{manager.firstName} {manager.lastName}</h4>
-                              <p className="text-xs text-gray-600">{manager.hierarchyRole?.replace('_', ' ') || 'Employee'}</p>
+                              <h4 className="font-medium text-sm">{manager.managerName}</h4>
+                              <p className="text-xs text-gray-600">{manager.permissionLevel?.replace('_', ' ') || 'Team Lead'}</p>
+                              <p className="text-xs text-blue-600 font-mono">ID: {manager.uniqueId}</p>
                             </div>
                           </div>
-                          <Badge className={getRoleBadgeColor(manager.hierarchyRole || 'employee')}>
-                            {manager.hierarchyRole === 'company_admin' ? 'Admin' :
-                             manager.hierarchyRole === 'branch_manager' ? 'Manager' :
-                             manager.hierarchyRole === 'team_lead' ? 'Lead' : 'Employee'}
+                          <Badge className={getRoleBadgeColor(manager.permissionLevel || 'team_lead')}>
+                            {manager.permissionLevel === 'company_admin' ? 'Admin' :
+                             manager.permissionLevel === 'branch_manager' ? 'Manager' :
+                             'Lead'}
                           </Badge>
                         </div>
                         <div className="space-y-2 text-xs">
                           <div className="flex justify-between">
                             <span>Login Access:</span>
-                            <span className={manager.canLogin !== false ? 'text-green-600' : 'text-red-600'}>
-                              {manager.canLogin !== false ? 'Enabled' : 'Disabled'}
+                            <span className={manager.isActive ? 'text-green-600' : 'text-red-600'}>
+                              {manager.isActive ? 'Enabled' : 'Disabled'}
                             </span>
                           </div>
                           <div className="flex justify-between">
-                            <span>Verification:</span>
-                            <span className={manager.canVerifyWork ? 'text-green-600' : 'text-gray-500'}>
-                              {manager.canVerifyWork ? (manager.verificationScope || 'Team') : 'None'}
-                            </span>
+                            <span>Email:</span>
+                            <span className="text-gray-600 truncate">{manager.managerEmail}</span>
                           </div>
                           <div className="flex justify-between">
                             <span>Permissions:</span>
                             <div className="flex gap-1">
-                              {manager.canManageEmployees && <Badge variant="outline" className="text-xs">Manage</Badge>}
-                              {manager.canCreateTeams && <Badge variant="outline" className="text-xs">Create</Badge>}
+                              {manager.permissions?.canApproveWork && <Badge variant="outline" className="text-xs">Approve</Badge>}
+                              {manager.permissions?.canEditEmployees && <Badge variant="outline" className="text-xs">Edit</Badge>}
+                              {manager.permissions?.canManageTeams && <Badge variant="outline" className="text-xs">Teams</Badge>}
                             </div>
                           </div>
+                          {manager.lastLoginAt && (
+                            <div className="flex justify-between">
+                              <span>Last Login:</span>
+                              <span className="text-gray-500">{new Date(manager.lastLoginAt).toLocaleDateString()}</span>
+                            </div>
+                          )}
                         </div>
                       </Card>
                     ))}
