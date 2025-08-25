@@ -1078,7 +1078,7 @@ export default function CompanyHierarchy() {
         }))
       }
     };
-  }, [structureData]);
+  }, [employees, branches, teams]);
 
   // Phase 5: Real-time Socket Connection & Notifications
   useEffect(() => {
