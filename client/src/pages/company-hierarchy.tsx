@@ -5713,7 +5713,7 @@ export default function CompanyHierarchy() {
                   </div>
                 </TabsContent>
               </Tabs>
-              <div className="flex justify-end">
+              <div className="flex justify-end mt-6">
                 <Button 
                   variant="outline"
                   onClick={() => setIsAnalyticsOpen(false)}
