@@ -2200,25 +2200,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create manager account
   app.post("/api/company/managers", requireCompany, async (req: any, res) => {
     try {
-      const { managerName, managerEmail, branchId, teamId, permissionLevel, permissions } = req.body;
+      const { employeeId, username, password, accessLevel, permissions } = req.body;
       
-      if (!managerName || !managerEmail) {
+      if (!employeeId || !username || !password) {
         return res.status(400).json({ 
-          message: "Manager name and email are required" 
+          message: "Employee ID, username, and password are required" 
         });
       }
       
-      // Generate a temporary password (can be changed by manager)
-      const tempPassword = Math.random().toString(36).slice(-8) + 'A1';
+      // Get employee details
+      const employee = await storage.getEmployee(employeeId);
+      if (!employee) {
+        return res.status(404).json({ message: "Employee not found" });
+      }
       
+      // Check if employee is part of this company
+      const companyEmployee = await storage.getCompanyEmployee(employeeId, req.user.id);
+      if (!companyEmployee) {
+        return res.status(400).json({ 
+          message: "Employee is not part of this company" 
+        });
+      }
+      
+      // Update employee's hierarchy role
+      const hierarchyRole = accessLevel === 'company_admin' ? 'company_admin' : 
+                          accessLevel === 'branch_manager' ? 'branch_manager' : 'team_lead';
+      
+      await storage.updateEmployeeHierarchyRole(employeeId, req.user.id, {
+        hierarchyRole,
+        canVerifyWork: permissions?.canVerifyWork || true,
+        canManageEmployees: permissions?.canManageEmployees || true,
+        canCreateTeams: permissions?.canCreateTeams || false,
+        verificationScope: accessLevel === 'company_admin' ? 'company' : 
+                          accessLevel === 'branch_manager' ? 'branch' : 'team'
+      });
+      
+      // Create manager account data
       const managerData = {
         companyId: req.user.id,
-        managerName,
-        managerEmail,
-        branchId: branchId || null,
-        teamId: teamId || null,
-        permissionLevel: permissionLevel || 'team_lead',
-        password: tempPassword
+        managerName: `${employee.firstName} ${employee.lastName}`,
+        managerEmail: employee.email,
+        branchId: null,
+        teamId: null,
+        permissionLevel: hierarchyRole,
+        password: password
       };
       
       const manager = await storage.createManager(managerData);
@@ -2228,14 +2253,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await storage.updateManagerPermissions(manager.id, permissions);
       }
       
-      // Remove password from response but include uniqueId for setup
+      // Remove password from response
       const { password: _, ...managerResponse } = manager;
       
       res.json({
         message: "Manager account created successfully",
-        manager: managerResponse,
-        tempPassword, // Send temp password for initial setup
-        note: "Manager should change password on first login"
+        manager: managerResponse
       });
     } catch (error: any) {
       console.error("Create manager error:", error);
