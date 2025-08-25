@@ -3809,9 +3809,7 @@ export default function CompanyHierarchy() {
               ) : (
                 <Button
                   onClick={() => {
-                    toast({ title: "Success", description: "Manager account created successfully" });
-                    setIsCreateManagerOpen(false);
-                    resetManagerForm();
+                    createManager.mutate(newManager);
                   }}
                   disabled={!stepValidation.step4}
                   className="flex items-center gap-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none"
