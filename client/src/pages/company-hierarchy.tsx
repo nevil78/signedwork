@@ -5133,50 +5133,96 @@ export default function CompanyHierarchy() {
                       data-testid="switch-can-create-teams"
                     />
                   </div>
+                  {employeeUpdate.canVerifyWork && (
+                    <div className="p-3 bg-yellow-50 rounded border border-yellow-200">
+                      <Label htmlFor="verification-scope" className="flex items-center gap-2">
+                        <Target className="w-4 h-4 text-yellow-600" />
+                        Verification Scope
+                      </Label>
+                      <Select value={employeeUpdate.verificationScope} onValueChange={(value) => setEmployeeUpdate({ ...employeeUpdate, verificationScope: value })}>
+                        <SelectTrigger data-testid="select-verification-scope" className="mt-2">
+                          <SelectValue placeholder="Select verification level" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">No Verification Rights</SelectItem>
+                          <SelectItem value="team">Team Level Only</SelectItem>
+                          <SelectItem value="branch">Branch Level Access</SelectItem>
+                          <SelectItem value="company">Company-Wide Access</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground mt-2">
+                        {employeeUpdate.verificationScope === "team" && "✓ Can verify work entries from team members only"}
+                        {employeeUpdate.verificationScope === "branch" && "✓ Can verify work entries from entire branch"}
+                        {employeeUpdate.verificationScope === "company" && "✓ Can verify work entries company-wide"}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Assignment Summary & Actions */}
+            <div className="mt-6 space-y-4">
+              <div className="p-4 bg-gradient-to-r from-gray-50 to-slate-50 rounded-lg border">
+                <h5 className="font-medium text-sm mb-3 flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-gray-600" />
+                  Phase 2: Complete Assignment Summary
+                </h5>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
+                  <div className="p-3 bg-white rounded border">
+                    <div className="font-medium text-blue-600">Location</div>
+                    <div>{employeeUpdate.branchId === "headquarters" ? "Headquarters" : branches?.find((b: any) => b.id === employeeUpdate.branchId)?.name || "Unassigned"}</div>
+                  </div>
+                  <div className="p-3 bg-white rounded border">
+                    <div className="font-medium text-green-600">Team</div>
+                    <div>{employeeUpdate.teamId ? teams?.find((t: any) => t.id === employeeUpdate.teamId)?.name || "Unknown" : "No Team"}</div>
+                  </div>
+                  <div className="p-3 bg-white rounded border">
+                    <div className="font-medium text-purple-600">Authority</div>
+                    <div>{employeeUpdate.hierarchyRole.replace('_', ' ')}</div>
+                  </div>
+                  <div className="p-3 bg-white rounded border">
+                    <div className="font-medium text-orange-600">Permissions</div>
+                    <div className="flex gap-1">
+                      {employeeUpdate.canVerifyWork && <span className="text-xs bg-green-100 text-green-700 px-1 rounded">Verify</span>}
+                      {employeeUpdate.canManageEmployees && <span className="text-xs bg-blue-100 text-blue-700 px-1 rounded">Manage</span>}
+                      {employeeUpdate.canCreateTeams && <span className="text-xs bg-purple-100 text-purple-700 px-1 rounded">Create</span>}
+                    </div>
+                  </div>
                 </div>
               </div>
 
-                <div>
-                  <Label htmlFor="verification-scope">Verification Scope</Label>
-                  <Select value={employeeUpdate.verificationScope} onValueChange={(value) => setEmployeeUpdate({ ...employeeUpdate, verificationScope: value })}>
-                    <SelectTrigger data-testid="select-verification-scope">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">None</SelectItem>
-                      <SelectItem value="team">Team Level - Can verify team members' work</SelectItem>
-                      <SelectItem value="branch">Branch Level - Can verify entire branch</SelectItem>
-                      <SelectItem value="company">Company Level - Can verify company-wide</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Determines what level of work entries this employee can verify
-                  </p>
-                </div>
+              {/* Action Buttons */}
+              <div className="flex gap-3">
+                <Button 
+                  onClick={() => updateEmployeeHierarchyMutation.mutate({ 
+                    employeeId: selectedEmployee.employeeId, 
+                    updates: employeeUpdate 
+                  })}
+                  disabled={updateEmployeeHierarchyMutation.isPending}
+                  className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+                  data-testid="button-update-employee-hierarchy"
+                >
+                  {updateEmployeeHierarchyMutation.isPending ? (
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Applying Changes...
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4" />
+                      Apply Phase 2 Assignment
+                    </div>
+                  )}
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={() => setIsManageEmployeeOpen(false)}
+                  className="px-6"
+                >
+                  Cancel
+                </Button>
               </div>
-
-              {/* Assignment Summary */}
-              <div className="p-3 bg-gray-50 rounded-lg border">
-                <h5 className="font-medium text-sm mb-2">Assignment Summary</h5>
-                <div className="text-xs space-y-1">
-                  <div>Branch: {employeeUpdate.branchId ? branches?.find((b: any) => b.id === employeeUpdate.branchId)?.name || "Unknown" : "Headquarters"}</div>
-                  <div>Team: {employeeUpdate.teamId ? teams?.find((t: any) => t.id === employeeUpdate.teamId)?.name || "Unknown" : "No Team"}</div>
-                  <div>Role: {employeeUpdate.hierarchyRole.replace('_', ' ')}</div>
-                  <div>Can Verify: {employeeUpdate.canVerifyWork ? `Yes (${employeeUpdate.verificationScope})` : "No"}</div>
-                </div>
-              </div>
-
-              <Button 
-                onClick={() => updateEmployeeHierarchyMutation.mutate({ 
-                  employeeId: selectedEmployee.employeeId, 
-                  updates: employeeUpdate 
-                })}
-                disabled={updateEmployeeHierarchyMutation.isPending}
-                className="w-full"
-                data-testid="button-update-employee-hierarchy"
-              >
-                {updateEmployeeHierarchyMutation.isPending ? "Updating..." : "Update Employee"}
-              </Button>
             </div>
           )}
         </DialogContent>
@@ -5681,50 +5727,96 @@ export default function CompanyHierarchy() {
                       data-testid="switch-can-create-teams"
                     />
                   </div>
+                  {employeeUpdate.canVerifyWork && (
+                    <div className="p-3 bg-yellow-50 rounded border border-yellow-200">
+                      <Label htmlFor="verification-scope" className="flex items-center gap-2">
+                        <Target className="w-4 h-4 text-yellow-600" />
+                        Verification Scope
+                      </Label>
+                      <Select value={employeeUpdate.verificationScope} onValueChange={(value) => setEmployeeUpdate({ ...employeeUpdate, verificationScope: value })}>
+                        <SelectTrigger data-testid="select-verification-scope" className="mt-2">
+                          <SelectValue placeholder="Select verification level" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">No Verification Rights</SelectItem>
+                          <SelectItem value="team">Team Level Only</SelectItem>
+                          <SelectItem value="branch">Branch Level Access</SelectItem>
+                          <SelectItem value="company">Company-Wide Access</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground mt-2">
+                        {employeeUpdate.verificationScope === "team" && "✓ Can verify work entries from team members only"}
+                        {employeeUpdate.verificationScope === "branch" && "✓ Can verify work entries from entire branch"}
+                        {employeeUpdate.verificationScope === "company" && "✓ Can verify work entries company-wide"}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Assignment Summary & Actions */}
+            <div className="mt-6 space-y-4">
+              <div className="p-4 bg-gradient-to-r from-gray-50 to-slate-50 rounded-lg border">
+                <h5 className="font-medium text-sm mb-3 flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-gray-600" />
+                  Phase 2: Complete Assignment Summary
+                </h5>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
+                  <div className="p-3 bg-white rounded border">
+                    <div className="font-medium text-blue-600">Location</div>
+                    <div>{employeeUpdate.branchId === "headquarters" ? "Headquarters" : branches?.find((b: any) => b.id === employeeUpdate.branchId)?.name || "Unassigned"}</div>
+                  </div>
+                  <div className="p-3 bg-white rounded border">
+                    <div className="font-medium text-green-600">Team</div>
+                    <div>{employeeUpdate.teamId ? teams?.find((t: any) => t.id === employeeUpdate.teamId)?.name || "Unknown" : "No Team"}</div>
+                  </div>
+                  <div className="p-3 bg-white rounded border">
+                    <div className="font-medium text-purple-600">Authority</div>
+                    <div>{employeeUpdate.hierarchyRole.replace('_', ' ')}</div>
+                  </div>
+                  <div className="p-3 bg-white rounded border">
+                    <div className="font-medium text-orange-600">Permissions</div>
+                    <div className="flex gap-1">
+                      {employeeUpdate.canVerifyWork && <span className="text-xs bg-green-100 text-green-700 px-1 rounded">Verify</span>}
+                      {employeeUpdate.canManageEmployees && <span className="text-xs bg-blue-100 text-blue-700 px-1 rounded">Manage</span>}
+                      {employeeUpdate.canCreateTeams && <span className="text-xs bg-purple-100 text-purple-700 px-1 rounded">Create</span>}
+                    </div>
+                  </div>
                 </div>
               </div>
 
-                <div>
-                  <Label htmlFor="verification-scope">Verification Scope</Label>
-                  <Select value={employeeUpdate.verificationScope} onValueChange={(value) => setEmployeeUpdate({ ...employeeUpdate, verificationScope: value })}>
-                    <SelectTrigger data-testid="select-verification-scope">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">None</SelectItem>
-                      <SelectItem value="team">Team Level - Can verify team members' work</SelectItem>
-                      <SelectItem value="branch">Branch Level - Can verify entire branch</SelectItem>
-                      <SelectItem value="company">Company Level - Can verify company-wide</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Determines what level of work entries this employee can verify
-                  </p>
-                </div>
+              {/* Action Buttons */}
+              <div className="flex gap-3">
+                <Button 
+                  onClick={() => updateEmployeeHierarchyMutation.mutate({ 
+                    employeeId: selectedEmployee.employeeId, 
+                    updates: employeeUpdate 
+                  })}
+                  disabled={updateEmployeeHierarchyMutation.isPending}
+                  className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+                  data-testid="button-update-employee-hierarchy"
+                >
+                  {updateEmployeeHierarchyMutation.isPending ? (
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Applying Changes...
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4" />
+                      Apply Phase 2 Assignment
+                    </div>
+                  )}
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={() => setIsManageEmployeeOpen(false)}
+                  className="px-6"
+                >
+                  Cancel
+                </Button>
               </div>
-
-              {/* Assignment Summary */}
-              <div className="p-3 bg-gray-50 rounded-lg border">
-                <h5 className="font-medium text-sm mb-2">Assignment Summary</h5>
-                <div className="text-xs space-y-1">
-                  <div>Branch: {employeeUpdate.branchId ? branches?.find((b: any) => b.id === employeeUpdate.branchId)?.name || "Unknown" : "Headquarters"}</div>
-                  <div>Team: {employeeUpdate.teamId ? teams?.find((t: any) => t.id === employeeUpdate.teamId)?.name || "Unknown" : "No Team"}</div>
-                  <div>Role: {employeeUpdate.hierarchyRole.replace('_', ' ')}</div>
-                  <div>Can Verify: {employeeUpdate.canVerifyWork ? `Yes (${employeeUpdate.verificationScope})` : "No"}</div>
-                </div>
-              </div>
-
-              <Button 
-                onClick={() => updateEmployeeHierarchyMutation.mutate({ 
-                  employeeId: selectedEmployee.employeeId, 
-                  updates: employeeUpdate 
-                })}
-                disabled={updateEmployeeHierarchyMutation.isPending}
-                className="w-full"
-                data-testid="button-update-employee-hierarchy"
-              >
-                {updateEmployeeHierarchyMutation.isPending ? "Updating..." : "Update Employee"}
-              </Button>
             </div>
           )}
         </DialogContent>
