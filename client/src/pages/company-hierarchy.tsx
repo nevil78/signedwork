@@ -2904,6 +2904,11 @@ export default function CompanyHierarchy() {
             {/* Employee Selection */}
             <div className="space-y-3">
               <Label htmlFor="manager-employee">Select Employee</Label>
+              {employees && employees.length > 0 && (
+                <p className="text-sm text-gray-600">
+                  Found {employees.length} employee(s) to promote to manager
+                </p>
+              )}
               <Select 
                 value={newManager.employeeId} 
                 onValueChange={(value) => setNewManager({ ...newManager, employeeId: value })}
@@ -2912,19 +2917,25 @@ export default function CompanyHierarchy() {
                   <SelectValue placeholder="Choose an employee to promote" />
                 </SelectTrigger>
                 <SelectContent>
-                  {Array.isArray(employees) && employees
-                    .filter((emp: any) => emp.hierarchyRole === 'employee')
-                    .map((employee: any) => (
-                      <SelectItem key={employee.id} value={employee.id}>
-                        <div className="flex items-center gap-2">
-                          <User className="h-4 w-4" />
-                          <span>{employee.firstName} {employee.lastName}</span>
-                          <Badge variant="outline" className="text-xs ml-2">
-                            {employee.position || 'Employee'}
-                          </Badge>
-                        </div>
-                      </SelectItem>
-                    ))}
+                  {Array.isArray(employees) && employees.length > 0 ? (
+                    employees
+                      .filter((emp: any) => emp.hierarchyRole === 'employee' || !emp.hierarchyRole)
+                      .map((employee: any) => (
+                        <SelectItem key={employee.id} value={employee.id}>
+                          <div className="flex items-center gap-2">
+                            <User className="h-4 w-4" />
+                            <span>{employee.firstName} {employee.lastName}</span>
+                            <Badge variant="outline" className="text-xs ml-2">
+                              {employee.position || 'Employee'}
+                            </Badge>
+                          </div>
+                        </SelectItem>
+                      ))
+                  ) : (
+                    <SelectItem value="none" disabled>
+                      <span className="text-gray-500">No employees available</span>
+                    </SelectItem>
+                  )}
                 </SelectContent>
               </Select>
             </div>
