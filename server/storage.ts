@@ -3798,7 +3798,7 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(companyEmployees)
       .where(eq(companyEmployees.teamId, teamId))
-      .orderBy(asc(companyEmployees.position));
+      .orderBy(asc(companyEmployees.createdAt));
   }
 
   // Enhanced CompanyEmployee operations with hierarchy
