@@ -1272,11 +1272,20 @@ export default function CompanyHierarchy() {
   };
 
   const canManageEmployee = (targetEmployee: any) => {
+    console.log('🔍 DEBUG canManageEmployee:', { 
+      targetEmployee: targetEmployee?.id, 
+      currentUser: currentUser?.type,
+      userData: currentUser 
+    });
+    
     if (!targetEmployee) return false;
     
     // Company owners can always manage employees
     const userData = currentUser;
-    if (userData?.type === 'company') return true;
+    if (userData?.type === 'company') {
+      console.log('✅ Company owner access granted');
+      return true;
+    }
     
     const userEmployee = getCurrentUserEmployee();
     if (!userEmployee) return false;
