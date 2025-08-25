@@ -1305,18 +1305,55 @@ export default function CompanyHierarchy() {
                     </SelectContent>
                   </Select>
                 </div>
-                <Button 
-                  onClick={() => {
-                    console.log("Creating branch with data:", newBranch);
-                    console.log("Button disabled?", !newBranch.name || !newBranch.location || createBranchMutation.isPending);
-                    createBranchMutation.mutate(newBranch);
-                  }}
-                  disabled={!newBranch.name || !newBranch.location || createBranchMutation.isPending}
-                  className="w-full"
-                  data-testid="button-confirm-create-branch"
-                >
-                  {createBranchMutation.isPending ? "Creating..." : "Create Branch"}
-                </Button>
+                <div className="space-y-2">
+                  <Button 
+                    onClick={() => {
+                      console.log("=== BRANCH CREATION DEBUG ===");
+                      console.log("newBranch data:", newBranch);
+                      console.log("name:", newBranch.name);
+                      console.log("location:", newBranch.location);
+                      console.log("managerEmployeeId:", newBranch.managerEmployeeId);
+                      
+                      const isDisabled = !newBranch.name || !newBranch.location || createBranchMutation.isPending;
+                      console.log("Button should be disabled?", isDisabled);
+                      
+                      if (isDisabled) {
+                        console.log("BUTTON IS DISABLED - cannot create branch");
+                        return;
+                      }
+                      
+                      console.log("Calling mutation...");
+                      try {
+                        createBranchMutation.mutate(newBranch);
+                      } catch (error) {
+                        console.error("Error calling mutation:", error);
+                      }
+                    }}
+                    disabled={!newBranch.name || !newBranch.location || createBranchMutation.isPending}
+                    className="w-full"
+                    data-testid="button-confirm-create-branch"
+                  >
+                    {createBranchMutation.isPending ? "Creating..." : "Create Branch"}
+                  </Button>
+                  
+                  <Button 
+                    onClick={() => {
+                      console.log("=== DIRECT API TEST ===");
+                      // Direct API test bypassing form validation
+                      const testData = {
+                        name: "Test Branch",
+                        location: "Test Location", 
+                        description: "Test Description"
+                      };
+                      console.log("Testing with:", testData);
+                      createBranchMutation.mutate(testData);
+                    }}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    🔧 Direct API Test
+                  </Button>
+                </div>
               </div>
             </DialogContent>
           </Dialog>
