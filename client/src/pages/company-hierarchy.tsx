@@ -2999,8 +2999,9 @@ export default function CompanyHierarchy() {
                 <Button 
                   onClick={() => setIsCreateManagerOpen(true)}
                   data-testid="button-create-manager"
+                  className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 font-medium"
                 >
-                  <Plus className="h-4 w-4 mr-2" />
+                  <Plus className="h-4 w-4 mr-2 transition-transform duration-200 group-hover:rotate-90" />
                   Create Manager Account
                 </Button>
               </div>
@@ -3010,7 +3011,7 @@ export default function CompanyHierarchy() {
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {employees.filter((emp: any) => emp.hierarchyRole !== 'employee').map((manager: any) => (
-                      <Card key={manager.id} className="p-4 border border-indigo-200">
+                      <Card key={manager.id} className="p-4 border border-indigo-200 hover:border-indigo-400 hover:shadow-lg transform hover:scale-102 transition-all duration-300 bg-gradient-to-br from-white to-indigo-50/30 hover:from-indigo-50/50 hover:to-purple-50/30">
                         <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center gap-3">
                             <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center">
@@ -3072,33 +3073,35 @@ export default function CompanyHierarchy() {
         setIsCreateManagerOpen(open);
         if (!open) resetManagerForm();
       }}>
-        <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col bg-gradient-to-br from-white to-gray-50">
+        <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col bg-gradient-to-br from-white to-gray-50 shadow-2xl border-2 border-indigo-100 animate-in fade-in-0 zoom-in-95 duration-300">
           <DialogHeader className="flex-shrink-0 pb-4 border-b border-gray-100">
             <DialogTitle className="flex items-center gap-3 text-lg">
-              <div className="p-2 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg">
+              <div className="p-2 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg shadow-lg animate-pulse">
                 <UserPlus className="h-5 w-5 text-white" />
               </div>
-              Create Manager Account - Step {managerCreationStep} of 4
+              <span className="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent font-bold">
+                Create Manager Account - Step {managerCreationStep} of 4
+              </span>
             </DialogTitle>
             <DialogDescription className="text-gray-600 mt-2">
               Follow the guided process to promote an employee to a management role with specialized login credentials
             </DialogDescription>
             
-            {/* Progress Indicator */}
+            {/* Enhanced Progress Indicator with Animations */}
             <div className="flex items-center justify-between mt-4 px-2">
               {[1, 2, 3, 4].map((step) => (
                 <div key={step} className="flex items-center">
                   <div className={`
-                    w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium
+                    w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transform transition-all duration-500 ease-in-out
                     ${step === managerCreationStep 
-                      ? 'bg-blue-500 text-white shadow-lg' 
+                      ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg scale-110 animate-pulse ring-4 ring-blue-200' 
                       : step < managerCreationStep 
-                        ? 'bg-green-500 text-white' 
-                        : 'bg-gray-200 text-gray-500'
+                        ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-md scale-105' 
+                        : 'bg-gray-200 text-gray-500 hover:bg-gray-300 transition-colors duration-200'
                     }
                   `}>
                     {step < managerCreationStep ? (
-                      <CheckCircle className="h-4 w-4" />
+                      <CheckCircle className="h-4 w-4 animate-bounce" />
                     ) : (
                       step
                     )}
@@ -3171,7 +3174,7 @@ export default function CompanyHierarchy() {
                           </button>
                         )}
                       </div>
-                  <Select value={employeeFilter} onValueChange={setEmployeeFilter}>
+                      <Select value={employeeFilter} onValueChange={setEmployeeFilter}>
                     <SelectTrigger className="w-36 h-10">
                       <SelectValue placeholder="Filter" />
                     </SelectTrigger>
@@ -3358,14 +3361,14 @@ export default function CompanyHierarchy() {
                         return true;
                       })
                       .map((employee: any) => (
-                        <SelectItem key={employee.id} value={employee.id}>
-                          <div className="flex items-center gap-3 py-2">
-                            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-medium text-xs">
+                        <SelectItem key={employee.id} value={employee.id} className="hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 cursor-pointer transition-all duration-200">
+                          <div className="flex items-center gap-3 py-2 group">
+                            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-medium text-xs shadow-md group-hover:shadow-lg group-hover:scale-110 transition-all duration-200">
                               {(employee.firstName?.[0] || 'E').toUpperCase()}{(employee.lastName?.[0] || 'M').toUpperCase()}
                             </div>
                             <div className="flex-1">
-                              <div className="font-medium text-sm">{employee.firstName} {employee.lastName}</div>
-                              <div className="text-xs text-gray-500">{employee.position || 'Employee'} • {employee.department || 'General'}</div>
+                              <div className="font-medium text-sm group-hover:text-blue-700 transition-colors duration-200">{employee.firstName} {employee.lastName}</div>
+                              <div className="text-xs text-gray-500 group-hover:text-gray-700 transition-colors duration-200">{employee.position || 'Employee'} • {employee.department || 'General'}</div>
                             </div>
                           </div>
                         </SelectItem>
@@ -3643,7 +3646,7 @@ export default function CompanyHierarchy() {
                 <Button
                   onClick={goToNextStep}
                   disabled={!stepValidation[`step${managerCreationStep}` as keyof typeof stepValidation]}
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none"
                   data-testid="button-next-step"
                 >
                   Next →
@@ -3656,9 +3659,10 @@ export default function CompanyHierarchy() {
                     resetManagerForm();
                   }}
                   disabled={!stepValidation.step4}
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none"
                   data-testid="button-create-manager-account"
                 >
+                  <CheckCircle className="h-4 w-4" />
                   Create Account
                 </Button>
               )}
@@ -3666,6 +3670,7 @@ export default function CompanyHierarchy() {
                 variant="outline"
                 onClick={() => setIsCreateManagerOpen(false)}
                 data-testid="button-cancel-manager-account"
+                className="hover:bg-gray-100 hover:border-gray-300 transition-all duration-200 transform hover:scale-105"
               >
                 Cancel
               </Button>
