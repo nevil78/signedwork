@@ -64,9 +64,7 @@ export default function CompanyNavHeader({ companyId, companyName }: CompanyNavH
 
   const getCurrentTab = () => {
     if (location === '/company-dashboard') return 'dashboard';
-    if (location === '/company-employees') return 'employees';
     if (location === '/company-work-entries') return 'work-entries';
-    if (location === '/company-jobs') return 'jobs';
     if (location === '/company-recruiter') return 'recruiter';
     if (location === '/change-password') return 'settings';
     return '';
@@ -74,9 +72,7 @@ export default function CompanyNavHeader({ companyId, companyName }: CompanyNavH
 
   const handleTabChange = (value: string) => {
     if (value === 'dashboard') setLocation('/company-dashboard');
-    else if (value === 'employees') setLocation('/company-employees');
     else if (value === 'work-entries') setLocation('/company-work-entries');
-    else if (value === 'jobs') setLocation('/company-jobs');
     else if (value === 'recruiter') setLocation('/company-recruiter');
   };
 
@@ -109,29 +105,15 @@ export default function CompanyNavHeader({ companyId, companyName }: CompanyNavH
                     Dashboard
                   </TabsTrigger>
                   <TabsTrigger 
-                    value="employees" 
-                    className="data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 rounded-none h-full px-4"
-                  >
-                    <Users className="h-4 w-4 mr-2" />
-                    Employees
-                  </TabsTrigger>
-                  <TabsTrigger 
                     value="work-entries" 
-                    className="data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 rounded-none h-full px-4"
+                    className="data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 rounded-none h-full px-6"
                   >
                     <FileText className="h-4 w-4 mr-2" />
                     Work Reviews
                   </TabsTrigger>
                   <TabsTrigger 
-                    value="jobs" 
-                    className="data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 rounded-none h-full px-4"
-                  >
-                    <Briefcase className="h-4 w-4 mr-2" />
-                    Jobs
-                  </TabsTrigger>
-                  <TabsTrigger 
                     value="recruiter" 
-                    className="data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 rounded-none h-full px-4"
+                    className="data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 rounded-none h-full px-6"
                   >
                     <UserCheck className="h-4 w-4 mr-2" />
                     Recruiter
@@ -176,28 +158,12 @@ export default function CompanyNavHeader({ companyId, companyName }: CompanyNavH
                   {/* Other Navigation Options */}
                   <div className="space-y-1">
                     <DropdownMenuItem 
-                      onClick={() => setLocation('/company-employees')}
-                      className={`flex items-center cursor-pointer py-3 px-3 rounded-lg transition-all duration-200 ${getCurrentTab() === 'employees' ? 'bg-blue-50 text-blue-600 border border-blue-200' : 'hover:bg-gray-50 border border-transparent'}`}
-                      data-testid="mobile-nav-company-employees"
-                    >
-                      <Users className="h-5 w-5 mr-3 text-gray-600" />
-                      <span className="font-medium">Employees</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem 
                       onClick={() => setLocation('/company-work-entries')}
                       className={`flex items-center cursor-pointer py-3 px-3 rounded-lg transition-all duration-200 ${getCurrentTab() === 'work-entries' ? 'bg-blue-50 text-blue-600 border border-blue-200' : 'hover:bg-gray-50 border border-transparent'}`}
                       data-testid="mobile-nav-company-work-entries"
                     >
                       <FileText className="h-5 w-5 mr-3 text-gray-600" />
                       <span className="font-medium">Work Reviews</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem 
-                      onClick={() => setLocation('/company-jobs')}
-                      className={`flex items-center cursor-pointer py-3 px-3 rounded-lg transition-all duration-200 ${getCurrentTab() === 'jobs' ? 'bg-blue-50 text-blue-600 border border-blue-200' : 'hover:bg-gray-50 border border-transparent'}`}
-                      data-testid="mobile-nav-company-jobs"
-                    >
-                      <Briefcase className="h-5 w-5 mr-3 text-gray-600" />
-                      <span className="font-medium">Jobs</span>
                     </DropdownMenuItem>
                     <DropdownMenuItem 
                       onClick={() => setLocation('/company-recruiter')}
