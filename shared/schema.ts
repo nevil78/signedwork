@@ -308,17 +308,14 @@ export const companyEmployees = pgTable("company_employees", {
 export const companyManagers = pgTable("company_managers", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   companyId: varchar("company_id").notNull().references(() => companies.id, { onDelete: "cascade" }),
-  uniqueId: varchar("unique_id", { length: 8 }).notNull().unique(), // JNM123 format
+  uniqueId: varchar("unique_id", { length: 8 }).notNull().unique(), // YP123 format
   password: text("password").notNull(), // Hashed password
   managerName: text("manager_name").notNull(),
   managerEmail: text("manager_email").notNull(),
   branchId: varchar("branch_id").references(() => companyBranches.id), // Manager's branch (null for HQ)
   teamId: varchar("team_id").references(() => companyTeams.id), // Manager's team (null if branch-level)
-  permissionLevel: text("permission_level").notNull().default("team_lead"), // "branch_manager", "team_lead"
   isActive: boolean("is_active").default(true),
-  lastLoginAt: timestamp("last_login_at"),
   createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 // Manager permissions table for granular access control
@@ -330,8 +327,6 @@ export const managerPermissions = pgTable("manager_permissions", {
   canViewAnalytics: boolean("can_view_analytics").default(true),
   canInviteEmployees: boolean("can_invite_employees").default(false),
   canManageTeams: boolean("can_manage_teams").default(false),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 // Job listings table for job discovery

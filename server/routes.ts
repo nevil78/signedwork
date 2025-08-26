@@ -3694,8 +3694,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { managerId, managerName, managerEmail, password, permissionLevel, branchId, teamId } = req.body;
 
-      console.log('🔍 Manager creation request:', { managerId, managerName, managerEmail });
-
       // Check if manager ID already exists
       const existingManager = await storage.getManagerByUniqueId(managerId);
       if (existingManager) {
@@ -3709,12 +3707,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         password: password,
         managerName: managerName,
         managerEmail: managerEmail,
-        permissionLevel: permissionLevel,
         branchId: branchId || null,
         teamId: teamId || null,
       });
-
-      console.log('✅ Manager created with uniqueId:', manager.uniqueId);
 
       // Create default permissions
       await storage.createManagerPermissions({
