@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'wouter';
-import { Building2, Users, FileText, Briefcase, UserCheck, LogOut, Settings, ChevronDown, Menu, MessageSquare, Clock } from 'lucide-react';
+import { Building2, Users, FileText, Briefcase, UserCheck, LogOut, Settings, ChevronDown, Menu } from 'lucide-react';
 import { FeedbackButton } from '@/components/FeedbackButton';
 import signedworkLogo from "@assets/Signed-work-Logo (1)_1755168042120.png";
 import { Button } from '@/components/ui/button';
@@ -24,26 +24,11 @@ interface CompanyNavHeaderProps {
 export default function CompanyNavHeader({ companyId, companyName }: CompanyNavHeaderProps) {
   const [location, setLocation] = useLocation();
   const { toast } = useToast();
-  const [sessionTime, setSessionTime] = useState<string>('24h 0m');
-
   // Fetch company data if not provided
   const { data: company } = useQuery({
     queryKey: ['/api/auth/user'],
     enabled: !companyId && !companyName,
   });
-
-  // Session status query
-  const { data: sessionStatus } = useQuery({
-    queryKey: ['/api/auth/session-status'],
-    refetchInterval: 60000, // Refresh every minute
-  });
-
-  // Update session time display
-  useEffect(() => {
-    if (sessionStatus && (sessionStatus as any).remainingTime) {
-      setSessionTime((sessionStatus as any).remainingTime);
-    }
-  }, [sessionStatus]);
 
   // Session heartbeat to keep session alive (every 15 minutes)
   useEffect(() => {
@@ -99,15 +84,15 @@ export default function CompanyNavHeader({ companyId, companyName }: CompanyNavH
     <div className="bg-white border-b border-gray-200 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          <div className="flex items-center space-x-2 md:space-x-8">
-            <div className="flex items-center space-x-2">
-              <img src={signedworkLogo} alt="Signedwork" className="h-6 w-6" />
-              <div className="flex items-center">
-                <h1 className="text-base md:text-lg font-semibold text-gray-900">Signedwork</h1>
+          <div className="flex items-center space-x-4 md:space-x-6">
+            <div className="flex items-center space-x-3">
+              <img src={signedworkLogo} alt="Signedwork" className="h-7 w-7" />
+              <div>
+                <h1 className="text-lg font-semibold text-gray-900">Signedwork</h1>
                 {displayCompanyName && (
-                  <span className="text-sm md:text-base font-medium text-gray-600 ml-2 hidden sm:inline">
-                    - {displayCompanyName}
-                  </span>
+                  <p className="text-xs text-gray-500 -mt-1 hidden sm:block">
+                    {displayCompanyName}
+                  </p>
                 )}
               </div>
             </div>
@@ -228,44 +213,49 @@ export default function CompanyNavHeader({ companyId, companyName }: CompanyNavH
             </div>
           </div>
           
-          <div className="flex items-center space-x-2 md:space-x-4">
+          <div className="flex items-center space-x-3">
+            {/* Feedback Button */}
+            <FeedbackButton 
+              variant="outline" 
+              size="sm" 
+              className="hidden md:flex"
+              data-testid="company-feedback-button"
+            />
             
+            {/* Account Menu */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button 
                   variant="ghost" 
                   size="sm"
-                  className="text-gray-500 hover:text-gray-700"
+                  className="text-gray-600 hover:text-gray-900"
                   data-testid="button-company-account-menu"
                 >
                   <Settings className="h-4 w-4 md:mr-2" />
                   <span className="hidden md:inline">Account</span>
-                  <ChevronDown className="h-4 w-4 md:ml-2 ml-1" />
+                  <ChevronDown className="h-3 w-3 md:ml-1 ml-1" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                {/* Company info section */}
-                <div className="px-3 py-2 border-b">
-                  <div className="text-sm font-medium text-gray-900">
-                    {displayCompanyName || 'Company'}
-                  </div>
-                  {displayCompanyId && (
-                    <div className="text-xs text-gray-500">ID: {displayCompanyId}</div>
-                  )}
-                </div>
-                
-                {/* Feedback option */}
-                <div>
+              <DropdownMenuContent align="end" className="w-48">
+                {/* Simplified feedback for mobile */}
+                <div className="md:hidden">
                   <DropdownMenuItem className="flex items-center p-0">
                     <FeedbackButton 
                       variant="ghost" 
                       size="sm" 
                       className="w-full justify-start p-2 h-auto font-normal text-sm"
-                      data-testid="company-feedback-button"
+                      data-testid="company-feedback-button-mobile"
                     />
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                 </div>
+                
+                <DropdownMenuItem asChild>
+                  <Link href="/company-settings" className="flex items-center cursor-pointer" data-testid="link-company-settings">
+                    <Settings className="h-4 w-4 mr-2" />
+                    Settings
+                  </Link>
+                </DropdownMenuItem>
                 
                 <DropdownMenuItem asChild>
                   <Link href="/change-password" className="flex items-center cursor-pointer" data-testid="link-company-change-password">
