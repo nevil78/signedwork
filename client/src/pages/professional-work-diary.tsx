@@ -198,13 +198,22 @@ export default function ProfessionalWorkDiary() {
       challenges: "",
       learnings: "",
       companyId: "",
+      teamId: "", // Add team selection
     },
+  });
+
+  // Fetch employee teams for team selection
+  const { data: employeeTeams } = useQuery({
+    queryKey: ["/api/employee/teams", selectedCompany],
+    queryFn: () => apiRequest("GET", `/api/employee/teams?companyId=${selectedCompany}`),
+    enabled: !!selectedCompany,
   });
 
   // Update form when selectedCompany changes
   useEffect(() => {
     if (selectedCompany) {
       workEntryForm.setValue('companyId', selectedCompany);
+      workEntryForm.setValue('teamId', ''); // Reset team selection when company changes
     }
   }, [selectedCompany, workEntryForm]);
 
@@ -324,6 +333,7 @@ export default function ProfessionalWorkDiary() {
         challenges: "",
         learnings: "",
         companyId: selectedCompany || "",
+        teamId: "", // Reset team selection
       });
       toast({
         title: editingEntry ? "Work entry updated" : "Work entry created",
@@ -614,6 +624,7 @@ export default function ProfessionalWorkDiary() {
                           challenges: "",
                           learnings: "",
                           companyId: selectedCompany, // Ensure company ID is set
+                          teamId: "", // Reset team selection
                         });
                         setIsAddDialogOpen(true);
                       }}
@@ -1045,6 +1056,7 @@ export default function ProfessionalWorkDiary() {
                             challenges: "",
                             learnings: "",
                             companyId: selectedCompany, // Ensure company ID is set
+                            teamId: "", // Reset team selection
                           });
                           setIsAddDialogOpen(true);
                         }}>
@@ -1183,6 +1195,39 @@ export default function ProfessionalWorkDiary() {
                         </SelectContent>
                       </Select>
                       <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={workEntryForm.control}
+                  name="teamId"
+                  render={({ field }) => (
+                    <FormItem className="md:col-span-2">
+                      <FormLabel>Submit to Team Manager</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select team (optional)" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="">Submit to Company Only</SelectItem>
+                          {employeeTeams && employeeTeams.length > 0 ? (
+                            employeeTeams.map((team: any) => (
+                              <SelectItem key={team.id} value={team.id}>
+                                {team.name}
+                              </SelectItem>
+                            ))
+                          ) : (
+                            <SelectItem value="" disabled>No teams available</SelectItem>
+                          )}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                      <div className="text-xs text-muted-foreground">
+                        Choose a team to submit this work entry to the team manager. The company will always receive a copy of all entries.
+                      </div>
                     </FormItem>
                   )}
                 />

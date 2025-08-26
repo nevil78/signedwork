@@ -843,6 +843,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get employee teams - for work diary team selection
+  app.get("/api/employee/teams", requireEmployee, async (req: any, res) => {
+    try {
+      // Get the employee's current company from query parameter or get first active company
+      const { companyId } = req.query;
+      
+      if (!companyId) {
+        return res.status(400).json({ message: "Company ID is required" });
+      }
+      
+      const employeeTeams = await storage.getEmployeeTeams(req.user.id, companyId as string);
+      res.json(employeeTeams);
+    } catch (error) {
+      console.error("Error getting employee teams:", error);
+      res.status(500).json({ message: "Failed to get employee teams" });
+    }
+  });
+
   // Update employee email (with verification reset) - PROTECTED ROUTE
   app.patch("/api/employee/email", requireEmployee, async (req: any, res) => {
 
