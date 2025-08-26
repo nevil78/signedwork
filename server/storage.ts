@@ -3924,6 +3924,17 @@ export class DatabaseStorage implements IStorage {
         updatedAt: new Date()
       })
       .where(eq(companyEmployees.teamId, teamId));
+
+    // IMPORTANT: Preserve work entries for company visibility
+    // Set team_id to null in work entries but keep all other data intact
+    // Work entries belong to the company and should remain visible in company work diary
+    await db
+      .update(workEntries)
+      .set({ 
+        teamId: null,
+        updatedAt: new Date()
+      })
+      .where(eq(workEntries.teamId, teamId));
   }
 
   async getTeamMembers(teamId: string): Promise<CompanyEmployee[]> {
