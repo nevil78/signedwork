@@ -213,7 +213,7 @@ export default function CompanyHierarchySimple() {
       createTeamMutation.mutate({
         name: newTeam.name,
         branchId: newTeam.branchId === "headquarters" ? null : newTeam.branchId,
-        teamManagerId: newTeam.teamManagerId || null,
+        teamManagerId: newTeam.teamManagerId === "none" ? null : newTeam.teamManagerId || null,
         maxMembers: 10
       });
     }
@@ -669,7 +669,7 @@ export default function CompanyHierarchySimple() {
                   <SelectValue placeholder="Select manager" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">No Manager</SelectItem>
+                  <SelectItem value="none">No Manager</SelectItem>
                   {Array.isArray(managers) && managers
                     .filter((manager: any) => !manager.teamId) // Only show unassigned managers
                     .map((manager: any) => (
