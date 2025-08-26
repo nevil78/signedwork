@@ -4886,6 +4886,7 @@ export class DatabaseStorage implements IStorage {
     startDate?: string;
     endDate?: string;
   } = {}): Promise<(WorkEntry & { employee: Employee })[]> {
+    // Only show work entries that were specifically submitted to teams managed by this manager
     let query = db
       .select({
         ...getTableColumns(workEntries),
@@ -4893,10 +4894,9 @@ export class DatabaseStorage implements IStorage {
       })
       .from(workEntries)
       .innerJoin(employees, eq(workEntries.employeeId, employees.id))
-      .innerJoin(companyEmployees, and(
-        eq(companyEmployees.employeeId, employees.id),
-        eq(companyEmployees.assignedManagerId, managerId),
-        eq(companyEmployees.isActive, true)
+      .innerJoin(companyTeams, and(
+        eq(workEntries.teamId, companyTeams.id),
+        eq(companyTeams.teamManagerId, managerId)
       ));
 
     const conditions = [];
