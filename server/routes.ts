@@ -2423,14 +2423,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Manager not found" });
       }
       
+      // If disabling the manager, delete their teams first
+      if (!isActive) {
+        // Get teams managed by this manager before disabling
+        const managedTeams = await storage.getTeamsByManager(managerId);
+        
+        // Delete teams managed by this manager (cascades to employee assignments)
+        for (const team of managedTeams) {
+          await storage.deleteCompanyTeam(team.id);
+        }
+        
+        // Unassign any remaining employees from this manager
+        const assignedEmployees = await storage.getEmployeesAssignedToManager(managerId);
+        for (const emp of assignedEmployees) {
+          await storage.unassignEmployeeFromManager(emp.employeeId, req.user.id);
+        }
+      }
+      
       // Update manager status
       const updatedManager = await storage.updateManager(managerId, { isActive });
-      
-      // If disabling the manager, also update their session status
-      if (!isActive) {
-        // Force logout by updating their session token or invalidating sessions
-        // This would require session management updates - for now just update the status
-      }
       
       const { password: _, ...managerResponse } = updatedManager;
       res.json({
