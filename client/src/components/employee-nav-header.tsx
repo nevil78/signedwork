@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/hooks/useAuth';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   DropdownMenu,
@@ -25,13 +24,8 @@ interface EmployeeNavHeaderProps {
 export default function EmployeeNavHeader({ employeeId, employeeName }: EmployeeNavHeaderProps) {
   const [location, setLocation] = useLocation();
   const { toast } = useToast();
-  const { user, userType, isAuthenticated } = useAuth();
   const [sessionTime, setSessionTime] = useState<string>('24h 0m');
 
-  // Secure logo click - always go to root and let app routing handle authentication
-  const handleLogoClick = () => {
-    setLocation('/');
-  };
 
   // Fetch current employee data with auto-refresh
   const { data: employee } = useQuery({
@@ -142,11 +136,7 @@ export default function EmployeeNavHeader({ employeeId, employeeName }: Employee
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center space-x-2 md:space-x-8">
-            <div 
-              className="flex items-center space-x-2 cursor-pointer hover:opacity-80 transition-opacity"
-              onClick={handleLogoClick}
-              data-testid="logo-home-navigation"
-            >
+            <div className="flex items-center space-x-2">
               <img src={signedworkLogo} alt="Signedwork" className="h-6 w-6" />
               <div className="flex items-center min-w-0 flex-1">
                 <h1 className="text-base md:text-lg font-semibold text-gray-900 whitespace-nowrap">Signedwork</h1>
