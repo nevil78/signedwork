@@ -2454,14 +2454,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Manager not found" });
       }
       
-      // Unassign all employees from this manager
+      // Get teams managed by this manager before deletion
+      const managedTeams = await storage.getTeamsByManager(managerId);
+      
+      // Delete teams managed by this manager (cascades to employee assignments)
+      for (const team of managedTeams) {
+        await storage.deleteCompanyTeam(team.id);
+      }
+      
+      // Unassign any remaining employees from this manager
       const assignedEmployees = await storage.getEmployeesAssignedToManager(managerId);
       for (const emp of assignedEmployees) {
         await storage.unassignEmployeeFromManager(emp.employeeId, req.user.id);
       }
-      
-      // Unassign teams managed by this manager
-      await storage.unassignTeamsFromManager(managerId);
       
       // Soft delete manager
       await storage.deleteManager(managerId);

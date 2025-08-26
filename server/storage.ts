@@ -591,7 +591,7 @@ export interface IStorage {
   getManagersByCompany(companyId: string): Promise<CompanyManager[]>;
   updateManager(id: string, data: Partial<CompanyManager>): Promise<CompanyManager>;
   deleteManager(id: string): Promise<void>;
-  unassignTeamsFromManager(managerId: string): Promise<void>;
+  getTeamsByManager(managerId: string): Promise<CompanyTeam[]>;
   resetManagerPassword(id: string, newPassword: string): Promise<void>;
   updateManagerLastLogin(id: string): Promise<void>;
 
@@ -4632,11 +4632,10 @@ export class DatabaseStorage implements IStorage {
       .where(eq(companyManagers.id, id));
   }
 
-  async unassignTeamsFromManager(managerId: string): Promise<void> {
-    // Set teamManagerId to null for all teams managed by this manager
-    await db
-      .update(companyTeams)
-      .set({ teamManagerId: null })
+  async getTeamsByManager(managerId: string): Promise<CompanyTeam[]> {
+    return await db
+      .select()
+      .from(companyTeams)
       .where(eq(companyTeams.teamManagerId, managerId));
   }
 
