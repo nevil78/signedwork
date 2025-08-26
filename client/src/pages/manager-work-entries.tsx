@@ -489,7 +489,7 @@ const ManagerWorkEntries = memo(function ManagerWorkEntries() {
                                 entry.approvalStatus === 'pending_review' ? 'border-l-orange-500' :
                                 entry.approvalStatus === 'approved' ? 'border-l-green-500' : 'border-l-red-500'
                               } ${selectedEntry?.id === entry.id ? 'ring-2 ring-blue-500' : ''}`}
-                              onClick={() => setSelectedEntry(entry)}
+                              onClick={() => setSelectedEntry(selectedEntry?.id === entry.id ? null : entry)}
                               data-testid={`work-entry-${entry.id}`}
                                 >
                               <CardContent className="p-3">
