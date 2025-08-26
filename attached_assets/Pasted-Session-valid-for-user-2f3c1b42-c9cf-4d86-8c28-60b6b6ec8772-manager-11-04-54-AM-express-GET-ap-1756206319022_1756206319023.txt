@@ -1,0 +1,93 @@
+Session valid for user: 2f3c1b42-c9cf-4d86-8c28-60b6b6ec8772 (manager)
+11:04:54 AM [express] GET /api/manager/profile 304 in 43ms :: {"manager":{"id":"2f3c1b42-c9cf-4d86-8c…
+Session debug: {
+  sessionId: 'C7vxKZdlp2KMTtbAjZdit7rpFCHKwj9b',
+  hasSession: true,
+  sessionUser: {
+    id: '2f3c1b42-c9cf-4d86-8c28-60b6b6ec8772',
+    uniqueId: 'NPPAT396',
+    type: 'manager',
+    companyId: '8f392d4a-2259-44f6-b79d-ad9d6ff249f1',
+    permissions: {
+      id: '41077860-5d66-476e-bab2-3b594360bcb5',
+      managerId: '2f3c1b42-c9cf-4d86-8c28-60b6b6ec8772',
+      canApproveWork: true,
+      canEditEmployees: false,
+      canViewAnalytics: true,
+      canInviteEmployees: false,
+      canManageTeams: false
+    }
+  },
+  sessionCookie: 'sessionId=s%3AC7vxKZdlp2KMTtbAjZdit7rpFCHKwj9b.7wko157IK7FUzMLs55fMnKDSQ45DnWDc9dgOMFDENnY'
+}
+Session valid for user: 2f3c1b42-c9cf-4d86-8c28-60b6b6ec8772 (manager)
+11:04:54 AM [express] GET /api/manager/employees 304 in 81ms :: [{"id":"234fbef8-5306-4a52-bf87-59b1c…
+Session debug: {
+  sessionId: 'C7vxKZdlp2KMTtbAjZdit7rpFCHKwj9b',
+  hasSession: true,
+  sessionUser: {
+    id: '2f3c1b42-c9cf-4d86-8c28-60b6b6ec8772',
+    uniqueId: 'NPPAT396',
+    type: 'manager',
+    companyId: '8f392d4a-2259-44f6-b79d-ad9d6ff249f1',
+    permissions: {
+      id: '41077860-5d66-476e-bab2-3b594360bcb5',
+      managerId: '2f3c1b42-c9cf-4d86-8c28-60b6b6ec8772',
+      canApproveWork: true,
+      canEditEmployees: false,
+      canViewAnalytics: true,
+      canInviteEmployees: false,
+      canManageTeams: false
+    }
+  },
+  sessionCookie: 'sessionId=s%3AC7vxKZdlp2KMTtbAjZdit7rpFCHKwj9b.7wko157IK7FUzMLs55fMnKDSQ45DnWDc9dgOMFDENnY'
+}
+Session valid for user: 2f3c1b42-c9cf-4d86-8c28-60b6b6ec8772 (manager)
+Session debug: {
+  sessionId: 'C7vxKZdlp2KMTtbAjZdit7rpFCHKwj9b',
+  hasSession: true,
+  sessionUser: {
+    id: '2f3c1b42-c9cf-4d86-8c28-60b6b6ec8772',
+    uniqueId: 'NPPAT396',
+    type: 'manager',
+    companyId: '8f392d4a-2259-44f6-b79d-ad9d6ff249f1',
+    permissions: {
+      id: '41077860-5d66-476e-bab2-3b594360bcb5',
+      managerId: '2f3c1b42-c9cf-4d86-8c28-60b6b6ec8772',
+      canApproveWork: true,
+      canEditEmployees: false,
+      canViewAnalytics: true,
+      canInviteEmployees: false,
+      canManageTeams: false
+    }
+  },
+  sessionCookie: 'sessionId=s%3AC7vxKZdlp2KMTtbAjZdit7rpFCHKwj9b.7wko157IK7FUzMLs55fMnKDSQ45DnWDc9dgOMFDENnY'
+}
+Session valid for user: 2f3c1b42-c9cf-4d86-8c28-60b6b6ec8772 (manager)
+11:04:54 AM [express] GET /api/manager/work-entries 304 in 214ms :: [{"id":"f49ea31b-4184-490d-b2ff-9…
+11:04:54 AM [express] GET /api/manager/analytics 304 in 341ms :: {"totalEmployees":1,"pendingWorkEntr…
+Session debug: {
+  sessionId: 'C7vxKZdlp2KMTtbAjZdit7rpFCHKwj9b',
+  hasSession: true,
+  sessionUser: {
+    id: '2f3c1b42-c9cf-4d86-8c28-60b6b6ec8772',
+    uniqueId: 'NPPAT396',
+    type: 'manager',
+    companyId: '8f392d4a-2259-44f6-b79d-ad9d6ff249f1',
+    permissions: {
+      id: '41077860-5d66-476e-bab2-3b594360bcb5',
+      managerId: '2f3c1b42-c9cf-4d86-8c28-60b6b6ec8772',
+      canApproveWork: true,
+      canEditEmployees: false,
+      canViewAnalytics: true,
+      canInviteEmployees: false,
+      canManageTeams: false
+    }
+  },
+  sessionCookie: 'sessionId=s%3AC7vxKZdlp2KMTtbAjZdit7rpFCHKwj9b.7wko157IK7FUzMLs55fMnKDSQ45DnWDc9dgOMFDENnY'
+}
+Session valid for user: 2f3c1b42-c9cf-4d86-8c28-60b6b6ec8772 (manager)
+Manager approve work entry error: TypeError: storage.getCompanyEmployeeByEmployeeId is not a function
+    at <anonymous> (/home/runner/workspace/server/routes.ts:3494:48)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+11:04:59 AM [express] POST /api/manager/work-entries/4f6bfb6f-37a3-4a16-9585-b3c3789f34e9/approve 500…

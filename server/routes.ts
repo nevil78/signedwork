@@ -3491,8 +3491,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Check if the employee who created this work entry is assigned to this manager
-      const employeeAssignment = await storage.getCompanyEmployeeByEmployeeId(workEntry.employeeId);
-      if (!employeeAssignment || employeeAssignment.assignedManagerId !== req.user.id) {
+      const { companyEmployees } = await import('../shared/schema');
+      const { eq, and } = await import('drizzle-orm');
+      const { db } = await import('./db');
+      
+      const [employeeAssignment] = await db
+        .select()
+        .from(companyEmployees)
+        .where(and(
+          eq(companyEmployees.employeeId, workEntry.employeeId),
+          eq(companyEmployees.assignedManagerId, req.user.id),
+          eq(companyEmployees.isActive, true)
+        ));
+
+      if (!employeeAssignment) {
         return res.status(403).json({ 
           message: "You can only approve work entries from employees assigned to you" 
         });
