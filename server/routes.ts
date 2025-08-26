@@ -1120,7 +1120,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Manager authentication routes
 
-  // Manager login - Simple working version
+  // Manager login - Database authentication
   app.post("/api/manager/auth/login", async (req, res) => {
     try {
       const { uniqueId, password } = req.body;
@@ -1131,39 +1131,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Test with our known working manager
-      if (uniqueId === "AHM123" && password === "testpass123") {
-        const manager = {
-          id: "2385877a-7d09-4253-adf3-1972b67964b4",
-          uniqueId: "AHM123",
-          managerName: "Arham Test Manager",
-          managerEmail: "manager@arham.com",
-          companyId: "8f392d4a-2259-44f6-b79d-ad9d6ff249f1",
-          permissionLevel: "team_lead",
-          permissions: {
-            canApproveWork: true,
-            canViewAnalytics: true,
-            canEditEmployees: false
-          }
-        };
-        
-        // Store manager session
-        (req.session as any).user = {
+      // Authenticate manager against database
+      const manager = await storage.authenticateManager(uniqueId, password);
+      
+      if (!manager) {
+        return res.status(401).json({ message: "Invalid manager ID or password" });
+      }
+
+      // Get manager permissions
+      const permissions = await storage.getManagerPermissions(manager.id);
+      
+      // Store manager session
+      (req.session as any).user = {
+        id: manager.id,
+        uniqueId: manager.uniqueId,
+        type: "manager",
+        companyId: manager.companyId,
+        permissionLevel: manager.permissionLevel,
+        permissions: permissions || {
+          canApproveWork: true,
+          canEditEmployees: false,
+          canViewAnalytics: true,
+          canInviteEmployees: false,
+          canManageTeams: false
+        }
+      };
+      
+      return res.json({ 
+        message: "Manager login successful",
+        manager: {
           id: manager.id,
           uniqueId: manager.uniqueId,
-          type: "manager",
+          managerName: manager.managerName,
+          managerEmail: manager.managerEmail,
           companyId: manager.companyId,
           permissionLevel: manager.permissionLevel,
-          permissions: manager.permissions
-        };
-        
-        return res.json({ 
-          message: "Manager login successful",
-          manager: manager
-        });
-      }
-      
-      res.status(401).json({ message: "Invalid manager ID or password" });
+          permissions: permissions
+        }
+      });
     } catch (error: any) {
       console.error("Manager login error:", error);
       res.status(500).json({ message: "Manager login failed" });
