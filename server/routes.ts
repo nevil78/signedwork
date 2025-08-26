@@ -1165,7 +1165,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         uniqueId: manager.uniqueId,
         type: "manager",
         companyId: manager.companyId,
-        permissionLevel: manager.permissionLevel,
         permissions: permissions || {
           canApproveWork: true,
           canEditEmployees: false,
@@ -1183,7 +1182,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           managerName: manager.managerName,
           managerEmail: manager.managerEmail,
           companyId: manager.companyId,
-          permissionLevel: manager.permissionLevel,
           permissions: permissions
         }
       });
