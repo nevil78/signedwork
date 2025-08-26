@@ -549,26 +549,16 @@ export default function CompanyHierarchySimple() {
                 {/* Show real managers from managers table */}
                 {Array.isArray(managers) && managers.length > 0 ? (
                   managers.map((manager: any) => (
-                      <div key={manager.id} className="p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
-                        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-                          <div className="flex items-start gap-3 min-w-0 flex-1">
-                            <UserCog className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
-                            <div className="min-w-0 flex-1">
-                              <div className="flex items-center gap-2 mb-1">
-                                <h4 className="font-semibold text-blue-900 truncate">{manager.managerName}</h4>
-                                <div className={`w-2 h-2 rounded-full ${manager.isActive !== false ? 'bg-green-500' : 'bg-red-500'}`} />
-                              </div>
-                              <div className="text-xs text-blue-700 space-y-1">
-                                <div className="truncate">Username: {manager.uniqueId}</div>
-                                <div className="truncate">Email: {manager.managerEmail}</div>
-                                <div>Role: {manager.permissionLevel?.replace('_', ' ') || 'Manager'}</div>
-                                <div className="truncate">Team: {getTeamName(manager.teamId) || 'No team assigned'}</div>
-                                <div className={`text-xs font-medium ${manager.isActive !== false ? 'text-green-700' : 'text-red-700'}`}>
-                                  {manager.isActive !== false ? 'Active' : 'Disabled'}
-                                </div>
-                              </div>
+                      <div key={manager.id} className="p-3 sm:p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+                        <div className="space-y-3">
+                          {/* Header with Name, Status and Badge */}
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2 min-w-0 flex-1">
+                              <UserCog className="w-5 h-5 text-blue-600 shrink-0" />
+                              <h4 className="font-semibold text-blue-900 truncate text-sm sm:text-base">{manager.managerName}</h4>
+                              <div className={`w-2 h-2 rounded-full ${manager.isActive !== false ? 'bg-green-500' : 'bg-red-500'}`} />
                             </div>
-                            <Badge variant={manager.permissionLevel === "company_admin" ? "default" : "secondary"} className="shrink-0">
+                            <Badge variant={manager.permissionLevel === "company_admin" ? "default" : "secondary"} className="shrink-0 text-xs">
                               <span className="hidden sm:inline">
                                 {manager.permissionLevel === "company_admin" ? "Admin" : 
                                  manager.permissionLevel === "branch_manager" ? "Branch Manager" : "Team Lead"}
@@ -579,16 +569,37 @@ export default function CompanyHierarchySimple() {
                               </span>
                             </Badge>
                           </div>
-                          <div className="flex gap-2 shrink-0">
+                          
+                          {/* Manager Details */}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs sm:text-sm text-blue-700">
+                            <div className="truncate">
+                              <span className="font-medium">Username:</span> {manager.uniqueId}
+                            </div>
+                            <div className="truncate">
+                              <span className="font-medium">Status:</span> 
+                              <span className={`ml-1 font-medium ${manager.isActive !== false ? 'text-green-700' : 'text-red-700'}`}>
+                                {manager.isActive !== false ? 'Active' : 'Disabled'}
+                              </span>
+                            </div>
+                            <div className="truncate col-span-1 sm:col-span-2">
+                              <span className="font-medium">Email:</span> {manager.managerEmail}
+                            </div>
+                            <div className="truncate col-span-1 sm:col-span-2">
+                              <span className="font-medium">Team:</span> {getTeamName(manager.teamId) || 'No team assigned'}
+                            </div>
+                          </div>
+                          
+                          {/* Manage Button */}
+                          <div className="flex justify-end pt-1">
                             <Button 
                               size="sm" 
                               variant="outline" 
-                              className="text-blue-600 w-full sm:w-auto"
+                              className="text-blue-600 px-3 py-1"
                               onClick={() => handleManageManager(manager)}
                               data-testid={`manage-manager-${manager.id}`}
                             >
-                              <Shield className="w-4 h-4 sm:mr-1" />
-                              <span className="hidden sm:inline">Manage</span>
+                              <Shield className="w-4 h-4 mr-1" />
+                              <span>Manage</span>
                             </Button>
                           </div>
                         </div>
