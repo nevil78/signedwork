@@ -155,7 +155,7 @@ export default function CompanyHierarchySimple() {
         assignment: {
           ...employeeAssignment,
           branchId: employeeAssignment.branchId === "headquarters" ? null : employeeAssignment.branchId,
-          teamId: employeeAssignment.teamId || null
+          teamId: employeeAssignment.teamId === "no_team" ? null : employeeAssignment.teamId || null
         }
       });
     }
@@ -474,7 +474,7 @@ export default function CompanyHierarchySimple() {
                       <SelectValue placeholder="Select team" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">No Team</SelectItem>
+                      <SelectItem value="no_team">No Team</SelectItem>
                       {Array.isArray(teams) && teams
                         .filter((team: any) => 
                           employeeAssignment.branchId === "headquarters" 
