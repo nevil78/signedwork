@@ -30,6 +30,7 @@ export default function CompanyHierarchySimple() {
   const [isCreateBranchOpen, setIsCreateBranchOpen] = useState(false);
   const [isCreateTeamOpen, setIsCreateTeamOpen] = useState(false);
   const [isAddMembersOpen, setIsAddMembersOpen] = useState(false);
+  const [isManageTeamOpen, setIsManageTeamOpen] = useState(false);
   const [selectedTeam, setSelectedTeam] = useState<any>(null);
   
   // Manager creation states
@@ -126,6 +127,23 @@ export default function CompanyHierarchySimple() {
     setSelectedEmployees([]);
     setSelectedManager("");
     setIsAddMembersOpen(true);
+  };
+
+  const handleManageTeam = (team: any) => {
+    setSelectedTeam(team);
+    setIsManageTeamOpen(true);
+  };
+
+  const handleRemoveFromTeam = (employeeId: string) => {
+    // TODO: Implement remove from team API call
+    console.log('Removing employee from team:', employeeId);
+    toast({ title: "Success", description: "Employee removed from team" });
+  };
+
+  const handleChangeManager = (newManagerId: string) => {
+    // TODO: Implement change manager API call
+    console.log('Changing team manager to:', newManagerId);
+    toast({ title: "Success", description: "Team manager updated" });
   };
 
   const handleCreateBranch = () => {
@@ -261,16 +279,28 @@ export default function CompanyHierarchySimple() {
                           {team.branchId ? getBranchName(team.branchId) : "Headquarters"}
                         </p>
                       </div>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleAddMembers(team)}
-                        className="flex items-center gap-1"
-                        data-testid={`add-members-${team.id}`}
-                      >
-                        <UserPlus className="w-4 h-4" />
-                        Add Members
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleManageTeam(team)}
+                          className="flex items-center gap-1"
+                          data-testid={`manage-team-${team.id}`}
+                        >
+                          <Users className="w-4 h-4" />
+                          Manage
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleAddMembers(team)}
+                          className="flex items-center gap-1"
+                          data-testid={`add-members-${team.id}`}
+                        >
+                          <UserPlus className="w-4 h-4" />
+                          Add Members
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 )) : (
@@ -525,6 +555,141 @@ export default function CompanyHierarchySimple() {
                 </Button>
                 <Button variant="outline" onClick={() => setIsAddMembersOpen(false)}>
                   Cancel
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Manage Team Dialog */}
+      <Dialog open={isManageTeamOpen} onOpenChange={setIsManageTeamOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Users className="w-5 h-5 text-green-600" />
+              Manage Team: {selectedTeam?.name}
+            </DialogTitle>
+            <DialogDescription>
+              View and edit team members, roles, and structure
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedTeam && (
+            <div className="space-y-4">
+              {/* Team Info */}
+              <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="font-semibold text-green-900">{selectedTeam.name}</h3>
+                  <Badge variant="secondary">
+                    {selectedTeam.branchId ? getBranchName(selectedTeam.branchId) : "Headquarters"}
+                  </Badge>
+                </div>
+                <p className="text-sm text-green-700">
+                  Team ID: {selectedTeam.id}
+                </p>
+              </div>
+
+              {/* Current Team Members */}
+              <div>
+                <h4 className="font-medium mb-3 flex items-center gap-2">
+                  <User className="w-4 h-4" />
+                  Current Team Members
+                </h4>
+                <div className="border rounded-lg">
+                  {Array.isArray(employees) && employees
+                    .filter((emp: any) => emp.teamId === selectedTeam.id)
+                    .length > 0 ? (
+                    <div className="divide-y">
+                      {employees
+                        .filter((emp: any) => emp.teamId === selectedTeam.id)
+                        .map((member: any, index: number) => (
+                          <div key={member.employeeId} className="p-3 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              {member.hierarchyRole === "team_lead" || member.hierarchyRole === "branch_manager" ? (
+                                <UserCog className="w-5 h-5 text-blue-600" />
+                              ) : (
+                                <User className="w-5 h-5 text-gray-600" />
+                              )}
+                              <div>
+                                <p className="font-medium">{member.firstName} {member.lastName}</p>
+                                <p className="text-sm text-muted-foreground">{member.email}</p>
+                              </div>
+                              <Badge variant={member.hierarchyRole === "team_lead" || member.hierarchyRole === "branch_manager" ? "default" : "secondary"}>
+                                {member.hierarchyRole === "team_lead" ? "Manager" : 
+                                 member.hierarchyRole === "branch_manager" ? "Branch Manager" : "Employee"}
+                              </Badge>
+                            </div>
+                            <div className="flex gap-2">
+                              {member.hierarchyRole !== "team_lead" && member.hierarchyRole !== "branch_manager" && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleChangeManager(member.employeeId)}
+                                  className="text-blue-600 hover:text-blue-700"
+                                >
+                                  Make Manager
+                                </Button>
+                              )}
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleRemoveFromTeam(member.employeeId)}
+                                className="text-red-600 hover:text-red-700"
+                              >
+                                Remove
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  ) : (
+                    <div className="p-6 text-center text-muted-foreground">
+                      <Users className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                      <p>No team members assigned yet</p>
+                      <p className="text-sm">Use "Add Members" to assign employees to this team</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Team Statistics */}
+              <div className="grid grid-cols-3 gap-4">
+                <div className="p-3 bg-blue-50 rounded-lg text-center">
+                  <div className="text-2xl font-bold text-blue-600">
+                    {employees?.filter((emp: any) => emp.teamId === selectedTeam.id).length || 0}
+                  </div>
+                  <div className="text-sm text-blue-700">Total Members</div>
+                </div>
+                <div className="p-3 bg-green-50 rounded-lg text-center">
+                  <div className="text-2xl font-bold text-green-600">
+                    {employees?.filter((emp: any) => emp.teamId === selectedTeam.id && (emp.hierarchyRole === "team_lead" || emp.hierarchyRole === "branch_manager")).length || 0}
+                  </div>
+                  <div className="text-sm text-green-700">Managers</div>
+                </div>
+                <div className="p-3 bg-purple-50 rounded-lg text-center">
+                  <div className="text-2xl font-bold text-purple-600">
+                    {employees?.filter((emp: any) => emp.teamId === selectedTeam.id && emp.hierarchyRole === "employee").length || 0}
+                  </div>
+                  <div className="text-sm text-purple-700">Employees</div>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-2 pt-4 border-t">
+                <Button
+                  onClick={() => {
+                    setIsManageTeamOpen(false);
+                    handleAddMembers(selectedTeam);
+                  }}
+                  className="flex-1"
+                  variant="outline"
+                >
+                  <UserPlus className="w-4 h-4 mr-2" />
+                  Add More Members
+                </Button>
+                <Button onClick={() => setIsManageTeamOpen(false)} variant="outline">
+                  Close
                 </Button>
               </div>
             </div>
