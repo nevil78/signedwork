@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'wouter';
-import { Building2, Users, FileText, Briefcase, UserCheck, LogOut, Settings, ChevronDown, Menu } from 'lucide-react';
+import { Building2, Users, FileText, Briefcase, UserCheck, LogOut, Settings, ChevronDown, Menu, HelpCircle } from 'lucide-react';
 import { FeedbackButton } from '@/components/FeedbackButton';
 import signedworkLogo from "@assets/Signed-work-Logo (1)_1755168042120.png";
 import { Button } from '@/components/ui/button';
@@ -215,6 +215,11 @@ export default function CompanyNavHeader({ companyId, companyName }: CompanyNavH
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                 </div>
+                
+                <DropdownMenuItem onClick={() => setLocation('/help')}>
+                  <HelpCircle className="h-4 w-4 mr-2" />
+                  Help & Tutorials
+                </DropdownMenuItem>
                 
                 <DropdownMenuItem asChild>
                   <Link href="/company-settings" className="flex items-center cursor-pointer" data-testid="link-company-settings">

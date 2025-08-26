@@ -45,6 +45,7 @@ import FeedbackPage from "@/pages/feedback";
 import ContactPage from "@/pages/contact";
 import AboutPage from "@/pages/about";
 import SupportPage from "@/pages/support";
+import HelpSettingsPage from "@/pages/help-settings";
 // Lazy load legal pages for better performance
 import { lazy, Suspense } from "react";
 const TermsOfService = lazy(() => import("@/pages/terms"));
@@ -110,6 +111,7 @@ function Router() {
       <Route path="/contact" component={ContactPage} />
       <Route path="/about" component={AboutPage} />
       <Route path="/support" component={SupportPage} />
+      <Route path="/help" component={HelpSettingsPage} />
       <Route path="/terms" component={() => <Suspense fallback={<PageLoader />}><TermsOfService /></Suspense>} />
       <Route path="/privacy" component={() => <Suspense fallback={<PageLoader />}><PrivacyPolicy /></Suspense>} />
 

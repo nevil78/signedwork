@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'wouter';
-import { User, Briefcase, Search, LogOut, Settings, ChevronDown, ShieldCheck, Menu, MessageSquare, BarChart3, Clock } from 'lucide-react';
+import { User, Briefcase, Search, LogOut, Settings, ChevronDown, ShieldCheck, Menu, MessageSquare, BarChart3, Clock, HelpCircle } from 'lucide-react';
 import { FeedbackButton } from '@/components/FeedbackButton';
 import signedworkLogo from "@assets/Signed-work-Logo (1)_1755168042120.png";
 import { Button } from '@/components/ui/button';
@@ -307,6 +307,11 @@ export default function EmployeeNavHeader({ employeeId, employeeName }: Employee
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                 </div>
+                
+                <DropdownMenuItem onClick={() => setLocation('/help')}>
+                  <HelpCircle className="h-4 w-4 mr-2" />
+                  Help & Tutorials
+                </DropdownMenuItem>
                 
                 <DropdownMenuItem asChild>
                   <Link href="/change-password" className="flex items-center cursor-pointer" data-testid="link-change-password">
