@@ -40,6 +40,7 @@ export default function CompanyHierarchySimple() {
   const [newManager, setNewManager] = useState({ firstName: "", lastName: "", email: "", password: "", username: "" });
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [newTempPassword, setNewTempPassword] = useState("");
+  const [showToggleConfirmDialog, setShowToggleConfirmDialog] = useState(false);
   
   // Form states
   const [newBranch, setNewBranch] = useState({ name: "", location: "" });
@@ -376,6 +377,29 @@ export default function CompanyHierarchySimple() {
 
   const handleToggleManagerStatus = async () => {
     if (selectedManagerForEdit) {
+      // Check if manager has a team assigned
+      const managerTeam = teams?.find(team => team.teamManagerId === selectedManagerForEdit.id);
+      const teamMembers = managerTeam ? employees?.filter(emp => emp.teamId === managerTeam.id) || [] : [];
+      
+      const currentStatus = selectedManagerForEdit.isActive ?? true;
+      
+      // If disabling and manager has team/members, show confirmation
+      if (currentStatus && (managerTeam || teamMembers.length > 0)) {
+        setShowToggleConfirmDialog(true);
+        return;
+      }
+      
+      // Direct toggle for managers without teams
+      const newStatus = !currentStatus;
+      toggleManagerStatusMutation.mutate({
+        managerId: selectedManagerForEdit.id,
+        isActive: newStatus
+      });
+    }
+  };
+  
+  const handleConfirmToggleStatus = () => {
+    if (selectedManagerForEdit) {
       const currentStatus = selectedManagerForEdit.isActive ?? true;
       const newStatus = !currentStatus;
       
@@ -383,6 +407,7 @@ export default function CompanyHierarchySimple() {
         managerId: selectedManagerForEdit.id,
         isActive: newStatus
       });
+      setShowToggleConfirmDialog(false);
     }
   };
 
@@ -1268,6 +1293,92 @@ export default function CompanyHierarchySimple() {
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Toggle Status Confirmation Dialog */}
+      <Dialog open={showToggleConfirmDialog} onOpenChange={setShowToggleConfirmDialog}>
+        <DialogContent className="max-w-md mx-4">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-orange-600">
+              <Shield className="w-5 h-5" />
+              Confirm Manager Disable
+            </DialogTitle>
+            <DialogDescription>
+              This action will have significant impact on the team structure
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedManagerForEdit && (
+            <div className="space-y-4">
+              {/* Manager Info */}
+              <div className="p-3 bg-orange-50 rounded-lg border border-orange-200">
+                <p className="font-medium text-orange-900">
+                  Disabling: {selectedManagerForEdit.managerName}
+                </p>
+                <p className="text-sm text-orange-700">
+                  Role: {selectedManagerForEdit.permissionLevel?.replace('_', ' ') || 'Manager'}
+                </p>
+              </div>
+
+              {/* Impact Preview */}
+              <div className="space-y-3">
+                <h4 className="font-medium text-red-900">Impact of this action:</h4>
+                
+                {(() => {
+                  const managerTeam = teams?.find(team => team.teamManagerId === selectedManagerForEdit.id);
+                  const teamMembers = managerTeam ? employees?.filter(emp => emp.teamId === managerTeam.id) || [] : [];
+                  
+                  return (
+                    <>
+                      {managerTeam && (
+                        <div className="p-3 bg-red-50 rounded-lg border border-red-200">
+                          <div className="text-sm text-red-900 space-y-1">
+                            <div className="font-medium">• Team "{managerTeam.name}" will lose its manager</div>
+                            <div>• {teamMembers.length} team members will be unassigned from manager supervision</div>
+                            <div>• Team structure will need manual reassignment</div>
+                          </div>
+                        </div>
+                      )}
+                      
+                      <div className="p-3 bg-red-50 rounded-lg border border-red-200">
+                        <div className="text-sm text-red-900 space-y-1">
+                          <div className="font-medium">• Manager login access will be disabled</div>
+                          <div>• All manager permissions will be suspended</div>
+                          <div>• Work verification capability will be removed</div>
+                        </div>
+                      </div>
+                    </>
+                  );
+                })()}
+              </div>
+
+              {/* Warning */}
+              <div className="p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                <p className="text-sm text-yellow-800">
+                  <strong>Note:</strong> You can re-enable this manager later, but team assignments will need to be manually restored.
+                </p>
+              </div>
+
+              <div className="flex gap-2 pt-4 border-t">
+                <Button 
+                  onClick={handleConfirmToggleStatus}
+                  variant="destructive"
+                  className="flex-1"
+                  disabled={toggleManagerStatusMutation.isPending}
+                >
+                  {toggleManagerStatusMutation.isPending ? "Disabling..." : "Yes, Disable Manager"}
+                </Button>
+                <Button 
+                  onClick={() => setShowToggleConfirmDialog(false)} 
+                  variant="outline"
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
