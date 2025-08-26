@@ -878,7 +878,7 @@ export default function CompanyHierarchySimple() {
                                 <span className="text-xs text-muted-foreground truncate block">
                                   {employee.email}
                                   {isAlreadyInTeam && (
-                                    <span className="ml-1 text-blue-600 font-medium">• Already in this team</span>
+                                    <span className="ml-1 text-blue-600 font-medium">• Already in team {selectedTeam?.name}</span>
                                   )}
                                 </span>
                               </div>
