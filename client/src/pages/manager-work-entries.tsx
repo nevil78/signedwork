@@ -71,6 +71,11 @@ const ManagerWorkEntries = memo(function ManagerWorkEntries() {
   const [rating, setRating] = useState(0);
   const [approvalFeedback, setApprovalFeedback] = useState('');
   const [feedback, setFeedback] = useState('');
+  
+  // Search and filter states
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState('all');
+  const [expandedEmployees, setExpandedEmployees] = useState<Record<string, boolean>>({});
 
   // Approve work entry mutation - same pattern as company
   const approveMutation = useMutation({
@@ -174,6 +179,45 @@ const ManagerWorkEntries = memo(function ManagerWorkEntries() {
     groups[employeeId].entries.push(entry);
     return groups;
   }, {}) || {};
+
+  // Filter grouped entries based on search and selected employee
+  const filteredGroupedEntries = Object.entries(groupedEntries).filter(([employeeId, group]: [string, any]) => {
+    // Filter by selected employee
+    if (selectedEmployeeId !== 'all' && employeeId !== selectedEmployeeId) {
+      return false;
+    }
+    
+    // Filter by search term (employee name or entry titles)
+    if (searchTerm) {
+      const searchLower = searchTerm.toLowerCase();
+      const employeeNameMatch = group.employeeName.toLowerCase().includes(searchLower);
+      const entryTitleMatch = group.entries.some((entry: any) => 
+        entry.title.toLowerCase().includes(searchLower) ||
+        entry.description?.toLowerCase().includes(searchLower)
+      );
+      return employeeNameMatch || entryTitleMatch;
+    }
+    
+    return true;
+  }).reduce((obj: any, [employeeId, group]) => {
+    obj[employeeId] = group;
+    return obj;
+  }, {});
+
+  // Get unique employees for dropdown
+  const employeeOptions = Object.values(groupedEntries).map((group: any) => ({
+    id: group.employee.id,
+    name: group.employeeName,
+    entryCount: group.entries.length
+  }));
+
+  // Toggle employee expansion
+  const toggleEmployeeExpansion = (employeeId: string) => {
+    setExpandedEmployees(prev => ({
+      ...prev,
+      [employeeId]: !prev[employeeId]
+    }));
+  };
 
   // Use same handler patterns as company work entries
   const handleApprove = (entry: any) => {
@@ -282,43 +326,89 @@ const ManagerWorkEntries = memo(function ManagerWorkEntries() {
           </Card>
         </div>
 
-        {/* Filters */}
+        {/* Search and Filter Controls */}
         <Card className="mb-6">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Filter className="h-5 w-5" />
-              Filters
+              Search & Filter
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Search Bar */}
               <div>
-                <label className="text-sm font-medium mb-2 block">Status</label>
-                <Select value={filters.status} onValueChange={(value) => setFilters(prev => ({ ...prev, status: value }))}>
-                  <SelectTrigger data-testid="select-status-filter">
-                    <SelectValue />
+                <label className="text-sm font-medium mb-2 block">Search</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Search employees or work entries..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                    data-testid="input-search"
+                  />
+                </div>
+              </div>
+
+              {/* Employee Filter Dropdown */}
+              <div>
+                <label className="text-sm font-medium mb-2 block">Employee Filter</label>
+                <Select value={selectedEmployeeId} onValueChange={setSelectedEmployeeId}>
+                  <SelectTrigger data-testid="select-employee-filter">
+                    <SelectValue placeholder="Select employee..." />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="completed">Completed</SelectItem>
-                    <SelectItem value="in_progress">In Progress</SelectItem>
+                    <SelectItem value="all">All Employees ({Object.keys(groupedEntries).length})</SelectItem>
+                    {employeeOptions.map((employee) => (
+                      <SelectItem key={employee.id} value={employee.id}>
+                        {employee.name} ({employee.entryCount} {employee.entryCount === 1 ? 'entry' : 'entries'})
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
-              <div>
-                <label className="text-sm font-medium mb-2 block">Approval Status</label>
-                <Select value={filters.approvalStatus} onValueChange={(value) => setFilters(prev => ({ ...prev, approvalStatus: value }))}>
-                  <SelectTrigger data-testid="select-approval-filter">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Approvals</SelectItem>
-                    <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="manager_approved">Approved</SelectItem>
-                    <SelectItem value="manager_rejected">Needs Changes</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            </div>
+
+            {/* Quick Filter Buttons */}
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Button
+                variant={selectedEmployeeId === 'all' && !searchTerm ? "default" : "outline"}
+                size="sm"
+                onClick={() => {
+                  setSelectedEmployeeId('all');
+                  setSearchTerm('');
+                }}
+                data-testid="button-show-all"
+              >
+                Show All
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const allEmployeeIds = Object.keys(groupedEntries);
+                  const newExpanded: Record<string, boolean> = {};
+                  allEmployeeIds.forEach(id => newExpanded[id] = true);
+                  setExpandedEmployees(newExpanded);
+                }}
+                data-testid="button-expand-all"
+              >
+                Expand All
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setExpandedEmployees({})}
+                data-testid="button-collapse-all"
+              >
+                Collapse All
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -328,93 +418,129 @@ const ManagerWorkEntries = memo(function ManagerWorkEntries() {
           <div>
             <h2 className="text-lg font-semibold mb-4">Work Entries by Employee</h2>
             <div className="space-y-6">
-              {Object.keys(groupedEntries).length === 0 ? (
+              {Object.keys(filteredGroupedEntries).length === 0 ? (
                 <Card>
                   <CardContent className="p-8 text-center">
                     <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-600">No work entries found for your team.</p>
+                    <p className="text-gray-600">
+                      {searchTerm || selectedEmployeeId !== 'all' 
+                        ? 'No work entries match your search criteria.' 
+                        : 'No work entries found for your team.'}
+                    </p>
+                    {(searchTerm || selectedEmployeeId !== 'all') && (
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="mt-2"
+                        onClick={() => {
+                          setSearchTerm('');
+                          setSelectedEmployeeId('all');
+                        }}
+                      >
+                        Clear Filters
+                      </Button>
+                    )}
                   </CardContent>
                 </Card>
               ) : (
-                Object.values(groupedEntries).map((employeeGroup: any) => (
-                  <div key={employeeGroup.employee.id} className="border rounded-lg bg-white">
-                    {/* Employee Header */}
-                    <div className="p-4 border-b bg-gray-50 rounded-t-lg">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-medium">
-                            {employeeGroup.employeeName.split(' ').map((n: string) => n[0]).join('')}
+                Object.entries(filteredGroupedEntries).map(([employeeId, employeeGroup]: [string, any]) => {
+                  const isExpanded = expandedEmployees[employeeId];
+                  
+                  return (
+                    <div key={employeeId} className="border rounded-lg bg-white shadow-sm">
+                      {/* Employee Header - Clickable */}
+                      <div 
+                        className="p-4 border-b bg-gray-50 rounded-t-lg cursor-pointer hover:bg-gray-100 transition-colors"
+                        onClick={() => toggleEmployeeExpansion(employeeId)}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-medium">
+                              {employeeGroup.employeeName.split(' ').map((n: string) => n[0]).join('')}
+                            </div>
+                            <div>
+                              <h3 className="font-semibold text-gray-900">{employeeGroup.employeeName}</h3>
+                              <p className="text-sm text-gray-600">{employeeGroup.employee.email}</p>
+                            </div>
                           </div>
-                          <div>
-                            <h3 className="font-semibold text-gray-900">{employeeGroup.employeeName}</h3>
-                            <p className="text-sm text-gray-600">{employeeGroup.employee.email}</p>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="text-xs">
+                              {employeeGroup.entries.length} {employeeGroup.entries.length === 1 ? 'entry' : 'entries'}
+                            </Badge>
+                            <svg 
+                              className={`w-5 h-5 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                              fill="none" 
+                              stroke="currentColor" 
+                              viewBox="0 0 24 24"
+                            >
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
                           </div>
                         </div>
-                        <Badge variant="outline" className="text-xs">
-                          {employeeGroup.entries.length} {employeeGroup.entries.length === 1 ? 'entry' : 'entries'}
-                        </Badge>
                       </div>
-                    </div>
-                    
-                    {/* Employee's Work Entries */}
-                    <div className="p-4 space-y-3">
-                      {employeeGroup.entries.map((entry: any, index: number) => (
-                        <Card 
-                          key={entry.id} 
-                          className={`cursor-pointer transition-all hover:shadow-md border-l-4 ${
-                            entry.approvalStatus === 'pending_review' ? 'border-l-orange-500' :
-                            entry.approvalStatus === 'approved' ? 'border-l-green-500' : 'border-l-red-500'
-                          } ${selectedEntry?.id === entry.id ? 'ring-2 ring-blue-500' : ''}`}
-                          onClick={() => setSelectedEntry(entry)}
-                          data-testid={`work-entry-${entry.id}`}
-                        >
-                          <CardContent className="p-3">
-                            <div className="flex justify-between items-start mb-2">
-                              <div className="flex items-center gap-2">
-                                <span className="text-xs text-gray-500 font-mono">#{index + 1}</span>
-                                <h4 className="font-medium text-sm">{entry.title}</h4>
-                              </div>
-                              <Badge 
-                                variant={
-                                  entry.approvalStatus === 'pending_review' ? 'secondary' :
-                                  entry.approvalStatus === 'approved' ? 'default' : 'destructive'
-                                }
-                                className={`text-xs ${
-                                  entry.approvalStatus === 'approved' ? 'bg-green-600 text-white' : ''
-                                }`}
-                              >
-                                {entry.approvalStatus === 'pending_review' && 'Pending'}
-                                {entry.approvalStatus === 'approved' && (
-                                  <span className="flex items-center gap-1">
-                                    <Shield className="w-2 h-2" />
-                                    Verified
-                                  </span>
-                                )}
-                                {entry.approvalStatus === 'needs_changes' && 'Changes'}
-                              </Badge>
-                            </div>
-                            
-                            <div className="text-xs text-gray-600 space-y-1">
-                              <div className="flex items-center gap-2">
-                                <Calendar className="h-3 w-3" />
-                                {new Date(entry.createdAt).toLocaleDateString()}
-                              </div>
-                              {entry.companyRating && (
-                                <div className="flex items-center gap-1">
-                                  {getRatingStars(entry.companyRating)}
+                      
+                      {/* Employee's Work Entries - Collapsible */}
+                      {isExpanded && (
+                        <div className="p-4 space-y-3">
+                          {employeeGroup.entries.map((entry: any, index: number) => (
+                            <Card 
+                              key={entry.id} 
+                              className={`cursor-pointer transition-all hover:shadow-md border-l-4 ${
+                                entry.approvalStatus === 'pending_review' ? 'border-l-orange-500' :
+                                entry.approvalStatus === 'approved' ? 'border-l-green-500' : 'border-l-red-500'
+                              } ${selectedEntry?.id === entry.id ? 'ring-2 ring-blue-500' : ''}`}
+                              onClick={() => setSelectedEntry(entry)}
+                              data-testid={`work-entry-${entry.id}`}
+                                >
+                              <CardContent className="p-3">
+                                <div className="flex justify-between items-start mb-2">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs text-gray-500 font-mono">#{index + 1}</span>
+                                    <h4 className="font-medium text-sm">{entry.title}</h4>
+                                  </div>
+                                  <Badge 
+                                    variant={
+                                      entry.approvalStatus === 'pending_review' ? 'secondary' :
+                                      entry.approvalStatus === 'approved' ? 'default' : 'destructive'
+                                    }
+                                    className={`text-xs ${
+                                      entry.approvalStatus === 'approved' ? 'bg-green-600 text-white' : ''
+                                    }`}
+                                  >
+                                    {entry.approvalStatus === 'pending_review' && 'Pending'}
+                                    {entry.approvalStatus === 'approved' && (
+                                      <span className="flex items-center gap-1">
+                                        <Shield className="w-2 h-2" />
+                                        Verified
+                                      </span>
+                                    )}
+                                    {entry.approvalStatus === 'needs_changes' && 'Changes'}
+                                  </Badge>
                                 </div>
-                              )}
-                            </div>
-                            
-                            <p className="text-xs text-gray-700 mt-2 line-clamp-2">
-                              {entry.description}
-                            </p>
-                          </CardContent>
-                        </Card>
-                      ))}
+                                
+                                <div className="text-xs text-gray-600 space-y-1">
+                                  <div className="flex items-center gap-2">
+                                    <Calendar className="h-3 w-3" />
+                                    {new Date(entry.createdAt).toLocaleDateString()}
+                                  </div>
+                                  {entry.companyRating && (
+                                    <div className="flex items-center gap-1">
+                                      {getRatingStars(entry.companyRating)}
+                                    </div>
+                                  )}
+                                </div>
+                                
+                                <p className="text-xs text-gray-700 mt-2 line-clamp-2">
+                                  {entry.description}
+                                </p>
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           </div>
