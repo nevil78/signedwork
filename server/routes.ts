@@ -3574,6 +3574,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update team
+  app.patch("/api/company/teams/:teamId", requireCompany, async (req: any, res) => {
+    try {
+      const { teamId } = req.params;
+      const updateData = req.body;
+      
+      // Verify team belongs to this company
+      const existingTeam = await storage.getCompanyTeam(teamId);
+      if (!existingTeam || existingTeam.companyId !== req.user.id) {
+        return res.status(404).json({ message: "Team not found" });
+      }
+      
+      const updatedTeam = await storage.updateCompanyTeam(teamId, updateData);
+      
+      emitRealTimeUpdate('team-updated', {
+        team: updatedTeam,
+        companyId: req.user.id
+      }, [`company-${req.user.id}`]);
+      
+      res.json(updatedTeam);
+    } catch (error) {
+      console.error("Update company team error:", error);
+      res.status(500).json({ message: "Failed to update company team" });
+    }
+  });
+
   app.get("/api/company/teams/:id/members", requireCompany, async (req: any, res) => {
     try {
       const { id } = req.params;

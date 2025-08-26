@@ -222,14 +222,9 @@ export default function CompanyHierarchySimple() {
   const handleSaveBulkAssignment = async () => {
     if (selectedTeam && selectedManager && selectedEmployees.length > 0) {
       try {
-        // Assign manager to team
-        await apiRequest("PATCH", `/api/company/employees/${selectedManager}/hierarchy-role`, {
-          teamId: selectedTeam.id,
-          hierarchyRole: "team_lead",
-          branchId: selectedTeam.branchId,
-          canVerifyWork: true,
-          canManageEmployees: true,
-          verificationScope: "team"
+        // Update team to assign the manager
+        await apiRequest("PATCH", `/api/company/teams/${selectedTeam.id}`, {
+          teamManagerId: selectedManager
         });
 
         // Assign employees to team
@@ -247,8 +242,9 @@ export default function CompanyHierarchySimple() {
         // Refresh data
         queryClient.invalidateQueries({ queryKey: ["/api/company/employees"] });
         queryClient.invalidateQueries({ queryKey: ["/api/company/teams"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/company/managers"] });
         
-        toast({ title: "Success", description: `Added ${selectedEmployees.length + 1} members to ${selectedTeam.name}` });
+        toast({ title: "Success", description: `Added ${selectedEmployees.length} members to ${selectedTeam.name}` });
         setIsAddMembersOpen(false);
         setSelectedEmployees([]);
         setSelectedManager("");
@@ -777,9 +773,9 @@ export default function CompanyHierarchySimple() {
               <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
                 <h5 className="font-medium text-sm mb-2 text-blue-900">Assignment Summary</h5>
                 <div className="text-xs space-y-1 text-blue-800">
-                  <div>Manager: {selectedManager ? employees?.find((e: any) => e.employeeId === selectedManager)?.firstName + ' ' + employees?.find((e: any) => e.employeeId === selectedManager)?.lastName : "Not selected"}</div>
+                  <div>Manager: {selectedManager ? managers?.find((m: any) => m.id === selectedManager)?.managerName + ' (' + managers?.find((m: any) => m.id === selectedManager)?.uniqueId + ')' : "Not selected"}</div>
                   <div>Team Members: {selectedEmployees.length} selected</div>
-                  <div>Total Team Size: {selectedManager && selectedEmployees.length ? selectedEmployees.length + 1 : 0}</div>
+                  <div>Total Team Size: {selectedEmployees.length}</div>
                 </div>
               </div>
 
