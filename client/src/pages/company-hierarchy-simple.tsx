@@ -279,28 +279,16 @@ export default function CompanyHierarchySimple() {
                           {team.branchId ? getBranchName(team.branchId) : "Headquarters"}
                         </p>
                       </div>
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleManageTeam(team)}
-                          className="flex items-center gap-1"
-                          data-testid={`manage-team-${team.id}`}
-                        >
-                          <Users className="w-4 h-4" />
-                          Manage
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleAddMembers(team)}
-                          className="flex items-center gap-1"
-                          data-testid={`add-members-${team.id}`}
-                        >
-                          <UserPlus className="w-4 h-4" />
-                          Add Members
-                        </Button>
-                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleManageTeam(team)}
+                        className="flex items-center gap-1"
+                        data-testid={`manage-team-${team.id}`}
+                      >
+                        <Users className="w-4 h-4" />
+                        Manage Team
+                      </Button>
                     </div>
                   </div>
                 )) : (
