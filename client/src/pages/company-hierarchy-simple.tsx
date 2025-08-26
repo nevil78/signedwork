@@ -247,13 +247,19 @@ export default function CompanyHierarchySimple() {
     }
   };
 
-  const handleCreateManager = () => {
+  const handleCreateManager = async () => {
     if (newManager.firstName && newManager.lastName && newManager.email && newManager.password) {
-      // TODO: Implement manager creation API call
-      console.log('Creating manager:', newManager);
-      toast({ title: "Success", description: `Manager ${newManager.firstName} ${newManager.lastName} created successfully` });
-      setIsCreateManagerOpen(false);
-      setNewManager({ firstName: "", lastName: "", email: "", password: "" });
+      try {
+        // TODO: Implement actual manager creation API call when backend is ready
+        console.log('Creating manager:', newManager);
+        
+        // For now, we'll simulate success
+        toast({ title: "Success", description: `Manager ${newManager.firstName} ${newManager.lastName} will be created once API is implemented` });
+        setIsCreateManagerOpen(false);
+        setNewManager({ firstName: "", lastName: "", email: "", password: "" });
+      } catch (error: any) {
+        toast({ title: "Error", description: error.message || "Failed to create manager", variant: "destructive" });
+      }
     }
   };
 
@@ -371,22 +377,74 @@ export default function CompanyHierarchySimple() {
             </CardContent>
           </Card>
 
-          {/* Employees */}
+          {/* Managers */}
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
                   <CardTitle className="flex items-center gap-2">
-                    <User className="w-5 h-5 text-purple-600" />
-                    Employees
+                    <UserCog className="w-5 h-5 text-blue-600" />
+                    Managers
                   </CardTitle>
-                  <CardDescription>Team members and their assignments</CardDescription>
+                  <CardDescription>Manager accounts and credentials</CardDescription>
                 </div>
-                <Button onClick={() => setIsCreateManagerOpen(true)} size="sm" variant="outline">
-                  <UserCog className="w-4 h-4 mr-2" />
+                <Button onClick={() => setIsCreateManagerOpen(true)} size="sm">
+                  <UserPlus className="w-4 h-4 mr-2" />
                   Create Manager
                 </Button>
               </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {Array.isArray(employees) && employees.filter((emp: any) => emp.hierarchyRole === "team_lead" || emp.hierarchyRole === "branch_manager" || emp.hierarchyRole === "company_admin").length > 0 ? (
+                  employees
+                    .filter((emp: any) => emp.hierarchyRole === "team_lead" || emp.hierarchyRole === "branch_manager" || emp.hierarchyRole === "company_admin")
+                    .map((manager: any) => (
+                      <div key={manager.id} className="p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <UserCog className="w-5 h-5 text-blue-600" />
+                            <div>
+                              <h4 className="font-semibold text-blue-900">{manager.firstName} {manager.lastName}</h4>
+                              <div className="text-xs text-blue-700 space-y-1">
+                                <div>Role: {manager.hierarchyRole?.replace('_', ' ') || 'Manager'}</div>
+                                <div>Email: {manager.email}</div>
+                                <div>Team: {getTeamName(manager.teamId) || 'No team assigned'}</div>
+                              </div>
+                            </div>
+                            <Badge variant={manager.hierarchyRole === "company_admin" ? "default" : "secondary"}>
+                              {manager.hierarchyRole === "company_admin" ? "Admin" : 
+                               manager.hierarchyRole === "branch_manager" ? "Branch Manager" : "Team Lead"}
+                            </Badge>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button size="sm" variant="outline" className="text-blue-600">
+                              <Shield className="w-4 h-4 mr-1" />
+                              Manage
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                ) : (
+                  <div className="text-center py-6 text-muted-foreground">
+                    <UserCog className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">No managers created yet</p>
+                    <p className="text-xs">Create manager accounts to delegate work verification</p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Employees */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <User className="w-5 h-5 text-purple-600" />
+                Employees
+              </CardTitle>
+              <CardDescription>Team members and their assignments</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
