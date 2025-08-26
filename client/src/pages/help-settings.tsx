@@ -22,7 +22,6 @@ import { useAuth } from '@/hooks/useAuth';
 import { useTour } from '@/hooks/useTour';
 import { useLocation } from 'wouter';
 import GuidedTour from '@/components/GuidedTour';
-import HelpDesk from '@/components/HelpDesk';
 import TourButton from '@/components/TourButton';
 import { getToursByUserType } from '@/data/tourConfigs';
 import { hasCompletedTour, shouldShowTourPrompt } from '@/hooks/useTour';
@@ -30,7 +29,6 @@ import { hasCompletedTour, shouldShowTourPrompt } from '@/hooks/useTour';
 export default function HelpSettingsPage() {
   const { user, userType } = useAuth();
   const [location, setLocation] = useLocation();
-  const [showHelpDesk, setShowHelpDesk] = useState(false);
   const { activeTour, isTourActive, startTour, completeTour, skipTour, closeTour } = useTour();
 
   // Get user-specific tours
@@ -202,18 +200,6 @@ export default function HelpSettingsPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <Button 
-                  onClick={() => setShowHelpDesk(true)}
-                  className="w-full justify-between"
-                  variant="outline"
-                >
-                  <div className="flex items-center gap-2">
-                    <HelpCircle className="h-4 w-4" />
-                    Open Help Documentation
-                  </div>
-                  <ExternalLink className="h-4 w-4" />
-                </Button>
-                
                 <div className="grid gap-4">
                   <div className="p-4 bg-gray-50 rounded-lg">
                     <h4 className="font-medium mb-2">Quick Reference</h4>
@@ -259,19 +245,14 @@ export default function HelpSettingsPage() {
                       <Button 
                         variant="outline" 
                         className="w-full justify-start"
-                        onClick={() => setShowHelpDesk(true)}
-                      >
-                        <HelpCircle className="h-4 w-4 mr-2" />
-                        Browse FAQ & Documentation
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        className="w-full justify-start"
                         onClick={() => handleStartTour('platform-overview')}
                       >
                         <Play className="h-4 w-4 mr-2" />
                         Take Interactive Tour
                       </Button>
+                      <p className="text-xs text-gray-500">
+                        Browse this page's Documentation tab for detailed guides and FAQ
+                      </p>
                     </div>
                   </div>
                   
@@ -332,14 +313,6 @@ export default function HelpSettingsPage() {
           </TabsContent>
         </Tabs>
       </div>
-
-      {/* Help Desk Modal */}
-      <HelpDesk
-        isOpen={showHelpDesk}
-        onClose={() => setShowHelpDesk(false)}
-        userType={userType || 'employee'}
-        onStartTour={handleStartTour}
-      />
 
       {/* Guided Tour Component */}
       {isTourActive && activeTour && (
