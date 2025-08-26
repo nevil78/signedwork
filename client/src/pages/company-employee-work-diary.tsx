@@ -5,6 +5,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import { 
   ArrowLeft, 
   Calendar, 
@@ -16,7 +23,12 @@ import {
   Play,
   Tag,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  Info,
+  MapPin,
+  FileText,
+  Target,
+  Hash
 } from 'lucide-react';
 import { format } from 'date-fns';
 import type { WorkEntry, Employee, Company } from '@shared/schema';
@@ -28,6 +40,8 @@ interface WorkEntryWithCompany extends WorkEntry {
 export default function CompanyEmployeeWorkDiary() {
   const { employeeId } = useParams();
   const [expandedCompanies, setExpandedCompanies] = useState<Set<string>>(new Set());
+  const [selectedWorkEntry, setSelectedWorkEntry] = useState<WorkEntryWithCompany | null>(null);
+  const [showDetailsDialog, setShowDetailsDialog] = useState(false);
 
   // Get employee details
   const { data: employee, isLoading: employeeLoading } = useQuery<Employee>({
@@ -221,6 +235,18 @@ export default function CompanyEmployeeWorkDiary() {
                               <CardTitle className="text-lg line-clamp-2">{entry.title}</CardTitle>
                               <div className="flex items-center gap-1 ml-2">
                                 {getStatusIcon(entry.status)}
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 w-8 p-0"
+                                  onClick={() => {
+                                    setSelectedWorkEntry(entry);
+                                    setShowDetailsDialog(true);
+                                  }}
+                                  data-testid={`button-info-work-entry-${entry.id}`}
+                                >
+                                  <Info className="h-4 w-4" />
+                                </Button>
                               </div>
                             </div>
                             <div className="flex items-center gap-2">
@@ -275,6 +301,204 @@ export default function CompanyEmployeeWorkDiary() {
             </div>
           )}
         </div>
+
+        {/* Work Entry Details Dialog */}
+        <Dialog open={showDetailsDialog} onOpenChange={setShowDetailsDialog}>
+          <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
+            <DialogHeader className="flex-shrink-0">
+              <DialogTitle>Work Entry Details</DialogTitle>
+            </DialogHeader>
+            
+            {selectedWorkEntry && (
+              <div className="flex-1 overflow-y-auto space-y-6">
+                {/* Header Section */}
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-6 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <div className="flex items-start justify-between mb-4">
+                    <div>
+                      <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+                        {selectedWorkEntry.title}
+                      </h3>
+                      <div className="flex items-center gap-2 mb-3">
+                        <Badge className={getStatusColor(selectedWorkEntry.status)}>
+                          {getStatusIcon(selectedWorkEntry.status)}
+                          <span className="ml-1">{selectedWorkEntry.status.replace('_', ' ')}</span>
+                        </Badge>
+                        <Badge className={getPriorityColor(selectedWorkEntry.priority)}>
+                          {selectedWorkEntry.priority}
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Verification Status */}
+                  <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border">
+                    <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">Verification Status</h4>
+                    <div className="flex items-center gap-2">
+                      {selectedWorkEntry.approvalStatus === 'approved' ? (
+                        <>
+                          <CheckCircle className="h-5 w-5 text-green-600" />
+                          <span className="text-green-700 dark:text-green-400 font-medium">
+                            Verified by Company
+                          </span>
+                          {selectedWorkEntry.verifiedBy && (
+                            <span className="text-sm text-gray-600 dark:text-gray-400">
+                              (Verified by: {selectedWorkEntry.verifiedBy})
+                            </span>
+                          )}
+                        </>
+                      ) : selectedWorkEntry.approvalStatus === 'pending_review' ? (
+                        <>
+                          <Clock className="h-5 w-5 text-yellow-600" />
+                          <span className="text-yellow-700 dark:text-yellow-400 font-medium">
+                            Pending Review
+                          </span>
+                        </>
+                      ) : selectedWorkEntry.approvalStatus === 'revision_requested' ? (
+                        <>
+                          <AlertCircle className="h-5 w-5 text-orange-600" />
+                          <span className="text-orange-700 dark:text-orange-400 font-medium">
+                            Revision Requested
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <AlertCircle className="h-5 w-5 text-gray-600" />
+                          <span className="text-gray-700 dark:text-gray-400 font-medium">
+                            Not Verified
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Work Details */}
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-lg">Work Information</h4>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Date Range */}
+                    <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Calendar className="h-4 w-4 text-blue-600" />
+                        <h5 className="font-medium text-gray-900 dark:text-gray-100">Date Range</h5>
+                      </div>
+                      <p className="text-gray-600 dark:text-gray-400">
+                        {selectedWorkEntry.startDate} {selectedWorkEntry.endDate ? `to ${selectedWorkEntry.endDate}` : '(ongoing)'}
+                      </p>
+                    </div>
+                    
+                    {/* Hours */}
+                    <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Clock className="h-4 w-4 text-blue-600" />
+                        <h5 className="font-medium text-gray-900 dark:text-gray-100">Hours Logged</h5>
+                      </div>
+                      <p className="text-gray-600 dark:text-gray-400">
+                        {selectedWorkEntry.hours ? `${selectedWorkEntry.hours} hours` : 'Not specified'}
+                      </p>
+                    </div>
+
+                    {/* Location */}
+                    {selectedWorkEntry.location && (
+                      <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
+                        <div className="flex items-center gap-2 mb-2">
+                          <MapPin className="h-4 w-4 text-blue-600" />
+                          <h5 className="font-medium text-gray-900 dark:text-gray-100">Location</h5>
+                        </div>
+                        <p className="text-gray-600 dark:text-gray-400">{selectedWorkEntry.location}</p>
+                      </div>
+                    )}
+
+                    {/* Category */}
+                    {selectedWorkEntry.category && (
+                      <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Tag className="h-4 w-4 text-blue-600" />
+                          <h5 className="font-medium text-gray-900 dark:text-gray-100">Category</h5>
+                        </div>
+                        <p className="text-gray-600 dark:text-gray-400">{selectedWorkEntry.category}</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Description */}
+                  {selectedWorkEntry.description && (
+                    <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
+                      <div className="flex items-center gap-2 mb-2">
+                        <FileText className="h-4 w-4 text-blue-600" />
+                        <h5 className="font-medium text-gray-900 dark:text-gray-100">Description</h5>
+                      </div>
+                      <p className="text-gray-600 dark:text-gray-400 whitespace-pre-wrap">
+                        {selectedWorkEntry.description}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Objectives */}
+                  {selectedWorkEntry.objectives && (
+                    <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Target className="h-4 w-4 text-blue-600" />
+                        <h5 className="font-medium text-gray-900 dark:text-gray-100">Objectives</h5>
+                      </div>
+                      <p className="text-gray-600 dark:text-gray-400 whitespace-pre-wrap">
+                        {selectedWorkEntry.objectives}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Skills */}
+                  {selectedWorkEntry.skills && selectedWorkEntry.skills.length > 0 && (
+                    <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Hash className="h-4 w-4 text-blue-600" />
+                        <h5 className="font-medium text-gray-900 dark:text-gray-100">Skills Used</h5>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedWorkEntry.skills.map((skill, index) => (
+                          <Badge key={index} variant="outline" className="text-sm">
+                            {skill}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Company Feedback */}
+                  {selectedWorkEntry.companyFeedback && (
+                    <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-lg border border-amber-200 dark:border-amber-800">
+                      <h5 className="font-medium text-amber-900 dark:text-amber-100 mb-2">Company Feedback</h5>
+                      <p className="text-amber-800 dark:text-amber-200 whitespace-pre-wrap">
+                        {selectedWorkEntry.companyFeedback}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Timestamps */}
+                  <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
+                    <h5 className="font-medium text-gray-900 dark:text-gray-100 mb-2">Timeline</h5>
+                    <div className="space-y-1 text-sm text-gray-600 dark:text-gray-400">
+                      <p>Created: {selectedWorkEntry.createdAt ? format(new Date(selectedWorkEntry.createdAt), 'PPp') : 'Unknown'}</p>
+                      {selectedWorkEntry.updatedAt && selectedWorkEntry.updatedAt !== selectedWorkEntry.createdAt && (
+                        <p>Last updated: {format(new Date(selectedWorkEntry.updatedAt), 'PPp')}</p>
+                      )}
+                      {selectedWorkEntry.approvedAt && (
+                        <p>Approved: {format(new Date(selectedWorkEntry.approvedAt), 'PPp')}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <DialogFooter className="flex-shrink-0">
+              <Button variant="outline" onClick={() => setShowDetailsDialog(false)}>
+                Close
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
