@@ -4662,8 +4662,8 @@ export class DatabaseStorage implements IStorage {
     const isValidPassword = await bcrypt.compare(password, manager.password);
     if (!isValidPassword) return null;
     
-    // Update last login
-    await this.updateManagerLastLogin(manager.id);
+    // Skip last login update temporarily due to SQL syntax error
+    // await this.updateManagerLastLogin(manager.id);
     
     return manager;
   }
