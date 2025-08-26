@@ -198,7 +198,7 @@ export default function ProfessionalWorkDiary() {
       challenges: "",
       learnings: "",
       companyId: "",
-      teamId: "company-only", // Add team selection
+      teamId: "", // Add team selection
     },
   });
 
@@ -213,7 +213,7 @@ export default function ProfessionalWorkDiary() {
   useEffect(() => {
     if (selectedCompany) {
       workEntryForm.setValue('companyId', selectedCompany);
-      workEntryForm.setValue('teamId', 'company-only'); // Reset team selection when company changes
+      workEntryForm.setValue('teamId', ''); // Reset team selection when company changes
     }
   }, [selectedCompany, workEntryForm]);
 
@@ -273,8 +273,8 @@ export default function ProfessionalWorkDiary() {
     const submissionData = {
       ...data,
       companyId: finalCompanyId,
-      // Convert "company-only" to null for backend
-      teamId: data.teamId === "company-only" ? null : data.teamId,
+      // Convert empty string to null for backend
+      teamId: data.teamId || null,
       // Ensure numbers are properly set
       estimatedHours: data.estimatedHours || 0,
       actualHours: data.actualHours || 0,
@@ -335,7 +335,7 @@ export default function ProfessionalWorkDiary() {
         challenges: "",
         learnings: "",
         companyId: selectedCompany || "",
-        teamId: "company-only", // Reset team selection
+        teamId: "", // Reset team selection
       });
       toast({
         title: editingEntry ? "Work entry updated" : "Work entry created",
@@ -626,7 +626,7 @@ export default function ProfessionalWorkDiary() {
                           challenges: "",
                           learnings: "",
                           companyId: selectedCompany, // Ensure company ID is set
-                          teamId: "company-only", // Reset team selection
+                          teamId: "", // Reset team selection
                         });
                         setIsAddDialogOpen(true);
                       }}
@@ -1058,7 +1058,7 @@ export default function ProfessionalWorkDiary() {
                             challenges: "",
                             learnings: "",
                             companyId: selectedCompany, // Ensure company ID is set
-                            teamId: "company-only", // Reset team selection
+                            teamId: "", // Reset team selection
                           });
                           setIsAddDialogOpen(true);
                         }}>
@@ -1207,14 +1207,13 @@ export default function ProfessionalWorkDiary() {
                   render={({ field }) => (
                     <FormItem className="md:col-span-2">
                       <FormLabel>Submit to Team Manager</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value || ""}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select team (optional)" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="company-only">Submit to Company Only</SelectItem>
                           {employeeTeams && employeeTeams.length > 0 ? (
                             employeeTeams.map((team: any) => (
                               <SelectItem key={team.id} value={team.id}>
@@ -1228,7 +1227,7 @@ export default function ProfessionalWorkDiary() {
                       </Select>
                       <FormMessage />
                       <div className="text-xs text-muted-foreground">
-                        Choose a team to submit this work entry to the team manager. The company will always receive a copy of all entries.
+                        Select a team manager to review this entry. Company administrators always receive all entries.
                       </div>
                     </FormItem>
                   )}
