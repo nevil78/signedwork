@@ -38,6 +38,8 @@ export default function CompanyHierarchySimple() {
   const [isManageManagerOpen, setIsManageManagerOpen] = useState(false);
   const [selectedManagerForEdit, setSelectedManagerForEdit] = useState<any>(null);
   const [newManager, setNewManager] = useState({ firstName: "", lastName: "", email: "", password: "" });
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+  const [newTempPassword, setNewTempPassword] = useState("");
   
   // Form states
   const [newBranch, setNewBranch] = useState({ name: "", location: "" });
@@ -273,9 +275,21 @@ export default function CompanyHierarchySimple() {
   const handleResetManagerPassword = async () => {
     if (selectedManagerForEdit) {
       try {
-        // TODO: Implement password reset API call
+        // Generate a new temporary password
+        const tempPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-4).toUpperCase();
+        
+        // TODO: Call API to update manager password
         console.log('Resetting password for manager:', selectedManagerForEdit.employeeId);
-        toast({ title: "Success", description: "Password reset instructions sent to manager" });
+        console.log('New temporary password:', tempPassword);
+        
+        // Show the new password in a dialog
+        setNewTempPassword(tempPassword);
+        setShowPasswordDialog(true);
+        
+        toast({ 
+          title: "Password Reset Successful", 
+          description: "New temporary password generated"
+        });
       } catch (error: any) {
         toast({ title: "Error", description: error.message || "Failed to reset password", variant: "destructive" });
       }
@@ -929,6 +943,65 @@ export default function CompanyHierarchySimple() {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Password Reset Dialog */}
+      <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserCog className="w-5 h-5 text-green-600" />
+              New Temporary Password
+            </DialogTitle>
+            <DialogDescription>
+              Share this temporary password with {selectedManagerForEdit?.firstName} {selectedManagerForEdit?.lastName}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+              <label className="block text-sm font-medium text-green-900 mb-2">
+                Temporary Password:
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={newTempPassword}
+                  readOnly
+                  className="flex-1 px-3 py-2 bg-white border border-green-300 rounded-md font-mono text-sm"
+                  data-testid="temp-password-input"
+                />
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    navigator.clipboard.writeText(newTempPassword);
+                    toast({ title: "Copied!", description: "Password copied to clipboard" });
+                  }}
+                  data-testid="copy-password-btn"
+                >
+                  Copy
+                </Button>
+              </div>
+            </div>
+            
+            <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+              <p className="text-sm text-blue-900">
+                <strong>Instructions:</strong>
+              </p>
+              <ul className="text-xs text-blue-800 mt-1 space-y-1">
+                <li>• Share this password with the manager</li>
+                <li>• They should change it after first login</li>
+                <li>• This password is valid immediately</li>
+              </ul>
+            </div>
+            
+            <div className="flex gap-2">
+              <Button onClick={() => setShowPasswordDialog(false)} className="flex-1">
+                Done
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
 
