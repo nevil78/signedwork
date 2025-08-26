@@ -3659,7 +3659,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/company/managers', requireCompany, async (req: any, res) => {
+  app.post('/api/company/managers/create-standalone', requireCompany, async (req: any, res) => {
     try {
       const { managerId, managerName, managerEmail, password, permissionLevel, branchId, teamId } = req.body;
 
@@ -3673,7 +3673,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const hashedPassword = await bcrypt.hash(password, 10);
 
       // Create manager
-      const manager = await storage.createCompanyManager({
+      const manager = await storage.createManager({
         companyId: req.user.id,
         uniqueId: managerId,
         password: hashedPassword,

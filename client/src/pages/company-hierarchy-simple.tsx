@@ -298,7 +298,7 @@ export default function CompanyHierarchySimple() {
           teamId: null
         };
         
-        const response = await apiRequest("POST", "/api/company/managers", managerData);
+        const response = await apiRequest("POST", "/api/company/managers/create-standalone", managerData);
         console.log('Manager creation response:', response);
         
         // Refresh data to show new manager
