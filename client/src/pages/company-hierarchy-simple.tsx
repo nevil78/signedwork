@@ -106,8 +106,6 @@ export default function CompanyHierarchySimple() {
       apiRequest("PATCH", `/api/company/employees/${employeeId}/hierarchy-role`, assignment),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/company/employees"] });
-      setIsAssignEmployeeOpen(false);
-      setSelectedEmployee(null);
       toast({ title: "Success", description: "Employee assigned successfully" });
     },
     onError: () => {
@@ -166,6 +164,13 @@ export default function CompanyHierarchySimple() {
     setSelectedManager("");
     setIsAddMembersOpen(true);
   };
+
+  // Query to get current team memberships
+  const { data: currentTeamMemberships } = useQuery({
+    queryKey: ["/api/company/teams", selectedTeam?.id, "memberships"],
+    queryFn: () => apiRequest("GET", `/api/company/teams/${selectedTeam?.id}/memberships`),
+    enabled: !!selectedTeam?.id && isAddMembersOpen
+  });
 
   const handleManageTeam = (team: any) => {
     setSelectedTeam(team);
@@ -841,37 +846,45 @@ export default function CompanyHierarchySimple() {
               <div>
                 <Label>Select Team Members</Label>
                 <div className="max-h-32 sm:max-h-40 overflow-y-auto border rounded-lg p-2 space-y-2">
-                  {Array.isArray(employees) && employees
-                    .filter((emp: any) => emp.employeeId !== selectedManager) // Exclude manager only, allow employees in other teams
-                    .map((employee: any) => (
-                      <div key={employee.employeeId} className="flex items-center space-x-2">
-                        <input
-                          type="checkbox"
-                          id={`emp-${employee.employeeId}`}
-                          checked={selectedEmployees.includes(employee.employeeId)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setSelectedEmployees([...selectedEmployees, employee.employeeId]);
-                            } else {
-                              setSelectedEmployees(selectedEmployees.filter(id => id !== employee.employeeId));
-                            }
-                          }}
-                          className="rounded"
-                        />
-                        <label htmlFor={`emp-${employee.employeeId}`} className="flex items-center gap-2 cursor-pointer flex-1 min-w-0">
-                          <User className="w-4 h-4 text-gray-600 shrink-0" />
-                          <div className="flex-1 min-w-0">
-                            <span className="truncate block">{employee.firstName} {employee.lastName}</span>
-                            <span className="text-xs text-muted-foreground truncate block">
-                              {employee.email}
-                              {employee.teamId && (
-                                <span className="ml-1 text-blue-600">• Already in {getTeamName(employee.teamId)}</span>
-                              )}
-                            </span>
-                          </div>
-                        </label>
-                      </div>
-                    ))}
+                  {(() => {
+                    // Get list of employee IDs already in this team
+                    const currentTeamMemberIds = currentTeamMemberships?.map((membership: any) => membership.employeeId) || [];
+                    
+                    return Array.isArray(employees) && employees
+                      .filter((emp: any) => 
+                        emp.employeeId !== selectedManager && // Exclude manager
+                        !currentTeamMemberIds.includes(emp.employeeId) // Exclude employees already in this team
+                      )
+                      .map((employee: any) => (
+                        <div key={employee.employeeId} className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            id={`emp-${employee.employeeId}`}
+                            checked={selectedEmployees.includes(employee.employeeId)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedEmployees([...selectedEmployees, employee.employeeId]);
+                              } else {
+                                setSelectedEmployees(selectedEmployees.filter(id => id !== employee.employeeId));
+                              }
+                            }}
+                            className="rounded"
+                          />
+                          <label htmlFor={`emp-${employee.employeeId}`} className="flex items-center gap-2 cursor-pointer flex-1 min-w-0">
+                            <User className="w-4 h-4 text-gray-600 shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <span className="truncate block">{employee.firstName} {employee.lastName}</span>
+                              <span className="text-xs text-muted-foreground truncate block">
+                                {employee.email}
+                                {employee.teamId && (
+                                  <span className="ml-1 text-blue-600">• Already in {getTeamName(employee.teamId)}</span>
+                                )}
+                              </span>
+                            </div>
+                          </label>
+                        </div>
+                      ));
+                  })()}
                 </div>
               </div>
 
@@ -993,7 +1006,7 @@ export default function CompanyHierarchySimple() {
                               <Button
                                 size="sm"
                                 variant="outline"
-                                onClick={() => handleRemoveFromTeam(member.employeeId)}
+                                onClick={() => handleRemoveFromTeam(member.employeeId, selectedTeam.id)}
                                 className="text-red-600 hover:text-red-700 flex-1 sm:flex-none"
                               >
                                 Remove
