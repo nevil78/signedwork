@@ -538,9 +538,8 @@ export default function CompanyHierarchySimple() {
                   <CardDescription>Manager accounts and credentials</CardDescription>
                 </div>
                 <Button onClick={() => setIsCreateManagerOpen(true)} size="sm" className="shrink-0">
-                  <UserPlus className="w-4 h-4 sm:mr-2" />
-                  <span className="hidden sm:inline">Create Manager</span>
-                  <span className="sm:hidden">Create</span>
+                  <Plus className="w-4 h-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Add</span>
                 </Button>
               </div>
             </CardHeader>
