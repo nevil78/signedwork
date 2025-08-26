@@ -352,14 +352,14 @@ export default function CompanyHierarchySimple() {
   };
 
   const handleToggleManagerStatus = async () => {
+    // This feature would enable/disable manager accounts
+    // Currently not needed for basic manager management
     if (selectedManagerForEdit) {
-      try {
-        // TODO: Implement manager status toggle API call
-        console.log('Toggling status for manager:', selectedManagerForEdit.employeeId);
-        toast({ title: "Success", description: "Manager status updated" });
-      } catch (error: any) {
-        toast({ title: "Error", description: error.message || "Failed to update manager status", variant: "destructive" });
-      }
+      toast({ 
+        title: "Feature Coming Soon", 
+        description: "Manager account status toggle will be added in future updates",
+        variant: "default"
+      });
     }
   };
 
@@ -988,7 +988,7 @@ export default function CompanyHierarchySimple() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Shield className="w-5 h-5 text-blue-600" />
-              Manage Manager: {selectedManagerForEdit?.firstName} {selectedManagerForEdit?.lastName}
+              Manage Manager: {selectedManagerForEdit?.managerName}
             </DialogTitle>
             <DialogDescription>
               Manage manager account, permissions, and credentials
@@ -1002,19 +1002,19 @@ export default function CompanyHierarchySimple() {
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   <div>
                     <span className="font-medium text-blue-900">Name:</span>
-                    <p className="text-blue-700">{selectedManagerForEdit.firstName} {selectedManagerForEdit.lastName}</p>
+                    <p className="text-blue-700">{selectedManagerForEdit.managerName}</p>
                   </div>
                   <div>
                     <span className="font-medium text-blue-900">Role:</span>
-                    <p className="text-blue-700">{selectedManagerForEdit.hierarchyRole?.replace('_', ' ') || 'Manager'}</p>
+                    <p className="text-blue-700">{selectedManagerForEdit.permissionLevel?.replace('_', ' ') || 'Manager'}</p>
                   </div>
                   <div>
                     <span className="font-medium text-blue-900">Email:</span>
-                    <p className="text-blue-700">{selectedManagerForEdit.email}</p>
+                    <p className="text-blue-700">{selectedManagerForEdit.managerEmail}</p>
                   </div>
                   <div>
                     <span className="font-medium text-blue-900">Team:</span>
-                    <p className="text-blue-700">{getTeamName(selectedManagerForEdit.teamId) || 'No team'}</p>
+                    <p className="text-blue-700">{getTeamName(selectedManagerForEdit.teamId) || 'No Team'}</p>
                   </div>
                 </div>
               </div>
@@ -1032,9 +1032,15 @@ export default function CompanyHierarchySimple() {
                     Reset Password
                   </Button>
                   <Button
-                    onClick={handleToggleManagerStatus}
+                    onClick={() => {
+                      toast({ 
+                        title: "Feature Coming Soon", 
+                        description: "Manager status toggle will be implemented in future update",
+                        variant: "default"
+                      });
+                    }}
                     variant="outline"
-                    className="flex-1"
+                    className="flex-1 opacity-60"
                     data-testid="toggle-manager-status"
                   >
                     <Shield className="w-4 h-4 mr-2" />
@@ -1049,8 +1055,8 @@ export default function CompanyHierarchySimple() {
                 <div className="text-xs space-y-1 text-green-700">
                   <div>✓ Can verify work entries</div>
                   <div>✓ Can manage team members</div>
-                  {selectedManagerForEdit.hierarchyRole === "branch_manager" && <div>✓ Can manage entire branch</div>}
-                  {selectedManagerForEdit.hierarchyRole === "company_admin" && <div>✓ Full company access</div>}
+                  {selectedManagerForEdit.permissionLevel === "branch_manager" && <div>✓ Can manage entire branch</div>}
+                  {selectedManagerForEdit.permissionLevel === "company_admin" && <div>✓ Full company access</div>}
                 </div>
               </div>
 
@@ -1073,7 +1079,7 @@ export default function CompanyHierarchySimple() {
               New Temporary Password
             </DialogTitle>
             <DialogDescription>
-              Share this temporary password with {selectedManagerForEdit?.firstName} {selectedManagerForEdit?.lastName}
+              Share this temporary password with {selectedManagerForEdit?.managerName}
             </DialogDescription>
           </DialogHeader>
           
