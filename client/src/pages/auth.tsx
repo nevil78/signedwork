@@ -13,9 +13,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { insertEmployeeSchema, insertCompanySchema, loginSchema, type InsertEmployee, type InsertCompany, type LoginData } from "@shared/schema";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { PrefetchLink } from "@/components/PrefetchLink";
 import PrivacyPolicyModal from "@/components/PrivacyPolicyModal";
 import TermsOfServiceModal from "@/components/TermsOfServiceModal";
@@ -105,6 +106,23 @@ export default function AuthPage() {
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
   const { toast } = useToast();
+  const { user, userType, isAuthenticated } = useAuth();
+  const [, setLocation] = useLocation();
+
+  // Smart navigation function for logo clicks
+  const handleLogoClick = () => {
+    if (isAuthenticated && user) {
+      if (userType === 'company') {
+        setLocation('/company-dashboard');
+      } else if (userType === 'employee') {
+        setLocation('/dashboard');
+      } else {
+        setCurrentView("login");
+      }
+    } else {
+      setCurrentView("login");
+    }
+  };
 
   // Handle URL view parameters dynamically
   useEffect(() => {
@@ -511,7 +529,7 @@ export default function AuthPage() {
             <div className="flex justify-between items-center h-16">
               <div 
                 className="flex items-center cursor-pointer hover:opacity-80 transition-opacity"
-                onClick={() => setCurrentView("login")}
+                onClick={handleLogoClick}
                 data-testid="logo-home-navigation"
               >
                 <img src={signedworkLogo} alt="Signedwork" className="h-8 w-8 mr-3" />
@@ -592,7 +610,7 @@ export default function AuthPage() {
             <div className="flex justify-between items-center h-16">
               <div 
                 className="flex items-center cursor-pointer hover:opacity-80 transition-opacity"
-                onClick={() => setCurrentView("login")}
+                onClick={handleLogoClick}
                 data-testid="logo-home-navigation"
               >
                 <img src={signedworkLogo} alt="Signedwork" className="h-8 w-8 mr-3" />
@@ -956,7 +974,7 @@ export default function AuthPage() {
             <div className="flex justify-between items-center h-16">
               <div 
                 className="flex items-center cursor-pointer hover:opacity-80 transition-opacity"
-                onClick={() => setCurrentView("login")}
+                onClick={handleLogoClick}
                 data-testid="logo-home-navigation"
               >
                 <img src={signedworkLogo} alt="Signedwork" className="h-8 w-8 mr-3" />
@@ -1479,7 +1497,7 @@ export default function AuthPage() {
             <div className="flex justify-between items-center h-16">
               <div 
                 className="flex items-center cursor-pointer hover:opacity-80 transition-opacity"
-                onClick={() => setCurrentView("login")}
+                onClick={handleLogoClick}
                 data-testid="logo-home-navigation"
               >
                 <img src={signedworkLogo} alt="Signedwork" className="h-8 w-8 mr-3" />
@@ -1707,7 +1725,7 @@ export default function AuthPage() {
             <div className="flex justify-between items-center h-16">
               <div 
                 className="flex items-center cursor-pointer hover:opacity-80 transition-opacity"
-                onClick={() => setCurrentView("login")}
+                onClick={handleLogoClick}
                 data-testid="logo-home-navigation"
               >
                 <img src={signedworkLogo} alt="Signedwork" className="h-8 w-8 mr-3" />
@@ -1766,7 +1784,7 @@ export default function AuthPage() {
             <div className="flex justify-between items-center h-16">
               <div 
                 className="flex items-center cursor-pointer hover:opacity-80 transition-opacity"
-                onClick={() => setCurrentView("login")}
+                onClick={handleLogoClick}
                 data-testid="logo-home-navigation"
               >
                 <img src={signedworkLogo} alt="Signedwork" className="h-8 w-8 mr-3" />
@@ -1913,7 +1931,7 @@ export default function AuthPage() {
             <div className="flex justify-between items-center h-16">
               <div 
                 className="flex items-center cursor-pointer hover:opacity-80 transition-opacity"
-                onClick={() => setCurrentView("login")}
+                onClick={handleLogoClick}
                 data-testid="logo-home-navigation"
               >
                 <img src={signedworkLogo} alt="Signedwork" className="h-8 w-8 mr-3" />
@@ -1960,7 +1978,7 @@ export default function AuthPage() {
             <div className="flex justify-between items-center h-16">
               <div 
                 className="flex items-center cursor-pointer hover:opacity-80 transition-opacity"
-                onClick={() => setCurrentView("login")}
+                onClick={handleLogoClick}
                 data-testid="logo-home-navigation"
               >
                 <img src={signedworkLogo} alt="Signedwork" className="h-8 w-8 mr-3" />
