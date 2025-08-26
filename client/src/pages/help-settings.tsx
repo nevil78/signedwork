@@ -200,27 +200,112 @@ export default function HelpSettingsPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid gap-4">
-                  <div className="p-4 bg-gray-50 rounded-lg">
-                    <h4 className="font-medium mb-2">Quick Reference</h4>
-                    <ul className="text-sm text-gray-600 space-y-1">
-                      <li>• Getting started with your account</li>
-                      <li>• Understanding work verification</li>
-                      <li>• Building your professional profile</li>
-                      <li>• Using job discovery features</li>
-                    </ul>
+                {userType === 'company' ? (
+                  // Company-specific documentation
+                  <div className="grid gap-4">
+                    <div className="p-4 bg-blue-50 rounded-lg border-l-4 border-blue-500">
+                      <h4 className="font-medium mb-3 text-blue-900">Company Setup & Registration</h4>
+                      <ul className="text-sm text-blue-800 space-y-2">
+                        <li>• <strong>Initial Setup:</strong> Complete company profile, add business information and logo</li>
+                        <li>• <strong>Invitation Codes:</strong> Generate unique codes for employee recruitment</li>
+                        <li>• <strong>Verification Settings:</strong> Configure work diary approval workflows</li>
+                        <li>• <strong>Company Branding:</strong> Customize your organization's public profile</li>
+                      </ul>
+                    </div>
+
+                    <div className="p-4 bg-green-50 rounded-lg border-l-4 border-green-500">
+                      <h4 className="font-medium mb-3 text-green-900">Organizational Structure Management</h4>
+                      <ul className="text-sm text-green-800 space-y-2">
+                        <li>• <strong>Hierarchy Creation:</strong> Set up Company → Branches → Teams structure</li>
+                        <li>• <strong>Role Assignments:</strong> Assign Company Admin, Branch Manager, Team Lead roles</li>
+                        <li>• <strong>Employee Management:</strong> Track employment status, positions, and assignments</li>
+                        <li>• <strong>Matrix Management:</strong> Visual organization charts with capacity tracking</li>
+                        <li>• <strong>Conflict Detection:</strong> Automated identification of organizational issues</li>
+                      </ul>
+                    </div>
+
+                    <div className="p-4 bg-purple-50 rounded-lg border-l-4 border-purple-500">
+                      <h4 className="font-medium mb-3 text-purple-900">Work Diary & Verification System</h4>
+                      <ul className="text-sm text-purple-800 space-y-2">
+                        <li>• <strong>Hierarchical Approval:</strong> Multi-level work verification workflows</li>
+                        <li>• <strong>Bulk Processing:</strong> Approve multiple work entries efficiently</li>
+                        <li>• <strong>Verification Analytics:</strong> Track approval rates and processing times</li>
+                        <li>• <strong>Quality Control:</strong> Ensure work diary accuracy and completeness</li>
+                        <li>• <strong>Immutable Records:</strong> Approved entries become permanent credentials</li>
+                      </ul>
+                    </div>
+
+                    <div className="p-4 bg-orange-50 rounded-lg border-l-4 border-orange-500">
+                      <h4 className="font-medium mb-3 text-orange-900">Recruitment & Job Management</h4>
+                      <ul className="text-sm text-orange-800 space-y-2">
+                        <li>• <strong>Job Posting:</strong> Create and publish job opportunities</li>
+                        <li>• <strong>Application Management:</strong> Review and process candidate applications</li>
+                        <li>• <strong>Recruitment Pipelines:</strong> Track candidates through hiring stages</li>
+                        <li>• <strong>Talent Discovery:</strong> Search verified professionals by skills and experience</li>
+                        <li>• <strong>Interview Scheduling:</strong> Coordinate recruitment activities</li>
+                      </ul>
+                    </div>
+
+                    <div className="p-4 bg-red-50 rounded-lg border-l-4 border-red-500">
+                      <h4 className="font-medium mb-3 text-red-900">Analytics & Performance Monitoring</h4>
+                      <ul className="text-sm text-red-800 space-y-2">
+                        <li>• <strong>Company Dashboard:</strong> Real-time overview of all business metrics</li>
+                        <li>• <strong>Employee Analytics:</strong> Track team performance and productivity</li>
+                        <li>• <strong>Recruitment Metrics:</strong> Monitor hiring success rates and time-to-fill</li>
+                        <li>• <strong>Verification Statistics:</strong> Analyze work diary approval patterns</li>
+                        <li>• <strong>Organizational Health:</strong> Capacity tracking and optimization recommendations</li>
+                      </ul>
+                    </div>
+
+                    <div className="p-4 bg-gray-50 rounded-lg border-l-4 border-gray-500">
+                      <h4 className="font-medium mb-3 text-gray-900">Security & Compliance</h4>
+                      <ul className="text-sm text-gray-800 space-y-2">
+                        <li>• <strong>Role-Based Access:</strong> Granular permissions for different user levels</li>
+                        <li>• <strong>Audit Trails:</strong> Complete logging of all verification activities</li>
+                        <li>• <strong>Data Protection:</strong> Secure handling of employee and business information</li>
+                        <li>• <strong>Legal Compliance:</strong> Meet professional verification standards</li>
+                        <li>• <strong>Privacy Controls:</strong> Manage data visibility and sharing permissions</li>
+                      </ul>
+                    </div>
                   </div>
-                  
-                  <div className="p-4 bg-gray-50 rounded-lg">
-                    <h4 className="font-medium mb-2">Advanced Features</h4>
-                    <ul className="text-sm text-gray-600 space-y-1">
-                      <li>• Company hierarchy management</li>
-                      <li>• Bulk verification processes</li>
-                      <li>• Analytics and reporting</li>
-                      <li>• Integration with external tools</li>
-                    </ul>
+                ) : userType === 'employee' ? (
+                  // Employee-specific documentation
+                  <div className="grid gap-4">
+                    <div className="p-4 bg-gray-50 rounded-lg">
+                      <h4 className="font-medium mb-2">Quick Reference</h4>
+                      <ul className="text-sm text-gray-600 space-y-1">
+                        <li>• Getting started with your account</li>
+                        <li>• Building your professional profile</li>
+                        <li>• Tracking work in your diary</li>
+                        <li>• Using job discovery features</li>
+                        <li>• Understanding work verification</li>
+                      </ul>
+                    </div>
+                    
+                    <div className="p-4 bg-gray-50 rounded-lg">
+                      <h4 className="font-medium mb-2">Advanced Features</h4>
+                      <ul className="text-sm text-gray-600 space-y-1">
+                        <li>• Skills tracking and validation</li>
+                        <li>• Professional networking</li>
+                        <li>• Career progression tracking</li>
+                        <li>• Verified credential building</li>
+                      </ul>
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  // Manager-specific documentation
+                  <div className="grid gap-4">
+                    <div className="p-4 bg-gray-50 rounded-lg">
+                      <h4 className="font-medium mb-2">Management Tools</h4>
+                      <ul className="text-sm text-gray-600 space-y-1">
+                        <li>• Team work verification</li>
+                        <li>• Employee performance tracking</li>
+                        <li>• Work diary approval workflows</li>
+                        <li>• Team organization management</li>
+                      </ul>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
