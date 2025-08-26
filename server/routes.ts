@@ -3691,7 +3691,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         canEditEmployees: permissionLevel === 'branch_manager',
         canViewAnalytics: true,
         canInviteEmployees: false,
-        canManageTeams: permissionLevel === 'branch_manager',
       });
 
       res.json({ manager, message: 'Manager created successfully' });
