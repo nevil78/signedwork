@@ -142,6 +142,7 @@ export default function CompanyRecruiterPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [jobFilter, setJobFilter] = useState<string>('all');
   const [showStatusDialog, setShowStatusDialog] = useState(false);
+  const [showViewDialog, setShowViewDialog] = useState(false);
   const [newStatus, setNewStatus] = useState<ApplicationStatus>('viewed');
   const [notes, setNotes] = useState('');
   const [rejectionReason, setRejectionReason] = useState('');
@@ -571,7 +572,10 @@ export default function CompanyRecruiterPage() {
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => setSelectedApplication(application)}
+                              onClick={() => {
+                                setSelectedApplication(application);
+                                setShowViewDialog(true);
+                              }}
                               className="text-xs px-2"
                             >
                               <Eye className="h-3 w-3 mr-1" />
@@ -906,6 +910,127 @@ export default function CompanyRecruiterPage() {
             </TabsContent>
           ))}
         </Tabs>
+
+        {/* Application Details View Dialog */}
+        <Dialog open={showViewDialog} onOpenChange={setShowViewDialog}>
+          <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
+            <DialogHeader className="flex-shrink-0">
+              <DialogTitle>Application Details</DialogTitle>
+            </DialogHeader>
+            
+            {selectedApplication && (
+              <div className="flex-1 overflow-y-auto space-y-6">
+                {/* Employee Profile Section */}
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-6 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="h-16 w-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-xl">
+                      {selectedApplication.employee.firstName?.[0]}{selectedApplication.employee.lastName?.[0]}
+                    </div>
+                    <div>
+                      <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                        {selectedApplication.employee.firstName} {selectedApplication.employee.lastName}
+                      </h3>
+                      <p className="text-gray-600 dark:text-gray-400">
+                        Applied for {selectedApplication.job.title}
+                      </p>
+                      <div className="flex items-center gap-2 mt-2">
+                        <Mail className="h-4 w-4 text-gray-500" />
+                        <span className="text-gray-600 dark:text-gray-400">{selectedApplication.employee.email}</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-blue-600" />
+                      <span className="text-sm">
+                        Applied on {new Date(selectedApplication.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <div>
+                      <Badge className={getStatusBadgeColor(selectedApplication.status)}>
+                        {getStatusIcon(selectedApplication.status)}
+                        <span className="ml-1 capitalize">{selectedApplication.status}</span>
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Application Details */}
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-lg">Application Information</h4>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
+                      <h5 className="font-medium text-gray-900 dark:text-gray-100 mb-2">Position</h5>
+                      <p className="text-gray-600 dark:text-gray-400">{selectedApplication.job.title}</p>
+                      <p className="text-sm text-gray-500 mt-1">{selectedApplication.job.department}</p>
+                    </div>
+                    
+                    <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
+                      <h5 className="font-medium text-gray-900 dark:text-gray-100 mb-2">Application Status</h5>
+                      <p className="text-gray-600 dark:text-gray-400 capitalize">{selectedApplication.status}</p>
+                      {selectedApplication.appliedAt && (
+                        <p className="text-sm text-gray-500 mt-1">
+                          Applied {new Date(selectedApplication.appliedAt).toLocaleDateString()}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Cover Letter / Notes */}
+                  {selectedApplication.coverLetter && (
+                    <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
+                      <h5 className="font-medium text-gray-900 dark:text-gray-100 mb-2">Cover Letter</h5>
+                      <p className="text-gray-600 dark:text-gray-400 whitespace-pre-wrap">
+                        {selectedApplication.coverLetter}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Company Notes */}
+                  {selectedApplication.companyNotes && (
+                    <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-lg border border-amber-200 dark:border-amber-800">
+                      <h5 className="font-medium text-amber-900 dark:text-amber-100 mb-2">Internal Notes</h5>
+                      <p className="text-amber-800 dark:text-amber-200 whitespace-pre-wrap">
+                        {selectedApplication.companyNotes}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <DialogFooter className="flex-shrink-0 flex gap-2">
+              <Link href={`/company-employee/${selectedApplication?.employee.id}`}>
+                <Button variant="outline" className="flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  View Full Profile
+                </Button>
+              </Link>
+              <Link href={`/employee-work-diary/${selectedApplication?.employee.id}`}>
+                <Button className="flex items-center gap-2">
+                  <FileText className="h-4 w-4" />
+                  View Work Entries
+                </Button>
+              </Link>
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setShowViewDialog(false);
+                  setShowStatusDialog(true);
+                }}
+                className="flex items-center gap-2"
+              >
+                <CheckCircle className="h-4 w-4" />
+                Update Status
+              </Button>
+              <Button variant="outline" onClick={() => setShowViewDialog(false)}>
+                Close
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* Status Change Dialog */}
         <Dialog open={showStatusDialog} onOpenChange={setShowStatusDialog}>
