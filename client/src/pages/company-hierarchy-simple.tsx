@@ -37,7 +37,7 @@ export default function CompanyHierarchySimple() {
   const [isCreateManagerOpen, setIsCreateManagerOpen] = useState(false);
   const [isManageManagerOpen, setIsManageManagerOpen] = useState(false);
   const [selectedManagerForEdit, setSelectedManagerForEdit] = useState<any>(null);
-  const [newManager, setNewManager] = useState({ firstName: "", lastName: "", email: "", password: "" });
+  const [newManager, setNewManager] = useState({ firstName: "", lastName: "", email: "", password: "", username: "" });
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [newTempPassword, setNewTempPassword] = useState("");
   
@@ -251,16 +251,41 @@ export default function CompanyHierarchySimple() {
     }
   };
 
+  // Generate unique username based on name
+  const generateUsername = (firstName: string, lastName: string) => {
+    if (!firstName || !lastName) return "";
+    
+    const initials = (firstName.charAt(0) + lastName.charAt(0)).toUpperCase();
+    const lastNamePart = lastName.substring(0, 3).toUpperCase();
+    const randomNum = Math.floor(Math.random() * 999) + 1;
+    
+    return `${initials}${lastNamePart}${randomNum.toString().padStart(3, '0')}`;
+  };
+
+  // Auto-generate username when names change
+  const handleNameChange = (field: string, value: string) => {
+    const updatedManager = { ...newManager, [field]: value };
+    
+    if (field === 'firstName' || field === 'lastName') {
+      updatedManager.username = generateUsername(
+        field === 'firstName' ? value : newManager.firstName,
+        field === 'lastName' ? value : newManager.lastName
+      );
+    }
+    
+    setNewManager(updatedManager);
+  };
+
   const handleCreateManager = async () => {
-    if (newManager.firstName && newManager.lastName && newManager.email && newManager.password) {
+    if (newManager.firstName && newManager.lastName && newManager.email && newManager.password && newManager.username) {
       try {
         // TODO: Implement actual manager creation API call when backend is ready
         console.log('Creating manager:', newManager);
         
         // For now, we'll simulate success
-        toast({ title: "Success", description: `Manager ${newManager.firstName} ${newManager.lastName} will be created once API is implemented` });
+        toast({ title: "Success", description: `Manager ${newManager.firstName} ${newManager.lastName} (${newManager.username}) will be created once API is implemented` });
         setIsCreateManagerOpen(false);
-        setNewManager({ firstName: "", lastName: "", email: "", password: "" });
+        setNewManager({ firstName: "", lastName: "", email: "", password: "", username: "" });
       } catch (error: any) {
         toast({ title: "Error", description: error.message || "Failed to create manager", variant: "destructive" });
       }
@@ -1025,7 +1050,7 @@ export default function CompanyHierarchySimple() {
                 <Input
                   id="manager-first-name"
                   value={newManager.firstName}
-                  onChange={(e) => setNewManager({ ...newManager, firstName: e.target.value })}
+                  onChange={(e) => handleNameChange('firstName', e.target.value)}
                   placeholder="John"
                   data-testid="input-manager-first-name"
                 />
@@ -1035,7 +1060,7 @@ export default function CompanyHierarchySimple() {
                 <Input
                   id="manager-last-name"
                   value={newManager.lastName}
-                  onChange={(e) => setNewManager({ ...newManager, lastName: e.target.value })}
+                  onChange={(e) => handleNameChange('lastName', e.target.value)}
                   placeholder="Doe"
                   data-testid="input-manager-last-name"
                 />
@@ -1043,7 +1068,22 @@ export default function CompanyHierarchySimple() {
             </div>
             
             <div>
-              <Label htmlFor="manager-email">Email (Manager ID)</Label>
+              <Label htmlFor="manager-username">Manager Username (Auto-generated)</Label>
+              <Input
+                id="manager-username"
+                value={newManager.username}
+                readOnly
+                className="bg-gray-50 font-mono text-sm"
+                placeholder="Username will be generated automatically"
+                data-testid="input-manager-username"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Unique username generated from name (e.g., JOHDO123)
+              </p>
+            </div>
+            
+            <div>
+              <Label htmlFor="manager-email">Email (for notifications)</Label>
               <Input
                 id="manager-email"
                 type="email"
@@ -1052,6 +1092,9 @@ export default function CompanyHierarchySimple() {
                 placeholder="john.doe@company.com"
                 data-testid="input-manager-email"
               />
+              <p className="text-xs text-muted-foreground mt-1">
+                Email for notifications and communication only
+              </p>
             </div>
             
             <div>
@@ -1069,7 +1112,7 @@ export default function CompanyHierarchySimple() {
             <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
               <h5 className="font-medium text-sm mb-2 text-blue-900">Manager Credentials</h5>
               <div className="text-xs space-y-1 text-blue-800">
-                <div>Manager ID: {newManager.email || "Not set"}</div>
+                <div>Username: {newManager.username || "Will be generated automatically"}</div>
                 <div>Role: Team Manager</div>
                 <div>Permissions: Can verify work entries, manage team members</div>
               </div>
