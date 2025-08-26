@@ -4920,7 +4920,7 @@ export class DatabaseStorage implements IStorage {
     // Manager approval = Company verification (delegated authority)
     const updateData: any = {
       approvalStatus: 'approved',
-      verifiedBy: managerId,
+      // Don't set verifiedBy since it expects employee ID, not manager ID
       verifiedByRole: 'assigned_manager',
       verifiedByName: manager.managerName,
       verifiedAt: new Date(),
