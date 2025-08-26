@@ -40,6 +40,10 @@ export default function CompanyHierarchySimple() {
   const [newManager, setNewManager] = useState({ firstName: "", lastName: "", email: "", password: "", username: "" });
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [newTempPassword, setNewTempPassword] = useState("");
+  const [passwordResetForm, setPasswordResetForm] = useState({
+    newPassword: "",
+    confirmPassword: ""
+  });
   const [showToggleConfirmDialog, setShowToggleConfirmDialog] = useState(false);
   
   // Form states
@@ -351,27 +355,32 @@ export default function CompanyHierarchySimple() {
     setIsManageManagerOpen(true);
   };
 
-  const handleResetManagerPassword = async () => {
+  // Password reset mutation
+  const resetManagerPasswordMutation = useMutation({
+    mutationFn: async ({ managerId, newPassword }: { managerId: string; newPassword: string }) => {
+      return apiRequest("POST", `/api/company/managers/${managerId}/reset-password`, { newPassword });
+    },
+    onSuccess: () => {
+      setShowPasswordDialog(false);
+      setPasswordResetForm({ newPassword: "", confirmPassword: "" });
+      queryClient.invalidateQueries({ queryKey: ["/api/company/managers"] });
+      toast({ 
+        title: "Password Reset Successful", 
+        description: "Manager password has been updated successfully" 
+      });
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Error", 
+        description: error.message || "Failed to reset manager password", 
+        variant: "destructive" 
+      });
+    }
+  });
+
+  const handleResetManagerPassword = () => {
     if (selectedManagerForEdit) {
-      try {
-        // Generate a new temporary password
-        const tempPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-4).toUpperCase();
-        
-        // TODO: Call API to update manager password
-        console.log('Resetting password for manager:', selectedManagerForEdit.employeeId);
-        console.log('New temporary password:', tempPassword);
-        
-        // Show the new password in a dialog
-        setNewTempPassword(tempPassword);
-        setShowPasswordDialog(true);
-        
-        toast({ 
-          title: "Password Reset Successful", 
-          description: "New temporary password generated"
-        });
-      } catch (error: any) {
-        toast({ title: "Error", description: error.message || "Failed to reset password", variant: "destructive" });
-      }
+      setShowPasswordDialog(true);
     }
   };
 
@@ -1152,60 +1161,119 @@ export default function CompanyHierarchySimple() {
       </Dialog>
 
       {/* Password Reset Dialog */}
-      <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
-        <DialogContent className="max-w-md">
+      <Dialog open={showPasswordDialog} onOpenChange={(open) => {
+        setShowPasswordDialog(open);
+        if (!open) {
+          setPasswordResetForm({ newPassword: "", confirmPassword: "" });
+        }
+      }}>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <UserCog className="w-5 h-5 text-green-600" />
-              New Temporary Password
+              <UserCog className="h-5 w-5 text-blue-600" />
+              Reset Manager Password
             </DialogTitle>
             <DialogDescription>
-              Share this temporary password with {selectedManagerForEdit?.managerName}
+              Set a new password for {selectedManagerForEdit?.managerName}
             </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-4">
-            <div className="p-4 bg-green-50 rounded-lg border border-green-200">
-              <label className="block text-sm font-medium text-green-900 mb-2">
-                Temporary Password:
-              </label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={newTempPassword}
-                  readOnly
-                  className="flex-1 px-3 py-2 bg-white border border-green-300 rounded-md font-mono text-sm"
-                  data-testid="temp-password-input"
-                />
-                <Button
-                  size="sm"
-                  onClick={() => {
-                    navigator.clipboard.writeText(newTempPassword);
-                    toast({ title: "Copied!", description: "Password copied to clipboard" });
-                  }}
-                  data-testid="copy-password-btn"
-                >
-                  Copy
-                </Button>
+            <div className="bg-gray-50 p-4 rounded-lg border">
+              <Label className="text-sm font-medium text-gray-700">Manager Details</Label>
+              <div className="mt-2 space-y-1 text-sm">
+                <div><strong>Name:</strong> {selectedManagerForEdit?.managerName}</div>
+                <div><strong>ID:</strong> {selectedManagerForEdit?.uniqueId}</div>
+                <div><strong>Email:</strong> {selectedManagerForEdit?.managerEmail}</div>
               </div>
             </div>
             
-            <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
-              <p className="text-sm text-blue-900">
-                <strong>Instructions:</strong>
-              </p>
-              <ul className="text-xs text-blue-800 mt-1 space-y-1">
-                <li>• Share this password with the manager</li>
-                <li>• They should change it after first login</li>
-                <li>• This password is valid immediately</li>
-              </ul>
+            <div className="space-y-3">
+              <div>
+                <Label htmlFor="new-password" className="text-sm font-medium">
+                  New Password
+                </Label>
+                <Input
+                  id="new-password"
+                  type="password"
+                  value={passwordResetForm.newPassword}
+                  onChange={(e) => setPasswordResetForm(prev => ({ ...prev, newPassword: e.target.value }))}
+                  placeholder="Enter new password"
+                  className="mt-1"
+                  data-testid="input-new-password"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="confirm-password" className="text-sm font-medium">
+                  Confirm Password
+                </Label>
+                <Input
+                  id="confirm-password"
+                  type="password"
+                  value={passwordResetForm.confirmPassword}
+                  onChange={(e) => setPasswordResetForm(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                  placeholder="Confirm new password"
+                  className="mt-1"
+                  data-testid="input-confirm-password"
+                />
+                {passwordResetForm.confirmPassword && passwordResetForm.newPassword !== passwordResetForm.confirmPassword && (
+                  <p className="text-sm text-red-600 mt-1">Passwords do not match</p>
+                )}
+              </div>
             </div>
             
-            <div className="flex gap-2">
-              <Button onClick={() => setShowPasswordDialog(false)} className="flex-1">
-                Done
-              </Button>
+            <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
+              <div className="flex items-start gap-2">
+                <div className="text-sm text-blue-800">
+                  <strong>Password Requirements:</strong>
+                  <ul className="mt-1 space-y-1 text-xs">
+                    <li>• Minimum 8 characters</li>
+                    <li>• At least one uppercase letter</li>
+                    <li>• At least one number</li>
+                  </ul>
+                </div>
+              </div>
             </div>
+          </div>
+          
+          <div className="flex gap-2 pt-4">
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setShowPasswordDialog(false);
+                setPasswordResetForm({ newPassword: "", confirmPassword: "" });
+              }}
+              className="flex-1"
+              data-testid="button-cancel-reset"
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={() => {
+                if (!passwordResetForm.newPassword || !passwordResetForm.confirmPassword) {
+                  toast({ title: "Error", description: "Please fill in both password fields", variant: "destructive" });
+                  return;
+                }
+                if (passwordResetForm.newPassword !== passwordResetForm.confirmPassword) {
+                  toast({ title: "Error", description: "Passwords do not match", variant: "destructive" });
+                  return;
+                }
+                if (passwordResetForm.newPassword.length < 8) {
+                  toast({ title: "Error", description: "Password must be at least 8 characters long", variant: "destructive" });
+                  return;
+                }
+                resetManagerPasswordMutation.mutate({ 
+                  managerId: selectedManagerForEdit?.id, 
+                  newPassword: passwordResetForm.newPassword 
+                });
+              }}
+              disabled={resetManagerPasswordMutation.isPending || !passwordResetForm.newPassword || !passwordResetForm.confirmPassword || passwordResetForm.newPassword !== passwordResetForm.confirmPassword}
+              className="flex-1"
+              data-testid="button-confirm-reset"
+            >
+              {resetManagerPasswordMutation.isPending ? "Resetting..." : "Reset Password"}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
