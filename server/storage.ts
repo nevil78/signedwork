@@ -4830,17 +4830,27 @@ export class DatabaseStorage implements IStorage {
     const manager = await this.getManager(managerId);
     if (!manager) throw new Error('Manager not found');
     
+    // Manager approval = Company verification (delegated authority)
+    const finalApprovalStatus = data.approvalStatus === 'manager_approved' ? 'approved' : 'needs_changes';
+    
+    const updateData: any = {
+      approvalStatus: finalApprovalStatus,
+      approvedByManagerId: managerId,
+      approvedByManagerName: manager.managerName,
+      managerApprovalDate: new Date(),
+      companyFeedback: data.managerFeedback,
+      companyRating: data.managerRating,
+      updatedAt: new Date(),
+    };
+    
+    // For immutable protection, also set status to approved when manager approves
+    if (data.approvalStatus === 'manager_approved') {
+      updateData.status = 'approved';
+    }
+    
     const [updatedEntry] = await db
       .update(workEntries)
-      .set({
-        approvalStatus: data.approvalStatus,
-        approvedByManagerId: managerId,
-        approvedByManagerName: manager.managerName,
-        managerApprovalDate: new Date(),
-        companyFeedback: data.managerFeedback,
-        companyRating: data.managerRating,
-        updatedAt: new Date(),
-      })
+      .set(updateData)
       .where(eq(workEntries.id, workEntryId))
       .returning();
       

@@ -236,12 +236,14 @@ export default function CompanyWorkEntries() {
     }
   };
 
-  const getStatusBadge = (approvalStatus: ApprovalStatus) => {
+  const getStatusBadge = (approvalStatus: ApprovalStatus, entry?: any) => {
     switch (approvalStatus) {
       case 'pending_review':
         return <Badge variant="secondary" className="bg-yellow-100 text-yellow-800"><Clock className="w-3 h-3 mr-1" />Pending Review</Badge>;
       case 'approved':
-        return <Badge variant="secondary" className="bg-green-100 text-green-800"><CheckCircle className="w-3 h-3 mr-1" />Approved</Badge>;
+        // Show if verified by manager (delegated authority) or direct company verification
+        const verifiedBy = entry?.approvedByManagerName ? `Verified by ${entry.approvedByManagerName}` : 'Company Verified';
+        return <Badge variant="secondary" className="bg-green-100 text-green-800"><CheckCircle className="w-3 h-3 mr-1" />{verifiedBy}</Badge>;
       case 'needs_changes':
         return <Badge variant="secondary" className="bg-red-100 text-red-800"><AlertCircle className="w-3 h-3 mr-1" />Needs Changes</Badge>;
       default:
@@ -276,7 +278,7 @@ export default function CompanyWorkEntries() {
             </CardDescription>
           </div>
           <div className="flex items-center gap-2">
-            {getStatusBadge(entry.approvalStatus)}
+            {getStatusBadge(entry.approvalStatus, entry)}
             {getPriorityBadge(entry.priority)}
           </div>
         </div>
