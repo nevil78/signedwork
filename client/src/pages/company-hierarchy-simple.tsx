@@ -63,6 +63,12 @@ export default function CompanyHierarchySimple() {
     queryFn: () => apiRequest("GET", "/api/company/teams")
   });
 
+  // Fetch managers data (real managers, not employee hierarchy)
+  const { data: managers, isLoading: managersLoading } = useQuery({
+    queryKey: ["/api/company/managers"],
+    queryFn: () => apiRequest("GET", "/api/company/managers")
+  });
+
   // Mutations
   const createBranchMutation = useMutation({
     mutationFn: (data: any) => apiRequest("POST", "/api/company/branches", data),
@@ -281,19 +287,15 @@ export default function CompanyHierarchySimple() {
       try {
         console.log('Creating manager directly...');
         
-        // Create manager with direct API call
+        // Create manager with correct data format for the API
         const managerData = {
+          managerId: newManager.username, // Use managerId field
           managerName: `${newManager.firstName} ${newManager.lastName}`,
           managerEmail: newManager.email,
-          username: newManager.username,
           password: newManager.password,
           permissionLevel: "team_lead",
-          permissions: {
-            canVerifyWork: true,
-            canManageEmployees: true,
-            canCreateTeams: false,
-            canViewReports: true
-          }
+          branchId: null,
+          teamId: null
         };
         
         const response = await apiRequest("POST", "/api/company/managers", managerData);
@@ -495,25 +497,25 @@ export default function CompanyHierarchySimple() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {Array.isArray(employees) && employees.filter((emp: any) => emp.hierarchyRole === "team_lead" || emp.hierarchyRole === "branch_manager" || emp.hierarchyRole === "company_admin").length > 0 ? (
-                  employees
-                    .filter((emp: any) => emp.hierarchyRole === "team_lead" || emp.hierarchyRole === "branch_manager" || emp.hierarchyRole === "company_admin")
-                    .map((manager: any) => (
+                {/* Show real managers from managers table */}
+                {Array.isArray(managers) && managers.length > 0 ? (
+                  managers.map((manager: any) => (
                       <div key={manager.id} className="p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
                             <UserCog className="w-5 h-5 text-blue-600" />
                             <div>
-                              <h4 className="font-semibold text-blue-900">{manager.firstName} {manager.lastName}</h4>
+                              <h4 className="font-semibold text-blue-900">{manager.managerName}</h4>
                               <div className="text-xs text-blue-700 space-y-1">
-                                <div>Role: {manager.hierarchyRole?.replace('_', ' ') || 'Manager'}</div>
-                                <div>Email: {manager.email}</div>
+                                <div>Username: {manager.uniqueId}</div>
+                                <div>Email: {manager.managerEmail}</div>
+                                <div>Role: {manager.permissionLevel?.replace('_', ' ') || 'Manager'}</div>
                                 <div>Team: {getTeamName(manager.teamId) || 'No team assigned'}</div>
                               </div>
                             </div>
-                            <Badge variant={manager.hierarchyRole === "company_admin" ? "default" : "secondary"}>
-                              {manager.hierarchyRole === "company_admin" ? "Admin" : 
-                               manager.hierarchyRole === "branch_manager" ? "Branch Manager" : "Team Lead"}
+                            <Badge variant={manager.permissionLevel === "company_admin" ? "default" : "secondary"}>
+                              {manager.permissionLevel === "company_admin" ? "Admin" : 
+                               manager.permissionLevel === "branch_manager" ? "Branch Manager" : "Team Lead"}
                             </Badge>
                           </div>
                           <div className="flex gap-2">
@@ -522,7 +524,7 @@ export default function CompanyHierarchySimple() {
                               variant="outline" 
                               className="text-blue-600"
                               onClick={() => handleManageManager(manager)}
-                              data-testid={`manage-manager-${manager.employeeId}`}
+                              data-testid={`manage-manager-${manager.id}`}
                             >
                               <Shield className="w-4 h-4 mr-1" />
                               Manage
