@@ -4896,9 +4896,7 @@ export class DatabaseStorage implements IStorage {
       .innerJoin(companyEmployees, and(
         eq(companyEmployees.employeeId, employees.id),
         eq(companyEmployees.assignedManagerId, managerId),
-        eq(companyEmployees.isActive, true),
-        // Only show work entries created AFTER employee was assigned to manager
-        sql`${workEntries.createdAt} >= ${companyEmployees.updatedAt}`
+        eq(companyEmployees.isActive, true)
       ));
 
     const conditions = [];
