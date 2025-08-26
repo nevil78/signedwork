@@ -1,5 +1,5 @@
 import { sql, relations } from "drizzle-orm";
-import { pgTable, text, varchar, timestamp, integer, boolean, numeric, jsonb, index } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, timestamp, integer, boolean, numeric, jsonb, index, unique } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -304,6 +304,25 @@ export const companyEmployees = pgTable("company_employees", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Team members junction table for many-to-many relationship
+export const teamMembers = pgTable("team_members", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  teamId: varchar("team_id").notNull().references(() => companyTeams.id, { onDelete: "cascade" }),
+  employeeId: varchar("employee_id").notNull().references(() => employees.id, { onDelete: "cascade" }),
+  companyId: varchar("company_id").notNull().references(() => companies.id, { onDelete: "cascade" }),
+  joinedAt: timestamp("joined_at").defaultNow(),
+  leftAt: timestamp("left_at"),
+  isActive: boolean("is_active").default(true),
+  role: varchar("role", { length: 50 }).default("member"), // "member", "lead", etc.
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => {
+  return {
+    // Ensure unique team-employee combination per company
+    uniqueTeamEmployee: unique().on(table.teamId, table.employeeId),
+  };
+});
+
 // Company managers table for sub-account system
 export const companyManagers = pgTable("company_managers", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -487,6 +506,7 @@ export const employeesRelations = relations(employees, ({ many }) => ({
   employeeCompanies: many(employeeCompanies),
   workEntries: many(workEntries),
   companyEmployees: many(companyEmployees),
+  teamMemberships: many(teamMembers), // New relation for team memberships
   jobApplications: many(jobApplications),
   savedJobs: many(savedJobs),
   jobAlerts: many(jobAlerts),
@@ -575,6 +595,7 @@ export const companiesRelations = relations(companies, ({ many }) => ({
   jobListings: many(jobListings),
   profileViews: many(profileViews),
   companyEmployees: many(companyEmployees),
+  teamMembers: many(teamMembers), // New relation for team members
   invitationCodes: many(companyInvitationCodes),
   branches: many(companyBranches),
   teams: many(companyTeams),
@@ -607,8 +628,25 @@ export const companyTeamsRelations = relations(companyTeams, ({ one, many }) => 
     references: [companyManagers.id],
   }),
   members: many(companyEmployees),
+  teamMembers: many(teamMembers), // New many-to-many relation
   workEntries: many(workEntries),
   managers: many(companyManagers),
+}));
+
+// Team members relations
+export const teamMembersRelations = relations(teamMembers, ({ one }) => ({
+  team: one(companyTeams, {
+    fields: [teamMembers.teamId],
+    references: [companyTeams.id],
+  }),
+  employee: one(employees, {
+    fields: [teamMembers.employeeId],
+    references: [employees.id],
+  }),
+  company: one(companies, {
+    fields: [teamMembers.companyId],
+    references: [companies.id],
+  }),
 }));
 
 // Manager relations
@@ -866,6 +904,12 @@ export const insertCompanyEmployeeSchema = createInsertSchema(companyEmployees).
   updatedAt: true,
 });
 
+export const insertTeamMemberSchema = createInsertSchema(teamMembers).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export const insertCompanyInvitationCodeSchema = createInsertSchema(companyInvitationCodes).omit({
   id: true,
   code: true,
@@ -1039,6 +1083,7 @@ export type WorkEntry = typeof workEntries.$inferSelect;
 export type Company = typeof companies.$inferSelect;
 export type CompanyInvitationCode = typeof companyInvitationCodes.$inferSelect;
 export type CompanyEmployee = typeof companyEmployees.$inferSelect;
+export type TeamMember = typeof teamMembers.$inferSelect;
 export type CompanyBranch = typeof companyBranches.$inferSelect;
 export type CompanyTeam = typeof companyTeams.$inferSelect;
 export type CompanyManager = typeof companyManagers.$inferSelect;
@@ -1057,6 +1102,7 @@ export type InsertWorkEntry = z.infer<typeof insertWorkEntrySchema>;
 export type InsertCompany = z.infer<typeof insertCompanySchema>;
 export type InsertCompanyInvitationCode = z.infer<typeof insertCompanyInvitationCodeSchema>;
 export type InsertCompanyEmployee = z.infer<typeof insertCompanyEmployeeSchema>;
+export type InsertTeamMember = z.infer<typeof insertTeamMemberSchema>;
 export type InsertCompanyBranch = z.infer<typeof insertCompanyBranchSchema>;
 export type InsertCompanyTeam = z.infer<typeof insertCompanyTeamSchema>;
 export type LoginData = z.infer<typeof loginSchema>;

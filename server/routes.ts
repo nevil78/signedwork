@@ -3681,6 +3681,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // New team membership endpoints for many-to-many relationships
+  app.post("/api/company/teams/:teamId/members", requireCompany, async (req: any, res) => {
+    try {
+      const { teamId } = req.params;
+      const { employeeIds, role = "member" } = req.body;
+      
+      if (!Array.isArray(employeeIds) || employeeIds.length === 0) {
+        return res.status(400).json({ message: "Employee IDs array is required" });
+      }
+
+      const addedMembers = [];
+      for (const employeeId of employeeIds) {
+        // Check if employee is already in the team
+        const isAlreadyMember = await storage.isEmployeeInTeam(employeeId, teamId);
+        if (!isAlreadyMember) {
+          const teamMember = await storage.addEmployeeToTeam(employeeId, teamId, req.user.id, role);
+          addedMembers.push(teamMember);
+        }
+      }
+
+      res.json({ 
+        message: `${addedMembers.length} employee(s) added to team successfully`,
+        addedMembers 
+      });
+    } catch (error) {
+      console.error("Add team members error:", error);
+      res.status(500).json({ message: "Failed to add team members" });
+    }
+  });
+
+  app.delete("/api/company/teams/:teamId/members/:employeeId", requireCompany, async (req: any, res) => {
+    try {
+      const { teamId, employeeId } = req.params;
+      
+      await storage.removeEmployeeFromTeam(employeeId, teamId);
+      
+      res.json({ message: "Employee removed from team successfully" });
+    } catch (error) {
+      console.error("Remove team member error:", error);
+      res.status(500).json({ message: "Failed to remove team member" });
+    }
+  });
+
+  app.get("/api/company/employees/:employeeId/teams", requireCompany, async (req: any, res) => {
+    try {
+      const { employeeId } = req.params;
+      const teams = await storage.getEmployeeTeams(employeeId, req.user.id);
+      res.json(teams);
+    } catch (error) {
+      console.error("Get employee teams error:", error);
+      res.status(500).json({ message: "Failed to fetch employee teams" });
+    }
+  });
+
+  app.get("/api/company/teams/:teamId/memberships", requireCompany, async (req: any, res) => {
+    try {
+      const { teamId } = req.params;
+      const memberships = await storage.getTeamMemberships(teamId);
+      res.json(memberships);
+    } catch (error) {
+      console.error("Get team memberships error:", error);
+      res.status(500).json({ message: "Failed to fetch team memberships" });
+    }
+  });
+
   // Employee Hierarchy Information Routes
   app.get("/api/company/employees/:employeeId/hierarchy", requireCompany, async (req: any, res) => {
     try {

@@ -1,6 +1,6 @@
 import { 
   employees, companies, experiences, educations, certifications, projects, endorsements, workEntries, employeeCompanies,
-  companyInvitationCodes, companyEmployees, companyBranches, companyTeams, companyManagers, managerPermissions, jobListings, jobApplications, savedJobs, jobAlerts, profileViews, admins, emailVerifications, userFeedback, loginSessions,
+  companyInvitationCodes, companyEmployees, companyBranches, companyTeams, teamMembers, companyManagers, managerPermissions, jobListings, jobApplications, savedJobs, jobAlerts, profileViews, admins, emailVerifications, userFeedback, loginSessions,
   skills, skillTrends, userSkillPreferences, skillAnalytics, pendingUsers,
   recruiterProfiles, candidatePipelines, candidateInteractions, recruitmentAnalytics, savedSearches,
   type Employee, type Company, type InsertEmployee, type InsertCompany,
@@ -8,6 +8,7 @@ import {
   type InsertExperience, type InsertEducation, type InsertCertification, 
   type InsertProject, type InsertEndorsement, type InsertWorkEntry, type InsertEmployeeCompany,
   type CompanyInvitationCode, type CompanyEmployee, type InsertCompanyInvitationCode, type InsertCompanyEmployee,
+  type TeamMember, type InsertTeamMember,
   type CompanyBranch, type CompanyTeam, type InsertCompanyBranch, type InsertCompanyTeam,
   type CompanyManager, type ManagerPermission, type InsertCompanyManager, type InsertManagerPermission,
   type JobListing, type JobApplication, type SavedJob, type JobAlert, type ProfileView,
@@ -5385,6 +5386,122 @@ export class DatabaseStorage implements IStorage {
       createdAt: r.createdAt,
       updatedAt: r.updatedAt
     }));
+  }
+
+  // Team membership operations (many-to-many relationships)
+  async addEmployeeToTeam(employeeId: string, teamId: string, companyId: string, role: string = "member"): Promise<TeamMember> {
+    const [teamMember] = await db
+      .insert(teamMembers)
+      .values({
+        employeeId,
+        teamId,
+        companyId,
+        role,
+        isActive: true
+      })
+      .returning();
+    return teamMember;
+  }
+
+  async removeEmployeeFromTeam(employeeId: string, teamId: string): Promise<void> {
+    await db
+      .update(teamMembers)
+      .set({ 
+        isActive: false,
+        leftAt: new Date()
+      })
+      .where(
+        and(
+          eq(teamMembers.employeeId, employeeId),
+          eq(teamMembers.teamId, teamId)
+        )
+      );
+  }
+
+  async getEmployeeTeams(employeeId: string, companyId: string): Promise<CompanyTeam[]> {
+    const employeeTeams = await db
+      .select({
+        id: companyTeams.id,
+        teamId: companyTeams.teamId,
+        companyId: companyTeams.companyId,
+        branchId: companyTeams.branchId,
+        name: companyTeams.name,
+        description: companyTeams.description,
+        teamManagerId: companyTeams.teamManagerId,
+        maxMembers: companyTeams.maxMembers,
+        isActive: companyTeams.isActive,
+        createdAt: companyTeams.createdAt,
+        updatedAt: companyTeams.updatedAt,
+      })
+      .from(teamMembers)
+      .innerJoin(companyTeams, eq(teamMembers.teamId, companyTeams.id))
+      .where(
+        and(
+          eq(teamMembers.employeeId, employeeId),
+          eq(teamMembers.companyId, companyId),
+          eq(teamMembers.isActive, true)
+        )
+      );
+    return employeeTeams;
+  }
+
+  async getTeamMemberships(teamId: string): Promise<any[]> {
+    const memberships = await db
+      .select({
+        id: teamMembers.id,
+        employeeId: teamMembers.employeeId,
+        teamId: teamMembers.teamId,
+        companyId: teamMembers.companyId,
+        joinedAt: teamMembers.joinedAt,
+        role: teamMembers.role,
+        isActive: teamMembers.isActive,
+        employee: {
+          id: employees.id,
+          employeeId: employees.employeeId,
+          firstName: employees.firstName,
+          lastName: employees.lastName,
+          email: employees.email,
+          profilePhoto: employees.profilePhoto,
+        }
+      })
+      .from(teamMembers)
+      .innerJoin(employees, eq(teamMembers.employeeId, employees.id))
+      .where(
+        and(
+          eq(teamMembers.teamId, teamId),
+          eq(teamMembers.isActive, true)
+        )
+      );
+    return memberships;
+  }
+
+  async isEmployeeInTeam(employeeId: string, teamId: string): Promise<boolean> {
+    const [membership] = await db
+      .select({ id: teamMembers.id })
+      .from(teamMembers)
+      .where(
+        and(
+          eq(teamMembers.employeeId, employeeId),
+          eq(teamMembers.teamId, teamId),
+          eq(teamMembers.isActive, true)
+        )
+      )
+      .limit(1);
+    return !!membership;
+  }
+
+  async getEmployeeTeamCount(employeeId: string, companyId: string): Promise<number> {
+    const [result] = await db
+      .select({ count: count() })
+      .from(teamMembers)
+      .where(
+        and(
+          eq(teamMembers.employeeId, employeeId),
+          eq(teamMembers.companyId, companyId),
+          eq(teamMembers.isActive, true)
+        )
+      );
+    return result.count;
   }
 }
 

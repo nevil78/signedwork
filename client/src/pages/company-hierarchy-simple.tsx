@@ -172,18 +172,12 @@ export default function CompanyHierarchySimple() {
     setIsManageTeamOpen(true);
   };
 
-  const handleRemoveFromTeam = async (employeeId: string) => {
+  const handleRemoveFromTeam = async (employeeId: string, teamId: string) => {
     try {
-      await apiRequest("PATCH", `/api/company/employees/${employeeId}/hierarchy-role`, {
-        teamId: null,
-        hierarchyRole: "employee",
-        branchId: null,
-        canVerifyWork: false,
-        canManageEmployees: false,
-        verificationScope: "none"
-      });
+      await apiRequest("DELETE", `/api/company/teams/${teamId}/members/${employeeId}`);
       
       queryClient.invalidateQueries({ queryKey: ["/api/company/employees"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/company/teams"] });
       toast({ title: "Success", description: "Employee removed from team" });
     } catch (error: any) {
       toast({ title: "Error", description: error.message || "Failed to remove employee from team", variant: "destructive" });
@@ -257,17 +251,11 @@ export default function CompanyHierarchySimple() {
           });
         }
 
-        // Assign employees to team
-        for (const employeeId of selectedEmployees) {
-          await apiRequest("PATCH", `/api/company/employees/${employeeId}/hierarchy-role`, {
-            teamId: selectedTeam.id,
-            hierarchyRole: "employee",
-            branchId: selectedTeam.branchId,
-            canVerifyWork: false,
-            canManageEmployees: false,
-            verificationScope: "none"
-          });
-        }
+        // Add employees to team using new team membership API
+        await apiRequest("POST", `/api/company/teams/${selectedTeam.id}/members`, {
+          employeeIds: selectedEmployees,
+          role: "member"
+        });
 
         // Refresh data
         queryClient.invalidateQueries({ queryKey: ["/api/company/employees"] });
@@ -854,7 +842,7 @@ export default function CompanyHierarchySimple() {
                 <Label>Select Team Members</Label>
                 <div className="max-h-32 sm:max-h-40 overflow-y-auto border rounded-lg p-2 space-y-2">
                   {Array.isArray(employees) && employees
-                    .filter((emp: any) => !emp.teamId && emp.employeeId !== selectedManager) // Exclude manager and already assigned
+                    .filter((emp: any) => emp.employeeId !== selectedManager) // Exclude manager only, allow employees in other teams
                     .map((employee: any) => (
                       <div key={employee.employeeId} className="flex items-center space-x-2">
                         <input
@@ -872,8 +860,15 @@ export default function CompanyHierarchySimple() {
                         />
                         <label htmlFor={`emp-${employee.employeeId}`} className="flex items-center gap-2 cursor-pointer flex-1 min-w-0">
                           <User className="w-4 h-4 text-gray-600 shrink-0" />
-                          <span className="truncate">{employee.firstName} {employee.lastName}</span>
-                          <span className="text-xs text-muted-foreground truncate hidden sm:inline">({employee.email})</span>
+                          <div className="flex-1 min-w-0">
+                            <span className="truncate block">{employee.firstName} {employee.lastName}</span>
+                            <span className="text-xs text-muted-foreground truncate block">
+                              {employee.email}
+                              {employee.teamId && (
+                                <span className="ml-1 text-blue-600">• Already in {getTeamName(employee.teamId)}</span>
+                              )}
+                            </span>
+                          </div>
                         </label>
                       </div>
                     ))}
