@@ -4911,30 +4911,24 @@ export class DatabaseStorage implements IStorage {
   }
 
   async approveWorkEntryAsManager(workEntryId: string, managerId: string, data: {
-    approvalStatus: "manager_approved" | "manager_rejected";
-    managerFeedback?: string;
-    managerRating?: number;
+    rating?: number;
+    feedback?: string;
   }): Promise<WorkEntry> {
-    const manager = await this.getManager(managerId);
+    const manager = await this.getCompanyManagerById(managerId);
     if (!manager) throw new Error('Manager not found');
     
     // Manager approval = Company verification (delegated authority)
-    const finalApprovalStatus = data.approvalStatus === 'manager_approved' ? 'approved' : 'needs_changes';
-    
     const updateData: any = {
-      approvalStatus: finalApprovalStatus,
-      approvedByManagerId: managerId,
-      approvedByManagerName: manager.managerName,
-      managerApprovalDate: new Date(),
-      companyFeedback: data.managerFeedback,
-      companyRating: data.managerRating,
+      approvalStatus: 'approved',
+      verifiedBy: managerId,
+      verifiedByRole: 'assigned_manager',
+      verifiedByName: manager.managerName,
+      verifiedAt: new Date(),
+      companyFeedback: data.feedback,
+      companyRating: data.rating,
+      status: 'approved', // For immutable protection
       updatedAt: new Date(),
     };
-    
-    // For immutable protection, also set status to approved when manager approves
-    if (data.approvalStatus === 'manager_approved') {
-      updateData.status = 'approved';
-    }
     
     const [updatedEntry] = await db
       .update(workEntries)
