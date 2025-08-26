@@ -83,14 +83,26 @@ export default function CompanyNavHeader({ companyId, companyName }: CompanyNavH
           <div className="flex items-center space-x-4 md:space-x-6">
             <div 
               className="flex items-center space-x-3 cursor-pointer hover:opacity-80 transition-opacity"
-              onClick={() => {
-                // Smart navigation based on user type
-                const userData = (company as any)?.user;
-                if (userData?.type === 'company') {
-                  setLocation('/company-dashboard');
-                } else if (userData?.type === 'employee') {
-                  setLocation('/dashboard');
-                } else {
+              onClick={async () => {
+                try {
+                  // Always make a fresh API call to verify current authentication status
+                  const response = await apiRequest("GET", "/api/auth/user");
+                  
+                  if (response?.user && response?.userType) {
+                    // User is authenticated, navigate based on type
+                    if (response.userType === 'company') {
+                      setLocation('/company-dashboard');
+                    } else if (response.userType === 'employee') {
+                      setLocation('/dashboard');
+                    } else {
+                      setLocation('/');
+                    }
+                  } else {
+                    // Not authenticated, go to auth page
+                    setLocation('/');
+                  }
+                } catch (error) {
+                  // Authentication failed, go to auth page
                   setLocation('/');
                 }
               }}

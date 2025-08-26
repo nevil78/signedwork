@@ -28,17 +28,27 @@ export default function EmployeeNavHeader({ employeeId, employeeName }: Employee
   const { user, userType, isAuthenticated } = useAuth();
   const [sessionTime, setSessionTime] = useState<string>('24h 0m');
 
-  // Smart navigation function for logo clicks
-  const handleLogoClick = () => {
-    if (isAuthenticated && user) {
-      if (userType === 'company') {
-        setLocation('/company-dashboard');
-      } else if (userType === 'employee') {
-        setLocation('/dashboard');
+  // Smart navigation function for logo clicks - SECURE VERSION
+  const handleLogoClick = async () => {
+    try {
+      // Always make a fresh API call to verify current authentication status
+      const response = await apiRequest("GET", "/api/auth/user");
+      
+      if (response?.user && response?.userType) {
+        // User is authenticated, navigate based on type
+        if (response.userType === 'company') {
+          setLocation('/company-dashboard');
+        } else if (response.userType === 'employee') {
+          setLocation('/dashboard');
+        } else {
+          setLocation('/');
+        }
       } else {
+        // Not authenticated, go to auth page
         setLocation('/');
       }
-    } else {
+    } catch (error) {
+      // Authentication failed, go to auth page
       setLocation('/');
     }
   };
