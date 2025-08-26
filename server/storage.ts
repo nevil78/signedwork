@@ -2406,6 +2406,9 @@ export class DatabaseStorage implements IStorage {
         priority: workEntries.priority,
         hours: workEntries.hours,
         status: workEntries.status,
+        approvalStatus: workEntries.approvalStatus,
+        verifiedBy: workEntries.verifiedBy,
+        approvedAt: workEntries.approvedAt,
         companyFeedback: workEntries.companyFeedback,
         createdAt: workEntries.createdAt,
         updatedAt: workEntries.updatedAt,
@@ -2423,6 +2426,9 @@ export class DatabaseStorage implements IStorage {
         learnings: workEntries.learnings,
         companyRating: workEntries.companyRating,
         attachments: workEntries.attachments,
+        location: workEntries.location,
+        objectives: workEntries.objectives,
+        skills: workEntries.skills,
         companyName: companies.name
       })
       .from(workEntries)
@@ -2430,7 +2436,8 @@ export class DatabaseStorage implements IStorage {
       .where(
         and(
           eq(workEntries.employeeId, employeeId),
-          eq(workEntries.companyId, companyId)
+          eq(workEntries.companyId, companyId),
+          eq(workEntries.approvalStatus, 'approved') // Only return verified/approved work entries
         )
       )
       .orderBy(desc(workEntries.createdAt));
