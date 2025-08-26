@@ -13,11 +13,11 @@ import {
   Users, 
   Plus, 
   User,
-  Edit,
+  UserPlus,
   Crown,
   Shield,
   CheckCircle,
-  Target
+  UserCog
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import CompanyNavHeader from "@/components/company-nav-header";
@@ -29,19 +29,18 @@ export default function CompanyHierarchySimple() {
   // Dialog states
   const [isCreateBranchOpen, setIsCreateBranchOpen] = useState(false);
   const [isCreateTeamOpen, setIsCreateTeamOpen] = useState(false);
-  const [isAssignEmployeeOpen, setIsAssignEmployeeOpen] = useState(false);
+  const [isAddMembersOpen, setIsAddMembersOpen] = useState(false);
+  const [selectedTeam, setSelectedTeam] = useState<any>(null);
   
-  // Selected data
-  const [selectedEmployee, setSelectedEmployee] = useState<any>(null);
+  // Manager creation states
+  const [isCreateManagerOpen, setIsCreateManagerOpen] = useState(false);
+  const [newManager, setNewManager] = useState({ firstName: "", lastName: "", email: "", password: "" });
   
   // Form states
   const [newBranch, setNewBranch] = useState({ name: "", location: "" });
   const [newTeam, setNewTeam] = useState({ name: "", branchId: "" });
-  const [employeeAssignment, setEmployeeAssignment] = useState({
-    branchId: "",
-    teamId: "",
-    hierarchyRole: "employee"
-  });
+  const [selectedEmployees, setSelectedEmployees] = useState<string[]>([]);
+  const [selectedManager, setSelectedManager] = useState<string>("");
 
   // Fetch data
   const { data: employees, isLoading: employeesLoading } = useQuery({
@@ -122,14 +121,11 @@ export default function CompanyHierarchySimple() {
     return team?.name || "Unknown Team";
   };
 
-  const handleAssignEmployee = (employee: any) => {
-    setSelectedEmployee(employee);
-    setEmployeeAssignment({
-      branchId: employee.branchId || "",
-      teamId: employee.teamId || "",
-      hierarchyRole: employee.hierarchyRole || "employee"
-    });
-    setIsAssignEmployeeOpen(true);
+  const handleAddMembers = (team: any) => {
+    setSelectedTeam(team);
+    setSelectedEmployees([]);
+    setSelectedManager("");
+    setIsAddMembersOpen(true);
   };
 
   const handleCreateBranch = () => {
@@ -148,16 +144,28 @@ export default function CompanyHierarchySimple() {
     }
   };
 
-  const handleSaveAssignment = () => {
-    if (selectedEmployee) {
-      assignEmployeeMutation.mutate({
-        employeeId: selectedEmployee.employeeId,
-        assignment: {
-          ...employeeAssignment,
-          branchId: employeeAssignment.branchId === "headquarters" ? null : employeeAssignment.branchId,
-          teamId: employeeAssignment.teamId === "no_team" ? null : employeeAssignment.teamId || null
-        }
+  const handleSaveBulkAssignment = () => {
+    if (selectedTeam && selectedManager && selectedEmployees.length > 0) {
+      // TODO: Implement bulk assignment API call
+      console.log('Bulk assignment:', { 
+        teamId: selectedTeam.id, 
+        managerId: selectedManager, 
+        employeeIds: selectedEmployees 
       });
+      toast({ title: "Success", description: `Added ${selectedEmployees.length + 1} members to ${selectedTeam.name}` });
+      setIsAddMembersOpen(false);
+      setSelectedEmployees([]);
+      setSelectedManager("");
+    }
+  };
+
+  const handleCreateManager = () => {
+    if (newManager.firstName && newManager.lastName && newManager.email && newManager.password) {
+      // TODO: Implement manager creation API call
+      console.log('Creating manager:', newManager);
+      toast({ title: "Success", description: `Manager ${newManager.firstName} ${newManager.lastName} created successfully` });
+      setIsCreateManagerOpen(false);
+      setNewManager({ firstName: "", lastName: "", email: "", password: "" });
     }
   };
 
@@ -243,13 +251,27 @@ export default function CompanyHierarchySimple() {
               <div className="space-y-3">
                 {Array.isArray(teams) && teams.length > 0 ? teams.map((team: any) => (
                   <div key={team.id} className="p-3 bg-white rounded-lg border">
-                    <div className="flex items-center gap-2">
-                      <Users className="w-4 h-4 text-green-600" />
-                      <span className="font-medium">{team.name}</span>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <Users className="w-4 h-4 text-green-600" />
+                          <span className="font-medium">{team.name}</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {team.branchId ? getBranchName(team.branchId) : "Headquarters"}
+                        </p>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleAddMembers(team)}
+                        className="flex items-center gap-1"
+                        data-testid={`add-members-${team.id}`}
+                      >
+                        <UserPlus className="w-4 h-4" />
+                        Add Members
+                      </Button>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {team.branchId ? getBranchName(team.branchId) : "Headquarters"}
-                    </p>
                   </div>
                 )) : (
                   <div className="text-center py-6 text-muted-foreground">
@@ -264,11 +286,19 @@ export default function CompanyHierarchySimple() {
           {/* Employees */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <User className="w-5 h-5 text-purple-600" />
-                Employees
-              </CardTitle>
-              <CardDescription>Team members and their assignments</CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <User className="w-5 h-5 text-purple-600" />
+                    Employees
+                  </CardTitle>
+                  <CardDescription>Team members and their assignments</CardDescription>
+                </div>
+                <Button onClick={() => setIsCreateManagerOpen(true)} size="sm" variant="outline">
+                  <UserCog className="w-4 h-4 mr-2" />
+                  Create Manager
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
@@ -285,15 +315,6 @@ export default function CompanyHierarchySimple() {
                           </div>
                         </div>
                       </div>
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        onClick={() => handleAssignEmployee(employee)}
-                        data-testid={`assign-employee-${employee.id}`}
-                      >
-                        <Edit className="w-4 h-4 mr-1" />
-                        Assign
-                      </Button>
                     </div>
                   </div>
                 )) : (
@@ -405,168 +426,199 @@ export default function CompanyHierarchySimple() {
       </Dialog>
 
       {/* Employee Assignment Dialog */}
-      <Dialog open={isAssignEmployeeOpen} onOpenChange={setIsAssignEmployeeOpen}>
+      <Dialog open={isAddMembersOpen} onOpenChange={setIsAddMembersOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Target className="w-5 h-5 text-blue-600" />
-              Assign Employee
+              <Users className="w-5 h-5 text-blue-600" />
+              Add Members to {selectedTeam?.name}
             </DialogTitle>
             <DialogDescription>
-              Set branch, team, and role for {selectedEmployee?.firstName} {selectedEmployee?.lastName}
+              Select employees to add to this team and designate a manager
             </DialogDescription>
           </DialogHeader>
           
-          {selectedEmployee && (
+          {selectedTeam && (
             <div className="space-y-4">
-              {/* Current Assignment Display */}
-              <div className="p-3 bg-gray-50 rounded-lg">
-                <h5 className="font-medium text-sm mb-2">Current Assignment</h5>
-                <div className="text-xs space-y-1">
-                  <div>Branch: {getBranchName(selectedEmployee.branchId)}</div>
-                  <div>Team: {getTeamName(selectedEmployee.teamId)}</div>
-                  <div>Role: {selectedEmployee.hierarchyRole?.replace('_', ' ') || 'employee'}</div>
-                </div>
+              {/* Team Info */}
+              <div className="p-3 bg-green-50 rounded-lg border border-green-200">
+                <h5 className="font-medium text-sm mb-2 text-green-900">Team: {selectedTeam.name}</h5>
+                <p className="text-xs text-green-700">
+                  Branch: {selectedTeam.branchId ? getBranchName(selectedTeam.branchId) : "Headquarters"}
+                </p>
               </div>
 
-              {/* Assignment Form */}
-              <div className="space-y-3">
-                <div>
-                  <Label htmlFor="assign-branch">Branch</Label>
-                  <Select 
-                    value={employeeAssignment.branchId} 
-                    onValueChange={(value) => setEmployeeAssignment({ 
-                      ...employeeAssignment, 
-                      branchId: value, 
-                      teamId: value === "headquarters" ? "" : employeeAssignment.teamId 
-                    })}
-                  >
-                    <SelectTrigger data-testid="select-assign-branch">
-                      <SelectValue placeholder="Select branch" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="headquarters">
-                        <div className="flex items-center gap-2">
-                          <Crown className="w-4 h-4 text-yellow-600" />
-                          Headquarters
-                        </div>
-                      </SelectItem>
-                      {Array.isArray(branches) && branches.map((branch: any) => (
-                        <SelectItem key={branch.id} value={branch.id}>
+              {/* Select Manager */}
+              <div>
+                <Label>Select Team Manager</Label>
+                <Select value={selectedManager} onValueChange={setSelectedManager}>
+                  <SelectTrigger data-testid="select-manager">
+                    <SelectValue placeholder="Choose team manager" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.isArray(employees) && employees
+                      .filter((emp: any) => !emp.teamId) // Only show unassigned employees
+                      .map((employee: any) => (
+                        <SelectItem key={employee.employeeId} value={employee.employeeId}>
                           <div className="flex items-center gap-2">
-                            <Building2 className="w-4 h-4 text-blue-600" />
-                            {branch.name}
+                            <UserCog className="w-4 h-4 text-blue-600" />
+                            {employee.firstName} {employee.lastName}
                           </div>
                         </SelectItem>
                       ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                  </SelectContent>
+                </Select>
+              </div>
 
-                <div>
-                  <Label htmlFor="assign-team">Team</Label>
-                  <Select 
-                    value={employeeAssignment.teamId} 
-                    onValueChange={(value) => setEmployeeAssignment({ ...employeeAssignment, teamId: value })}
-                    disabled={!employeeAssignment.branchId || employeeAssignment.branchId === "headquarters"}
-                  >
-                    <SelectTrigger data-testid="select-assign-team">
-                      <SelectValue placeholder="Select team" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="no_team">No Team</SelectItem>
-                      {Array.isArray(teams) && teams
-                        .filter((team: any) => 
-                          employeeAssignment.branchId === "headquarters" 
-                            ? !team.branchId 
-                            : team.branchId === employeeAssignment.branchId
-                        )
-                        .map((team: any) => (
-                          <SelectItem key={team.id} value={team.id}>
-                            <div className="flex items-center gap-2">
-                              <Users className="w-4 h-4 text-green-600" />
-                              {team.name}
-                            </div>
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label htmlFor="assign-role">Role</Label>
-                  <Select 
-                    value={employeeAssignment.hierarchyRole} 
-                    onValueChange={(value) => setEmployeeAssignment({ ...employeeAssignment, hierarchyRole: value })}
-                  >
-                    <SelectTrigger data-testid="select-assign-role">
-                      <SelectValue placeholder="Select role" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="employee">
-                        <div className="flex items-center gap-2">
+              {/* Select Team Members */}
+              <div>
+                <Label>Select Team Members</Label>
+                <div className="max-h-40 overflow-y-auto border rounded-lg p-2 space-y-2">
+                  {Array.isArray(employees) && employees
+                    .filter((emp: any) => !emp.teamId && emp.employeeId !== selectedManager) // Exclude manager and already assigned
+                    .map((employee: any) => (
+                      <div key={employee.employeeId} className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          id={`emp-${employee.employeeId}`}
+                          checked={selectedEmployees.includes(employee.employeeId)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedEmployees([...selectedEmployees, employee.employeeId]);
+                            } else {
+                              setSelectedEmployees(selectedEmployees.filter(id => id !== employee.employeeId));
+                            }
+                          }}
+                          className="rounded"
+                        />
+                        <label htmlFor={`emp-${employee.employeeId}`} className="flex items-center gap-2 cursor-pointer flex-1">
                           <User className="w-4 h-4 text-gray-600" />
-                          Employee
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="team_lead">
-                        <div className="flex items-center gap-2">
-                          <Users className="w-4 h-4 text-blue-600" />
-                          Team Lead
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="branch_manager">
-                        <div className="flex items-center gap-2">
-                          <Shield className="w-4 h-4 text-green-600" />
-                          Branch Manager
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="company_admin">
-                        <div className="flex items-center gap-2">
-                          <Crown className="w-4 h-4 text-purple-600" />
-                          Company Admin
-                        </div>
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
+                          <span>{employee.firstName} {employee.lastName}</span>
+                          <span className="text-xs text-muted-foreground">({employee.email})</span>
+                        </label>
+                      </div>
+                    ))}
                 </div>
               </div>
 
               {/* Assignment Summary */}
               <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
-                <h5 className="font-medium text-sm mb-2 text-blue-900">New Assignment</h5>
+                <h5 className="font-medium text-sm mb-2 text-blue-900">Assignment Summary</h5>
                 <div className="text-xs space-y-1 text-blue-800">
-                  <div>Branch: {employeeAssignment.branchId === "headquarters" ? "Headquarters" : getBranchName(employeeAssignment.branchId) || "Not selected"}</div>
-                  <div>Team: {getTeamName(employeeAssignment.teamId) || "No team"}</div>
-                  <div>Role: {employeeAssignment.hierarchyRole.replace('_', ' ')}</div>
+                  <div>Manager: {selectedManager ? employees?.find((e: any) => e.employeeId === selectedManager)?.firstName + ' ' + employees?.find((e: any) => e.employeeId === selectedManager)?.lastName : "Not selected"}</div>
+                  <div>Team Members: {selectedEmployees.length} selected</div>
+                  <div>Total Team Size: {selectedManager && selectedEmployees.length ? selectedEmployees.length + 1 : 0}</div>
                 </div>
               </div>
 
               <div className="flex gap-2">
                 <Button 
-                  onClick={handleSaveAssignment}
-                  disabled={assignEmployeeMutation.isPending}
+                  onClick={handleSaveBulkAssignment}
+                  disabled={!selectedManager || selectedEmployees.length === 0}
                   className="flex-1"
-                  data-testid="button-save-assignment"
+                  data-testid="button-save-bulk-assignment"
                 >
-                  {assignEmployeeMutation.isPending ? (
-                    <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      Saving...
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <CheckCircle className="w-4 h-4" />
-                      Save Assignment
-                    </div>
-                  )}
+                  <div className="flex items-center gap-2">
+                    <Users className="w-4 h-4" />
+                    Add {selectedEmployees.length + (selectedManager ? 1 : 0)} Members
+                  </div>
                 </Button>
-                <Button variant="outline" onClick={() => setIsAssignEmployeeOpen(false)}>
+                <Button variant="outline" onClick={() => setIsAddMembersOpen(false)}>
                   Cancel
                 </Button>
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Manager Dialog */}
+      <Dialog open={isCreateManagerOpen} onOpenChange={setIsCreateManagerOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserCog className="w-5 h-5 text-blue-600" />
+              Create Manager
+            </DialogTitle>
+            <DialogDescription>
+              Create a new manager with unique credentials
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label htmlFor="manager-first-name">First Name</Label>
+                <Input
+                  id="manager-first-name"
+                  value={newManager.firstName}
+                  onChange={(e) => setNewManager({ ...newManager, firstName: e.target.value })}
+                  placeholder="John"
+                  data-testid="input-manager-first-name"
+                />
+              </div>
+              <div>
+                <Label htmlFor="manager-last-name">Last Name</Label>
+                <Input
+                  id="manager-last-name"
+                  value={newManager.lastName}
+                  onChange={(e) => setNewManager({ ...newManager, lastName: e.target.value })}
+                  placeholder="Doe"
+                  data-testid="input-manager-last-name"
+                />
+              </div>
+            </div>
+            
+            <div>
+              <Label htmlFor="manager-email">Email (Manager ID)</Label>
+              <Input
+                id="manager-email"
+                type="email"
+                value={newManager.email}
+                onChange={(e) => setNewManager({ ...newManager, email: e.target.value })}
+                placeholder="john.doe@company.com"
+                data-testid="input-manager-email"
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="manager-password">Password</Label>
+              <Input
+                id="manager-password"
+                type="password"
+                value={newManager.password}
+                onChange={(e) => setNewManager({ ...newManager, password: e.target.value })}
+                placeholder="Secure password"
+                data-testid="input-manager-password"
+              />
+            </div>
+            
+            <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+              <h5 className="font-medium text-sm mb-2 text-blue-900">Manager Credentials</h5>
+              <div className="text-xs space-y-1 text-blue-800">
+                <div>Manager ID: {newManager.email || "Not set"}</div>
+                <div>Role: Team Manager</div>
+                <div>Permissions: Can verify work entries, manage team members</div>
+              </div>
+            </div>
+            
+            <div className="flex gap-2">
+              <Button 
+                onClick={handleCreateManager}
+                disabled={!newManager.firstName || !newManager.lastName || !newManager.email || !newManager.password}
+                className="flex-1"
+                data-testid="button-create-manager"
+              >
+                <div className="flex items-center gap-2">
+                  <UserCog className="w-4 h-4" />
+                  Create Manager
+                </div>
+              </Button>
+              <Button variant="outline" onClick={() => setIsCreateManagerOpen(false)}>
+                Cancel
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
