@@ -3490,9 +3490,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Work entry not found" });
       }
       
-      if (workEntry.approvedByManagerId !== req.user.id) {
+      // Check if the employee who created this work entry is assigned to this manager
+      const employeeAssignment = await storage.getCompanyEmployeeByEmployeeId(workEntry.employeeId);
+      if (!employeeAssignment || employeeAssignment.assignedManagerId !== req.user.id) {
         return res.status(403).json({ 
-          message: "You can only approve work entries assigned to your team" 
+          message: "You can only approve work entries from employees assigned to you" 
         });
       }
       
