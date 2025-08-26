@@ -110,6 +110,29 @@ export default function CompanyHierarchySimple() {
     }
   });
 
+  // Toggle manager status mutation
+  const toggleManagerStatusMutation = useMutation({
+    mutationFn: async ({ managerId, isActive }: { managerId: string; isActive: boolean }) => {
+      return apiRequest("PATCH", `/api/company/managers/${managerId}/status`, { isActive });
+    },
+    onSuccess: (data: any, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/company/managers"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/company/employees"] });
+      toast({ 
+        title: "Success", 
+        description: `Manager ${variables.isActive ? 'enabled' : 'disabled'} successfully` 
+      });
+      setIsManageManagerOpen(false);
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Error", 
+        description: error.message || "Failed to update manager status", 
+        variant: "destructive" 
+      });
+    }
+  });
+
   // Helper functions
   const getRoleIcon = (role: string) => {
     switch (role) {
@@ -352,13 +375,13 @@ export default function CompanyHierarchySimple() {
   };
 
   const handleToggleManagerStatus = async () => {
-    // This feature would enable/disable manager accounts
-    // Currently not needed for basic manager management
     if (selectedManagerForEdit) {
-      toast({ 
-        title: "Feature Coming Soon", 
-        description: "Manager account status toggle will be added in future updates",
-        variant: "default"
+      const currentStatus = selectedManagerForEdit.isActive ?? true;
+      const newStatus = !currentStatus;
+      
+      toggleManagerStatusMutation.mutate({
+        managerId: selectedManagerForEdit.id,
+        isActive: newStatus
       });
     }
   };
@@ -506,12 +529,18 @@ export default function CompanyHierarchySimple() {
                           <div className="flex items-start gap-3 min-w-0 flex-1">
                             <UserCog className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
                             <div className="min-w-0 flex-1">
-                              <h4 className="font-semibold text-blue-900 truncate">{manager.managerName}</h4>
+                              <div className="flex items-center gap-2 mb-1">
+                                <h4 className="font-semibold text-blue-900 truncate">{manager.managerName}</h4>
+                                <div className={`w-2 h-2 rounded-full ${manager.isActive !== false ? 'bg-green-500' : 'bg-red-500'}`} />
+                              </div>
                               <div className="text-xs text-blue-700 space-y-1">
                                 <div className="truncate">Username: {manager.uniqueId}</div>
                                 <div className="truncate">Email: {manager.managerEmail}</div>
                                 <div>Role: {manager.permissionLevel?.replace('_', ' ') || 'Manager'}</div>
                                 <div className="truncate">Team: {getTeamName(manager.teamId) || 'No team assigned'}</div>
+                                <div className={`text-xs font-medium ${manager.isActive !== false ? 'text-green-700' : 'text-red-700'}`}>
+                                  {manager.isActive !== false ? 'Active' : 'Disabled'}
+                                </div>
                               </div>
                             </div>
                             <Badge variant={manager.permissionLevel === "company_admin" ? "default" : "secondary"} className="shrink-0">
@@ -1005,6 +1034,15 @@ export default function CompanyHierarchySimple() {
                     <p className="text-blue-700">{selectedManagerForEdit.managerName}</p>
                   </div>
                   <div>
+                    <span className="font-medium text-blue-900">Status:</span>
+                    <div className="flex items-center gap-2">
+                      <div className={`w-2 h-2 rounded-full ${selectedManagerForEdit.isActive !== false ? 'bg-green-500' : 'bg-red-500'}`} />
+                      <span className={`text-xs font-medium ${selectedManagerForEdit.isActive !== false ? 'text-green-700' : 'text-red-700'}`}>
+                        {selectedManagerForEdit.isActive !== false ? 'Active' : 'Disabled'}
+                      </span>
+                    </div>
+                  </div>
+                  <div>
                     <span className="font-medium text-blue-900">Role:</span>
                     <p className="text-blue-700">{selectedManagerForEdit.permissionLevel?.replace('_', ' ') || 'Manager'}</p>
                   </div>
@@ -1012,7 +1050,7 @@ export default function CompanyHierarchySimple() {
                     <span className="font-medium text-blue-900">Email:</span>
                     <p className="text-blue-700">{selectedManagerForEdit.managerEmail}</p>
                   </div>
-                  <div>
+                  <div className="col-span-2">
                     <span className="font-medium text-blue-900">Team:</span>
                     <p className="text-blue-700">{getTeamName(selectedManagerForEdit.teamId) || 'No Team'}</p>
                   </div>
@@ -1032,19 +1070,15 @@ export default function CompanyHierarchySimple() {
                     Reset Password
                   </Button>
                   <Button
-                    onClick={() => {
-                      toast({ 
-                        title: "Feature Coming Soon", 
-                        description: "Manager status toggle will be implemented in future update",
-                        variant: "default"
-                      });
-                    }}
-                    variant="outline"
-                    className="flex-1 opacity-60"
+                    onClick={handleToggleManagerStatus}
+                    variant={selectedManagerForEdit.isActive !== false ? "destructive" : "default"}
+                    className="flex-1"
+                    disabled={toggleManagerStatusMutation.isPending}
                     data-testid="toggle-manager-status"
                   >
                     <Shield className="w-4 h-4 mr-2" />
-                    Toggle Status
+                    {toggleManagerStatusMutation.isPending ? "Updating..." : 
+                     selectedManagerForEdit.isActive !== false ? "Disable Manager" : "Enable Manager"}
                   </Button>
                 </div>
               </div>
