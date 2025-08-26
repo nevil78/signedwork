@@ -801,13 +801,20 @@ export default function CompanyHierarchySimple() {
                     <div className="flex items-center gap-2">
                       <UserCog className="w-4 h-4 text-blue-600" />
                       <span className="font-medium">
-                        {managers?.find((m: any) => m.id === selectedTeam.teamManagerId)?.managerName || 'Unknown Manager'}
+                        {selectedTeam.teamManagerId ? 
+                          managers?.find((m: any) => m.id === selectedTeam.teamManagerId)?.managerName || 'Manager Not Found' :
+                          'No Manager Assigned'
+                        }
                       </span>
-                      <span className="text-xs text-muted-foreground">
-                        ({managers?.find((m: any) => m.id === selectedTeam.teamManagerId)?.uniqueId})
-                      </span>
+                      {selectedTeam.teamManagerId && (
+                        <span className="text-xs text-muted-foreground">
+                          ({managers?.find((m: any) => m.id === selectedTeam.teamManagerId)?.uniqueId || 'N/A'})
+                        </span>
+                      )}
                     </div>
-                    <p className="text-xs text-gray-600 mt-1">This team already has a manager assigned</p>
+                    <p className="text-xs text-gray-600 mt-1">
+                      {selectedTeam.teamManagerId ? "This team already has a manager assigned" : "This team currently has no manager assigned"}
+                    </p>
                   </div>
                 </div>
               ) : (
@@ -870,10 +877,10 @@ export default function CompanyHierarchySimple() {
                 <div className="text-xs space-y-1 text-blue-800">
                   <div>Manager: {
                     selectedTeam?.teamManagerId ? 
-                      managers?.find((m: any) => m.id === selectedTeam.teamManagerId)?.managerName + ' (' + managers?.find((m: any) => m.id === selectedTeam.teamManagerId)?.uniqueId + ')' + ' (Current)' :
+                      (managers?.find((m: any) => m.id === selectedTeam.teamManagerId)?.managerName || 'Manager Not Found') + ' (' + (managers?.find((m: any) => m.id === selectedTeam.teamManagerId)?.uniqueId || 'N/A') + ')' + ' (Current)' :
                       selectedManager ? 
-                        managers?.find((m: any) => m.id === selectedManager)?.managerName + ' (' + managers?.find((m: any) => m.id === selectedManager)?.uniqueId + ')' + ' (New)' : 
-                        "Not selected"
+                        (managers?.find((m: any) => m.id === selectedManager)?.managerName || 'Manager Not Found') + ' (' + (managers?.find((m: any) => m.id === selectedManager)?.uniqueId || 'N/A') + ')' + ' (New)' : 
+                        "No manager assigned"
                   }</div>
                   <div>Team Members: {selectedEmployees.length} selected</div>
                   <div>Total Team Size: {selectedEmployees.length + (selectedTeam?.teamManagerId || selectedManager ? 1 : 0)}</div>

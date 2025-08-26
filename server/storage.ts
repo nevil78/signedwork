@@ -591,6 +591,7 @@ export interface IStorage {
   getManagersByCompany(companyId: string): Promise<CompanyManager[]>;
   updateManager(id: string, data: Partial<CompanyManager>): Promise<CompanyManager>;
   deleteManager(id: string): Promise<void>;
+  unassignTeamsFromManager(managerId: string): Promise<void>;
   resetManagerPassword(id: string, newPassword: string): Promise<void>;
   updateManagerLastLogin(id: string): Promise<void>;
 
@@ -4627,8 +4628,16 @@ export class DatabaseStorage implements IStorage {
     // Soft delete - set isActive to false
     await db
       .update(companyManagers)
-      .set({ isActive: false, updatedAt: new Date() })
+      .set({ isActive: false })
       .where(eq(companyManagers.id, id));
+  }
+
+  async unassignTeamsFromManager(managerId: string): Promise<void> {
+    // Set teamManagerId to null for all teams managed by this manager
+    await db
+      .update(companyTeams)
+      .set({ teamManagerId: null })
+      .where(eq(companyTeams.teamManagerId, managerId));
   }
 
   async resetManagerPassword(id: string, newPassword: string): Promise<void> {

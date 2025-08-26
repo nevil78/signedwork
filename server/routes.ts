@@ -2460,6 +2460,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await storage.unassignEmployeeFromManager(emp.employeeId, req.user.id);
       }
       
+      // Unassign teams managed by this manager
+      await storage.unassignTeamsFromManager(managerId);
+      
       // Soft delete manager
       await storage.deleteManager(managerId);
       
