@@ -113,9 +113,9 @@ const ManagerWorkEntries = memo(function ManagerWorkEntries() {
     );
   }
 
-  const pendingEntries = workEntries?.filter((entry: any) => entry.approvalStatus === 'pending') || [];
-  const approvedEntries = workEntries?.filter((entry: any) => entry.approvalStatus === 'manager_approved') || [];
-  const rejectedEntries = workEntries?.filter((entry: any) => entry.approvalStatus === 'manager_rejected') || [];
+  const pendingEntries = (workEntries as any[])?.filter((entry: any) => entry.approvalStatus === 'pending') || [];
+  const approvedEntries = (workEntries as any[])?.filter((entry: any) => entry.approvalStatus === 'manager_approved') || [];
+  const rejectedEntries = (workEntries as any[])?.filter((entry: any) => entry.approvalStatus === 'manager_rejected') || [];
 
   const handleApproval = () => {
     if (!selectedEntry || !approvalData.approvalStatus) return;
@@ -252,7 +252,7 @@ const ManagerWorkEntries = memo(function ManagerWorkEntries() {
           <div>
             <h2 className="text-lg font-semibold mb-4">Work Entries</h2>
             <div className="space-y-4">
-              {workEntries?.map((entry: any) => (
+              {(workEntries as any[])?.map((entry: any) => (
                 <Card 
                   key={entry.id} 
                   className={`cursor-pointer transition-all hover:shadow-md ${
@@ -299,7 +299,7 @@ const ManagerWorkEntries = memo(function ManagerWorkEntries() {
                 </Card>
               ))}
               
-              {workEntries?.length === 0 && (
+              {(workEntries as any[])?.length === 0 && (
                 <Card>
                   <CardContent className="p-8 text-center">
                     <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
