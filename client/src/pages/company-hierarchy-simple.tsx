@@ -220,12 +220,14 @@ export default function CompanyHierarchySimple() {
   };
 
   const handleSaveBulkAssignment = async () => {
-    if (selectedTeam && selectedManager && selectedEmployees.length > 0) {
+    if (selectedTeam && selectedEmployees.length > 0) {
       try {
-        // Update team to assign the manager
-        await apiRequest("PATCH", `/api/company/teams/${selectedTeam.id}`, {
-          teamManagerId: selectedManager
-        });
+        // Only update team manager if team doesn't have one and manager is selected
+        if (!selectedTeam.teamManagerId && selectedManager) {
+          await apiRequest("PATCH", `/api/company/teams/${selectedTeam.id}`, {
+            teamManagerId: selectedManager
+          });
+        }
 
         // Assign employees to team
         for (const employeeId of selectedEmployees) {
@@ -702,7 +704,10 @@ export default function CompanyHierarchySimple() {
               Add Members to {selectedTeam?.name}
             </DialogTitle>
             <DialogDescription>
-              Select employees to add to this team and designate a manager
+              {selectedTeam?.teamManagerId ? 
+                "Select employees to add to this team" : 
+                "Select employees to add to this team and designate a manager"
+              }
             </DialogDescription>
           </DialogHeader>
           
@@ -716,27 +721,45 @@ export default function CompanyHierarchySimple() {
                 </p>
               </div>
 
-              {/* Select Manager */}
-              <div>
-                <Label>Select Team Manager</Label>
-                <Select value={selectedManager} onValueChange={setSelectedManager}>
-                  <SelectTrigger data-testid="select-manager">
-                    <SelectValue placeholder="Choose team manager" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Array.isArray(managers) && managers
-                      .filter((manager: any) => !manager.teamId) // Only show unassigned managers
-                      .map((manager: any) => (
-                        <SelectItem key={manager.id} value={manager.id}>
-                          <div className="flex items-center gap-2">
-                            <UserCog className="w-4 h-4 text-blue-600" />
-                            {manager.managerName} ({manager.uniqueId})
-                          </div>
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              {/* Current Manager or Select Manager */}
+              {selectedTeam?.teamManagerId ? (
+                <div>
+                  <Label>Current Team Manager</Label>
+                  <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                    <div className="flex items-center gap-2">
+                      <UserCog className="w-4 h-4 text-blue-600" />
+                      <span className="font-medium">
+                        {managers?.find((m: any) => m.id === selectedTeam.teamManagerId)?.managerName || 'Unknown Manager'}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        ({managers?.find((m: any) => m.id === selectedTeam.teamManagerId)?.uniqueId})
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-600 mt-1">This team already has a manager assigned</p>
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <Label>Select Team Manager</Label>
+                  <Select value={selectedManager} onValueChange={setSelectedManager}>
+                    <SelectTrigger data-testid="select-manager">
+                      <SelectValue placeholder="Choose team manager" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.isArray(managers) && managers
+                        .filter((manager: any) => !manager.teamId) // Only show unassigned managers
+                        .map((manager: any) => (
+                          <SelectItem key={manager.id} value={manager.id}>
+                            <div className="flex items-center gap-2">
+                              <UserCog className="w-4 h-4 text-blue-600" />
+                              {manager.managerName} ({manager.uniqueId})
+                            </div>
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
 
               {/* Select Team Members */}
               <div>
@@ -773,16 +796,22 @@ export default function CompanyHierarchySimple() {
               <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
                 <h5 className="font-medium text-sm mb-2 text-blue-900">Assignment Summary</h5>
                 <div className="text-xs space-y-1 text-blue-800">
-                  <div>Manager: {selectedManager ? managers?.find((m: any) => m.id === selectedManager)?.managerName + ' (' + managers?.find((m: any) => m.id === selectedManager)?.uniqueId + ')' : "Not selected"}</div>
+                  <div>Manager: {
+                    selectedTeam?.teamManagerId ? 
+                      managers?.find((m: any) => m.id === selectedTeam.teamManagerId)?.managerName + ' (' + managers?.find((m: any) => m.id === selectedTeam.teamManagerId)?.uniqueId + ')' + ' (Current)' :
+                      selectedManager ? 
+                        managers?.find((m: any) => m.id === selectedManager)?.managerName + ' (' + managers?.find((m: any) => m.id === selectedManager)?.uniqueId + ')' + ' (New)' : 
+                        "Not selected"
+                  }</div>
                   <div>Team Members: {selectedEmployees.length} selected</div>
-                  <div>Total Team Size: {selectedEmployees.length}</div>
+                  <div>Total Team Size: {selectedEmployees.length + (selectedTeam?.teamManagerId || selectedManager ? 1 : 0)}</div>
                 </div>
               </div>
 
               <div className="flex gap-2">
                 <Button 
                   onClick={handleSaveBulkAssignment}
-                  disabled={!selectedManager || selectedEmployees.length === 0}
+                  disabled={(!selectedTeam?.teamManagerId && !selectedManager) || selectedEmployees.length === 0}
                   className="flex-1"
                   data-testid="button-save-bulk-assignment"
                 >
@@ -859,7 +888,8 @@ export default function CompanyHierarchySimple() {
                               </Badge>
                             </div>
                             <div className="flex gap-2">
-                              {member.hierarchyRole !== "team_lead" && member.hierarchyRole !== "branch_manager" && (
+                              {/* Only show Make Manager if team doesn't have a manager assigned via teamManagerId */}
+                              {!selectedTeam?.teamManagerId && member.hierarchyRole !== "team_lead" && member.hierarchyRole !== "branch_manager" && (
                                 <Button
                                   size="sm"
                                   variant="outline"
