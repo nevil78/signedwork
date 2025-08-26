@@ -10,7 +10,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { CheckCircle, AlertCircle, Clock, Calendar, User, Users, Building, ArrowLeft, Building2, Lock, Star, Briefcase, Target, DollarSign, Tag, Trophy, BookOpen, AlertTriangle, FileText, Paperclip, Shield, Search } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { CheckCircle, AlertCircle, Clock, Calendar, User, Users, Building, ArrowLeft, Building2, Lock, Star, Briefcase, Target, DollarSign, Tag, Trophy, BookOpen, AlertTriangle, FileText, Paperclip, Shield, Search, Filter } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import CompanyNavHeader from '@/components/company-nav-header';
 
@@ -64,14 +65,15 @@ export default function CompanyWorkEntries() {
   const [showApprovalDialog, setShowApprovalDialog] = useState(false);
   const [showChangesDialog, setShowChangesDialog] = useState(false);
   const [feedback, setFeedback] = useState('');
-  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<'employees' | 'entries'>('employees');
   // Rating system state variables
   const [rating, setRating] = useState<number>(0);
   const [hoveredRating, setHoveredRating] = useState<number>(0);
   const [approvalFeedback, setApprovalFeedback] = useState('');
-  // Search functionality
+  // Search and filter states
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedEmployeeFilter, setSelectedEmployeeFilter] = useState('all');
+  const [expandedEmployees, setExpandedEmployees] = useState<Record<string, boolean>>({});
 
   // Fetch all work entries for the company
   const { data: allWorkEntries = [], isLoading: loadingAll } = useQuery<WorkEntry[]>({
@@ -127,22 +129,43 @@ export default function CompanyWorkEntries() {
   const allEntriesForDisplay = [...allWorkEntries, ...pendingEntries];
   const employeeGroups = groupEntriesByEmployee(allEntriesForDisplay);
   
-  // Filter employee groups based on search query
+  // Enhanced filtering logic
   const filteredEmployeeGroups = employeeGroups.filter(group => {
-    if (!searchQuery.trim()) return true;
+    // Filter by selected employee
+    if (selectedEmployeeFilter !== 'all' && group.employeeId !== selectedEmployeeFilter) {
+      return false;
+    }
     
-    const query = searchQuery.toLowerCase();
-    const employeeName = getEmployeeName({ employeeName: group.employee?.firstName + ' ' + group.employee?.lastName }).toLowerCase();
-    const employeeEmail = (group.employee?.email || '').toLowerCase();
+    // Filter by search term
+    if (searchTerm.trim()) {
+      const query = searchTerm.toLowerCase();
+      const employeeName = getEmployeeName({ employeeName: group.employee?.firstName + ' ' + group.employee?.lastName }).toLowerCase();
+      const employeeEmail = (group.employee?.email || '').toLowerCase();
+      const entryTitleMatch = group.entries.some((entry: any) => 
+        entry.title.toLowerCase().includes(query) ||
+        entry.description?.toLowerCase().includes(query)
+      );
+      
+      return employeeName.includes(query) || employeeEmail.includes(query) || entryTitleMatch;
+    }
     
-    return employeeName.includes(query) || employeeEmail.includes(query);
+    return true;
   });
-  const selectedEmployeeEntries = selectedEmployeeId 
-    ? allEntriesForDisplay.filter(entry => entry.employeeId === selectedEmployeeId)
-    : [];
-  const selectedEmployeeName = selectedEmployeeId 
-    ? (selectedEmployeeEntries.length > 0 ? getEmployeeName(selectedEmployeeEntries[0]) : 'Unknown Employee')
-    : '';
+
+  // Get unique employees for dropdown
+  const employeeOptions = employeeGroups.map(group => ({
+    id: group.employeeId,
+    name: getEmployeeName({ employeeName: group.employee?.firstName + ' ' + group.employee?.lastName }),
+    entryCount: group.totalCount
+  }));
+
+  // Toggle employee expansion
+  const toggleEmployeeExpansion = (employeeId: string) => {
+    setExpandedEmployees(prev => ({
+      ...prev,
+      [employeeId]: !prev[employeeId]
+    }));
+  };
 
   const approveMutation = useMutation({
     mutationFn: async ({ entryId, rating, feedback }: { entryId: string; rating: number; feedback: string }) => {
@@ -630,228 +653,259 @@ export default function CompanyWorkEntries() {
           </div>
         </div>
 
-        {/* Search Bar - only show in employee list view */}
-        {viewMode === 'employees' && (
-          <div className="flex items-center gap-4 mb-6">
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <Input
-                type="text"
-                placeholder="Search employees by name or email..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-                data-testid="search-employees-input"
-              />
+        {/* Enhanced Search and Filter Controls */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Filter className="h-5 w-5" />
+              Search & Filter
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Search Bar */}
+              <div>
+                <label className="text-sm font-medium mb-2 block">Search</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Search className="h-4 w-4 text-gray-400" />
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Search employees or work entries..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                    data-testid="input-search"
+                  />
+                </div>
+              </div>
+
+              {/* Employee Filter Dropdown */}
+              <div>
+                <label className="text-sm font-medium mb-2 block">Employee Filter</label>
+                <Select value={selectedEmployeeFilter} onValueChange={setSelectedEmployeeFilter}>
+                  <SelectTrigger data-testid="select-employee-filter">
+                    <SelectValue placeholder="Select employee..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Employees ({employeeGroups.length})</SelectItem>
+                    {employeeOptions.map((employee) => (
+                      <SelectItem key={employee.id} value={employee.id}>
+                        {employee.name} ({employee.entryCount} {employee.entryCount === 1 ? 'entry' : 'entries'})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-            {searchQuery && (
+
+            {/* Quick Filter Buttons */}
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Button
+                variant={selectedEmployeeFilter === 'all' && !searchTerm ? "default" : "outline"}
+                size="sm"
+                onClick={() => {
+                  setSelectedEmployeeFilter('all');
+                  setSearchTerm('');
+                }}
+                data-testid="button-show-all"
+              >
+                Show All
+              </Button>
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setSearchQuery('')}
-                className="text-gray-500 hover:text-gray-700"
-                data-testid="clear-search-button"
+                onClick={() => {
+                  const allEmployeeIds = employeeGroups.map(g => g.employeeId);
+                  const newExpanded: Record<string, boolean> = {};
+                  allEmployeeIds.forEach(id => newExpanded[id] = true);
+                  setExpandedEmployees(newExpanded);
+                }}
+                data-testid="button-expand-all"
               >
-                Clear
+                Expand All
               </Button>
-            )}
-          </div>
-        )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setExpandedEmployees({})}
+                data-testid="button-collapse-all"
+              >
+                Collapse All
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
-        {/* Navigation breadcrumb */}
-        {viewMode === 'entries' && selectedEmployeeId && (
-          <div className="mb-6">
-            <Button
-              variant="ghost"
-              onClick={() => {
-                setViewMode('employees');
-                setSelectedEmployeeId(null);
-              }}
-              className="mb-4"
-              data-testid="button-back-employees"
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Employee List
-            </Button>
-            <h2 className="text-2xl font-semibold" data-testid="selected-employee-title">
-              Work Entries for {selectedEmployeeName}
-            </h2>
-          </div>
-        )}
 
-        {viewMode === 'employees' ? (
-          /* Employee List View */
-          <div className="space-y-4">
-            {(loadingAll || loadingPending) ? (
-              <div className="text-center py-8" data-testid="loading-employees">Loading employees...</div>
-            ) : filteredEmployeeGroups.length === 0 && searchQuery ? (
-              <Card>
-                <CardContent className="text-center py-8">
-                  <Search className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">No employees found</h3>
-                  <p className="text-muted-foreground">
-                    No employees match your search for "{searchQuery}"
-                  </p>
-                </CardContent>
-              </Card>
-            ) : employeeGroups.length === 0 ? (
-              <Card>
-                <CardContent className="text-center py-8">
-                  <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">No Work Entries</h3>
-                  <p className="text-muted-foreground">
-                    No work entries have been submitted yet by any employees.
-                  </p>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="grid gap-4">
-                {filteredEmployeeGroups.map(({ employeeId, employee, totalCount, pendingCount, approvedCount, needsChangesCount }) => (
-                  <Card 
-                    key={employeeId} 
-                    className="cursor-pointer hover:shadow-lg transition-shadow" 
-                    onClick={() => {
-                      setSelectedEmployeeId(employeeId);
-                      setViewMode('entries');
-                    }}
-                    data-testid={`employee-entries-card-${employeeId}`}
-                  >
-                    <CardHeader>
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <CardTitle className="text-lg font-semibold text-primary hover:underline" data-testid={`employee-entries-name-${employeeId}`}>
-                            {employee ? `${employee.firstName} ${employee.lastName}` : 'Unknown Employee'}
-                          </CardTitle>
-                          <CardDescription className="flex items-center gap-2 mt-1">
-                            <User className="w-4 h-4" />
-                            <span data-testid={`employee-entries-email-${employeeId}`}>
-                              {employee?.email || 'No email available'}
-                            </span>
-                          </CardDescription>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline" className="bg-blue-50 text-blue-700" data-testid={`employee-entries-total-${employeeId}`}>
-                            {totalCount} {totalCount === 1 ? 'entry' : 'entries'}
-                          </Badge>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid grid-cols-3 gap-4 text-sm">
-                        <div className="text-center p-3 bg-yellow-50 rounded-lg">
-                          <div className="flex items-center justify-center gap-1 mb-1">
-                            <Clock className="w-4 h-4 text-yellow-600" />
-                            <span className="font-medium text-yellow-800">Pending</span>
+        {/* Enhanced Work Entries List - Grouped by Employee */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div>
+            <h2 className="text-lg font-semibold mb-4">Work Entries by Employee</h2>
+            <div className="space-y-6">
+              {(loadingAll || loadingPending) ? (
+                <Card>
+                  <CardContent className="p-8 text-center">
+                    <Clock className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-600">Loading work entries...</p>
+                  </CardContent>
+                </Card>
+              ) : filteredEmployeeGroups.length === 0 ? (
+                <Card>
+                  <CardContent className="p-8 text-center">
+                    <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-600">
+                      {searchTerm || selectedEmployeeFilter !== 'all' 
+                        ? 'No work entries match your search criteria.' 
+                        : 'No work entries found for any employees.'}
+                    </p>
+                    {(searchTerm || selectedEmployeeFilter !== 'all') && (
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="mt-2"
+                        onClick={() => {
+                          setSearchTerm('');
+                          setSelectedEmployeeFilter('all');
+                        }}
+                      >
+                        Clear Filters
+                      </Button>
+                    )}
+                  </CardContent>
+                </Card>
+              ) : (
+                filteredEmployeeGroups.map(({ employeeId, employee, entries, pendingCount, approvedCount, needsChangesCount }) => {
+                  const isExpanded = expandedEmployees[employeeId];
+                  const employeeName = employee ? `${employee.firstName} ${employee.lastName}` : 'Unknown Employee';
+                  
+                  return (
+                    <div key={employeeId} className="border rounded-lg bg-white shadow-sm">
+                      {/* Employee Header - Clickable */}
+                      <div 
+                        className="p-4 border-b bg-gray-50 rounded-t-lg cursor-pointer hover:bg-gray-100 transition-colors"
+                        onClick={() => toggleEmployeeExpansion(employeeId)}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-medium">
+                              {employeeName.split(' ').map((n: string) => n[0]).join('')}
+                            </div>
+                            <div>
+                              <h3 className="font-semibold text-gray-900">{employeeName}</h3>
+                              <p className="text-sm text-gray-600">{employee?.email || 'No email'}</p>
+                            </div>
                           </div>
-                          <div className="text-xl font-bold text-yellow-700" data-testid={`employee-pending-count-${employeeId}`}>
-                            {pendingCount}
-                          </div>
-                        </div>
-                        <div className="text-center p-3 bg-green-50 rounded-lg">
-                          <div className="flex items-center justify-center gap-1 mb-1">
-                            <CheckCircle className="w-4 h-4 text-green-600" />
-                            <span className="font-medium text-green-800">Approved</span>
-                          </div>
-                          <div className="text-xl font-bold text-green-700" data-testid={`employee-approved-count-${employeeId}`}>
-                            {approvedCount}
-                          </div>
-                        </div>
-                        <div className="text-center p-3 bg-red-50 rounded-lg">
-                          <div className="flex items-center justify-center gap-1 mb-1">
-                            <AlertCircle className="w-4 h-4 text-red-600" />
-                            <span className="font-medium text-red-800">Changes</span>
-                          </div>
-                          <div className="text-xl font-bold text-red-700" data-testid={`employee-changes-count-${employeeId}`}>
-                            {needsChangesCount}
+                          <div className="flex items-center gap-2">
+                            <div className="flex gap-1">
+                              {pendingCount > 0 && (
+                                <Badge variant="outline" className="text-xs bg-yellow-50 text-yellow-700">
+                                  {pendingCount} pending
+                                </Badge>
+                              )}
+                              {approvedCount > 0 && (
+                                <Badge variant="outline" className="text-xs bg-green-50 text-green-700">
+                                  {approvedCount} approved
+                                </Badge>
+                              )}
+                              {needsChangesCount > 0 && (
+                                <Badge variant="outline" className="text-xs bg-red-50 text-red-700">
+                                  {needsChangesCount} changes
+                                </Badge>
+                              )}
+                            </div>
+                            <svg 
+                              className={`w-5 h-5 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                              fill="none" 
+                              stroke="currentColor" 
+                              viewBox="0 0 24 24"
+                            >
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
                           </div>
                         </div>
                       </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
+                      
+                      {/* Employee's Work Entries - Collapsible */}
+                      {isExpanded && (
+                        <div className="p-4 space-y-3">
+                          {entries.map((entry: any, index: number) => (
+                            <Card 
+                              key={entry.id} 
+                              className={`cursor-pointer transition-all hover:shadow-md border-l-4 ${
+                                entry.approvalStatus === 'pending_review' ? 'border-l-orange-500' :
+                                entry.approvalStatus === 'approved' ? 'border-l-green-500' : 'border-l-red-500'
+                              } ${selectedEntry?.id === entry.id ? 'ring-2 ring-blue-500' : ''}`}
+                              onClick={() => setSelectedEntry(selectedEntry?.id === entry.id ? null : entry)}
+                              data-testid={`work-entry-${entry.id}`}
+                            >
+                              <CardContent className="p-3">
+                                <div className="flex justify-between items-start mb-2">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs text-gray-500 font-mono">#{index + 1}</span>
+                                    <h4 className="font-medium text-sm">{entry.title}</h4>
+                                  </div>
+                                  <Badge 
+                                    variant={
+                                      entry.approvalStatus === 'pending_review' ? 'secondary' :
+                                      entry.approvalStatus === 'approved' ? 'default' : 'destructive'
+                                    }
+                                    className={`text-xs ${
+                                      entry.approvalStatus === 'approved' ? 'bg-green-600 text-white' : ''
+                                    }`}
+                                  >
+                                    {entry.approvalStatus === 'pending_review' && 'Pending'}
+                                    {entry.approvalStatus === 'approved' && (
+                                      <span className="flex items-center gap-1">
+                                        <Shield className="w-2 h-2" />
+                                        Verified
+                                      </span>
+                                    )}
+                                    {entry.approvalStatus === 'needs_changes' && 'Changes'}
+                                  </Badge>
+                                </div>
+                                
+                                <div className="text-xs text-gray-600 space-y-1">
+                                  <div className="flex items-center gap-2">
+                                    <Calendar className="h-3 w-3" />
+                                    {new Date(entry.createdAt).toLocaleDateString()}
+                                  </div>
+                                  {entry.companyRating && (
+                                    <div className="flex items-center gap-1">
+                                      {Array.from({ length: 5 }, (_, i) => (
+                                        <Star 
+                                          key={i} 
+                                          className={`w-3 h-3 ${i < entry.companyRating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`} 
+                                        />
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                                
+                                <p className="text-xs text-gray-700 mt-2 line-clamp-2">
+                                  {entry.description}
+                                </p>
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+              )}
+            </div>
           </div>
-        ) : (
-          /* Individual Employee Entries View */
-          <Tabs defaultValue="pending" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="pending" data-testid="tab-pending">
-                Pending ({selectedEmployeeEntries.filter(e => e.approvalStatus === 'pending_review').length})
-              </TabsTrigger>
-              <TabsTrigger value="all" data-testid="tab-all">
-                All ({selectedEmployeeEntries.length})
-              </TabsTrigger>
-              <TabsTrigger value="reviewed" data-testid="tab-reviewed">
-                Reviewed ({selectedEmployeeEntries.filter(e => e.approvalStatus !== 'pending_review').length})
-              </TabsTrigger>
-            </TabsList>
 
-            <TabsContent value="pending" className="mt-6">
-              {selectedEmployeeEntries.filter(e => e.approvalStatus === 'pending_review').length === 0 ? (
-                <Card>
-                  <CardContent className="text-center py-8">
-                    <Clock className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">No Pending Entries</h3>
-                    <p className="text-muted-foreground">
-                      This employee has no pending work entries to review.
-                    </p>
-                  </CardContent>
-                </Card>
-              ) : (
-                <div className="space-y-4">
-                  {selectedEmployeeEntries
-                    .filter(entry => entry.approvalStatus === 'pending_review')
-                    .map(entry => (
-                      <WorkEntryCard key={entry.id} entry={entry} showActions={true} />
-                    ))}
-                </div>
-              )}
-            </TabsContent>
-
-            <TabsContent value="all" className="mt-6">
-              {selectedEmployeeEntries.length === 0 ? (
-                <Card>
-                  <CardContent className="text-center py-8">
-                    <Building className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">No Work Entries</h3>
-                    <p className="text-muted-foreground">
-                      This employee hasn't submitted any work entries yet.
-                    </p>
-                  </CardContent>
-                </Card>
-              ) : (
-                <div className="space-y-4">
-                  {selectedEmployeeEntries.map(entry => (
-                    <WorkEntryCard key={entry.id} entry={entry} />
-                  ))}
-                </div>
-              )}
-            </TabsContent>
-
-            <TabsContent value="reviewed" className="mt-6">
-              {selectedEmployeeEntries.filter(e => e.approvalStatus !== 'pending_review').length === 0 ? (
-                <Card>
-                  <CardContent className="text-center py-8">
-                    <CheckCircle className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">No Reviewed Entries</h3>
-                    <p className="text-muted-foreground">
-                      This employee has no reviewed work entries yet.
-                    </p>
-                  </CardContent>
-                </Card>
-              ) : (
-                <div className="space-y-4">
-                  {selectedEmployeeEntries
-                    .filter(entry => entry.approvalStatus !== 'pending_review')
-                    .map(entry => (
-                      <WorkEntryCard key={entry.id} entry={entry} />
-                    ))}
-                </div>
-              )}
-            </TabsContent>
-          </Tabs>
-        )}
+          {/* Enhanced Entry Details and Approval */}
+          {selectedEntry && (
+            <div>
+              <h2 className="text-lg font-semibold mb-4">Entry Details</h2>
+              <WorkEntryCard entry={selectedEntry} showActions={selectedEntry.approvalStatus === 'pending_review'} />
+            </div>
+          )}
+        </div>
 
       {/* Enhanced Approval Dialog with Rating System */}
       <Dialog open={showApprovalDialog} onOpenChange={setShowApprovalDialog}>
