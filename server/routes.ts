@@ -3496,6 +3496,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Fix existing team manager assignments (Company endpoint)
+  app.post("/api/company/fix-team-assignments", requireCompany, async (req: any, res) => {
+    try {
+      const result = await storage.fixExistingTeamManagerAssignments(req.user.id);
+      res.json({ 
+        message: `Fixed ${result.fixed} assignments`,
+        fixed: result.fixed,
+        errors: result.errors
+      });
+    } catch (error) {
+      console.error("Fix team assignments error:", error);
+      res.status(500).json({ message: "Failed to fix team assignments" });
+    }
+  });
+
   // Approve work entry as manager - New verification system
   app.post("/api/manager/work-entries/:workEntryId/approve", requireManager, await requireManagerPermission('canApproveWork'), async (req: any, res) => {
     try {

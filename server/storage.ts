@@ -25,7 +25,7 @@ import {
 type EmailVerification = typeof emailVerifications.$inferSelect;
 type InsertEmailVerification = typeof emailVerifications.$inferInsert;
 import { db } from "./db";
-import { eq, and, sql, desc, asc, inArray, count, like, or, getTableColumns, lt, ilike } from "drizzle-orm";
+import { eq, and, sql, desc, asc, inArray, count, like, or, getTableColumns, lt, ilike, isNotNull, isNull } from "drizzle-orm";
 import bcrypt from "bcrypt";
 
 // Generate a short, memorable employee ID
@@ -5390,6 +5390,13 @@ export class DatabaseStorage implements IStorage {
 
   // Team membership operations (many-to-many relationships)
   async addEmployeeToTeam(employeeId: string, teamId: string, companyId: string, role: string = "member"): Promise<TeamMember> {
+    // First, get the team's manager ID
+    const team = await this.getCompanyTeam(teamId);
+    if (!team) {
+      throw new Error("Team not found");
+    }
+
+    // Add employee to team members table
     const [teamMember] = await db
       .insert(teamMembers)
       .values({
@@ -5400,10 +5407,26 @@ export class DatabaseStorage implements IStorage {
         isActive: true
       })
       .returning();
+
+    // Update the employee's assignedManagerId in companyEmployees table
+    if (team.teamManagerId) {
+      await db
+        .update(companyEmployees)
+        .set({ 
+          assignedManagerId: team.teamManagerId,
+          updatedAt: new Date() 
+        })
+        .where(and(
+          eq(companyEmployees.employeeId, employeeId),
+          eq(companyEmployees.companyId, companyId)
+        ));
+    }
+
     return teamMember;
   }
 
   async removeEmployeeFromTeam(employeeId: string, teamId: string): Promise<void> {
+    // Remove from team members table
     await db
       .update(teamMembers)
       .set({ 
@@ -5416,6 +5439,31 @@ export class DatabaseStorage implements IStorage {
           eq(teamMembers.teamId, teamId)
         )
       );
+
+    // Check if employee is still in other teams with managers
+    const remainingTeamsWithManagers = await db
+      .select({ teamManagerId: companyTeams.teamManagerId })
+      .from(teamMembers)
+      .innerJoin(companyTeams, eq(teamMembers.teamId, companyTeams.id))
+      .where(
+        and(
+          eq(teamMembers.employeeId, employeeId),
+          eq(teamMembers.isActive, true),
+          isNotNull(companyTeams.teamManagerId)
+        )
+      )
+      .limit(1);
+
+    // If no remaining teams with managers, clear assignedManagerId
+    if (remainingTeamsWithManagers.length === 0) {
+      await db
+        .update(companyEmployees)
+        .set({ 
+          assignedManagerId: null,
+          updatedAt: new Date() 
+        })
+        .where(eq(companyEmployees.employeeId, employeeId));
+    }
   }
 
   async getEmployeeTeams(employeeId: string, companyId: string): Promise<CompanyTeam[]> {
@@ -5443,6 +5491,59 @@ export class DatabaseStorage implements IStorage {
         )
       );
     return employeeTeams;
+  }
+
+  // Fix existing team assignments that don't have assignedManagerId set
+  async fixExistingTeamManagerAssignments(companyId: string): Promise<{fixed: number, errors: string[]}> {
+    const errors: string[] = [];
+    let fixed = 0;
+
+    try {
+      // Get all active team members without assigned managers
+      const membersNeedingFix = await db
+        .select({
+          employeeId: teamMembers.employeeId,
+          teamId: teamMembers.teamId,
+          teamManagerId: companyTeams.teamManagerId,
+        })
+        .from(teamMembers)
+        .innerJoin(companyTeams, eq(teamMembers.teamId, companyTeams.id))
+        .innerJoin(companyEmployees, and(
+          eq(teamMembers.employeeId, companyEmployees.employeeId),
+          eq(teamMembers.companyId, companyEmployees.companyId)
+        ))
+        .where(
+          and(
+            eq(teamMembers.companyId, companyId),
+            eq(teamMembers.isActive, true),
+            isNotNull(companyTeams.teamManagerId),
+            isNull(companyEmployees.assignedManagerId)
+          )
+        );
+
+      // Fix each member's assignedManagerId
+      for (const member of membersNeedingFix) {
+        try {
+          await db
+            .update(companyEmployees)
+            .set({ 
+              assignedManagerId: member.teamManagerId,
+              updatedAt: new Date() 
+            })
+            .where(and(
+              eq(companyEmployees.employeeId, member.employeeId),
+              eq(companyEmployees.companyId, companyId)
+            ));
+          fixed++;
+        } catch (error) {
+          errors.push(`Failed to fix employee ${member.employeeId}: ${error}`);
+        }
+      }
+
+      return { fixed, errors };
+    } catch (error) {
+      return { fixed: 0, errors: [`Failed to fix assignments: ${error}`] };
+    }
   }
 
   async getTeamMemberships(teamId: string): Promise<any[]> {
