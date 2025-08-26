@@ -134,16 +134,62 @@ export default function CompanyHierarchySimple() {
     setIsManageTeamOpen(true);
   };
 
-  const handleRemoveFromTeam = (employeeId: string) => {
-    // TODO: Implement remove from team API call
-    console.log('Removing employee from team:', employeeId);
-    toast({ title: "Success", description: "Employee removed from team" });
+  const handleRemoveFromTeam = async (employeeId: string) => {
+    try {
+      await apiRequest("PATCH", `/api/company/employees/${employeeId}/hierarchy-role`, {
+        teamId: null,
+        hierarchyRole: "employee",
+        branchId: null,
+        canVerifyWork: false,
+        canManageEmployees: false,
+        verificationScope: "none"
+      });
+      
+      queryClient.invalidateQueries({ queryKey: ["/api/company/employees"] });
+      toast({ title: "Success", description: "Employee removed from team" });
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message || "Failed to remove employee from team", variant: "destructive" });
+    }
   };
 
-  const handleChangeManager = (newManagerId: string) => {
-    // TODO: Implement change manager API call
-    console.log('Changing team manager to:', newManagerId);
-    toast({ title: "Success", description: "Team manager updated" });
+  const handleChangeManager = async (newManagerId: string) => {
+    if (!selectedTeam) return;
+    
+    try {
+      // Update new manager role
+      await apiRequest("PATCH", `/api/company/employees/${newManagerId}/hierarchy-role`, {
+        teamId: selectedTeam.id,
+        hierarchyRole: "team_lead",
+        branchId: selectedTeam.branchId,
+        canVerifyWork: true,
+        canManageEmployees: true,
+        verificationScope: "team"
+      });
+      
+      // Find and demote old manager to employee
+      if (Array.isArray(employees)) {
+        const oldManager = employees.find((emp: any) => 
+          emp.teamId === selectedTeam.id && 
+          (emp.hierarchyRole === "team_lead" || emp.hierarchyRole === "branch_manager")
+        );
+        
+        if (oldManager && oldManager.employeeId !== newManagerId) {
+          await apiRequest("PATCH", `/api/company/employees/${oldManager.employeeId}/hierarchy-role`, {
+            teamId: selectedTeam.id,
+            hierarchyRole: "employee",
+            branchId: selectedTeam.branchId,
+            canVerifyWork: false,
+            canManageEmployees: false,
+            verificationScope: "none"
+          });
+        }
+      }
+      
+      queryClient.invalidateQueries({ queryKey: ["/api/company/employees"] });
+      toast({ title: "Success", description: "Team manager updated successfully" });
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message || "Failed to update team manager", variant: "destructive" });
+    }
   };
 
   const handleCreateBranch = () => {
@@ -162,18 +208,42 @@ export default function CompanyHierarchySimple() {
     }
   };
 
-  const handleSaveBulkAssignment = () => {
+  const handleSaveBulkAssignment = async () => {
     if (selectedTeam && selectedManager && selectedEmployees.length > 0) {
-      // TODO: Implement bulk assignment API call
-      console.log('Bulk assignment:', { 
-        teamId: selectedTeam.id, 
-        managerId: selectedManager, 
-        employeeIds: selectedEmployees 
-      });
-      toast({ title: "Success", description: `Added ${selectedEmployees.length + 1} members to ${selectedTeam.name}` });
-      setIsAddMembersOpen(false);
-      setSelectedEmployees([]);
-      setSelectedManager("");
+      try {
+        // Assign manager to team
+        await apiRequest("PATCH", `/api/company/employees/${selectedManager}/hierarchy-role`, {
+          teamId: selectedTeam.id,
+          hierarchyRole: "team_lead",
+          branchId: selectedTeam.branchId,
+          canVerifyWork: true,
+          canManageEmployees: true,
+          verificationScope: "team"
+        });
+
+        // Assign employees to team
+        for (const employeeId of selectedEmployees) {
+          await apiRequest("PATCH", `/api/company/employees/${employeeId}/hierarchy-role`, {
+            teamId: selectedTeam.id,
+            hierarchyRole: "employee",
+            branchId: selectedTeam.branchId,
+            canVerifyWork: false,
+            canManageEmployees: false,
+            verificationScope: "none"
+          });
+        }
+
+        // Refresh data
+        queryClient.invalidateQueries({ queryKey: ["/api/company/employees"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/company/teams"] });
+        
+        toast({ title: "Success", description: `Added ${selectedEmployees.length + 1} members to ${selectedTeam.name}` });
+        setIsAddMembersOpen(false);
+        setSelectedEmployees([]);
+        setSelectedManager("");
+      } catch (error: any) {
+        toast({ title: "Error", description: error.message || "Failed to assign team members", variant: "destructive" });
+      }
     }
   };
 
