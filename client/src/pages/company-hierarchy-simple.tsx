@@ -851,39 +851,41 @@ export default function CompanyHierarchySimple() {
                     const currentTeamMemberIds = currentTeamMemberships?.map((membership: any) => membership.employeeId) || [];
                     
                     return Array.isArray(employees) && employees
-                      .filter((emp: any) => 
-                        emp.employeeId !== selectedManager && // Exclude manager
-                        !currentTeamMemberIds.includes(emp.employeeId) // Exclude employees already in this team
-                      )
-                      .map((employee: any) => (
-                        <div key={employee.employeeId} className="flex items-center space-x-2">
-                          <input
-                            type="checkbox"
-                            id={`emp-${employee.employeeId}`}
-                            checked={selectedEmployees.includes(employee.employeeId)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setSelectedEmployees([...selectedEmployees, employee.employeeId]);
-                              } else {
-                                setSelectedEmployees(selectedEmployees.filter(id => id !== employee.employeeId));
-                              }
-                            }}
-                            className="rounded"
-                          />
-                          <label htmlFor={`emp-${employee.employeeId}`} className="flex items-center gap-2 cursor-pointer flex-1 min-w-0">
-                            <User className="w-4 h-4 text-gray-600 shrink-0" />
-                            <div className="flex-1 min-w-0">
-                              <span className="truncate block">{employee.firstName} {employee.lastName}</span>
-                              <span className="text-xs text-muted-foreground truncate block">
-                                {employee.email}
-                                {employee.teamId && (
-                                  <span className="ml-1 text-blue-600">• Already in {getTeamName(employee.teamId)}</span>
-                                )}
-                              </span>
-                            </div>
-                          </label>
-                        </div>
-                      ));
+                      .filter((emp: any) => emp.employeeId !== selectedManager) // Only exclude manager
+                      .map((employee: any) => {
+                        const isAlreadyInTeam = currentTeamMemberIds.includes(employee.employeeId);
+                        
+                        return (
+                          <div key={employee.employeeId} className={`flex items-center space-x-2 ${isAlreadyInTeam ? 'opacity-60' : ''}`}>
+                            <input
+                              type="checkbox"
+                              id={`emp-${employee.employeeId}`}
+                              checked={selectedEmployees.includes(employee.employeeId)}
+                              disabled={isAlreadyInTeam}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedEmployees([...selectedEmployees, employee.employeeId]);
+                                } else {
+                                  setSelectedEmployees(selectedEmployees.filter(id => id !== employee.employeeId));
+                                }
+                              }}
+                              className={`rounded ${isAlreadyInTeam ? 'cursor-not-allowed' : ''}`}
+                            />
+                            <label htmlFor={`emp-${employee.employeeId}`} className={`flex items-center gap-2 flex-1 min-w-0 ${isAlreadyInTeam ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
+                              <User className="w-4 h-4 text-gray-600 shrink-0" />
+                              <div className="flex-1 min-w-0">
+                                <span className="truncate block">{employee.firstName} {employee.lastName}</span>
+                                <span className="text-xs text-muted-foreground truncate block">
+                                  {employee.email}
+                                  {isAlreadyInTeam && (
+                                    <span className="ml-1 text-blue-600 font-medium">• Already in this team</span>
+                                  )}
+                                </span>
+                              </div>
+                            </label>
+                          </div>
+                        );
+                      });
                   })()}
                 </div>
               </div>
