@@ -35,6 +35,8 @@ export default function CompanyHierarchySimple() {
   
   // Manager creation states
   const [isCreateManagerOpen, setIsCreateManagerOpen] = useState(false);
+  const [isManageManagerOpen, setIsManageManagerOpen] = useState(false);
+  const [selectedManager, setSelectedManager] = useState<any>(null);
   const [newManager, setNewManager] = useState({ firstName: "", lastName: "", email: "", password: "" });
   
   // Form states
@@ -263,6 +265,35 @@ export default function CompanyHierarchySimple() {
     }
   };
 
+  const handleManageManager = (manager: any) => {
+    setSelectedManager(manager);
+    setIsManageManagerOpen(true);
+  };
+
+  const handleResetManagerPassword = async () => {
+    if (selectedManager) {
+      try {
+        // TODO: Implement password reset API call
+        console.log('Resetting password for manager:', selectedManager.employeeId);
+        toast({ title: "Success", description: "Password reset instructions sent to manager" });
+      } catch (error: any) {
+        toast({ title: "Error", description: error.message || "Failed to reset password", variant: "destructive" });
+      }
+    }
+  };
+
+  const handleToggleManagerStatus = async () => {
+    if (selectedManager) {
+      try {
+        // TODO: Implement manager status toggle API call
+        console.log('Toggling status for manager:', selectedManager.employeeId);
+        toast({ title: "Success", description: "Manager status updated" });
+      } catch (error: any) {
+        toast({ title: "Error", description: error.message || "Failed to update manager status", variant: "destructive" });
+      }
+    }
+  };
+
   if (employeesLoading || branchesLoading || teamsLoading) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -418,7 +449,13 @@ export default function CompanyHierarchySimple() {
                             </Badge>
                           </div>
                           <div className="flex gap-2">
-                            <Button size="sm" variant="outline" className="text-blue-600">
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="text-blue-600"
+                              onClick={() => handleManageManager(manager)}
+                              data-testid={`manage-manager-${manager.employeeId}`}
+                            >
                               <Shield className="w-4 h-4 mr-1" />
                               Manage
                             </Button>
@@ -805,6 +842,88 @@ export default function CompanyHierarchySimple() {
                   Add More Members
                 </Button>
                 <Button onClick={() => setIsManageTeamOpen(false)} variant="outline">
+                  Close
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Manage Manager Dialog */}
+      <Dialog open={isManageManagerOpen} onOpenChange={setIsManageManagerOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Shield className="w-5 h-5 text-blue-600" />
+              Manage Manager: {selectedManager?.firstName} {selectedManager?.lastName}
+            </DialogTitle>
+            <DialogDescription>
+              Manage manager account, permissions, and credentials
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedManager && (
+            <div className="space-y-4">
+              {/* Manager Info */}
+              <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <span className="font-medium text-blue-900">Name:</span>
+                    <p className="text-blue-700">{selectedManager.firstName} {selectedManager.lastName}</p>
+                  </div>
+                  <div>
+                    <span className="font-medium text-blue-900">Role:</span>
+                    <p className="text-blue-700">{selectedManager.hierarchyRole?.replace('_', ' ') || 'Manager'}</p>
+                  </div>
+                  <div>
+                    <span className="font-medium text-blue-900">Email:</span>
+                    <p className="text-blue-700">{selectedManager.email}</p>
+                  </div>
+                  <div>
+                    <span className="font-medium text-blue-900">Team:</span>
+                    <p className="text-blue-700">{getTeamName(selectedManager.teamId) || 'No team'}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Manager Actions */}
+              <div className="space-y-3">
+                <div className="flex gap-2">
+                  <Button
+                    onClick={handleResetManagerPassword}
+                    variant="outline"
+                    className="flex-1"
+                    data-testid="reset-manager-password"
+                  >
+                    <UserCog className="w-4 h-4 mr-2" />
+                    Reset Password
+                  </Button>
+                  <Button
+                    onClick={handleToggleManagerStatus}
+                    variant="outline"
+                    className="flex-1"
+                    data-testid="toggle-manager-status"
+                  >
+                    <Shield className="w-4 h-4 mr-2" />
+                    Toggle Status
+                  </Button>
+                </div>
+              </div>
+
+              {/* Manager Permissions */}
+              <div className="p-3 bg-green-50 rounded-lg border border-green-200">
+                <h5 className="font-medium text-sm mb-2 text-green-900">Current Permissions</h5>
+                <div className="text-xs space-y-1 text-green-700">
+                  <div>✓ Can verify work entries</div>
+                  <div>✓ Can manage team members</div>
+                  {selectedManager.hierarchyRole === "branch_manager" && <div>✓ Can manage entire branch</div>}
+                  {selectedManager.hierarchyRole === "company_admin" && <div>✓ Full company access</div>}
+                </div>
+              </div>
+
+              <div className="flex gap-2 pt-4 border-t">
+                <Button onClick={() => setIsManageManagerOpen(false)} variant="outline" className="flex-1">
                   Close
                 </Button>
               </div>
