@@ -1429,59 +1429,6 @@ export class DatabaseStorage implements IStorage {
     await db.delete(workEntries).where(eq(workEntries.id, id));
   }
 
-  async getWorkEntriesForManager(managerId: string): Promise<any[]> {
-    // Get work entries for employees assigned to this manager
-    const result = await db
-      .select({
-        id: workEntries.id,
-        employeeId: workEntries.employeeId,
-        companyId: workEntries.companyId,
-        title: workEntries.title,
-        description: workEntries.description,
-        startDate: workEntries.startDate,
-        endDate: workEntries.endDate,
-        priority: workEntries.priority,
-        hours: workEntries.hours,
-        estimatedHours: workEntries.estimatedHours,
-        actualHours: workEntries.actualHours,
-        status: workEntries.status,
-        approvalStatus: workEntries.approvalStatus,
-        workType: workEntries.workType,
-        category: workEntries.category,
-        project: workEntries.project,
-        client: workEntries.client,
-        billable: workEntries.billable,
-        billableRate: workEntries.billableRate,
-        tags: workEntries.tags,
-        achievements: workEntries.achievements,
-        challenges: workEntries.challenges,
-        learnings: workEntries.learnings,
-        companyFeedback: workEntries.companyFeedback,
-        companyRating: workEntries.companyRating,
-        attachments: workEntries.attachments,
-        approvedByManagerId: workEntries.approvedByManagerId,
-        approvedByManagerName: workEntries.approvedByManagerName,
-        managerApprovalDate: workEntries.managerApprovalDate,
-        verifiedBy: workEntries.verifiedBy,
-        verifiedByRole: workEntries.verifiedByRole,
-        verifiedByName: workEntries.verifiedByName,
-        verifiedAt: workEntries.verifiedAt,
-        createdAt: workEntries.createdAt,
-        updatedAt: workEntries.updatedAt,
-        // Employee details
-        employeeName: employees.name,
-        employeeEmail: employees.email,
-        // Company details
-        companyName: companies.name
-      })
-      .from(workEntries)
-      .leftJoin(employees, eq(workEntries.employeeId, employees.id))
-      .leftJoin(companies, eq(workEntries.companyId, companies.id))
-      .where(eq(workEntries.approvedByManagerId, managerId))
-      .orderBy(desc(workEntries.createdAt));
-
-    return result;
-  }
 
   async approveWorkEntryAsCompany(workEntryId: string, companyId: string, data: { 
     rating?: number; 
