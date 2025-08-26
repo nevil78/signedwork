@@ -3900,9 +3900,30 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteCompanyTeam(teamId: string): Promise<void> {
+    // First, remove all employees from this team to avoid foreign key constraints
+    await this.removeAllEmployeesFromTeam(teamId);
+    
+    // Then safely delete the team
     await db
       .delete(companyTeams)
       .where(eq(companyTeams.id, teamId));
+  }
+
+  async removeAllEmployeesFromTeam(teamId: string): Promise<void> {
+    // Remove from team_members table
+    await db
+      .delete(teamMembers)
+      .where(eq(teamMembers.teamId, teamId));
+    
+    // Remove team assignment from company_employees table
+    await db
+      .update(companyEmployees)
+      .set({ 
+        teamId: null,
+        assignedManagerId: null,
+        updatedAt: new Date()
+      })
+      .where(eq(companyEmployees.teamId, teamId));
   }
 
   async getTeamMembers(teamId: string): Promise<CompanyEmployee[]> {
