@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { useManagerAuth } from "@/hooks/useManagerAuth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { 
@@ -33,12 +35,6 @@ const ManagerWorkEntries = memo(function ManagerWorkEntries() {
     approvalStatus: "all"
   });
   
-  const [selectedEntry, setSelectedEntry] = useState<any>(null);
-  const [approvalData, setApprovalData] = useState({
-    approvalStatus: "",
-    managerFeedback: "",
-    managerRating: 0
-  });
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -68,20 +64,64 @@ const ManagerWorkEntries = memo(function ManagerWorkEntries() {
     enabled: isAuthenticated && permissions.canApproveWork,
   });
 
-  // Approve/reject work entry mutation
-  const approvalMutation = useMutation({
-    mutationFn: async (data: { workEntryId: string; approvalStatus: string; managerFeedback?: string; managerRating?: number }) => {
-      return await apiRequest("POST", `/api/manager/work-entries/${data.workEntryId}/approve`, data);
+  // Use the same approval pattern as company work entries
+  const [selectedEntry, setSelectedEntry] = useState<any>(null);
+  const [showApprovalDialog, setShowApprovalDialog] = useState(false);
+  const [showChangesDialog, setShowChangesDialog] = useState(false);
+  const [rating, setRating] = useState(0);
+  const [approvalFeedback, setApprovalFeedback] = useState('');
+  const [feedback, setFeedback] = useState('');
+
+  // Approve work entry mutation - same pattern as company
+  const approveMutation = useMutation({
+    mutationFn: async ({ entryId, rating, feedback }: { entryId: string; rating?: number; feedback?: string }) => {
+      return await apiRequest("POST", `/api/manager/work-entries/${entryId}/approve`, { 
+        rating: rating || undefined, 
+        feedback: feedback || undefined 
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/manager/work-entries"] });
-      setSelectedEntry(null);
-      setApprovalData({ approvalStatus: "", managerFeedback: "", managerRating: 0 });
       toast({
         title: "Success",
-        description: "Work entry processed successfully.",
+        description: "Work entry approved successfully - now verified by company",
       });
-    }
+      setShowApprovalDialog(false);
+      setSelectedEntry(null);
+      setRating(0);
+      setApprovalFeedback('');
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to approve work entry",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Request changes mutation - same pattern as company
+  const requestChangesMutation = useMutation({
+    mutationFn: async ({ entryId, feedback }: { entryId: string; feedback: string }) => {
+      return await apiRequest("POST", `/api/manager/work-entries/${entryId}/request-changes`, { feedback });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/manager/work-entries"] });
+      toast({
+        title: "Success",
+        description: "Changes requested successfully",
+      });
+      setShowChangesDialog(false);
+      setSelectedEntry(null);
+      setFeedback('');
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to request changes",
+        variant: "destructive",
+      });
+    },
   });
 
   if (isLoading || entriesLoading) {
@@ -114,19 +154,37 @@ const ManagerWorkEntries = memo(function ManagerWorkEntries() {
     );
   }
 
-  const pendingEntries = (workEntries as any[])?.filter((entry: any) => entry.approvalStatus === 'pending') || [];
-  const approvedEntries = (workEntries as any[])?.filter((entry: any) => entry.approvalStatus === 'manager_approved') || [];
-  const rejectedEntries = (workEntries as any[])?.filter((entry: any) => entry.approvalStatus === 'manager_rejected') || [];
+  const pendingEntries = (workEntries as any[])?.filter((entry: any) => entry.approvalStatus === 'pending_review') || [];
+  const approvedEntries = (workEntries as any[])?.filter((entry: any) => entry.approvalStatus === 'approved') || [];
+  const rejectedEntries = (workEntries as any[])?.filter((entry: any) => entry.approvalStatus === 'needs_changes') || [];
 
-  const handleApproval = () => {
-    if (!selectedEntry || !approvalData.approvalStatus) return;
-    
-    approvalMutation.mutate({
-      workEntryId: selectedEntry.id,
-      approvalStatus: approvalData.approvalStatus,
-      managerFeedback: approvalData.managerFeedback || undefined,
-      managerRating: approvalData.managerRating || undefined
-    });
+  // Use same handler patterns as company work entries
+  const handleApprove = (entry: any) => {
+    setSelectedEntry(entry);
+    setRating(0);
+    setApprovalFeedback('');
+    setShowApprovalDialog(true);
+  };
+
+  const handleRequestChanges = (entry: any) => {
+    setSelectedEntry(entry);
+    setShowChangesDialog(true);
+  };
+
+  const confirmApproval = () => {
+    if (selectedEntry) {
+      approveMutation.mutate({ 
+        entryId: selectedEntry.id, 
+        rating, 
+        feedback: approvalFeedback 
+      });
+    }
+  };
+
+  const confirmRequestChanges = () => {
+    if (selectedEntry && feedback.trim()) {
+      requestChangesMutation.mutate({ entryId: selectedEntry.id, feedback });
+    }
   };
 
   const getRatingStars = (rating: number) => {
@@ -347,116 +405,59 @@ const ManagerWorkEntries = memo(function ManagerWorkEntries() {
                     </div>
                   )}
 
-                  {selectedEntry.approvalStatus === 'pending' && (
+                  {selectedEntry.approvalStatus === 'pending_review' && (
                     <div className="space-y-4 pt-4 border-t">
                       <h4 className="font-medium">Manager Approval</h4>
-                      
-                      <div>
-                        <label className="text-sm font-medium mb-2 block">Decision</label>
-                        <Select 
-                          value={approvalData.approvalStatus} 
-                          onValueChange={(value) => setApprovalData(prev => ({ ...prev, approvalStatus: value }))}
+                      <div className="flex gap-3">
+                        <Button 
+                          onClick={() => handleApprove(selectedEntry)} 
+                          className="bg-green-600 hover:bg-green-700 flex-1"
+                          data-testid="button-approve"
                         >
-                          <SelectTrigger data-testid="select-approval-decision">
-                            <SelectValue placeholder="Select decision" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="manager_approved">Approve</SelectItem>
-                            <SelectItem value="manager_rejected">Request Changes</SelectItem>
-                          </SelectContent>
-                        </Select>
+                          <CheckCircle className="w-4 h-4 mr-2" />
+                          Approve Entry
+                        </Button>
+                        <Button 
+                          onClick={() => handleRequestChanges(selectedEntry)} 
+                          variant="outline" 
+                          className="border-red-600 text-red-600 hover:bg-red-50 flex-1"
+                          data-testid="button-request-changes"
+                        >
+                          <XCircle className="w-4 h-4 mr-2" />
+                          Request Changes
+                        </Button>
                       </div>
-
-                      {approvalData.approvalStatus === 'manager_approved' && (
-                        <div>
-                          <label className="text-sm font-medium mb-2 block">Rating (Optional)</label>
-                          <div className="flex gap-1">
-                            {[1, 2, 3, 4, 5].map((star) => (
-                              <button
-                                key={star}
-                                type="button"
-                                onClick={() => setApprovalData(prev => ({ ...prev, managerRating: star }))}
-                                className="p-1"
-                                data-testid={`star-rating-${star}`}
-                              >
-                                <Star 
-                                  className={`h-6 w-6 ${
-                                    star <= approvalData.managerRating 
-                                      ? 'text-yellow-500 fill-current' 
-                                      : 'text-gray-300'
-                                  }`} 
-                                />
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      <div>
-                        <label className="text-sm font-medium mb-2 block">
-                          {approvalData.approvalStatus === 'manager_rejected' ? 'Feedback (Required)' : 'Feedback (Optional)'}
-                        </label>
-                        <Textarea
-                          value={approvalData.managerFeedback}
-                          onChange={(e) => setApprovalData(prev => ({ ...prev, managerFeedback: e.target.value }))}
-                          placeholder={
-                            approvalData.approvalStatus === 'manager_rejected' 
-                              ? "Please explain what changes are needed..."
-                              : "Add any feedback or comments..."
-                          }
-                          rows={4}
-                          data-testid="textarea-feedback"
-                        />
-                      </div>
-
-                      <Button 
-                        onClick={handleApproval}
-                        disabled={
-                          !approvalData.approvalStatus || 
-                          (approvalData.approvalStatus === 'manager_rejected' && !approvalData.managerFeedback.trim()) ||
-                          approvalMutation.isPending
-                        }
-                        className="w-full"
-                        data-testid="button-submit-approval"
-                      >
-                        {approvalMutation.isPending ? (
-                          <div className="flex items-center gap-2">
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                            Processing...
-                          </div>
-                        ) : (
-                          approvalData.approvalStatus === 'manager_approved' ? 'Approve Entry' : 'Request Changes'
-                        )}
-                      </Button>
                     </div>
                   )}
 
-                  {selectedEntry.approvalStatus !== 'pending' && (
+                  {selectedEntry.approvalStatus !== 'pending_review' && (
                     <div className="pt-4 border-t">
                       <h4 className="font-medium mb-2">Manager Decision</h4>
                       <div className="space-y-2">
                         <Badge 
-                          variant={selectedEntry.approvalStatus === 'manager_approved' ? 'default' : 'destructive'}
+                          variant={selectedEntry.approvalStatus === 'approved' ? 'default' : 'destructive'}
+                          className={selectedEntry.approvalStatus === 'approved' ? 'bg-green-600 text-white' : 'bg-red-100 text-red-800'}
                         >
-                          {selectedEntry.approvalStatus === 'manager_approved' ? 'Approved' : 'Changes Requested'}
+                          {selectedEntry.approvalStatus === 'approved' && <Shield className="w-3 h-3 mr-1" />}
+                          {selectedEntry.approvalStatus === 'approved' ? 'Verified by Company' : 'Changes Requested'}
                         </Badge>
                         
-                        {selectedEntry.managerFeedback && (
+                        {selectedEntry.feedback && (
                           <div>
                             <p className="text-sm font-medium">Feedback:</p>
-                            <p className="text-sm text-gray-700">{selectedEntry.managerFeedback}</p>
+                            <p className="text-sm text-gray-700">{selectedEntry.feedback}</p>
                           </div>
                         )}
                         
-                        {selectedEntry.managerRating && (
+                        {selectedEntry.rating && (
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-medium">Rating:</span>
-                            {getRatingStars(selectedEntry.managerRating)}
+                            {getRatingStars(selectedEntry.rating)}
                           </div>
                         )}
                         
                         <p className="text-xs text-gray-500">
-                          Processed on {new Date(selectedEntry.managerApprovalDate).toLocaleDateString()}
+                          Verified on {new Date(selectedEntry.updatedAt).toLocaleDateString()}
                         </p>
                       </div>
                     </div>
@@ -467,6 +468,152 @@ const ManagerWorkEntries = memo(function ManagerWorkEntries() {
           )}
         </div>
       </div>
+
+      {/* Approval Dialog - same pattern as company work entries */}
+      <Dialog open={showApprovalDialog} onOpenChange={setShowApprovalDialog}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" data-testid="approval-dialog">
+          <DialogHeader>
+            <DialogTitle>Approve Work Entry</DialogTitle>
+            <DialogDescription>
+              Review and approve this work entry. Once approved, it will be marked as "Verified by Company" and become immutable.
+            </DialogDescription>
+          </DialogHeader>
+          {selectedEntry && (
+            <div className="py-4 space-y-6">
+              <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg">
+                <h4 className="font-semibold mb-2">{selectedEntry.title}</h4>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                  By {selectedEntry.employeeName} • {new Date(selectedEntry.createdAt).toLocaleDateString()}
+                </p>
+                <p className="text-sm">{selectedEntry.description}</p>
+              </div>
+
+              {/* Rating Section */}
+              <div className="space-y-3">
+                <Label className="text-sm font-medium">Rating (optional)</Label>
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        type="button"
+                        onClick={() => setRating(star)}
+                        className="focus:outline-none transition-colors"
+                        data-testid={`rating-star-${star}`}
+                      >
+                        <Star 
+                          className={`h-6 w-6 ${
+                            star <= rating 
+                              ? 'text-yellow-500 fill-current' 
+                              : 'text-gray-300 hover:text-gray-400'
+                          }`} 
+                        />
+                      </button>
+                    ))}
+                  </div>
+                  {rating > 0 && (
+                    <span className="ml-3 text-sm text-gray-600 dark:text-gray-400">
+                      {rating} star{rating > 1 ? 's' : ''}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Feedback Section */}
+              <div className="space-y-3">
+                <Label htmlFor="approval-feedback" className="text-sm font-medium">
+                  Feedback for Employee (optional)
+                </Label>
+                <Textarea
+                  id="approval-feedback"
+                  placeholder="Great work! Here's some feedback to help you improve..."
+                  value={approvalFeedback}
+                  onChange={(e) => setApprovalFeedback(e.target.value)}
+                  rows={3}
+                  className="resize-none"
+                  data-testid="approval-feedback-textarea"
+                />
+              </div>
+            </div>
+          )}
+          
+          <DialogFooter className="flex-shrink-0 flex flex-col sm:flex-row gap-3 pt-4 border-t bg-white dark:bg-gray-950">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowApprovalDialog(false)} 
+              className="w-full sm:w-auto"
+              data-testid="cancel-approval"
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={confirmApproval}
+              className="bg-green-600 hover:bg-green-700 w-full sm:w-auto"
+              disabled={approveMutation.isPending}
+              data-testid="confirm-approval"
+            >
+              {approveMutation.isPending ? 'Approving...' : 'Approve & Verify Entry'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Request Changes Dialog - same pattern as company work entries */}
+      <Dialog open={showChangesDialog} onOpenChange={setShowChangesDialog}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" data-testid="request-changes-dialog">
+          <DialogHeader>
+            <DialogTitle>Request Changes</DialogTitle>
+            <DialogDescription>
+              Provide feedback to the employee about what needs to be changed or corrected in their work entry.
+            </DialogDescription>
+          </DialogHeader>
+          {selectedEntry && (
+            <div className="py-4 space-y-4">
+              <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg">
+                <h4 className="font-semibold mb-2">{selectedEntry.title}</h4>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                  By {selectedEntry.employeeName} • {new Date(selectedEntry.createdAt).toLocaleDateString()}
+                </p>
+                <p className="text-sm">{selectedEntry.description}</p>
+              </div>
+
+              <div className="space-y-3">
+                <Label htmlFor="changes-feedback" className="text-sm font-medium">
+                  What changes are needed? *
+                </Label>
+                <Textarea
+                  id="changes-feedback"
+                  placeholder="Please explain what needs to be corrected or improved in this work entry..."
+                  value={feedback}
+                  onChange={(e) => setFeedback(e.target.value)}
+                  rows={4}
+                  className="resize-none"
+                  data-testid="changes-feedback-textarea"
+                />
+              </div>
+            </div>
+          )}
+          
+          <DialogFooter className="flex-shrink-0 flex flex-col sm:flex-row gap-3 pt-4 border-t bg-white dark:bg-gray-950">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowChangesDialog(false)} 
+              className="w-full sm:w-auto"
+              data-testid="cancel-changes"
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={confirmRequestChanges}
+              className="bg-red-600 hover:bg-red-700 w-full sm:w-auto"
+              disabled={!feedback.trim() || requestChangesMutation.isPending}
+              data-testid="confirm-changes"
+            >
+              {requestChangesMutation.isPending ? 'Requesting...' : 'Request Changes'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 });
