@@ -172,6 +172,29 @@ export default function CompanyHierarchySimple() {
     enabled: !!selectedTeam?.id && isAddMembersOpen
   });
 
+  // Query to get all employee teams for showing which teams they're already in
+  const { data: allEmployeeTeams } = useQuery({
+    queryKey: ["/api/company/employees", "all-teams"],
+    queryFn: async () => {
+      if (!employees || !Array.isArray(employees)) return {};
+      
+      const employeeTeams: any = {};
+      
+      // Get teams for each employee
+      for (const emp of employees) {
+        try {
+          const teams = await apiRequest("GET", `/api/company/employees/${emp.employeeId}/teams`);
+          employeeTeams[emp.employeeId] = teams;
+        } catch (error) {
+          employeeTeams[emp.employeeId] = [];
+        }
+      }
+      
+      return employeeTeams;
+    },
+    enabled: !!employees && isAddMembersOpen
+  });
+
   const handleManageTeam = (team: any) => {
     setSelectedTeam(team);
     setIsManageTeamOpen(true);
@@ -861,6 +884,8 @@ export default function CompanyHierarchySimple() {
                       .filter((emp: any) => emp.employeeId !== selectedManager) // Only exclude manager
                       .map((employee: any) => {
                         const isAlreadyInTeam = currentTeamMemberIds.includes(employee.employeeId);
+                        const employeeTeamsList = allEmployeeTeams?.[employee.employeeId] || [];
+                        const teamNames = employeeTeamsList.map((team: any) => team.name).join(', ');
                         
                         return (
                           <div key={employee.employeeId} className={`flex items-center space-x-2 ${isAlreadyInTeam ? 'opacity-60' : ''}`}>
@@ -884,8 +909,8 @@ export default function CompanyHierarchySimple() {
                                 <span className="truncate block">{employee.firstName} {employee.lastName}</span>
                                 <span className="text-xs text-muted-foreground truncate block">
                                   {employee.email}
-                                  {isAlreadyInTeam && (
-                                    <span className="ml-1 text-blue-600 font-medium">• Already in team {selectedTeam?.name}</span>
+                                  {employeeTeamsList.length > 0 && (
+                                    <span className="ml-1 text-blue-600 font-medium">• Already in team {teamNames}</span>
                                   )}
                                 </span>
                               </div>
