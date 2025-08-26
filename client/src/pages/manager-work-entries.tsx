@@ -427,25 +427,129 @@ const ManagerWorkEntries = memo(function ManagerWorkEntries() {
                 <CardHeader>
                   <CardTitle>{selectedEntry.title}</CardTitle>
                   <CardDescription>
-                    By {selectedEntry.employeeName} • {new Date(selectedEntry.createdAt).toLocaleDateString()}
+                    By {selectedEntry.employee.firstName} {selectedEntry.employee.lastName} • {new Date(selectedEntry.createdAt).toLocaleDateString()}
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <h4 className="font-medium mb-2">Description</h4>
-                    <p className="text-sm text-gray-700">{selectedEntry.description}</p>
+                <CardContent className="space-y-6">
+                  {/* Work Details */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <h4 className="font-medium mb-2 text-gray-900">📅 Work Period</h4>
+                      <div className="text-sm text-gray-700 space-y-1">
+                        <p><span className="font-medium">Start:</span> {selectedEntry.startDate}</p>
+                        {selectedEntry.endDate && <p><span className="font-medium">End:</span> {selectedEntry.endDate}</p>}
+                      </div>
+                    </div>
+
+                    <div>
+                      <h4 className="font-medium mb-2 text-gray-900">⏱️ Time & Effort</h4>
+                      <div className="text-sm text-gray-700 space-y-1">
+                        {selectedEntry.estimatedHours && <p><span className="font-medium">Estimated:</span> {selectedEntry.estimatedHours}h</p>}
+                        {selectedEntry.actualHours && <p><span className="font-medium">Actual:</span> {selectedEntry.actualHours}h</p>}
+                        <p><span className="font-medium">Priority:</span> <Badge variant="outline" className="text-xs">{selectedEntry.priority}</Badge></p>
+                      </div>
+                    </div>
+
+                    {(selectedEntry.workType || selectedEntry.category) && (
+                      <div>
+                        <h4 className="font-medium mb-2 text-gray-900">🏷️ Classification</h4>
+                        <div className="text-sm text-gray-700 space-y-1">
+                          {selectedEntry.workType && <p><span className="font-medium">Type:</span> {selectedEntry.workType}</p>}
+                          {selectedEntry.category && <p><span className="font-medium">Category:</span> {selectedEntry.category}</p>}
+                        </div>
+                      </div>
+                    )}
+
+                    {(selectedEntry.client || selectedEntry.project || selectedEntry.externalCompanyName) && (
+                      <div>
+                        <h4 className="font-medium mb-2 text-gray-900">🏢 Project Info</h4>
+                        <div className="text-sm text-gray-700 space-y-1">
+                          {selectedEntry.client && <p><span className="font-medium">Client:</span> {selectedEntry.client}</p>}
+                          {selectedEntry.project && <p><span className="font-medium">Project:</span> {selectedEntry.project}</p>}
+                          {selectedEntry.externalCompanyName && <p><span className="font-medium">External Company:</span> {selectedEntry.externalCompanyName}</p>}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
+                  {/* Description */}
+                  <div>
+                    <h4 className="font-medium mb-2 text-gray-900">📝 Description</h4>
+                    <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-md">{selectedEntry.description || "No description provided"}</p>
+                  </div>
+
+                  {/* Key Learnings */}
+                  {selectedEntry.learnings && (
+                    <div>
+                      <h4 className="font-medium mb-2 text-gray-900">💡 Key Learnings</h4>
+                      <p className="text-sm text-gray-700 bg-blue-50 p-3 rounded-md">{selectedEntry.learnings}</p>
+                    </div>
+                  )}
+
+                  {/* Challenges */}
+                  {selectedEntry.challenges && (
+                    <div>
+                      <h4 className="font-medium mb-2 text-gray-900">⚠️ Challenges Faced</h4>
+                      <p className="text-sm text-gray-700 bg-orange-50 p-3 rounded-md">{selectedEntry.challenges}</p>
+                    </div>
+                  )}
+
+                  {/* Achievements */}
                   {selectedEntry.achievements && selectedEntry.achievements.length > 0 && (
                     <div>
-                      <h4 className="font-medium mb-2">Achievements</h4>
-                      <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
+                      <h4 className="font-medium mb-2 text-gray-900">🏆 Achievements</h4>
+                      <ul className="list-disc list-inside text-sm text-gray-700 space-y-1 bg-green-50 p-3 rounded-md">
                         {selectedEntry.achievements.map((achievement: string, index: number) => (
                           <li key={index}>{achievement}</li>
                         ))}
                       </ul>
                     </div>
                   )}
+
+                  {/* Tags */}
+                  {selectedEntry.tags && selectedEntry.tags.length > 0 && (
+                    <div>
+                      <h4 className="font-medium mb-2 text-gray-900">🏷️ Tags</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedEntry.tags.map((tag: string, index: number) => (
+                          <Badge key={index} variant="secondary" className="text-xs">{tag}</Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Billing Information */}
+                  {(selectedEntry.billable !== undefined || selectedEntry.billableRate) && (
+                    <div>
+                      <h4 className="font-medium mb-2 text-gray-900">💰 Billing</h4>
+                      <div className="text-sm text-gray-700 space-y-1">
+                        <p><span className="font-medium">Billable:</span> {selectedEntry.billable ? 'Yes' : 'No'}</p>
+                        {selectedEntry.billableRate && <p><span className="font-medium">Rate:</span> ${selectedEntry.billableRate}/hour</p>}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Status Information */}
+                  <div>
+                    <h4 className="font-medium mb-2 text-gray-900">📊 Status</h4>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="font-medium text-gray-600">Work Status:</span>
+                        <Badge variant="outline" className="ml-2 text-xs">{selectedEntry.status}</Badge>
+                      </div>
+                      <div>
+                        <span className="font-medium text-gray-600">Approval Status:</span>
+                        <Badge 
+                          variant={selectedEntry.approvalStatus === 'approved' ? 'default' : 'secondary'}
+                          className={`ml-2 text-xs ${selectedEntry.approvalStatus === 'approved' ? 'bg-green-600 text-white' : ''}`}
+                        >
+                          {selectedEntry.approvalStatus === 'pending_review' && 'Pending Review'}
+                          {selectedEntry.approvalStatus === 'approved' && 'Verified by Company'}
+                          {selectedEntry.approvalStatus === 'needs_changes' && 'Needs Changes'}
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
 
                   {selectedEntry.approvalStatus === 'pending_review' && (
                     <div className="space-y-4 pt-4 border-t">
