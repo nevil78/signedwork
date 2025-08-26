@@ -4546,6 +4546,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updateData = {
         ...req.body,
         status: 'pending', // Always reset to pending when employee updates
+        approvalStatus: 'pending_review', // CRITICAL FIX: Reset approval status for resubmission workflow
         companyFeedback: null, // Clear any previous company feedback
         companyRating: null, // Clear any previous company rating
         updatedAt: new Date()
@@ -4579,6 +4580,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updateData = {
         ...req.body,
         status: 'pending', // Always reset to pending when employee updates
+        approvalStatus: 'pending_review', // CRITICAL FIX: Reset approval status for resubmission workflow
         companyFeedback: null, // Clear any previous company feedback
         updatedAt: new Date()
       };
