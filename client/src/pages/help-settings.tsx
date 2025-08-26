@@ -59,17 +59,7 @@ export default function HelpSettingsPage() {
   };
 
   const handleBackNavigation = () => {
-    switch (userType) {
-      case 'company':
-        setLocation('/company-dashboard');
-        break;
-      case 'manager':
-        setLocation('/'); // Manager dashboard or default
-        break;
-      default:
-        setLocation('/'); // Employee dashboard
-        break;
-    }
+    window.history.back();
   };
 
   return (
