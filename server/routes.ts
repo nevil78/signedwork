@@ -2493,6 +2493,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/company/managers/:managerId/reset-password", requireCompany, async (req: any, res) => {
     try {
       const { managerId } = req.params;
+      const { newPassword } = req.body;
+      
+      // Validate new password
+      if (!newPassword || newPassword.length < 8) {
+        return res.status(400).json({ 
+          message: "New password is required and must be at least 8 characters long" 
+        });
+      }
       
       // Verify manager belongs to this company
       const manager = await storage.getManager(managerId);
@@ -2500,14 +2508,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Manager not found" });
       }
       
-      // Generate new temporary password
-      const newPassword = Math.random().toString(36).slice(-8) + 'A1';
+      // Reset password with provided password
       await storage.resetManagerPassword(managerId, newPassword);
       
       res.json({
-        message: "Password reset successfully",
-        tempPassword: newPassword,
-        note: "Manager should change password on next login"
+        message: "Password reset successfully"
       });
     } catch (error) {
       console.error("Reset manager password error:", error);

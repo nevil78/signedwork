@@ -98,6 +98,10 @@ export default function CompanyHierarchy() {
   const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<string[]>([]);
   const [bulkAssignTargetManager, setBulkAssignTargetManager] = useState<string>("");
   const [newTempPassword, setNewTempPassword] = useState<string>("");
+  const [passwordResetForm, setPasswordResetForm] = useState({
+    newPassword: "",
+    confirmPassword: ""
+  });
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importPreview, setImportPreview] = useState<any[]>([]);
   const [importErrors, setImportErrors] = useState<any[]>([]);
@@ -664,16 +668,16 @@ export default function CompanyHierarchy() {
   });
 
   const resetManagerPasswordMutation = useMutation({
-    mutationFn: async (managerId: string) => {
-      return apiRequest("POST", `/api/company/managers/${managerId}/reset-password`, {});
+    mutationFn: async ({ managerId, newPassword }: { managerId: string; newPassword: string }) => {
+      return apiRequest("POST", `/api/company/managers/${managerId}/reset-password`, { newPassword });
     },
-    onSuccess: (data: any) => {
-      setNewTempPassword(data.tempPassword);
-      setIsResetPasswordOpen(true);
+    onSuccess: () => {
+      setIsResetPasswordOpen(false);
+      setPasswordResetForm({ newPassword: "", confirmPassword: "" });
       queryClient.invalidateQueries({ queryKey: ["/api/company/managers"] });
       toast({ 
         title: "Password Reset Successful", 
-        description: "New temporary password generated for manager" 
+        description: "Manager password has been updated successfully" 
       });
     },
     onError: (error: any) => {
@@ -4175,7 +4179,7 @@ export default function CompanyHierarchy() {
                             variant="outline"
                             onClick={() => {
                               setSelectedManager(manager);
-                              resetManagerPasswordMutation.mutate(manager.id);
+                              setIsResetPasswordOpen(true);
                             }}
                             disabled={resetManagerPasswordMutation.isPending}
                             className="w-full text-xs"
@@ -4204,16 +4208,22 @@ export default function CompanyHierarchy() {
 
       </Tabs>
 
-      {/* Password Reset Success Dialog */}
-      <Dialog open={isResetPasswordOpen} onOpenChange={setIsResetPasswordOpen}>
+      {/* Password Reset Dialog */}
+      <Dialog open={isResetPasswordOpen} onOpenChange={(open) => {
+        setIsResetPasswordOpen(open);
+        if (!open) {
+          setPasswordResetForm({ newPassword: "", confirmPassword: "" });
+          setSelectedManager(null);
+        }
+      }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Key className="h-5 w-5 text-green-600" />
-              Password Reset Successful
+              <Key className="h-5 w-5 text-blue-600" />
+              Reset Manager Password
             </DialogTitle>
             <DialogDescription>
-              New temporary password has been generated for {selectedManager?.managerName}
+              Set a new password for {selectedManager?.managerName}
             </DialogDescription>
           </DialogHeader>
           
@@ -4227,25 +4237,50 @@ export default function CompanyHierarchy() {
               </div>
             </div>
             
-            <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
-              <Label className="text-sm font-medium text-yellow-800">New Temporary Password</Label>
-              <div className="mt-2 p-2 bg-white border rounded font-mono text-lg text-center select-all">
-                {newTempPassword}
+            <div className="space-y-3">
+              <div>
+                <Label htmlFor="new-password" className="text-sm font-medium">
+                  New Password
+                </Label>
+                <Input
+                  id="new-password"
+                  type="password"
+                  value={passwordResetForm.newPassword}
+                  onChange={(e) => setPasswordResetForm(prev => ({ ...prev, newPassword: e.target.value }))}
+                  placeholder="Enter new password"
+                  className="mt-1"
+                  data-testid="input-new-password"
+                />
               </div>
-              <p className="mt-2 text-xs text-yellow-700">
-                📋 Click to select and copy this password. The manager should change it on their next login.
-              </p>
+              
+              <div>
+                <Label htmlFor="confirm-password" className="text-sm font-medium">
+                  Confirm Password
+                </Label>
+                <Input
+                  id="confirm-password"
+                  type="password"
+                  value={passwordResetForm.confirmPassword}
+                  onChange={(e) => setPasswordResetForm(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                  placeholder="Confirm new password"
+                  className="mt-1"
+                  data-testid="input-confirm-password"
+                />
+                {passwordResetForm.confirmPassword && passwordResetForm.newPassword !== passwordResetForm.confirmPassword && (
+                  <p className="text-sm text-red-600 mt-1">Passwords do not match</p>
+                )}
+              </div>
             </div>
             
             <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
               <div className="flex items-start gap-2">
                 <AlertCircle className="h-4 w-4 text-blue-600 mt-0.5" />
                 <div className="text-sm text-blue-800">
-                  <strong>Next Steps:</strong>
+                  <strong>Password Requirements:</strong>
                   <ul className="mt-1 space-y-1 text-xs">
-                    <li>• Share this password securely with the manager</li>
-                    <li>• Manager should login and change password immediately</li>
-                    <li>• This temporary password expires after first use</li>
+                    <li>• Minimum 8 characters</li>
+                    <li>• At least one uppercase letter</li>
+                    <li>• At least one number</li>
                   </ul>
                 </div>
               </div>
@@ -4254,25 +4289,41 @@ export default function CompanyHierarchy() {
           
           <div className="flex gap-2 pt-4">
             <Button 
-              onClick={() => {
-                navigator.clipboard.writeText(newTempPassword);
-                toast({ title: "Copied!", description: "Password copied to clipboard" });
-              }}
-              className="flex-1"
-            >
-              <Key className="h-4 w-4 mr-2" />
-              Copy Password
-            </Button>
-            <Button 
               variant="outline" 
               onClick={() => {
                 setIsResetPasswordOpen(false);
+                setPasswordResetForm({ newPassword: "", confirmPassword: "" });
                 setSelectedManager(null);
-                setNewTempPassword("");
               }}
               className="flex-1"
+              data-testid="button-cancel-reset"
             >
-              Done
+              Cancel
+            </Button>
+            <Button 
+              onClick={() => {
+                if (!passwordResetForm.newPassword || !passwordResetForm.confirmPassword) {
+                  toast({ title: "Error", description: "Please fill in both password fields", variant: "destructive" });
+                  return;
+                }
+                if (passwordResetForm.newPassword !== passwordResetForm.confirmPassword) {
+                  toast({ title: "Error", description: "Passwords do not match", variant: "destructive" });
+                  return;
+                }
+                if (passwordResetForm.newPassword.length < 8) {
+                  toast({ title: "Error", description: "Password must be at least 8 characters long", variant: "destructive" });
+                  return;
+                }
+                resetManagerPasswordMutation.mutate({ 
+                  managerId: selectedManager?.id, 
+                  newPassword: passwordResetForm.newPassword 
+                });
+              }}
+              disabled={resetManagerPasswordMutation.isPending || !passwordResetForm.newPassword || !passwordResetForm.confirmPassword || passwordResetForm.newPassword !== passwordResetForm.confirmPassword}
+              className="flex-1"
+              data-testid="button-confirm-reset"
+            >
+              {resetManagerPasswordMutation.isPending ? "Resetting..." : "Reset Password"}
             </Button>
           </div>
         </DialogContent>
