@@ -110,7 +110,10 @@ export default function GuidedTour({
       <div className="fixed inset-0 bg-black/50 z-[100]" onClick={handleClose} />
       
       {/* Tour Card */}
-      <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-[101] w-full max-w-md mx-4">
+      <div 
+        className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-[101] w-full max-w-md mx-4"
+        onClick={(e) => e.stopPropagation()}
+      >
         <Card className="shadow-2xl">
           <CardHeader className="pb-4">
             <div className="flex items-center justify-between">
