@@ -109,29 +109,9 @@ export default function AuthPage() {
   const { user, userType, isAuthenticated } = useAuth();
   const [, setLocation] = useLocation();
 
-  // Smart navigation function for logo clicks - SECURE VERSION
-  const handleLogoClick = async () => {
-    try {
-      // Always make a fresh API call to verify current authentication status
-      const response = await apiRequest("GET", "/api/auth/user");
-      
-      if (response?.user && response?.userType) {
-        // User is authenticated, navigate based on type
-        if (response.userType === 'company') {
-          setLocation('/company-dashboard');
-        } else if (response.userType === 'employee') {
-          setLocation('/dashboard');
-        } else {
-          setCurrentView("login");
-        }
-      } else {
-        // Not authenticated, show login view
-        setCurrentView("login");
-      }
-    } catch (error) {
-      // Authentication failed, show login view
-      setCurrentView("login");
-    }
+  // Secure logo click - always show login view 
+  const handleLogoClick = () => {
+    setCurrentView("login");
   };
 
   // Handle URL view parameters dynamically

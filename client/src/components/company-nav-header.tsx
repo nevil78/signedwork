@@ -83,29 +83,7 @@ export default function CompanyNavHeader({ companyId, companyName }: CompanyNavH
           <div className="flex items-center space-x-4 md:space-x-6">
             <div 
               className="flex items-center space-x-3 cursor-pointer hover:opacity-80 transition-opacity"
-              onClick={async () => {
-                try {
-                  // Always make a fresh API call to verify current authentication status
-                  const response = await apiRequest("GET", "/api/auth/user");
-                  
-                  if (response?.user && response?.userType) {
-                    // User is authenticated, navigate based on type
-                    if (response.userType === 'company') {
-                      setLocation('/company-dashboard');
-                    } else if (response.userType === 'employee') {
-                      setLocation('/dashboard');
-                    } else {
-                      setLocation('/');
-                    }
-                  } else {
-                    // Not authenticated, go to auth page
-                    setLocation('/');
-                  }
-                } catch (error) {
-                  // Authentication failed, go to auth page
-                  setLocation('/');
-                }
-              }}
+              onClick={() => setLocation('/')}
               data-testid="logo-home-navigation"
             >
               <img src={signedworkLogo} alt="Signedwork" className="h-7 w-7" />

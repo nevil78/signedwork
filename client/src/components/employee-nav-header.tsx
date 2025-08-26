@@ -28,29 +28,9 @@ export default function EmployeeNavHeader({ employeeId, employeeName }: Employee
   const { user, userType, isAuthenticated } = useAuth();
   const [sessionTime, setSessionTime] = useState<string>('24h 0m');
 
-  // Smart navigation function for logo clicks - SECURE VERSION
-  const handleLogoClick = async () => {
-    try {
-      // Always make a fresh API call to verify current authentication status
-      const response = await apiRequest("GET", "/api/auth/user");
-      
-      if (response?.user && response?.userType) {
-        // User is authenticated, navigate based on type
-        if (response.userType === 'company') {
-          setLocation('/company-dashboard');
-        } else if (response.userType === 'employee') {
-          setLocation('/dashboard');
-        } else {
-          setLocation('/');
-        }
-      } else {
-        // Not authenticated, go to auth page
-        setLocation('/');
-      }
-    } catch (error) {
-      // Authentication failed, go to auth page
-      setLocation('/');
-    }
+  // Secure logo click - always go to root and let app routing handle authentication
+  const handleLogoClick = () => {
+    setLocation('/');
   };
 
   // Fetch current employee data with auto-refresh
