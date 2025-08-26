@@ -509,7 +509,11 @@ export default function AuthPage() {
         <header className="bg-white shadow-sm border-b border-slate-200">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center h-16">
-              <div className="flex items-center">
+              <div 
+                className="flex items-center cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={() => setCurrentView("login")}
+                data-testid="logo-home-navigation"
+              >
                 <img src={signedworkLogo} alt="Signedwork" className="h-8 w-8 mr-3" />
                 <span className="text-xl font-bold text-slate-800">Signedwork</span>
               </div>
@@ -586,7 +590,11 @@ export default function AuthPage() {
         <header className="bg-white shadow-sm border-b border-slate-200">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center h-16">
-              <div className="flex items-center">
+              <div 
+                className="flex items-center cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={() => setCurrentView("login")}
+                data-testid="logo-home-navigation"
+              >
                 <img src={signedworkLogo} alt="Signedwork" className="h-8 w-8 mr-3" />
                 <span className="text-xl font-bold text-slate-800">Signedwork</span>
               </div>
@@ -946,7 +954,11 @@ export default function AuthPage() {
         <header className="bg-white shadow-sm border-b border-slate-200">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center h-16">
-              <div className="flex items-center">
+              <div 
+                className="flex items-center cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={() => setCurrentView("login")}
+                data-testid="logo-home-navigation"
+              >
                 <img src={signedworkLogo} alt="Signedwork" className="h-8 w-8 mr-3" />
                 <span className="text-xl font-bold text-slate-800">Signedwork</span>
               </div>
@@ -1465,7 +1477,11 @@ export default function AuthPage() {
         <header className="bg-white shadow-sm border-b border-slate-200">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center h-16">
-              <div className="flex items-center">
+              <div 
+                className="flex items-center cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={() => setCurrentView("login")}
+                data-testid="logo-home-navigation"
+              >
                 <img src={signedworkLogo} alt="Signedwork" className="h-8 w-8 mr-3" />
                 <span className="text-xl font-bold text-slate-800">Signedwork</span>
               </div>
@@ -1689,7 +1705,11 @@ export default function AuthPage() {
         <header className="bg-white shadow-sm border-b border-slate-200">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center h-16">
-              <div className="flex items-center">
+              <div 
+                className="flex items-center cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={() => setCurrentView("login")}
+                data-testid="logo-home-navigation"
+              >
                 <img src={signedworkLogo} alt="Signedwork" className="h-8 w-8 mr-3" />
                 <span className="text-xl font-bold text-slate-800">Signedwork</span>
               </div>
@@ -1744,7 +1764,11 @@ export default function AuthPage() {
         <header className="bg-white shadow-sm border-b border-slate-200">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center h-16">
-              <div className="flex items-center">
+              <div 
+                className="flex items-center cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={() => setCurrentView("login")}
+                data-testid="logo-home-navigation"
+              >
                 <img src={signedworkLogo} alt="Signedwork" className="h-8 w-8 mr-3" />
                 <span className="text-xl font-bold text-slate-800">Signedwork</span>
               </div>
@@ -1887,7 +1911,11 @@ export default function AuthPage() {
         <header className="bg-white shadow-sm border-b border-slate-200">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center h-16">
-              <div className="flex items-center">
+              <div 
+                className="flex items-center cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={() => setCurrentView("login")}
+                data-testid="logo-home-navigation"
+              >
                 <img src={signedworkLogo} alt="Signedwork" className="h-8 w-8 mr-3" />
                 <span className="text-xl font-bold text-slate-800">Signedwork</span>
               </div>
@@ -1930,7 +1958,11 @@ export default function AuthPage() {
         <header className="bg-white shadow-sm border-b border-slate-200">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center h-16">
-              <div className="flex items-center">
+              <div 
+                className="flex items-center cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={() => setCurrentView("login")}
+                data-testid="logo-home-navigation"
+              >
                 <img src={signedworkLogo} alt="Signedwork" className="h-8 w-8 mr-3" />
                 <span className="text-xl font-bold text-slate-800">Signedwork</span>
               </div>
