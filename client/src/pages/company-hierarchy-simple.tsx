@@ -1077,6 +1077,11 @@ export default function CompanyHierarchySimple() {
                       </span>
                     </div>
                   </div>
+                  <div className="col-span-2 p-2 bg-white border border-blue-300 rounded">
+                    <span className="font-medium text-blue-900">Manager ID (Login Username):</span>
+                    <p className="text-blue-900 font-mono font-bold text-lg">{selectedManagerForEdit.uniqueId}</p>
+                    <p className="text-xs text-blue-600 mt-1">💡 Share this ID with the manager for login access</p>
+                  </div>
                   <div>
                     <span className="font-medium text-blue-900">Role:</span>
                     <p className="text-blue-700">{selectedManagerForEdit.permissionLevel?.replace('_', ' ') || 'Manager'}</p>
