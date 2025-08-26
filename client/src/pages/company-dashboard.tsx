@@ -150,11 +150,11 @@ export default function CompanyDashboard() {
         companyName={user?.name} 
       />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Welcome Section */}
-        <div className="mb-8">
-          <h1 className="text-xl md:text-3xl font-bold mb-2">Welcome, {user?.name}</h1>
-          <p className="text-sm md:text-base text-muted-foreground">
+        <div className="mb-6">
+          <h1 className="text-2xl md:text-3xl font-bold mb-2">Welcome, {user?.name}</h1>
+          <p className="text-muted-foreground">
             Manage your employees and generate invitation codes
           </p>
           <div className="flex flex-col sm:flex-row sm:items-center gap-3 mt-3">
@@ -262,174 +262,156 @@ export default function CompanyDashboard() {
           </Card>
         )}
 
-        {/* Core Management Section */}
-        <div className="mb-8">
-          <h2 className="text-xl font-bold mb-2">Core Management</h2>
-          <p className="text-muted-foreground mb-6">Essential tools for managing your company structure and employees</p>
-          <div className="grid gap-6 md:grid-cols-2">
-            
-            {/* Company Hierarchy Card */}
-            <Card 
-              className="cursor-pointer hover:shadow-lg hover:border-yellow-300 transition-all duration-200 border-2" 
-              onClick={() => navigate('/company-hierarchy')}
-              data-testid="company-hierarchy-card"
-            >
-              <CardHeader className="pb-4">
-                <div className="flex items-center gap-4 mb-3">
-                  <div className="w-12 h-12 bg-yellow-100 dark:bg-yellow-900 rounded-xl flex items-center justify-center">
-                    <Building2 className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
+        {/* Main Dashboard Grid */}
+        <div className="grid lg:grid-cols-3 gap-6 mb-6">
+          
+          {/* Core Management Section */}
+          <div className="lg:col-span-2">
+            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <Building2 className="w-5 h-5 text-primary" />
+              Core Management
+            </h2>
+            <div className="grid gap-4 md:grid-cols-2 mb-6">
+              
+              {/* Company Hierarchy Card */}
+              <Card 
+                className="cursor-pointer hover:shadow-md hover:border-yellow-300 transition-all duration-200" 
+                onClick={() => navigate('/company-hierarchy')}
+                data-testid="company-hierarchy-card"
+              >
+                <CardHeader className="pb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-yellow-100 dark:bg-yellow-900 rounded-lg flex items-center justify-center">
+                      <Building2 className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-base">Company Hierarchy</CardTitle>
+                      <CardDescription className="text-xs">
+                        Organization & Teams
+                      </CardDescription>
+                    </div>
                   </div>
-                  <div>
-                    <CardTitle className="text-lg font-semibold">Company Hierarchy</CardTitle>
-                    <CardDescription className="text-sm text-muted-foreground">
-                      Organization Management
-                    </CardDescription>
-                  </div>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Manage branches, teams, employee roles, and manager accounts in your organizational structure
-                </p>
-              </CardHeader>
-            </Card>
+                </CardHeader>
+              </Card>
 
-            {/* Manage Employees Card */}
-            <Card 
-              className="cursor-pointer hover:shadow-lg hover:border-orange-300 transition-all duration-200 border-2" 
-              onClick={() => navigate('/company-employees')}
-              data-testid="manage-employees-card"
-            >
-              <CardHeader className="pb-4">
-                <div className="flex items-center gap-4 mb-3">
-                  <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900 rounded-xl flex items-center justify-center">
-                    <Users className="w-6 h-6 text-orange-600 dark:text-orange-400" />
+              {/* Manage Employees Card */}
+              <Card 
+                className="cursor-pointer hover:shadow-md hover:border-orange-300 transition-all duration-200" 
+                onClick={() => navigate('/company-employees')}
+                data-testid="manage-employees-card"
+              >
+                <CardHeader className="pb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-orange-100 dark:bg-orange-900 rounded-lg flex items-center justify-center">
+                      <Users className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-base">Manage Employees</CardTitle>
+                      <CardDescription className="text-xs">
+                        Employee Administration
+                      </CardDescription>
+                    </div>
                   </div>
-                  <div>
-                    <CardTitle className="text-lg font-semibold">Manage Employees</CardTitle>
-                    <CardDescription className="text-sm text-muted-foreground">
-                      Employee Administration
-                    </CardDescription>
+                </CardHeader>
+              </Card>
+
+              {/* Work Entry Reviews Card */}
+              <Card 
+                className="cursor-pointer hover:shadow-md hover:border-blue-200 transition-all duration-200" 
+                onClick={() => navigate('/company-work-entries')}
+              >
+                <CardHeader className="pb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
+                      <FileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-base">Work Entry Reviews</CardTitle>
+                      <CardDescription className="text-xs">
+                        Review & Approve Work
+                      </CardDescription>
+                    </div>
                   </div>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Advanced employee management with search, filtering, and detailed profiles
-                </p>
-              </CardHeader>
-            </Card>
+                </CardHeader>
+              </Card>
+
+              {/* Work Verification Card */}
+              <Card 
+                className="cursor-pointer hover:shadow-md hover:border-green-200 transition-all duration-200" 
+                onClick={() => navigate('/work-verification')}
+                data-testid="work-verification-card"
+              >
+                <CardHeader className="pb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
+                      <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-base">Work Verification</CardTitle>
+                      <CardDescription className="text-xs">
+                        Verification Workflows
+                      </CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+              </Card>
+            </div>
+
+            {/* Secondary Tools */}
+            <h3 className="text-md font-medium mb-3 flex items-center gap-2">
+              <Briefcase className="w-4 h-4 text-muted-foreground" />
+              Additional Tools
+            </h3>
+            <div className="grid gap-3 md:grid-cols-2">
+              
+              {/* Job Postings Card */}
+              <Card 
+                className="cursor-pointer hover:shadow-sm hover:border-green-200 transition-all duration-200" 
+                onClick={() => navigate('/company-jobs')}
+              >
+                <CardHeader className="py-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-green-100 dark:bg-green-900 rounded-md flex items-center justify-center">
+                      <Briefcase className="w-4 h-4 text-green-600 dark:text-green-400" />
+                    </div>
+                    <CardTitle className="text-sm">Job Postings</CardTitle>
+                  </div>
+                </CardHeader>
+              </Card>
+              
+              {/* Premium Recruitment Card */}
+              <Card 
+                className="cursor-pointer hover:shadow-sm hover:border-purple-200 transition-all duration-200" 
+                onClick={() => navigate('/company-recruiter')}
+                data-testid="premium-recruitment-card"
+              >
+                <CardHeader className="py-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-purple-100 dark:bg-purple-900 rounded-md flex items-center justify-center">
+                      <UserSearch className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                    </div>
+                    <CardTitle className="text-sm">Premium Recruitment</CardTitle>
+                  </div>
+                </CardHeader>
+              </Card>
+            </div>
           </div>
-        </div>
 
-        {/* Work Management Section */}
-        <div className="mb-8">
-          <h2 className="text-xl font-bold mb-2">Work Management</h2>
-          <p className="text-muted-foreground mb-6">Tools for managing work verification and approval processes</p>
-          <div className="grid gap-4 md:grid-cols-2">
-            
-            {/* Work Verification Card */}
-            <Card 
-              className="cursor-pointer hover:shadow-md hover:border-green-200 transition-all duration-200" 
-              onClick={() => navigate('/work-verification')}
-              data-testid="work-verification-card"
-            >
-              <CardHeader className="pb-4">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-10 h-10 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
-                    <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
-                  </div>
-                  <CardTitle className="text-base font-semibold">Work Verification</CardTitle>
-                </div>
-                <CardDescription className="text-sm">
-                  Submit work entries and manage hierarchical verification workflows
+          {/* Quick Actions Sidebar */}
+          <div className="lg:col-span-1">
+            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <UserPlus className="w-5 h-5 text-primary" />
+              Quick Actions
+            </h2>
+
+            {/* Invitation Code Section */}
+            <Card className="mb-4">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base font-medium">Invitation Codes</CardTitle>
+                <CardDescription className="text-xs">
+                  Generate temporary codes for employees
                 </CardDescription>
               </CardHeader>
-            </Card>
-
-            {/* Work Entry Reviews Card */}
-            <Card 
-              className="cursor-pointer hover:shadow-md hover:border-blue-200 transition-all duration-200" 
-              onClick={() => navigate('/company-work-entries')}
-            >
-              <CardHeader className="pb-4">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
-                    <FileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                  </div>
-                  <CardTitle className="text-base font-semibold">Work Entry Reviews</CardTitle>
-                </div>
-                <CardDescription className="text-sm">
-                  Review and verify employee work entries for approval
-                </CardDescription>
-              </CardHeader>
-            </Card>
-          </div>
-        </div>
-
-        {/* Talent & Recruitment Section */}
-        <div className="mb-8">
-          <h2 className="text-xl font-bold mb-2">Talent & Recruitment</h2>
-          <p className="text-muted-foreground mb-6">Advanced recruitment tools and job management</p>
-          <div className="grid gap-4 md:grid-cols-2">
-            
-            {/* Job Postings Card */}
-            <Card 
-              className="cursor-pointer hover:shadow-md hover:border-green-200 transition-all duration-200" 
-              onClick={() => navigate('/company-jobs')}
-            >
-              <CardHeader className="pb-4">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-10 h-10 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
-                    <Briefcase className="w-5 h-5 text-green-600 dark:text-green-400" />
-                  </div>
-                  <CardTitle className="text-base font-semibold">Job Postings</CardTitle>
-                </div>
-                <CardDescription className="text-sm">
-                  Create and manage job listings for your company
-                </CardDescription>
-              </CardHeader>
-            </Card>
-            
-            {/* Premium Recruitment Card */}
-            <Card 
-              className="cursor-pointer hover:shadow-md hover:border-purple-200 transition-all duration-200" 
-              onClick={() => navigate('/company-recruiter')}
-              data-testid="premium-recruitment-card"
-            >
-              <CardHeader className="pb-4">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center">
-                    <UserSearch className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-                  </div>
-                  <CardTitle className="text-base font-semibold">Premium Recruitment</CardTitle>
-                </div>
-                <CardDescription className="text-sm">
-                  Advanced talent search with verified work history and analytics
-                </CardDescription>
-              </CardHeader>
-            </Card>
-          </div>
-        </div>
-
-        {/* Quick Actions Section */}
-        <div className="mb-8">
-          <h2 className="text-xl font-bold mb-2">Quick Actions</h2>
-          <p className="text-muted-foreground mb-6">Frequently used tools and current employee status</p>
-        </div>
-
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {/* Invitation Code Section */}
-          <Card className="lg:col-span-1">
-            <CardHeader className="pb-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
-                  <UserPlus className="w-5 h-5 text-green-600 dark:text-green-400" />
-                </div>
-                <div>
-                  <CardTitle className="text-base font-semibold">Invitation Codes</CardTitle>
-                  <CardDescription className="text-sm">
-                    Generate temporary codes for employees
-                  </CardDescription>
-                </div>
-              </div>
-            </CardHeader>
             <CardContent>
               {!isGeneratingCode ? (
                 <div className="text-center py-4">
@@ -485,34 +467,28 @@ export default function CompanyDashboard() {
             </CardContent>
           </Card>
 
-          {/* Employees Section */}
-          <Card className="lg:col-span-2">
-            <CardHeader className="pb-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-orange-100 dark:bg-orange-900 rounded-lg flex items-center justify-center">
-                    <Users className="w-5 h-5 text-orange-600 dark:text-orange-400" />
-                  </div>
+            {/* Recent Employees Section */}
+            <Card>
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
                   <div>
-                    <CardTitle className="text-base font-semibold">Recent Employees</CardTitle>
-                    <CardDescription className="text-sm">
-                      {employees.length} total • Last 5 shown
+                    <CardTitle className="text-base font-medium">Recent Employees</CardTitle>
+                    <CardDescription className="text-xs">
+                      {employees.length} total • Last 3 shown
                     </CardDescription>
                   </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => navigate('/company-employees')}
+                    className="shrink-0 text-xs"
+                    data-testid="button-manage-all-employees"
+                  >
+                    <Settings className="w-3 h-3 mr-1" />
+                    Manage
+                  </Button>
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => navigate('/company-employees')}
-                  className="shrink-0"
-                  data-testid="button-manage-all-employees"
-                >
-                  <Settings className="w-4 h-4 mr-1" />
-                  <span className="hidden sm:inline">Manage All</span>
-                  <span className="sm:hidden">All</span>
-                </Button>
-              </div>
-            </CardHeader>
+              </CardHeader>
             <CardContent>
               {isLoadingEmployees ? (
                 <p className="text-center text-muted-foreground py-4">Loading employees...</p>
@@ -524,8 +500,8 @@ export default function CompanyDashboard() {
                   </p>
                 </div>
               ) : (
-                <div className="space-y-3">
-                  {employees.slice(0, 5).map((employee) => (
+                <div className="space-y-2">
+                  {employees.slice(0, 3).map((employee) => (
                     <div 
                       key={employee.id} 
                       className="p-2 border rounded hover:bg-accent/50 transition-colors cursor-pointer"
@@ -555,7 +531,7 @@ export default function CompanyDashboard() {
                       </div>
                     </div>
                   ))}
-                  {employees.length > 5 && (
+                  {employees.length > 3 && (
                     <div className="text-center pt-2">
                       <Button
                         variant="ghost"
@@ -564,14 +540,15 @@ export default function CompanyDashboard() {
                         className="text-primary"
                         data-testid="button-view-all-employees"
                       >
-                        View all {employees.length} employees →
+                        View All {employees.length}
                       </Button>
                     </div>
                   )}
                 </div>
               )}
             </CardContent>
-          </Card>
+            </Card>
+          </div>
         </div>
       </div>
     </div>
