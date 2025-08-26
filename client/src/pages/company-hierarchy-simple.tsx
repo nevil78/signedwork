@@ -379,12 +379,12 @@ export default function CompanyHierarchySimple() {
       <CompanyNavHeader />
       
       <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold">Company Structure</h1>
-          <p className="text-muted-foreground">Manage your company's organizational structure and employee assignments</p>
+        <div className="mb-6 md:mb-8">
+          <h1 className="text-2xl md:text-3xl font-bold">Company Structure</h1>
+          <p className="text-sm md:text-base text-muted-foreground">Manage your company's organizational structure and employee assignments</p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
           {/* Branches */}
           <Card>
             <CardHeader>
@@ -396,9 +396,9 @@ export default function CompanyHierarchySimple() {
                   </CardTitle>
                   <CardDescription>Company locations</CardDescription>
                 </div>
-                <Button onClick={() => setIsCreateBranchOpen(true)} size="sm">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add
+                <Button onClick={() => setIsCreateBranchOpen(true)} size="sm" className="shrink-0">
+                  <Plus className="w-4 h-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Add</span>
                 </Button>
               </div>
             </CardHeader>
@@ -435,9 +435,9 @@ export default function CompanyHierarchySimple() {
                   </CardTitle>
                   <CardDescription>Work groups</CardDescription>
                 </div>
-                <Button onClick={() => setIsCreateTeamOpen(true)} size="sm">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add
+                <Button onClick={() => setIsCreateTeamOpen(true)} size="sm" className="shrink-0">
+                  <Plus className="w-4 h-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Add</span>
                 </Button>
               </div>
             </CardHeader>
@@ -445,13 +445,13 @@ export default function CompanyHierarchySimple() {
               <div className="space-y-3">
                 {Array.isArray(teams) && teams.length > 0 ? teams.map((team: any) => (
                   <div key={team.id} className="p-3 bg-white rounded-lg border">
-                    <div className="flex items-center justify-between">
-                      <div>
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                      <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
-                          <Users className="w-4 h-4 text-green-600" />
-                          <span className="font-medium">{team.name}</span>
+                          <Users className="w-4 h-4 text-green-600 shrink-0" />
+                          <span className="font-medium truncate">{team.name}</span>
                         </div>
-                        <p className="text-xs text-muted-foreground mt-1">
+                        <p className="text-xs text-muted-foreground mt-1 truncate">
                           {team.branchId ? getBranchName(team.branchId) : "Headquarters"}
                         </p>
                       </div>
@@ -459,11 +459,12 @@ export default function CompanyHierarchySimple() {
                         size="sm"
                         variant="outline"
                         onClick={() => handleManageTeam(team)}
-                        className="flex items-center gap-1"
+                        className="flex items-center gap-1 shrink-0 w-full sm:w-auto"
                         data-testid={`manage-team-${team.id}`}
                       >
                         <Users className="w-4 h-4" />
-                        Manage Team
+                        <span className="hidden sm:inline">Manage Team</span>
+                        <span className="sm:hidden">Manage</span>
                       </Button>
                     </div>
                   </div>
@@ -488,9 +489,10 @@ export default function CompanyHierarchySimple() {
                   </CardTitle>
                   <CardDescription>Manager accounts and credentials</CardDescription>
                 </div>
-                <Button onClick={() => setIsCreateManagerOpen(true)} size="sm">
-                  <UserPlus className="w-4 h-4 mr-2" />
-                  Create Manager
+                <Button onClick={() => setIsCreateManagerOpen(true)} size="sm" className="shrink-0">
+                  <UserPlus className="w-4 h-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Create Manager</span>
+                  <span className="sm:hidden">Create</span>
                 </Button>
               </div>
             </CardHeader>
@@ -500,33 +502,39 @@ export default function CompanyHierarchySimple() {
                 {Array.isArray(managers) && managers.length > 0 ? (
                   managers.map((manager: any) => (
                       <div key={manager.id} className="p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <UserCog className="w-5 h-5 text-blue-600" />
-                            <div>
-                              <h4 className="font-semibold text-blue-900">{manager.managerName}</h4>
+                        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                          <div className="flex items-start gap-3 min-w-0 flex-1">
+                            <UserCog className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+                            <div className="min-w-0 flex-1">
+                              <h4 className="font-semibold text-blue-900 truncate">{manager.managerName}</h4>
                               <div className="text-xs text-blue-700 space-y-1">
-                                <div>Username: {manager.uniqueId}</div>
-                                <div>Email: {manager.managerEmail}</div>
+                                <div className="truncate">Username: {manager.uniqueId}</div>
+                                <div className="truncate">Email: {manager.managerEmail}</div>
                                 <div>Role: {manager.permissionLevel?.replace('_', ' ') || 'Manager'}</div>
-                                <div>Team: {getTeamName(manager.teamId) || 'No team assigned'}</div>
+                                <div className="truncate">Team: {getTeamName(manager.teamId) || 'No team assigned'}</div>
                               </div>
                             </div>
-                            <Badge variant={manager.permissionLevel === "company_admin" ? "default" : "secondary"}>
-                              {manager.permissionLevel === "company_admin" ? "Admin" : 
-                               manager.permissionLevel === "branch_manager" ? "Branch Manager" : "Team Lead"}
+                            <Badge variant={manager.permissionLevel === "company_admin" ? "default" : "secondary"} className="shrink-0">
+                              <span className="hidden sm:inline">
+                                {manager.permissionLevel === "company_admin" ? "Admin" : 
+                                 manager.permissionLevel === "branch_manager" ? "Branch Manager" : "Team Lead"}
+                              </span>
+                              <span className="sm:hidden">
+                                {manager.permissionLevel === "company_admin" ? "Admin" : 
+                                 manager.permissionLevel === "branch_manager" ? "Branch" : "Team"}
+                              </span>
                             </Badge>
                           </div>
-                          <div className="flex gap-2">
+                          <div className="flex gap-2 shrink-0">
                             <Button 
                               size="sm" 
                               variant="outline" 
-                              className="text-blue-600"
+                              className="text-blue-600 w-full sm:w-auto"
                               onClick={() => handleManageManager(manager)}
                               data-testid={`manage-manager-${manager.id}`}
                             >
-                              <Shield className="w-4 h-4 mr-1" />
-                              Manage
+                              <Shield className="w-4 h-4 sm:mr-1" />
+                              <span className="hidden sm:inline">Manage</span>
                             </Button>
                           </div>
                         </div>
@@ -556,15 +564,15 @@ export default function CompanyHierarchySimple() {
               <div className="space-y-3">
                 {Array.isArray(employees) && employees.length > 0 ? employees.map((employee: any) => (
                   <div key={employee.id} className="p-3 bg-white rounded-lg border">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-3">
+                      <div className="shrink-0">
                         {getRoleIcon(employee.hierarchyRole)}
-                        <div>
-                          <span className="font-medium">{employee.firstName} {employee.lastName}</span>
-                          <div className="text-xs text-muted-foreground mt-1">
-                            <div>{getBranchName(employee.branchId)}</div>
-                            <div>{getTeamName(employee.teamId)}</div>
-                          </div>
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <span className="font-medium block truncate">{employee.firstName} {employee.lastName}</span>
+                        <div className="text-xs text-muted-foreground mt-1 space-y-0.5">
+                          <div className="truncate">{getBranchName(employee.branchId)}</div>
+                          <div className="truncate">{getTeamName(employee.teamId)}</div>
                         </div>
                       </div>
                     </div>
@@ -609,16 +617,16 @@ export default function CompanyHierarchySimple() {
                 data-testid="input-branch-location"
               />
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <Button 
                 onClick={handleCreateBranch}
                 disabled={createBranchMutation.isPending || !newBranch.name.trim() || !newBranch.location.trim()}
-                className="flex-1"
+                className="flex-1 order-2 sm:order-1"
                 data-testid="button-create-branch"
               >
                 {createBranchMutation.isPending ? "Creating..." : "Create Branch"}
               </Button>
-              <Button variant="outline" onClick={() => setIsCreateBranchOpen(false)}>
+              <Button variant="outline" onClick={() => setIsCreateBranchOpen(false)} className="order-1 sm:order-2">
                 Cancel
               </Button>
             </div>
@@ -678,16 +686,16 @@ export default function CompanyHierarchySimple() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <Button 
                 onClick={handleCreateTeam}
                 disabled={createTeamMutation.isPending || !newTeam.name.trim() || !newTeam.branchId}
-                className="flex-1"
+                className="flex-1 order-2 sm:order-1"
                 data-testid="button-create-team"
               >
                 {createTeamMutation.isPending ? "Creating..." : "Create Team"}
               </Button>
-              <Button variant="outline" onClick={() => setIsCreateTeamOpen(false)}>
+              <Button variant="outline" onClick={() => setIsCreateTeamOpen(false)} className="order-1 sm:order-2">
                 Cancel
               </Button>
             </div>
@@ -697,7 +705,7 @@ export default function CompanyHierarchySimple() {
 
       {/* Employee Assignment Dialog */}
       <Dialog open={isAddMembersOpen} onOpenChange={setIsAddMembersOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md mx-4 max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Users className="w-5 h-5 text-blue-600" />
@@ -764,7 +772,7 @@ export default function CompanyHierarchySimple() {
               {/* Select Team Members */}
               <div>
                 <Label>Select Team Members</Label>
-                <div className="max-h-40 overflow-y-auto border rounded-lg p-2 space-y-2">
+                <div className="max-h-32 sm:max-h-40 overflow-y-auto border rounded-lg p-2 space-y-2">
                   {Array.isArray(employees) && employees
                     .filter((emp: any) => !emp.teamId && emp.employeeId !== selectedManager) // Exclude manager and already assigned
                     .map((employee: any) => (
@@ -782,10 +790,10 @@ export default function CompanyHierarchySimple() {
                           }}
                           className="rounded"
                         />
-                        <label htmlFor={`emp-${employee.employeeId}`} className="flex items-center gap-2 cursor-pointer flex-1">
-                          <User className="w-4 h-4 text-gray-600" />
-                          <span>{employee.firstName} {employee.lastName}</span>
-                          <span className="text-xs text-muted-foreground">({employee.email})</span>
+                        <label htmlFor={`emp-${employee.employeeId}`} className="flex items-center gap-2 cursor-pointer flex-1 min-w-0">
+                          <User className="w-4 h-4 text-gray-600 shrink-0" />
+                          <span className="truncate">{employee.firstName} {employee.lastName}</span>
+                          <span className="text-xs text-muted-foreground truncate hidden sm:inline">({employee.email})</span>
                         </label>
                       </div>
                     ))}
@@ -808,19 +816,20 @@ export default function CompanyHierarchySimple() {
                 </div>
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <Button 
                   onClick={handleSaveBulkAssignment}
                   disabled={(!selectedTeam?.teamManagerId && !selectedManager) || selectedEmployees.length === 0}
-                  className="flex-1"
+                  className="flex-1 order-2 sm:order-1"
                   data-testid="button-save-bulk-assignment"
                 >
                   <div className="flex items-center gap-2">
                     <Users className="w-4 h-4" />
-                    Add {selectedEmployees.length + (selectedManager ? 1 : 0)} Members
+                    <span className="hidden sm:inline">Add {selectedEmployees.length + (selectedManager ? 1 : 0)} Members</span>
+                    <span className="sm:hidden">Add ({selectedEmployees.length})</span>
                   </div>
                 </Button>
-                <Button variant="outline" onClick={() => setIsAddMembersOpen(false)}>
+                <Button variant="outline" onClick={() => setIsAddMembersOpen(false)} className="order-1 sm:order-2">
                   Cancel
                 </Button>
               </div>
@@ -831,7 +840,7 @@ export default function CompanyHierarchySimple() {
 
       {/* Manage Team Dialog */}
       <Dialog open={isManageTeamOpen} onOpenChange={setIsManageTeamOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Users className="w-5 h-5 text-green-600" />
@@ -871,39 +880,46 @@ export default function CompanyHierarchySimple() {
                       {employees
                         .filter((emp: any) => emp.teamId === selectedTeam.id)
                         .map((member: any, index: number) => (
-                          <div key={member.employeeId} className="p-3 flex items-center justify-between">
-                            <div className="flex items-center gap-3">
+                          <div key={member.employeeId} className="p-3 flex flex-col sm:flex-row sm:items-center gap-3">
+                            <div className="flex items-center gap-3 min-w-0 flex-1">
                               {member.hierarchyRole === "team_lead" || member.hierarchyRole === "branch_manager" ? (
-                                <UserCog className="w-5 h-5 text-blue-600" />
+                                <UserCog className="w-5 h-5 text-blue-600 shrink-0" />
                               ) : (
-                                <User className="w-5 h-5 text-gray-600" />
+                                <User className="w-5 h-5 text-gray-600 shrink-0" />
                               )}
-                              <div>
-                                <p className="font-medium">{member.firstName} {member.lastName}</p>
-                                <p className="text-sm text-muted-foreground">{member.email}</p>
+                              <div className="min-w-0 flex-1">
+                                <p className="font-medium truncate">{member.firstName} {member.lastName}</p>
+                                <p className="text-sm text-muted-foreground truncate">{member.email}</p>
                               </div>
-                              <Badge variant={member.hierarchyRole === "team_lead" || member.hierarchyRole === "branch_manager" ? "default" : "secondary"}>
-                                {member.hierarchyRole === "team_lead" ? "Manager" : 
-                                 member.hierarchyRole === "branch_manager" ? "Branch Manager" : "Employee"}
+                              <Badge variant={member.hierarchyRole === "team_lead" || member.hierarchyRole === "branch_manager" ? "default" : "secondary"} className="shrink-0">
+                                <span className="hidden sm:inline">
+                                  {member.hierarchyRole === "team_lead" ? "Manager" : 
+                                   member.hierarchyRole === "branch_manager" ? "Branch Manager" : "Employee"}
+                                </span>
+                                <span className="sm:hidden">
+                                  {member.hierarchyRole === "team_lead" ? "Mgr" : 
+                                   member.hierarchyRole === "branch_manager" ? "Branch" : "Emp"}
+                                </span>
                               </Badge>
                             </div>
-                            <div className="flex gap-2">
+                            <div className="flex gap-2 shrink-0">
                               {/* Only show Make Manager if team doesn't have a manager assigned via teamManagerId */}
                               {!selectedTeam?.teamManagerId && member.hierarchyRole !== "team_lead" && member.hierarchyRole !== "branch_manager" && (
                                 <Button
                                   size="sm"
                                   variant="outline"
                                   onClick={() => handleChangeManager(member.employeeId)}
-                                  className="text-blue-600 hover:text-blue-700"
+                                  className="text-blue-600 hover:text-blue-700 flex-1 sm:flex-none"
                                 >
-                                  Make Manager
+                                  <span className="hidden sm:inline">Make Manager</span>
+                                  <span className="sm:hidden">Promote</span>
                                 </Button>
                               )}
                               <Button
                                 size="sm"
                                 variant="outline"
                                 onClick={() => handleRemoveFromTeam(member.employeeId)}
-                                className="text-red-600 hover:text-red-700"
+                                className="text-red-600 hover:text-red-700 flex-1 sm:flex-none"
                               >
                                 Remove
                               </Button>
@@ -922,41 +938,42 @@ export default function CompanyHierarchySimple() {
               </div>
 
               {/* Team Statistics */}
-              <div className="grid grid-cols-3 gap-4">
-                <div className="p-3 bg-blue-50 rounded-lg text-center">
-                  <div className="text-2xl font-bold text-blue-600">
+              <div className="grid grid-cols-3 gap-2 sm:gap-4">
+                <div className="p-2 sm:p-3 bg-blue-50 rounded-lg text-center">
+                  <div className="text-xl sm:text-2xl font-bold text-blue-600">
                     {employees?.filter((emp: any) => emp.teamId === selectedTeam.id).length || 0}
                   </div>
-                  <div className="text-sm text-blue-700">Total Members</div>
+                  <div className="text-xs sm:text-sm text-blue-700">Total</div>
                 </div>
-                <div className="p-3 bg-green-50 rounded-lg text-center">
-                  <div className="text-2xl font-bold text-green-600">
+                <div className="p-2 sm:p-3 bg-green-50 rounded-lg text-center">
+                  <div className="text-xl sm:text-2xl font-bold text-green-600">
                     {employees?.filter((emp: any) => emp.teamId === selectedTeam.id && (emp.hierarchyRole === "team_lead" || emp.hierarchyRole === "branch_manager")).length || 0}
                   </div>
-                  <div className="text-sm text-green-700">Managers</div>
+                  <div className="text-xs sm:text-sm text-green-700">Managers</div>
                 </div>
-                <div className="p-3 bg-purple-50 rounded-lg text-center">
-                  <div className="text-2xl font-bold text-purple-600">
+                <div className="p-2 sm:p-3 bg-purple-50 rounded-lg text-center">
+                  <div className="text-xl sm:text-2xl font-bold text-purple-600">
                     {employees?.filter((emp: any) => emp.teamId === selectedTeam.id && emp.hierarchyRole === "employee").length || 0}
                   </div>
-                  <div className="text-sm text-purple-700">Employees</div>
+                  <div className="text-xs sm:text-sm text-purple-700">Employees</div>
                 </div>
               </div>
 
               {/* Actions */}
-              <div className="flex gap-2 pt-4 border-t">
+              <div className="flex flex-col sm:flex-row gap-2 pt-4 border-t">
                 <Button
                   onClick={() => {
                     setIsManageTeamOpen(false);
                     handleAddMembers(selectedTeam);
                   }}
-                  className="flex-1"
+                  className="flex-1 order-2 sm:order-1"
                   variant="outline"
                 >
-                  <UserPlus className="w-4 h-4 mr-2" />
-                  Add More Members
+                  <UserPlus className="w-4 h-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Add More Members</span>
+                  <span className="sm:hidden">Add Members</span>
                 </Button>
-                <Button onClick={() => setIsManageTeamOpen(false)} variant="outline">
+                <Button onClick={() => setIsManageTeamOpen(false)} variant="outline" className="order-1 sm:order-2">
                   Close
                 </Button>
               </div>
@@ -967,7 +984,7 @@ export default function CompanyHierarchySimple() {
 
       {/* Manage Manager Dialog */}
       <Dialog open={isManageManagerOpen} onOpenChange={setIsManageManagerOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Shield className="w-5 h-5 text-blue-600" />
