@@ -19,6 +19,7 @@ import ProfessionalProfile from "@/pages/professional-profile";
 import ProfessionalWorkDiary from "@/pages/professional-work-diary";
 import JobDiscoveryPage from "@/pages/job-discovery";
 import CompanyDashboard from "@/pages/company-dashboard";
+import CompanySettings from "@/pages/company-settings";
 import CompanyWorkEntries from "@/pages/company-work-entries";
 import CompanyEmployeeProfile from "@/pages/company-employee-profile";
 import CompanyJobsPage from "@/pages/company-jobs";
@@ -80,6 +81,7 @@ function Router() {
       <Route path="/legacy-profile" component={Profile} />
       <Route path="/job-discovery" component={JobDiscoveryPage} />
       <Route path="/company-dashboard" component={CompanyDashboard} />
+      <Route path="/company-settings" component={CompanySettings} />
       <Route path="/company-work-entries" component={CompanyWorkEntries} />
       <Route path="/company-jobs" component={CompanyJobsPage} />
       <Route path="/company-recruiter" component={CompanyRecruiterPage} />

@@ -232,32 +232,52 @@ export default function CompanyDashboard() {
           </div>
         </div>
 
-        {/* Verification Details Section */}
-        {!isUserLoading && (
-          <Card className="mb-8">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <ShieldCheck className="h-5 w-5" />
-                Verification Details
-              </CardTitle>
-              <CardDescription>
-                {user?.isBasicDetailsLocked 
-                  ? "Your verification details have been approved and locked. Contact support for changes."
-                  : "Verify your email and add PAN/CIN numbers for complete company verification. Details can be edited until approved by admin."
-                }
-              </CardDescription>
+        {/* Verification Status Summary - Compact */}
+        {!isUserLoading && (user?.emailVerified || user?.panVerificationStatus === 'verified' || user?.cinVerificationStatus === 'verified') && (
+          <Card className="mb-6">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="h-4 w-4 text-green-600" />
+                  <CardTitle className="text-base">Account Verification</CardTitle>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate('/company-settings')}
+                  className="text-xs"
+                >
+                  <Settings className="w-3 h-3 mr-1" />
+                  Manage
+                </Button>
+              </div>
             </CardHeader>
-            <CardContent>
-              <CompanyVerificationEdit company={user} />
-            </CardContent>
-          </Card>
-        )}
-        
-        {/* Loading state for verification section */}
-        {isUserLoading && (
-          <Card className="mb-8">
-            <CardContent className="py-8">
-              <div className="text-center text-gray-500">Loading verification details...</div>
+            <CardContent className="pt-0">
+              <div className="flex flex-wrap gap-2">
+                {user?.emailVerified && (
+                  <Badge variant="default" className="text-xs">
+                    <CheckCircle className="w-3 h-3 mr-1" />
+                    Email Verified
+                  </Badge>
+                )}
+                {user?.panVerificationStatus === 'verified' && (
+                  <Badge variant="default" className="text-xs">
+                    <CheckCircle className="w-3 h-3 mr-1" />
+                    PAN Verified
+                  </Badge>
+                )}
+                {user?.cinVerificationStatus === 'verified' && (
+                  <Badge variant="default" className="text-xs">
+                    <CheckCircle className="w-3 h-3 mr-1" />
+                    CIN Verified
+                  </Badge>
+                )}
+                {user?.isBasicDetailsLocked && (
+                  <Badge variant="secondary" className="text-xs">
+                    Details Locked
+                  </Badge>
+                )}
+              </div>
             </CardContent>
           </Card>
         )}
