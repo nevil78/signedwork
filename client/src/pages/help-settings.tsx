@@ -15,10 +15,12 @@ import {
   Star,
   Users,
   Building,
-  UserCheck
+  UserCheck,
+  ArrowLeft
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useTour } from '@/hooks/useTour';
+import { useLocation } from 'wouter';
 import GuidedTour from '@/components/GuidedTour';
 import HelpDesk from '@/components/HelpDesk';
 import TourButton from '@/components/TourButton';
@@ -27,6 +29,7 @@ import { hasCompletedTour, shouldShowTourPrompt } from '@/hooks/useTour';
 
 export default function HelpSettingsPage() {
   const { user, userType } = useAuth();
+  const [location, setLocation] = useLocation();
   const [showHelpDesk, setShowHelpDesk] = useState(false);
   const { activeTour, isTourActive, startTour, completeTour, skipTour, closeTour } = useTour();
 
@@ -55,12 +58,40 @@ export default function HelpSettingsPage() {
     }
   };
 
+  const handleBackNavigation = () => {
+    switch (userType) {
+      case 'company':
+        setLocation('/company-dashboard');
+        break;
+      case 'manager':
+        setLocation('/'); // Manager dashboard or default
+        break;
+      default:
+        setLocation('/'); // Employee dashboard
+        break;
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-4xl mx-auto p-6 space-y-6">
         {/* Header */}
         <div className="space-y-2">
-          <h1 className="text-2xl font-bold text-gray-900">Help & Learning Center</h1>
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleBackNavigation}
+              className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
+              data-testid="button-back-navigation"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back to Dashboard
+            </Button>
+            <div className="flex-1">
+              <h1 className="text-2xl font-bold text-gray-900">Help & Learning Center</h1>
+            </div>
+          </div>
           <div className="flex items-center gap-2">
             <p className="text-gray-600">Get help and learn how to use Signedwork effectively</p>
             <Badge variant="outline" className="ml-2">
