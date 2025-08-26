@@ -279,15 +279,44 @@ export default function CompanyHierarchySimple() {
   const handleCreateManager = async () => {
     if (newManager.firstName && newManager.lastName && newManager.email && newManager.password && newManager.username) {
       try {
-        // TODO: Implement actual manager creation API call when backend is ready
-        console.log('Creating manager:', newManager);
+        console.log('Creating manager directly...');
         
-        // For now, we'll simulate success
-        toast({ title: "Success", description: `Manager ${newManager.firstName} ${newManager.lastName} (${newManager.username}) will be created once API is implemented` });
+        // Create manager with direct API call
+        const managerData = {
+          managerName: `${newManager.firstName} ${newManager.lastName}`,
+          managerEmail: newManager.email,
+          username: newManager.username,
+          password: newManager.password,
+          permissionLevel: "team_lead",
+          permissions: {
+            canVerifyWork: true,
+            canManageEmployees: true,
+            canCreateTeams: false,
+            canViewReports: true
+          }
+        };
+        
+        const response = await apiRequest("POST", "/api/company/managers", managerData);
+        console.log('Manager creation response:', response);
+        
+        // Refresh data to show new manager
+        queryClient.invalidateQueries({ queryKey: ["/api/company/employees"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/company/managers"] });
+        
+        toast({ 
+          title: "Manager Created Successfully!", 
+          description: `${newManager.firstName} ${newManager.lastName} (${newManager.username}) has been created as a manager` 
+        });
+        
         setIsCreateManagerOpen(false);
         setNewManager({ firstName: "", lastName: "", email: "", password: "", username: "" });
       } catch (error: any) {
-        toast({ title: "Error", description: error.message || "Failed to create manager", variant: "destructive" });
+        console.error('Manager creation error:', error);
+        toast({ 
+          title: "Error", 
+          description: error.message || "Failed to create manager account", 
+          variant: "destructive" 
+        });
       }
     }
   };
