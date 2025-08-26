@@ -1443,7 +1443,9 @@ export class DatabaseStorage implements IStorage {
         approvalStatus: "approved",
         companyRating: data.rating,
         companyFeedback: data.feedback,
-        verifiedBy: data.approvedBy,
+        // Do NOT set verifiedBy for company approvals since it references employees table
+        // Company approvals are tracked via verifiedByRole and verifiedByName
+        verifiedBy: null,
         verifiedByRole: "company_admin",
         verifiedByName: "Company Admin",
         verifiedAt: new Date(),
