@@ -177,6 +177,13 @@ export default function CompanyHierarchySimple() {
     setIsManageTeamOpen(true);
   };
 
+  // Query to get team memberships for manage dialog
+  const { data: manageTeamMemberships } = useQuery({
+    queryKey: ["/api/company/teams", selectedTeam?.id, "memberships"],
+    queryFn: () => apiRequest("GET", `/api/company/teams/${selectedTeam?.id}/memberships`),
+    enabled: !!selectedTeam?.id && isManageTeamOpen
+  });
+
   const handleRemoveFromTeam = async (employeeId: string, teamId: string) => {
     try {
       await apiRequest("DELETE", `/api/company/teams/${teamId}/members/${employeeId}`);
@@ -963,59 +970,33 @@ export default function CompanyHierarchySimple() {
                   Current Team Members
                 </h4>
                 <div className="border rounded-lg">
-                  {Array.isArray(employees) && employees
-                    .filter((emp: any) => emp.teamId === selectedTeam.id)
-                    .length > 0 ? (
+                  {Array.isArray(manageTeamMemberships) && manageTeamMemberships.length > 0 ? (
                     <div className="divide-y">
-                      {employees
-                        .filter((emp: any) => emp.teamId === selectedTeam.id)
-                        .map((member: any, index: number) => (
-                          <div key={member.employeeId} className="p-3 flex flex-col sm:flex-row sm:items-center gap-3">
-                            <div className="flex items-center gap-3 min-w-0 flex-1">
-                              {member.hierarchyRole === "team_lead" || member.hierarchyRole === "branch_manager" ? (
-                                <UserCog className="w-5 h-5 text-blue-600 shrink-0" />
-                              ) : (
-                                <User className="w-5 h-5 text-gray-600 shrink-0" />
-                              )}
-                              <div className="min-w-0 flex-1">
-                                <p className="font-medium truncate">{member.firstName} {member.lastName}</p>
-                                <p className="text-sm text-muted-foreground truncate">{member.email}</p>
-                              </div>
-                              <Badge variant={member.hierarchyRole === "team_lead" || member.hierarchyRole === "branch_manager" ? "default" : "secondary"} className="shrink-0">
-                                <span className="hidden sm:inline">
-                                  {member.hierarchyRole === "team_lead" ? "Manager" : 
-                                   member.hierarchyRole === "branch_manager" ? "Branch Manager" : "Employee"}
-                                </span>
-                                <span className="sm:hidden">
-                                  {member.hierarchyRole === "team_lead" ? "Mgr" : 
-                                   member.hierarchyRole === "branch_manager" ? "Branch" : "Emp"}
-                                </span>
-                              </Badge>
+                      {manageTeamMemberships.map((membership: any, index: number) => (
+                        <div key={membership.employeeId} className="p-3 flex flex-col sm:flex-row sm:items-center gap-3">
+                          <div className="flex items-center gap-3 min-w-0 flex-1">
+                            <User className="w-5 h-5 text-gray-600 shrink-0" />
+                            <div className="min-w-0 flex-1">
+                              <p className="font-medium truncate">{membership.employee.firstName} {membership.employee.lastName}</p>
+                              <p className="text-sm text-muted-foreground truncate">{membership.employee.email}</p>
                             </div>
-                            <div className="flex gap-2 shrink-0">
-                              {/* Only show Make Manager if team doesn't have a manager assigned via teamManagerId */}
-                              {!selectedTeam?.teamManagerId && member.hierarchyRole !== "team_lead" && member.hierarchyRole !== "branch_manager" && (
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => handleChangeManager(member.employeeId)}
-                                  className="text-blue-600 hover:text-blue-700 flex-1 sm:flex-none"
-                                >
-                                  <span className="hidden sm:inline">Make Manager</span>
-                                  <span className="sm:hidden">Promote</span>
-                                </Button>
-                              )}
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleRemoveFromTeam(member.employeeId, selectedTeam.id)}
-                                className="text-red-600 hover:text-red-700 flex-1 sm:flex-none"
-                              >
-                                Remove
-                              </Button>
-                            </div>
+                            <Badge variant="secondary" className="shrink-0">
+                              <span className="hidden sm:inline">{membership.role || 'Member'}</span>
+                              <span className="sm:hidden">Member</span>
+                            </Badge>
                           </div>
-                        ))}
+                          <div className="flex gap-2 shrink-0">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleRemoveFromTeam(membership.employeeId, selectedTeam.id)}
+                              className="text-red-600 hover:text-red-700 flex-1 sm:flex-none"
+                            >
+                              Remove
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   ) : (
                     <div className="p-6 text-center text-muted-foreground">
@@ -1031,19 +1012,19 @@ export default function CompanyHierarchySimple() {
               <div className="grid grid-cols-3 gap-2 sm:gap-4">
                 <div className="p-2 sm:p-3 bg-blue-50 rounded-lg text-center">
                   <div className="text-xl sm:text-2xl font-bold text-blue-600">
-                    {employees?.filter((emp: any) => emp.teamId === selectedTeam.id).length || 0}
+                    {manageTeamMemberships?.length || 0}
                   </div>
                   <div className="text-xs sm:text-sm text-blue-700">Total</div>
                 </div>
                 <div className="p-2 sm:p-3 bg-green-50 rounded-lg text-center">
                   <div className="text-xl sm:text-2xl font-bold text-green-600">
-                    {employees?.filter((emp: any) => emp.teamId === selectedTeam.id && (emp.hierarchyRole === "team_lead" || emp.hierarchyRole === "branch_manager")).length || 0}
+                    {manageTeamMemberships?.filter((membership: any) => membership.role === "lead" || membership.role === "manager").length || 0}
                   </div>
                   <div className="text-xs sm:text-sm text-green-700">Managers</div>
                 </div>
                 <div className="p-2 sm:p-3 bg-purple-50 rounded-lg text-center">
                   <div className="text-xl sm:text-2xl font-bold text-purple-600">
-                    {employees?.filter((emp: any) => emp.teamId === selectedTeam.id && emp.hierarchyRole === "employee").length || 0}
+                    {manageTeamMemberships?.filter((membership: any) => membership.role === "member").length || 0}
                   </div>
                   <div className="text-xs sm:text-sm text-purple-700">Employees</div>
                 </div>
