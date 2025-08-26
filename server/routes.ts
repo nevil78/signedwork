@@ -2210,30 +2210,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.post("/api/company/work-entries/:id/approve", requireCompany, async (req: any, res) => {
-    
     try {
       const { id } = req.params;
       const { rating, feedback } = req.body;
       
-      // Enhanced approval with rating and feedback
-      const workEntry = await storage.approveWorkEntry(id, {
+      // Check if work entry exists and belongs to this company
+      const workEntry = await storage.getWorkEntry(id);
+      if (!workEntry) {
+        return res.status(404).json({ message: "Work entry not found" });
+      }
+      
+      if (workEntry.companyId !== req.user.id) {
+        return res.status(403).json({ 
+          message: "You can only approve work entries for your company" 
+        });
+      }
+      
+      if (workEntry.approvalStatus === 'approved') {
+        return res.status(400).json({ 
+          message: "Work entry is already approved and immutable" 
+        });
+      }
+      
+      // Approve as company admin (makes it immutable with "Verified by Company" status)
+      const updatedEntry = await storage.approveWorkEntryAsCompany(id, req.user.id, {
         rating: rating && rating > 0 && rating <= 5 ? rating : undefined,
-        feedback: feedback && feedback.trim() ? feedback.trim() : undefined
+        feedback: feedback && feedback.trim() ? feedback.trim() : undefined,
+        approvedBy: req.user.id
       });
       
-      // Emit real-time update to employee
+      // Emit real-time update to employee and manager
       emitRealTimeUpdate('work-entry-approved', {
-        workEntry,
+        workEntry: updatedEntry,
         companyId: req.user.id,
-        employeeId: workEntry.employeeId,
+        employeeId: updatedEntry.employeeId,
         rating,
-        feedback
+        feedback,
+        verifiedByCompany: true
       }, [
-        `user-${workEntry.employeeId}`,
-        `company-${req.user.id}`
+        `user-${updatedEntry.employeeId}`,
+        `company-${req.user.id}`,
+        ...(updatedEntry.approvedByManagerId ? [`manager-${updatedEntry.approvedByManagerId}`] : [])
       ]);
       
-      res.json(workEntry);
+      res.json({
+        message: "Work entry approved successfully - now verified by company",
+        workEntry: updatedEntry
+      });
     } catch (error) {
       console.error("Approve work entry error:", error);
       res.status(500).json({ message: "Failed to approve work entry" });
@@ -3447,15 +3470,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get work entries for manager's team
   app.get("/api/manager/work-entries", requireManager, async (req: any, res) => {
     try {
-      const { status, approvalStatus, startDate, endDate } = req.query;
-      
-      const filters: any = {};
-      if (status) filters.status = status as string;
-      if (approvalStatus) filters.approvalStatus = approvalStatus as string;
-      if (startDate) filters.startDate = startDate as string;
-      if (endDate) filters.endDate = endDate as string;
-      
-      const workEntries = await storage.getWorkEntriesForManager(req.user.id, filters);
+      const workEntries = await storage.getWorkEntriesForManager(req.user.id);
       res.json(workEntries);
     } catch (error) {
       console.error("Get manager work entries error:", error);
@@ -3463,31 +3478,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Approve work entry as manager
+  // Approve work entry as manager - New verification system
   app.post("/api/manager/work-entries/:workEntryId/approve", requireManager, await requireManagerPermission('canApproveWork'), async (req: any, res) => {
     try {
       const { workEntryId } = req.params;
-      const { approvalStatus, managerFeedback, managerRating } = req.body;
+      const { rating, feedback } = req.body;
       
-      if (!approvalStatus || !['manager_approved', 'manager_rejected'].includes(approvalStatus)) {
-        return res.status(400).json({ 
-          message: "Valid approval status required (manager_approved or manager_rejected)" 
+      // Check if work entry exists and is assigned to this manager
+      const workEntry = await storage.getWorkEntry(workEntryId);
+      if (!workEntry) {
+        return res.status(404).json({ message: "Work entry not found" });
+      }
+      
+      if (workEntry.approvedByManagerId !== req.user.id) {
+        return res.status(403).json({ 
+          message: "You can only approve work entries assigned to your team" 
         });
       }
       
+      if (workEntry.approvalStatus === 'approved') {
+        return res.status(400).json({ 
+          message: "Work entry is already approved and immutable" 
+        });
+      }
+      
+      // Approve the work entry (makes it immutable with "Verified by Company" status)
       const updatedEntry = await storage.approveWorkEntryAsManager(workEntryId, req.user.id, {
-        approvalStatus,
-        managerFeedback,
-        managerRating
+        rating,
+        feedback
       });
       
       res.json({
-        message: "Work entry processed successfully",
+        message: "Work entry approved successfully - now verified by company",
         workEntry: updatedEntry
       });
     } catch (error) {
       console.error("Manager approve work entry error:", error);
-      res.status(500).json({ message: "Failed to process work entry" });
+      res.status(500).json({ message: "Failed to approve work entry" });
     }
   });
 

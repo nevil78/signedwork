@@ -17,7 +17,8 @@ import {
   FileText,
   User,
   Calendar,
-  Star
+  Star,
+  Shield
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -267,12 +268,20 @@ const ManagerWorkEntries = memo(function ManagerWorkEntries() {
                       <Badge 
                         variant={
                           entry.approvalStatus === 'pending' ? 'secondary' :
-                          entry.approvalStatus === 'manager_approved' ? 'default' : 'destructive'
+                          entry.approvalStatus === 'approved' ? 'default' : 'destructive'
+                        }
+                        className={
+                          entry.approvalStatus === 'approved' ? 'bg-green-600 text-white' : ''
                         }
                       >
-                        {entry.approvalStatus === 'pending' && 'Pending'}
-                        {entry.approvalStatus === 'manager_approved' && 'Approved'}
-                        {entry.approvalStatus === 'manager_rejected' && 'Needs Changes'}
+                        {entry.approvalStatus === 'pending_review' && 'Pending Review'}
+                        {entry.approvalStatus === 'approved' && (
+                          <span className="flex items-center gap-1">
+                            <Shield className="w-3 h-3" />
+                            Verified by Company
+                          </span>
+                        )}
+                        {entry.approvalStatus === 'needs_changes' && 'Needs Changes'}
                       </Badge>
                     </div>
                     

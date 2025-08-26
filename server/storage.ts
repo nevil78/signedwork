@@ -233,6 +233,9 @@ export interface IStorage {
   createWorkEntry(workEntry: InsertWorkEntry): Promise<WorkEntry>;
   updateWorkEntry(id: string, data: Partial<WorkEntry>): Promise<WorkEntry>;
   deleteWorkEntry(id: string): Promise<void>;
+  getWorkEntriesForManager(managerId: string): Promise<any[]>;
+  approveWorkEntryAsCompany(workEntryId: string, companyId: string, data: { rating?: number; feedback?: string; approvedBy: string }): Promise<WorkEntry>;
+  approveWorkEntryAsManager(workEntryId: string, managerId: string, data: { rating?: number; feedback?: string }): Promise<WorkEntry>;
   
   // Company invitation operations
   generateInvitationCode(companyId: string): Promise<CompanyInvitationCode>;
@@ -1368,10 +1371,42 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createWorkEntry(workEntry: InsertWorkEntry): Promise<WorkEntry> {
+    // Find the assigned manager for this employee in this company
+    const employeeRelation = await db
+      .select()
+      .from(companyEmployees)
+      .where(and(
+        eq(companyEmployees.employeeId, workEntry.employeeId),
+        eq(companyEmployees.companyId, workEntry.companyId),
+        eq(companyEmployees.isActive, true)
+      ))
+      .limit(1);
+
+    let assignedManagerId = null;
+    let assignedManagerName = null;
+
+    if (employeeRelation.length > 0 && employeeRelation[0].assignedManagerId) {
+      const manager = await db
+        .select()
+        .from(companyManagers)
+        .where(eq(companyManagers.id, employeeRelation[0].assignedManagerId))
+        .limit(1);
+      
+      if (manager.length > 0) {
+        assignedManagerId = manager[0].id;
+        assignedManagerName = manager[0].managerName;
+      }
+    }
+
     // CRITICAL FIX: Always start with pending_review approval status regardless of employee's task status
     const workEntryWithApproval = {
       ...workEntry,
-      approvalStatus: "pending_review" as const // Company must review all entries
+      approvalStatus: "pending_review" as const, // Company must review all entries
+      // Link to assigned manager if found
+      ...(assignedManagerId && {
+        approvedByManagerId: assignedManagerId,
+        approvedByManagerName: assignedManagerName
+      })
     };
     
     const [newWorkEntry] = await db
@@ -1392,6 +1427,124 @@ export class DatabaseStorage implements IStorage {
 
   async deleteWorkEntry(id: string): Promise<void> {
     await db.delete(workEntries).where(eq(workEntries.id, id));
+  }
+
+  async getWorkEntriesForManager(managerId: string): Promise<any[]> {
+    // Get work entries for employees assigned to this manager
+    const result = await db
+      .select({
+        id: workEntries.id,
+        employeeId: workEntries.employeeId,
+        companyId: workEntries.companyId,
+        title: workEntries.title,
+        description: workEntries.description,
+        startDate: workEntries.startDate,
+        endDate: workEntries.endDate,
+        priority: workEntries.priority,
+        hours: workEntries.hours,
+        estimatedHours: workEntries.estimatedHours,
+        actualHours: workEntries.actualHours,
+        status: workEntries.status,
+        approvalStatus: workEntries.approvalStatus,
+        workType: workEntries.workType,
+        category: workEntries.category,
+        project: workEntries.project,
+        client: workEntries.client,
+        billable: workEntries.billable,
+        billableRate: workEntries.billableRate,
+        tags: workEntries.tags,
+        achievements: workEntries.achievements,
+        challenges: workEntries.challenges,
+        learnings: workEntries.learnings,
+        companyFeedback: workEntries.companyFeedback,
+        companyRating: workEntries.companyRating,
+        attachments: workEntries.attachments,
+        approvedByManagerId: workEntries.approvedByManagerId,
+        approvedByManagerName: workEntries.approvedByManagerName,
+        managerApprovalDate: workEntries.managerApprovalDate,
+        verifiedBy: workEntries.verifiedBy,
+        verifiedByRole: workEntries.verifiedByRole,
+        verifiedByName: workEntries.verifiedByName,
+        verifiedAt: workEntries.verifiedAt,
+        createdAt: workEntries.createdAt,
+        updatedAt: workEntries.updatedAt,
+        // Employee details
+        employeeName: employees.name,
+        employeeEmail: employees.email,
+        // Company details
+        companyName: companies.name
+      })
+      .from(workEntries)
+      .leftJoin(employees, eq(workEntries.employeeId, employees.id))
+      .leftJoin(companies, eq(workEntries.companyId, companies.id))
+      .where(eq(workEntries.approvedByManagerId, managerId))
+      .orderBy(desc(workEntries.createdAt));
+
+    return result;
+  }
+
+  async approveWorkEntryAsCompany(workEntryId: string, companyId: string, data: { 
+    rating?: number; 
+    feedback?: string; 
+    approvedBy: string 
+  }): Promise<WorkEntry> {
+    // Company admin approval - makes entry immutable and "verified by company"
+    const [workEntry] = await db
+      .update(workEntries)
+      .set({
+        approvalStatus: "approved",
+        companyRating: data.rating,
+        companyFeedback: data.feedback,
+        verifiedBy: data.approvedBy,
+        verifiedByRole: "company_admin",
+        verifiedByName: "Company Admin",
+        verifiedAt: new Date(),
+        updatedAt: new Date()
+      })
+      .where(and(
+        eq(workEntries.id, workEntryId),
+        eq(workEntries.companyId, companyId)
+      ))
+      .returning();
+    
+    return workEntry;
+  }
+
+  async approveWorkEntryAsManager(workEntryId: string, managerId: string, data: { 
+    rating?: number; 
+    feedback?: string 
+  }): Promise<WorkEntry> {
+    // Manager approval - also makes entry immutable and "verified by company" (on behalf)
+    const manager = await db
+      .select()
+      .from(companyManagers)
+      .where(eq(companyManagers.id, managerId))
+      .limit(1);
+
+    if (!manager.length) {
+      throw new Error("Manager not found");
+    }
+
+    const [workEntry] = await db
+      .update(workEntries)
+      .set({
+        approvalStatus: "approved",
+        companyRating: data.rating,
+        companyFeedback: data.feedback,
+        verifiedBy: managerId,
+        verifiedByRole: "assigned_manager",
+        verifiedByName: `${manager[0].managerName} (Manager)`,
+        verifiedAt: new Date(),
+        managerApprovalDate: new Date(),
+        updatedAt: new Date()
+      })
+      .where(and(
+        eq(workEntries.id, workEntryId),
+        eq(workEntries.approvedByManagerId, managerId)
+      ))
+      .returning();
+    
+    return workEntry;
   }
 
   async getWorkEntriesForCompany(companyId: string): Promise<any[]> {

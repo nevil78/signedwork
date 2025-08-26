@@ -241,9 +241,18 @@ export default function CompanyWorkEntries() {
       case 'pending_review':
         return <Badge variant="secondary" className="bg-yellow-100 text-yellow-800"><Clock className="w-3 h-3 mr-1" />Pending Review</Badge>;
       case 'approved':
-        // Show if verified by manager (delegated authority) or direct company verification
-        const verifiedBy = entry?.approvedByManagerName ? `Verified by ${entry.approvedByManagerName}` : 'Company Verified';
-        return <Badge variant="secondary" className="bg-green-100 text-green-800"><CheckCircle className="w-3 h-3 mr-1" />{verifiedBy}</Badge>;
+        // Show "Verified by Company" badge for all approved entries (company admin or manager approval)
+        const verifierName = entry?.verifiedByName || 'Company Admin';
+        const isManagerVerified = entry?.verifiedByRole === 'assigned_manager';
+        return (
+          <Badge variant="default" className="bg-green-600 text-white">
+            <Shield className="w-3 h-3 mr-1" />
+            Verified by Company
+            {isManagerVerified && (
+              <span className="ml-1 text-xs opacity-80">({verifierName})</span>
+            )}
+          </Badge>
+        );
       case 'needs_changes':
         return <Badge variant="secondary" className="bg-red-100 text-red-800"><AlertCircle className="w-3 h-3 mr-1" />Needs Changes</Badge>;
       default:
