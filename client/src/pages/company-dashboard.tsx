@@ -262,49 +262,68 @@ export default function CompanyDashboard() {
           </Card>
         )}
 
-        {/* Management Tools Section */}
+        {/* Core Management Section */}
         <div className="mb-8">
-          <h3 className="text-lg font-semibold mb-4">Management Tools</h3>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <h2 className="text-xl font-bold mb-2">Core Management</h2>
+          <p className="text-muted-foreground mb-6">Essential tools for managing your company structure and employees</p>
+          <div className="grid gap-6 md:grid-cols-2">
             
-            {/* NEW: Company Hierarchy Card */}
+            {/* Company Hierarchy Card */}
             <Card 
-              className="cursor-pointer hover:shadow-md hover:border-yellow-200 transition-all duration-200" 
+              className="cursor-pointer hover:shadow-lg hover:border-yellow-300 transition-all duration-200 border-2" 
               onClick={() => navigate('/company-hierarchy')}
               data-testid="company-hierarchy-card"
             >
               <CardHeader className="pb-4">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-8 h-8 bg-yellow-100 dark:bg-yellow-900 rounded-lg flex items-center justify-center">
-                    <Building2 className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
+                <div className="flex items-center gap-4 mb-3">
+                  <div className="w-12 h-12 bg-yellow-100 dark:bg-yellow-900 rounded-xl flex items-center justify-center">
+                    <Building2 className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
                   </div>
-                  <CardTitle className="text-base font-semibold">Company Hierarchy</CardTitle>
+                  <div>
+                    <CardTitle className="text-lg font-semibold">Company Hierarchy</CardTitle>
+                    <CardDescription className="text-sm text-muted-foreground">
+                      Organization Management
+                    </CardDescription>
+                  </div>
                 </div>
-                <CardDescription className="text-sm">
+                <p className="text-sm text-muted-foreground">
                   Manage branches, teams, employee roles, and manager accounts in your organizational structure
-                </CardDescription>
+                </p>
               </CardHeader>
             </Card>
 
-            {/* Premium Recruitment Card */}
+            {/* Manage Employees Card */}
             <Card 
-              className="cursor-pointer hover:shadow-md hover:border-purple-200 transition-all duration-200" 
-              onClick={() => navigate('/company-recruiter')}
-              data-testid="premium-recruitment-card"
+              className="cursor-pointer hover:shadow-lg hover:border-orange-300 transition-all duration-200 border-2" 
+              onClick={() => navigate('/company-employees')}
+              data-testid="manage-employees-card"
             >
               <CardHeader className="pb-4">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-8 h-8 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center">
-                    <UserSearch className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                <div className="flex items-center gap-4 mb-3">
+                  <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900 rounded-xl flex items-center justify-center">
+                    <Users className="w-6 h-6 text-orange-600 dark:text-orange-400" />
                   </div>
-                  <CardTitle className="text-base font-semibold">Premium Recruitment</CardTitle>
+                  <div>
+                    <CardTitle className="text-lg font-semibold">Manage Employees</CardTitle>
+                    <CardDescription className="text-sm text-muted-foreground">
+                      Employee Administration
+                    </CardDescription>
+                  </div>
                 </div>
-                <CardDescription className="text-sm">
-                  Advanced talent search with verified work history, candidate pipelines, and analytics
-                </CardDescription>
+                <p className="text-sm text-muted-foreground">
+                  Advanced employee management with search, filtering, and detailed profiles
+                </p>
               </CardHeader>
             </Card>
+          </div>
+        </div>
 
+        {/* Work Management Section */}
+        <div className="mb-8">
+          <h2 className="text-xl font-bold mb-2">Work Management</h2>
+          <p className="text-muted-foreground mb-6">Tools for managing work verification and approval processes</p>
+          <div className="grid gap-4 md:grid-cols-2">
+            
             {/* Work Verification Card */}
             <Card 
               className="cursor-pointer hover:shadow-md hover:border-green-200 transition-all duration-200" 
@@ -313,8 +332,8 @@ export default function CompanyDashboard() {
             >
               <CardHeader className="pb-4">
                 <div className="flex items-center gap-3 mb-2">
-                  <div className="w-8 h-8 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
-                    <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
+                  <div className="w-10 h-10 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
+                    <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
                   </div>
                   <CardTitle className="text-base font-semibold">Work Verification</CardTitle>
                 </div>
@@ -323,79 +342,85 @@ export default function CompanyDashboard() {
                 </CardDescription>
               </CardHeader>
             </Card>
-{/* Manage Employees Card */}
+
+            {/* Work Entry Reviews Card */}
             <Card 
-              className="cursor-pointer hover:shadow-md hover:border-orange-200 transition-all duration-200" 
-              onClick={() => navigate('/company-employees')}
-              data-testid="manage-employees-card"
+              className="cursor-pointer hover:shadow-md hover:border-blue-200 transition-all duration-200" 
+              onClick={() => navigate('/company-work-entries')}
             >
               <CardHeader className="pb-4">
                 <div className="flex items-center gap-3 mb-2">
-                  <div className="w-8 h-8 bg-orange-100 dark:bg-orange-900 rounded-lg flex items-center justify-center">
-                    <Users className="w-4 h-4 text-orange-600 dark:text-orange-400" />
-                  </div>
-                  <CardTitle className="text-base font-semibold">Manage Employees</CardTitle>
-                </div>
-                <CardDescription className="text-sm">
-                  Advanced employee management with search, filtering, and pagination
-                </CardDescription>
-              </CardHeader>
-            </Card>
-
-            {/* Manage Managers Card */}
-{/* Manage Managers functionality has been consolidated into Company Hierarchy page */}
-
-            <Card className="cursor-pointer hover:shadow-md hover:border-blue-200 transition-all duration-200" onClick={() => navigate('/company-work-entries')}>
-              <CardHeader className="pb-4">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
-                    <FileText className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                  <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
+                    <FileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                   </div>
                   <CardTitle className="text-base font-semibold">Work Entry Reviews</CardTitle>
                 </div>
                 <CardDescription className="text-sm">
-                  Review and verify employee work entries
-                </CardDescription>
-              </CardHeader>
-            </Card>
-            
-            <Card className="cursor-pointer hover:shadow-md hover:border-green-200 transition-all duration-200" onClick={() => navigate('/company-jobs')}>
-              <CardHeader className="pb-4">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-8 h-8 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
-                    <Briefcase className="w-4 h-4 text-green-600 dark:text-green-400" />
-                  </div>
-                  <CardTitle className="text-base font-semibold">Job Postings</CardTitle>
-                </div>
-                <CardDescription className="text-sm">
-                  Create and manage job listings
-                </CardDescription>
-              </CardHeader>
-            </Card>
-            
-            <Card className="cursor-pointer hover:shadow-md hover:border-purple-200 transition-all duration-200" onClick={() => navigate('/company-recruiter')}>
-              <CardHeader className="pb-4">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-8 h-8 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center">
-                    <UserSearch className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-                  </div>
-                  <CardTitle className="text-base font-semibold">Recruiter Panel</CardTitle>
-                </div>
-                <CardDescription className="text-sm">
-                  View and manage job applications
+                  Review and verify employee work entries for approval
                 </CardDescription>
               </CardHeader>
             </Card>
           </div>
         </div>
 
+        {/* Talent & Recruitment Section */}
+        <div className="mb-8">
+          <h2 className="text-xl font-bold mb-2">Talent & Recruitment</h2>
+          <p className="text-muted-foreground mb-6">Advanced recruitment tools and job management</p>
+          <div className="grid gap-4 md:grid-cols-2">
+            
+            {/* Job Postings Card */}
+            <Card 
+              className="cursor-pointer hover:shadow-md hover:border-green-200 transition-all duration-200" 
+              onClick={() => navigate('/company-jobs')}
+            >
+              <CardHeader className="pb-4">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-10 h-10 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
+                    <Briefcase className="w-5 h-5 text-green-600 dark:text-green-400" />
+                  </div>
+                  <CardTitle className="text-base font-semibold">Job Postings</CardTitle>
+                </div>
+                <CardDescription className="text-sm">
+                  Create and manage job listings for your company
+                </CardDescription>
+              </CardHeader>
+            </Card>
+            
+            {/* Premium Recruitment Card */}
+            <Card 
+              className="cursor-pointer hover:shadow-md hover:border-purple-200 transition-all duration-200" 
+              onClick={() => navigate('/company-recruiter')}
+              data-testid="premium-recruitment-card"
+            >
+              <CardHeader className="pb-4">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center">
+                    <UserSearch className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                  </div>
+                  <CardTitle className="text-base font-semibold">Premium Recruitment</CardTitle>
+                </div>
+                <CardDescription className="text-sm">
+                  Advanced talent search with verified work history and analytics
+                </CardDescription>
+              </CardHeader>
+            </Card>
+          </div>
+        </div>
+
+        {/* Quick Actions Section */}
+        <div className="mb-8">
+          <h2 className="text-xl font-bold mb-2">Quick Actions</h2>
+          <p className="text-muted-foreground mb-6">Frequently used tools and current employee status</p>
+        </div>
+
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {/* Invitation Code Section */}
-          <Card>
+          <Card className="lg:col-span-1">
             <CardHeader className="pb-4">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
-                  <UserPlus className="w-4 h-4 text-green-600 dark:text-green-400" />
+                <div className="w-10 h-10 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
+                  <UserPlus className="w-5 h-5 text-green-600 dark:text-green-400" />
                 </div>
                 <div>
                   <CardTitle className="text-base font-semibold">Invitation Codes</CardTitle>
@@ -461,12 +486,12 @@ export default function CompanyDashboard() {
           </Card>
 
           {/* Employees Section */}
-          <Card>
+          <Card className="lg:col-span-2">
             <CardHeader className="pb-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-orange-100 dark:bg-orange-900 rounded-lg flex items-center justify-center">
-                    <Users className="w-4 h-4 text-orange-600 dark:text-orange-400" />
+                  <div className="w-10 h-10 bg-orange-100 dark:bg-orange-900 rounded-lg flex items-center justify-center">
+                    <Users className="w-5 h-5 text-orange-600 dark:text-orange-400" />
                   </div>
                   <div>
                     <CardTitle className="text-base font-semibold">Recent Employees</CardTitle>
@@ -483,7 +508,7 @@ export default function CompanyDashboard() {
                   data-testid="button-manage-all-employees"
                 >
                   <Settings className="w-4 h-4 mr-1" />
-                  <span className="hidden sm:inline">Manage</span>
+                  <span className="hidden sm:inline">Manage All</span>
                   <span className="sm:hidden">All</span>
                 </Button>
               </div>
