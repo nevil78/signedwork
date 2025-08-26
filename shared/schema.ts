@@ -270,7 +270,7 @@ export const companyTeams = pgTable("company_teams", {
   branchId: varchar("branch_id").references(() => companyBranches.id, { onDelete: "cascade" }), // Can be null for HQ teams
   name: text("name").notNull(), // "Sales Team A", "Development Team 1"
   description: text("description"),
-  teamLeadEmployeeId: varchar("team_lead_employee_id"), // Team lead employee ID
+  teamManagerId: varchar("team_manager_id").references(() => companyManagers.id), // Team manager ID
   maxMembers: integer("max_members").default(10), // Team size limit
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
@@ -607,9 +607,9 @@ export const companyTeamsRelations = relations(companyTeams, ({ one, many }) => 
     fields: [companyTeams.branchId],
     references: [companyBranches.id],
   }),
-  teamLead: one(employees, {
-    fields: [companyTeams.teamLeadEmployeeId],
-    references: [employees.id],
+  teamManager: one(companyManagers, {
+    fields: [companyTeams.teamManagerId],
+    references: [companyManagers.id],
   }),
   members: many(companyEmployees),
   workEntries: many(workEntries),

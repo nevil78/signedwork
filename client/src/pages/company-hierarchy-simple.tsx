@@ -43,7 +43,7 @@ export default function CompanyHierarchySimple() {
   
   // Form states
   const [newBranch, setNewBranch] = useState({ name: "", location: "" });
-  const [newTeam, setNewTeam] = useState({ name: "", branchId: "" });
+  const [newTeam, setNewTeam] = useState({ name: "", branchId: "", teamManagerId: "" });
   const [selectedEmployees, setSelectedEmployees] = useState<string[]>([]);
   const [selectedManager, setSelectedManager] = useState<string>("");
 
@@ -88,7 +88,7 @@ export default function CompanyHierarchySimple() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/company/teams"] });
       setIsCreateTeamOpen(false);
-      setNewTeam({ name: "", branchId: "" });
+      setNewTeam({ name: "", branchId: "", teamManagerId: "" });
       toast({ title: "Success", description: "Team created successfully" });
     },
     onError: () => {
@@ -213,6 +213,7 @@ export default function CompanyHierarchySimple() {
       createTeamMutation.mutate({
         name: newTeam.name,
         branchId: newTeam.branchId === "headquarters" ? null : newTeam.branchId,
+        teamManagerId: newTeam.teamManagerId || null,
         maxMembers: 10
       });
     }
@@ -661,6 +662,24 @@ export default function CompanyHierarchySimple() {
                 </SelectContent>
               </Select>
             </div>
+            <div>
+              <Label htmlFor="team-manager">Team Manager (Optional)</Label>
+              <Select value={newTeam.teamManagerId} onValueChange={(value) => setNewTeam({ ...newTeam, teamManagerId: value })}>
+                <SelectTrigger data-testid="select-team-manager">
+                  <SelectValue placeholder="Select manager" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">No Manager</SelectItem>
+                  {Array.isArray(managers) && managers
+                    .filter((manager: any) => !manager.teamId) // Only show unassigned managers
+                    .map((manager: any) => (
+                      <SelectItem key={manager.id} value={manager.id}>
+                        {manager.managerName} ({manager.uniqueId})
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div className="flex gap-2">
               <Button 
                 onClick={handleCreateTeam}
@@ -709,13 +728,13 @@ export default function CompanyHierarchySimple() {
                     <SelectValue placeholder="Choose team manager" />
                   </SelectTrigger>
                   <SelectContent>
-                    {Array.isArray(employees) && employees
-                      .filter((emp: any) => !emp.teamId) // Only show unassigned employees
-                      .map((employee: any) => (
-                        <SelectItem key={employee.employeeId} value={employee.employeeId}>
+                    {Array.isArray(managers) && managers
+                      .filter((manager: any) => !manager.teamId) // Only show unassigned managers
+                      .map((manager: any) => (
+                        <SelectItem key={manager.id} value={manager.id}>
                           <div className="flex items-center gap-2">
                             <UserCog className="w-4 h-4 text-blue-600" />
-                            {employee.firstName} {employee.lastName}
+                            {manager.managerName} ({manager.uniqueId})
                           </div>
                         </SelectItem>
                       ))}
