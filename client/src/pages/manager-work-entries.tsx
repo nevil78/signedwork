@@ -158,6 +158,23 @@ const ManagerWorkEntries = memo(function ManagerWorkEntries() {
   const approvedEntries = (workEntries as any[])?.filter((entry: any) => entry.approvalStatus === 'approved') || [];
   const rejectedEntries = (workEntries as any[])?.filter((entry: any) => entry.approvalStatus === 'needs_changes') || [];
 
+  // Group work entries by employee
+  const groupedEntries = (workEntries as any[])?.reduce((groups: any, entry: any) => {
+    const employeeName = `${entry.employee.firstName} ${entry.employee.lastName}`;
+    const employeeId = entry.employee.id;
+    
+    if (!groups[employeeId]) {
+      groups[employeeId] = {
+        employeeName,
+        employee: entry.employee,
+        entries: []
+      };
+    }
+    
+    groups[employeeId].entries.push(entry);
+    return groups;
+  }, {}) || {};
+
   // Use same handler patterns as company work entries
   const handleApprove = (entry: any) => {
     setSelectedEntry(entry);
@@ -306,73 +323,98 @@ const ManagerWorkEntries = memo(function ManagerWorkEntries() {
           </CardContent>
         </Card>
 
-        {/* Work Entries List */}
+        {/* Work Entries List - Grouped by Employee */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div>
-            <h2 className="text-lg font-semibold mb-4">Work Entries</h2>
-            <div className="space-y-4">
-              {(workEntries as any[])?.map((entry: any) => (
-                <Card 
-                  key={entry.id} 
-                  className={`cursor-pointer transition-all hover:shadow-md ${
-                    selectedEntry?.id === entry.id ? 'ring-2 ring-blue-500' : ''
-                  }`}
-                  onClick={() => setSelectedEntry(entry)}
-                  data-testid={`work-entry-${entry.id}`}
-                >
-                  <CardContent className="p-4">
-                    <div className="flex justify-between items-start mb-2">
-                      <h3 className="font-medium">{entry.title}</h3>
-                      <Badge 
-                        variant={
-                          entry.approvalStatus === 'pending' ? 'secondary' :
-                          entry.approvalStatus === 'approved' ? 'default' : 'destructive'
-                        }
-                        className={
-                          entry.approvalStatus === 'approved' ? 'bg-green-600 text-white' : ''
-                        }
-                      >
-                        {entry.approvalStatus === 'pending_review' && 'Pending Review'}
-                        {entry.approvalStatus === 'approved' && (
-                          <span className="flex items-center gap-1">
-                            <Shield className="w-3 h-3" />
-                            Verified by Company
-                          </span>
-                        )}
-                        {entry.approvalStatus === 'needs_changes' && 'Needs Changes'}
-                      </Badge>
-                    </div>
-                    
-                    <div className="text-sm text-gray-600 space-y-1">
-                      <div className="flex items-center gap-2">
-                        <User className="h-4 w-4" />
-                        {entry.employeeName}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4" />
-                        {new Date(entry.createdAt).toLocaleDateString()}
-                      </div>
-                      {entry.managerRating && (
-                        <div className="flex items-center gap-2">
-                          {getRatingStars(entry.managerRating)}
-                        </div>
-                      )}
-                    </div>
-                    
-                    <p className="text-sm text-gray-700 mt-2 line-clamp-2">
-                      {entry.description}
-                    </p>
-                  </CardContent>
-                </Card>
-              ))}
-              
-              {(workEntries as any[])?.length === 0 && (
+            <h2 className="text-lg font-semibold mb-4">Work Entries by Employee</h2>
+            <div className="space-y-6">
+              {Object.keys(groupedEntries).length === 0 ? (
                 <Card>
                   <CardContent className="p-8 text-center">
                     <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                     <p className="text-gray-600">No work entries found for your team.</p>
                   </CardContent>
                 </Card>
+              ) : (
+                Object.values(groupedEntries).map((employeeGroup: any) => (
+                  <div key={employeeGroup.employee.id} className="border rounded-lg bg-white">
+                    {/* Employee Header */}
+                    <div className="p-4 border-b bg-gray-50 rounded-t-lg">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-medium">
+                            {employeeGroup.employeeName.split(' ').map((n: string) => n[0]).join('')}
+                          </div>
+                          <div>
+                            <h3 className="font-semibold text-gray-900">{employeeGroup.employeeName}</h3>
+                            <p className="text-sm text-gray-600">{employeeGroup.employee.email}</p>
+                          </div>
+                        </div>
+                        <Badge variant="outline" className="text-xs">
+                          {employeeGroup.entries.length} {employeeGroup.entries.length === 1 ? 'entry' : 'entries'}
+                        </Badge>
+                      </div>
+                    </div>
+                    
+                    {/* Employee's Work Entries */}
+                    <div className="p-4 space-y-3">
+                      {employeeGroup.entries.map((entry: any, index: number) => (
+                        <Card 
+                          key={entry.id} 
+                          className={`cursor-pointer transition-all hover:shadow-md border-l-4 ${
+                            entry.approvalStatus === 'pending_review' ? 'border-l-orange-500' :
+                            entry.approvalStatus === 'approved' ? 'border-l-green-500' : 'border-l-red-500'
+                          } ${selectedEntry?.id === entry.id ? 'ring-2 ring-blue-500' : ''}`}
+                          onClick={() => setSelectedEntry(entry)}
+                          data-testid={`work-entry-${entry.id}`}
+                        >
+                          <CardContent className="p-3">
+                            <div className="flex justify-between items-start mb-2">
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs text-gray-500 font-mono">#{index + 1}</span>
+                                <h4 className="font-medium text-sm">{entry.title}</h4>
+                              </div>
+                              <Badge 
+                                variant={
+                                  entry.approvalStatus === 'pending_review' ? 'secondary' :
+                                  entry.approvalStatus === 'approved' ? 'default' : 'destructive'
+                                }
+                                className={`text-xs ${
+                                  entry.approvalStatus === 'approved' ? 'bg-green-600 text-white' : ''
+                                }`}
+                              >
+                                {entry.approvalStatus === 'pending_review' && 'Pending'}
+                                {entry.approvalStatus === 'approved' && (
+                                  <span className="flex items-center gap-1">
+                                    <Shield className="w-2 h-2" />
+                                    Verified
+                                  </span>
+                                )}
+                                {entry.approvalStatus === 'needs_changes' && 'Changes'}
+                              </Badge>
+                            </div>
+                            
+                            <div className="text-xs text-gray-600 space-y-1">
+                              <div className="flex items-center gap-2">
+                                <Calendar className="h-3 w-3" />
+                                {new Date(entry.createdAt).toLocaleDateString()}
+                              </div>
+                              {entry.companyRating && (
+                                <div className="flex items-center gap-1">
+                                  {getRatingStars(entry.companyRating)}
+                                </div>
+                              )}
+                            </div>
+                            
+                            <p className="text-xs text-gray-700 mt-2 line-clamp-2">
+                              {entry.description}
+                            </p>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </div>
+                ))
               )}
             </div>
           </div>
