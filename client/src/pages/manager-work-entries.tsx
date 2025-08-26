@@ -60,7 +60,7 @@ const ManagerWorkEntries = memo(function ManagerWorkEntries() {
 
   // Fetch work entries for manager's team
   const { data: workEntries, isLoading: entriesLoading } = useQuery({
-    queryKey: ["/api/manager/work-entries", filters],
+    queryKey: ["/api/manager/work-entries"],
     enabled: isAuthenticated && permissions.canApproveWork,
   });
 
