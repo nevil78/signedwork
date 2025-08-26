@@ -3694,26 +3694,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { managerId, managerName, managerEmail, password, permissionLevel, branchId, teamId } = req.body;
 
+      console.log('🔍 Manager creation request:', { managerId, managerName, managerEmail });
+
       // Check if manager ID already exists
       const existingManager = await storage.getManagerByUniqueId(managerId);
       if (existingManager) {
         return res.status(400).json({ message: 'Manager ID already exists' });
       }
 
-      // Hash password
-      const hashedPassword = await bcrypt.hash(password, 10);
-
-      // Create manager
+      // Create manager with raw password (storage will hash it)
       const manager = await storage.createManager({
         companyId: req.user.id,
         uniqueId: managerId,
-        password: hashedPassword,
+        password: password,
         managerName: managerName,
         managerEmail: managerEmail,
         permissionLevel: permissionLevel,
         branchId: branchId || null,
         teamId: teamId || null,
       });
+
+      console.log('✅ Manager created with uniqueId:', manager.uniqueId);
 
       // Create default permissions
       await storage.createManagerPermissions({

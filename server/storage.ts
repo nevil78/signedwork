@@ -4544,10 +4544,13 @@ export class DatabaseStorage implements IStorage {
   async createManager(managerData: InsertCompanyManager): Promise<CompanyManager> {
     const hashedPassword = await bcrypt.hash(managerData.password, 10);
     
+    console.log('🔍 Storage createManager received:', { uniqueId: managerData.uniqueId, managerName: managerData.managerName });
+    
     // Use provided uniqueId if available, otherwise generate one
     let uniqueId = managerData.uniqueId;
     
     if (!uniqueId) {
+      console.log('⚠️ No uniqueId provided, generating one...');
       // Generate unique manager ID only if not provided
       const company = await this.getCompany(managerData.companyId);
       if (!company) throw new Error('Company not found');
@@ -4567,6 +4570,8 @@ export class DatabaseStorage implements IStorage {
       if (attempts >= maxAttempts) {
         throw new Error('Failed to generate unique manager ID');
       }
+    } else {
+      console.log('✅ Using provided uniqueId:', uniqueId);
     }
     
     const [manager] = await db
