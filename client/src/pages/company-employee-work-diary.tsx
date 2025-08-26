@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import type { WorkEntry, Employee, Company } from '@shared/schema';
+import { CompanyVerificationBadge } from '@/components/CompanyVerificationBadge';
 
 interface WorkEntryWithCompany extends WorkEntry {
   company?: Company;
@@ -217,8 +218,33 @@ export default function CompanyEmployeeWorkDiary() {
                         <ChevronRight className="h-5 w-5 text-muted-foreground" />
                       )}
                       <Building2 className="h-6 w-6 text-primary" />
-                      <div>
-                        <h3 className="text-xl font-semibold">{companyName}</h3>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-xl font-semibold">{companyName}</h3>
+                          {/* Show verification badge if company data is available */}
+                          {entries[0]?.company && (() => {
+                            const company = entries[0].company;
+                            const getVerificationStatus = () => {
+                              if (company.panVerificationStatus === "verified" || company.cinVerificationStatus === "verified") {
+                                return "verified";
+                              }
+                              if (company.panVerificationStatus === "pending" || company.cinVerificationStatus === "pending") {
+                                return "pending";
+                              }
+                              if (company.panVerificationStatus === "rejected" || company.cinVerificationStatus === "rejected") {
+                                return "rejected";
+                              }
+                              return "unverified";
+                            };
+                            return (
+                              <CompanyVerificationBadge 
+                                status={getVerificationStatus()}
+                                size="sm"
+                                showText={false}
+                              />
+                            );
+                          })()}
+                        </div>
                         <p className="text-sm text-muted-foreground">
                           {entries.length} work {entries.length === 1 ? 'entry' : 'entries'}
                         </p>

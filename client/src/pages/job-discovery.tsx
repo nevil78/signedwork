@@ -23,6 +23,7 @@ import {
   CheckCircle, XCircle, Calendar, User, AlertCircle, Shield
 } from 'lucide-react';
 import type { JobListing, JobApplication, SavedJob, JobAlert } from '@shared/schema';
+import { CompanyVerificationBadge } from '@/components/CompanyVerificationBadge';
 import EmployeeNavHeader from '@/components/employee-nav-header';
 
 interface JobSearchFilters {
@@ -1436,5 +1437,187 @@ function TrendingSkillsDialog() {
         </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+// JobCard component for displaying individual job listings
+function JobCard({ job }: { job: JobListing & { company?: any } }) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  // Save/unsave job mutation
+  const saveJobMutation = useMutation({
+    mutationFn: (jobId: string) => apiRequest('POST', `/api/jobs/${jobId}/save`),
+    onSuccess: () => {
+      toast({ title: "Job saved!" });
+      queryClient.invalidateQueries({ queryKey: ['/api/jobs/saved'] });
+    }
+  });
+
+  const unsaveJobMutation = useMutation({
+    mutationFn: (jobId: string) => apiRequest('DELETE', `/api/jobs/${jobId}/save`),
+    onSuccess: () => {
+      toast({ title: "Job removed from saved" });
+      queryClient.invalidateQueries({ queryKey: ['/api/jobs/saved'] });
+    }
+  });
+
+  // Check if job is saved (simplified - would need actual saved jobs list)
+  const isSaved = false; // TODO: Implement proper saved state
+
+  // Get verification status - if either PAN or CIN is verified, company is verified
+  const getCompanyVerificationStatus = () => {
+    if (!job.company) return "unverified";
+    
+    const { panVerificationStatus, cinVerificationStatus } = job.company;
+    
+    // Company is verified if either PAN or CIN is verified
+    if (panVerificationStatus === "verified" || cinVerificationStatus === "verified") {
+      return "verified";
+    }
+    
+    // If either is pending, show pending
+    if (panVerificationStatus === "pending" || cinVerificationStatus === "pending") {
+      return "pending";
+    }
+    
+    // If either is rejected, show rejected
+    if (panVerificationStatus === "rejected" || cinVerificationStatus === "rejected") {
+      return "rejected";
+    }
+    
+    return "unverified";
+  };
+
+  const formatSalary = (salaryRange?: string) => {
+    if (!salaryRange) return "Salary not disclosed";
+    return salaryRange;
+  };
+
+  const formatPostedTime = (createdAt: string) => {
+    const posted = new Date(createdAt);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - posted.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 1) return "1 day ago";
+    if (diffDays < 7) return `${diffDays} days ago`;
+    if (diffDays < 30) return `${Math.ceil(diffDays / 7)} weeks ago`;
+    return `${Math.ceil(diffDays / 30)} months ago`;
+  };
+
+  return (
+    <Card className="hover:shadow-lg transition-all duration-200 border-l-4 border-l-blue-500">
+      <CardContent className="p-6">
+        <div className="flex justify-between items-start mb-4">
+          <div className="flex-1">
+            <div className="flex items-start justify-between mb-2">
+              <h3 className="text-xl font-semibold text-blue-600 hover:text-blue-700 cursor-pointer mb-1">
+                {job.title}
+              </h3>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => isSaved ? unsaveJobMutation.mutate(job.id) : saveJobMutation.mutate(job.id)}
+                className="ml-2"
+                data-testid={`button-${isSaved ? 'unsave' : 'save'}-job-${job.id}`}
+              >
+                {isSaved ? (
+                  <BookmarkCheck className="h-5 w-5 text-blue-600" />
+                ) : (
+                  <Bookmark className="h-5 w-5" />
+                )}
+              </Button>
+            </div>
+            
+            <div className="flex items-center gap-2 mb-3">
+              <div className="flex items-center gap-2">
+                <Building2 className="h-4 w-4 text-muted-foreground" />
+                <span className="font-medium text-gray-900">{job.company?.name || 'Company Name'}</span>
+              </div>
+              {job.company && (
+                <CompanyVerificationBadge 
+                  status={getCompanyVerificationStatus()}
+                  size="sm"
+                  showText={false}
+                />
+              )}
+            </div>
+
+            <div className="flex items-center gap-4 text-sm text-muted-foreground mb-3">
+              <div className="flex items-center gap-1">
+                <MapPin className="h-4 w-4" />
+                <span>{job.location}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Briefcase className="h-4 w-4" />
+                <span className="capitalize">{job.employmentType.replace('_', ' ')}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <DollarSign className="h-4 w-4" />
+                <span>{formatSalary(job.salaryRange)}</span>
+              </div>
+            </div>
+
+            <p className="text-gray-600 mb-4 line-clamp-2">{job.description}</p>
+
+            <div className="flex items-center justify-between">
+              <div className="flex flex-wrap gap-1">
+                {job.skills.slice(0, 3).map((skill, index) => (
+                  <Badge key={index} variant="secondary" className="text-xs">
+                    {skill}
+                  </Badge>
+                ))}
+                {job.skills.length > 3 && (
+                  <Badge variant="outline" className="text-xs">
+                    +{job.skills.length - 3} more
+                  </Badge>
+                )}
+              </div>
+              
+              <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                <div className="flex items-center gap-1">
+                  <Eye className="h-4 w-4" />
+                  <span>{job.views || 0} views</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Clock className="h-4 w-4" />
+                  <span>{formatPostedTime(job.createdAt)}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between mt-4 pt-4 border-t">
+              <div className="flex items-center gap-2">
+                <Badge variant={job.remoteType === 'remote' ? 'default' : 'secondary'}>
+                  {job.remoteType.charAt(0).toUpperCase() + job.remoteType.slice(1)}
+                </Badge>
+                <Badge variant="outline">
+                  {job.experienceLevel.charAt(0).toUpperCase() + job.experienceLevel.slice(1)} Level
+                </Badge>
+              </div>
+              
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  data-testid={`button-view-job-${job.id}`}
+                >
+                  <Eye className="h-4 w-4 mr-1" />
+                  View Details
+                </Button>
+                <Button
+                  size="sm"
+                  data-testid={`button-apply-job-${job.id}`}
+                >
+                  <Send className="h-4 w-4 mr-1" />
+                  Apply Now
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
