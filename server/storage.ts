@@ -4544,24 +4544,29 @@ export class DatabaseStorage implements IStorage {
   async createManager(managerData: InsertCompanyManager): Promise<CompanyManager> {
     const hashedPassword = await bcrypt.hash(managerData.password, 10);
     
-    // Generate unique manager ID
-    const company = await this.getCompany(managerData.companyId);
-    if (!company) throw new Error('Company not found');
+    // Use provided uniqueId if available, otherwise generate one
+    let uniqueId = managerData.uniqueId;
     
-    let uniqueId = generateManagerUniqueId(company.name);
-    let attempts = 0;
-    const maxAttempts = 10;
-    
-    // Ensure uniqueness
-    while (attempts < maxAttempts) {
-      const existing = await db.select().from(companyManagers).where(eq(companyManagers.uniqueId, uniqueId));
-      if (existing.length === 0) break;
+    if (!uniqueId) {
+      // Generate unique manager ID only if not provided
+      const company = await this.getCompany(managerData.companyId);
+      if (!company) throw new Error('Company not found');
+      
       uniqueId = generateManagerUniqueId(company.name);
-      attempts++;
-    }
-    
-    if (attempts >= maxAttempts) {
-      throw new Error('Failed to generate unique manager ID');
+      let attempts = 0;
+      const maxAttempts = 10;
+      
+      // Ensure uniqueness
+      while (attempts < maxAttempts) {
+        const existing = await db.select().from(companyManagers).where(eq(companyManagers.uniqueId, uniqueId));
+        if (existing.length === 0) break;
+        uniqueId = generateManagerUniqueId(company.name);
+        attempts++;
+      }
+      
+      if (attempts >= maxAttempts) {
+        throw new Error('Failed to generate unique manager ID');
+      }
     }
     
     const [manager] = await db
