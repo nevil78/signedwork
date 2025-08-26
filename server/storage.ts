@@ -2903,9 +2903,6 @@ export class DatabaseStorage implements IStorage {
 
 
 
-  async updateEmployeeProfilePicture(id: string, profilePictureURL: string): Promise<void> {
-    await db.update(employees).set({ profilePhoto: profilePictureURL }).where(eq(employees.id, id));
-  }
 
   async markEmployeeEmailVerified(id: string): Promise<void> {
     await db.update(employees).set({ emailVerified: true, updatedAt: new Date() }).where(eq(employees.id, id));
@@ -4201,30 +4198,6 @@ export class DatabaseStorage implements IStorage {
     return updatedRole;
   }
   // Work verification methods
-  async createWorkEntry(data: any): Promise<any> {
-    try {
-      const [workEntry] = await db
-        .insert(workEntries)
-        .values({
-          id: this.generateId(),
-          employeeId: data.employeeId,
-          title: data.title,
-          description: data.description,
-          date: data.date,
-          hoursWorked: data.hoursWorked,
-          category: data.category,
-          status: data.status || 'pending',
-          createdAt: new Date(),
-          updatedAt: new Date()
-        })
-        .returning();
-
-      return workEntry;
-    } catch (error) {
-      console.error('Error creating work entry:', error);
-      throw new Error('Failed to create work entry');
-    }
-  }
 
   async getAllWorkEntries(userId: string): Promise<any[]> {
     try {

@@ -83,8 +83,8 @@ const ManagerDashboard = memo(function ManagerDashboard() {
     return null; // Will redirect via useEffect
   }
 
-  const pendingApprovals = workEntries?.filter((entry: any) => entry.approvalStatus === 'pending') || [];
-  const recentApprovals = workEntries?.filter((entry: any) => entry.approvalStatus === 'manager_approved').slice(0, 5) || [];
+  const pendingApprovals = Array.isArray(workEntries) ? workEntries.filter((entry: any) => entry.approvalStatus === 'pending') : [];
+  const recentApprovals = Array.isArray(workEntries) ? workEntries.filter((entry: any) => entry.approvalStatus === 'manager_approved').slice(0, 5) : [];
 
   return (
     <div className="min-h-screen bg-gray-50">

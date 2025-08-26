@@ -117,9 +117,9 @@ export default function CompanyWorkEntries() {
       employee: data.employee,
       entries: data.entries,
       totalCount: data.entries.length,
-      pendingCount: data.entries.filter(e => e.approvalStatus === 'pending_review').length,
-      approvedCount: data.entries.filter(e => e.approvalStatus === 'approved').length,
-      needsChangesCount: data.entries.filter(e => e.approvalStatus === 'needs_changes').length
+      pendingCount: data.entries.filter((e: any) => e.approvalStatus === 'pending_review').length,
+      approvedCount: data.entries.filter((e: any) => e.approvalStatus === 'approved').length,
+      needsChangesCount: data.entries.filter((e: any) => e.approvalStatus === 'needs_changes').length
     }));
   };
 
