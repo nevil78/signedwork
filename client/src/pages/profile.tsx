@@ -135,7 +135,7 @@ export default function Profile() {
   }
 
   if (!userResponse || (userResponse as any).userType !== "employee") {
-    window.location.href = "/";
+    setLocation("/");
     return null;
   }
 

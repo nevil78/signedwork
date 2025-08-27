@@ -558,7 +558,7 @@ export default function ProfessionalProfile() {
   const [addingCertification, setAddingCertification] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
 
   const { data: userResponse, isLoading } = useQuery<{
     user: Employee;
@@ -797,7 +797,7 @@ export default function ProfessionalProfile() {
       return await apiRequest("POST", "/api/auth/logout", {});
     },
     onSuccess: () => {
-      window.location.href = "/";
+      setLocation("/");
     },
   });
 
@@ -813,7 +813,7 @@ export default function ProfessionalProfile() {
   }
 
   if (!userResponse || userResponse.userType !== "employee") {
-    window.location.href = "/";
+    setLocation("/");
     return null;
   }
 

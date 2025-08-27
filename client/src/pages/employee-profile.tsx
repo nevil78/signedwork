@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
   Shield, LogOut, User, Edit, Plus, MapPin, Globe, Briefcase, 
@@ -34,6 +35,7 @@ export default function EmployeeProfile() {
   const [editingProfile, setEditingProfile] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [, setLocation] = useLocation();
 
   const { data: userResponse, isLoading } = useQuery({
     queryKey: ["/api/auth/user"],
@@ -50,7 +52,7 @@ export default function EmployeeProfile() {
       return await apiRequest("POST", "/api/auth/logout", {});
     },
     onSuccess: () => {
-      window.location.href = "/";
+      setLocation("/");
     },
   });
 
@@ -66,7 +68,7 @@ export default function EmployeeProfile() {
   }
 
   if (!userResponse || userResponse.userType !== "employee") {
-    window.location.href = "/";
+    setLocation("/");
     return null;
   }
 
