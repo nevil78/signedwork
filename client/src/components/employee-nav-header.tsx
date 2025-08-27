@@ -164,7 +164,7 @@ export default function EmployeeNavHeader({ employeeId, employeeName }: Employee
                 <TabsList className="h-full bg-transparent border-none rounded-none p-0">
                   <TabsTrigger 
                     value="dashboard" 
-                    className="data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 data-[state=active]:bg-blue-50 rounded-none h-full px-6 font-medium border border-transparent hover:border-gray-200"
+                    className="data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 rounded-none h-full px-4"
                   >
                     <BarChart3 className="h-4 w-4 mr-2" />
                     Dashboard
