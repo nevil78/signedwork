@@ -518,7 +518,7 @@ export default function ProfessionalWorkDiary() {
                                 {company.companyName || company.name}
                               </h3>
                               {/* Show verification badge if company has verification data */}
-                              {(company as any)?.panVerificationStatus && (
+                              {((company as any)?.panVerificationStatus || (company as any)?.cinVerificationStatus) && (
                                 <CompanyVerificationBadge 
                                   status={
                                     ((company as any).panVerificationStatus === "verified" || (company as any).cinVerificationStatus === "verified") 
