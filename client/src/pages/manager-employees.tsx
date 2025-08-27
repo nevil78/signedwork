@@ -136,9 +136,9 @@ const ManagerEmployees = memo(function ManagerEmployees() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {employees.map((employee: any) => (
                 <Card 
-                  key={employee.employeeId} 
+                  key={employee.id} 
                   className="hover:shadow-lg transition-shadow"
-                  data-testid={`employee-card-${employee.employeeId}`}
+                  data-testid={`employee-card-${employee.id}`}
                 >
                   <CardContent className="p-6">
                     <div className="flex items-start gap-4 mb-4">
@@ -213,16 +213,16 @@ const ManagerEmployees = memo(function ManagerEmployees() {
                         <Button 
                           size="sm" 
                           variant="outline"
-                          onClick={() => setLocation(`/professional-profile/${employee.employeeId}`)}
-                          data-testid={`view-profile-${employee.employeeId}`}
+                          onClick={() => setLocation(`/professional-profile/${employee.id}`)}
+                          data-testid={`view-profile-${employee.id}`}
                         >
                           View Profile
                         </Button>
                         <Button 
                           size="sm" 
                           variant="outline"
-                          onClick={() => setLocation(`/manager/work-entries?employee=${employee.employeeId}`)}
-                          data-testid={`view-work-${employee.employeeId}`}
+                          onClick={() => setLocation(`/manager/work-entries?employee=${employee.id}`)}
+                          data-testid={`view-work-${employee.id}`}
                         >
                           Work Entries
                         </Button>
