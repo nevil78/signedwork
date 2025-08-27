@@ -1467,7 +1467,8 @@ function JobCard({ job }: { job: JobListing & { company?: any } }) {
 
   // Get verification status - if either PAN or CIN is verified, company is verified
   const getCompanyVerificationStatus = () => {
-    const { panVerificationStatus, cinVerificationStatus } = job as any;
+    const panVerificationStatus = (job as any).panVerificationStatus;
+    const cinVerificationStatus = (job as any).cinVerificationStatus;
     
     // Company is verified if either PAN or CIN is verified
     if (panVerificationStatus === "verified" || cinVerificationStatus === "verified") {
@@ -1533,13 +1534,11 @@ function JobCard({ job }: { job: JobListing & { company?: any } }) {
                 <Building2 className="h-4 w-4 text-muted-foreground" />
                 <span className="font-medium text-gray-900">{(job as any).companyName || 'Company Name'}</span>
               </div>
-              {((job as any).panVerificationStatus || (job as any).cinVerificationStatus) && (
-                <CompanyVerificationBadge 
-                  status={getCompanyVerificationStatus()}
-                  size="sm"
-                  showText={false}
-                />
-              )}
+              <CompanyVerificationBadge 
+                status={getCompanyVerificationStatus()}
+                size="sm"
+                showText={false}
+              />
             </div>
 
             <div className="flex items-center gap-4 text-sm text-muted-foreground mb-3">

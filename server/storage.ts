@@ -1938,6 +1938,9 @@ export class DatabaseStorage implements IStorage {
         createdAt: companyEmployees.joinedAt,
         updatedAt: companyEmployees.joinedAt,
         isCurrent: sql<boolean>`${companyEmployees.status} = 'employed'`,
+        // Add company verification fields for badges
+        panVerificationStatus: companies.panVerificationStatus,
+        cinVerificationStatus: companies.cinVerificationStatus
       })
       .from(companyEmployees)
       .innerJoin(companies, eq(companyEmployees.companyId, companies.id))
