@@ -17,7 +17,8 @@ import {
   Crown,
   Shield,
   CheckCircle,
-  UserCog
+  UserCog,
+  UserCheck
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import CompanyNavHeader from "@/components/company-nav-header";
@@ -258,6 +259,29 @@ export default function CompanyHierarchySimple() {
       toast({ title: "Error", description: error.message || "Failed to update team manager", variant: "destructive" });
     }
   };
+
+  // Fix manager assignments mutation
+  const fixManagerAssignmentsMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest("POST", "/api/company/fix-team-assignments", {});
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/company/employees"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/company/managers"] });
+      toast({ 
+        title: "Manager Assignments Synced", 
+        description: `Fixed ${data.fixed || 0} employee assignments. Managers can now see all assigned employees.`,
+        variant: "default"
+      });
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Sync Failed", 
+        description: error.message || "Failed to sync manager assignments", 
+        variant: "destructive" 
+      });
+    }
+  });
 
   const handleCreateBranch = () => {
     if (newBranch.name.trim() && newBranch.location.trim()) {
@@ -569,10 +593,23 @@ export default function CompanyHierarchySimple() {
                   </CardTitle>
                   <CardDescription>Manager accounts and credentials</CardDescription>
                 </div>
-                <Button onClick={() => setIsCreateManagerOpen(true)} size="sm" className="shrink-0">
-                  <Plus className="w-4 h-4 sm:mr-2" />
-                  <span className="hidden sm:inline">Add</span>
-                </Button>
+                <div className="flex gap-2">
+                  <Button 
+                    onClick={() => fixManagerAssignmentsMutation.mutate()}
+                    disabled={fixManagerAssignmentsMutation.isPending}
+                    size="sm" 
+                    variant="outline"
+                    className="shrink-0"
+                    title="Fix employee-manager assignments for existing team members"
+                  >
+                    <UserCheck className="w-4 h-4 sm:mr-2" />
+                    <span className="hidden sm:inline">{fixManagerAssignmentsMutation.isPending ? 'Syncing...' : 'Sync'}</span>
+                  </Button>
+                  <Button onClick={() => setIsCreateManagerOpen(true)} size="sm" className="shrink-0">
+                    <Plus className="w-4 h-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Add</span>
+                  </Button>
+                </div>
               </div>
             </CardHeader>
             <CardContent>
