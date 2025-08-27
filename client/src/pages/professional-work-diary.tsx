@@ -214,16 +214,6 @@ export default function ProfessionalWorkDiary() {
     refetchInterval: 30000, // Auto-refresh every 30 seconds to catch team changes
   });
 
-  // Debug logging for team selection
-  useEffect(() => {
-    console.log('Team selection debug:', {
-      selectedCompany,
-      employeeTeams,
-      teamsLoading,
-      teamsError,
-      dialogOpen: isAddDialogOpen
-    });
-  }, [selectedCompany, employeeTeams, teamsLoading, teamsError, isAddDialogOpen]);
 
   // Update form when selectedCompany changes
   useEffect(() => {
