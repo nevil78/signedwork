@@ -205,11 +205,24 @@ export default function ProfessionalWorkDiary() {
   });
 
   // Fetch employee teams for team selection
-  const { data: employeeTeams } = useQuery({
+  const { data: employeeTeams, isLoading: teamsLoading, error: teamsError } = useQuery({
     queryKey: ["/api/employee/teams", selectedCompany],
     queryFn: () => apiRequest("GET", `/api/employee/teams?companyId=${selectedCompany}`),
     enabled: !!selectedCompany,
+    refetchOnWindowFocus: false, // Prevent unnecessary refetches
+    staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
   });
+
+  // Debug logging for team selection
+  useEffect(() => {
+    console.log('Team selection debug:', {
+      selectedCompany,
+      employeeTeams,
+      teamsLoading,
+      teamsError,
+      dialogOpen: isAddDialogOpen
+    });
+  }, [selectedCompany, employeeTeams, teamsLoading, teamsError, isAddDialogOpen]);
 
   // Update form when selectedCompany changes
   useEffect(() => {
@@ -1230,14 +1243,20 @@ export default function ProfessionalWorkDiary() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {employeeTeams && employeeTeams.length > 0 ? (
+                          {teamsLoading ? (
+                            <SelectItem value="loading" disabled>Loading teams...</SelectItem>
+                          ) : teamsError ? (
+                            <SelectItem value="error" disabled>Error loading teams</SelectItem>
+                          ) : employeeTeams && employeeTeams.length > 0 ? (
                             employeeTeams.map((team: any) => (
                               <SelectItem key={team.id} value={team.id}>
-                                {team.name}
+                                {team.name} {team.teamManagerId ? '(Has Manager)' : '(No Manager)'}
                               </SelectItem>
                             ))
                           ) : (
-                            <SelectItem value="no-teams" disabled>No teams available</SelectItem>
+                            <SelectItem value="no-teams" disabled>
+                              {selectedCompany ? "No teams available for this company" : "Please wait, loading teams..."}
+                            </SelectItem>
                           )}
                         </SelectContent>
                       </Select>
