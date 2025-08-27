@@ -1465,34 +1465,6 @@ function JobCard({ job }: { job: JobListing & { company?: any } }) {
   // Check if job is saved (simplified - would need actual saved jobs list)
   const isSaved = false; // TODO: Implement proper saved state
 
-  // Get verification status - if either PAN or CIN is verified, company is verified
-  const getCompanyVerificationStatus = () => {
-    const panVerificationStatus = (job as any).panVerificationStatus;
-    const cinVerificationStatus = (job as any).cinVerificationStatus;
-    
-    console.log('Job verification data:', {
-      company: (job as any).companyName,
-      panStatus: panVerificationStatus,
-      cinStatus: cinVerificationStatus
-    });
-    
-    // Company is verified if either PAN or CIN is verified
-    if (panVerificationStatus === "verified" || cinVerificationStatus === "verified") {
-      return "verified";
-    }
-    
-    // If either is pending, show pending
-    if (panVerificationStatus === "pending" || cinVerificationStatus === "pending") {
-      return "pending";
-    }
-    
-    // If either is rejected, show rejected
-    if (panVerificationStatus === "rejected" || cinVerificationStatus === "rejected") {
-      return "rejected";
-    }
-    
-    return "unverified";
-  };
 
   const formatSalary = (salaryRange?: string) => {
     if (!salaryRange) return "Salary not disclosed";
@@ -1541,18 +1513,15 @@ function JobCard({ job }: { job: JobListing & { company?: any } }) {
                 <span className="font-medium text-gray-900">{(job as any).companyName || 'Company Name'}</span>
               </div>
               
-              {/* TEST: Always show a verified badge for debugging */}
-              <CompanyVerificationBadge 
-                status="verified"
-                size="sm"
-                showText={false}
-              />
-
-              {/* Debug: Show verification status */}
-              <span className="text-xs bg-yellow-100 px-2 py-1 rounded ml-2">
-                PAN: {(job as any)?.panVerificationStatus || 'none'} | 
-                CIN: {(job as any)?.cinVerificationStatus || 'none'}
-              </span>
+              {/* Show verification badge if PAN OR CIN is verified */}
+              {((job as any)?.panVerificationStatus === "verified" || (job as any)?.cinVerificationStatus === "verified") && (
+                <div className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1">
+                  <svg className="w-3 h-3" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                  Verified
+                </div>
+              )}
             </div>
 
             <div className="flex items-center gap-4 text-sm text-muted-foreground mb-3">
