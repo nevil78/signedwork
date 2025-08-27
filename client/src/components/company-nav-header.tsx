@@ -51,7 +51,7 @@ export default function CompanyNavHeader({ companyId, companyName }: CompanyNavH
       return await apiRequest("POST", "/api/auth/logout", {});
     },
     onSuccess: () => {
-      window.location.href = "/";
+      setLocation("/");
     },
     onError: (error: any) => {
       toast({

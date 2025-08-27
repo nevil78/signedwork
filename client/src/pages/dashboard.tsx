@@ -4,9 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { useLocation } from "wouter";
 
 export default function Dashboard() {
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   
   const { data: userResponse, isLoading } = useQuery({
     queryKey: ["/api/auth/user"],
@@ -18,7 +20,7 @@ export default function Dashboard() {
       return await apiRequest("POST", "/api/auth/logout", {});
     },
     onSuccess: () => {
-      window.location.href = "/";
+      setLocation("/");
     },
     onError: (error: any) => {
       toast({
@@ -41,19 +43,19 @@ export default function Dashboard() {
   }
 
   if (!userResponse) {
-    window.location.href = "/";
+    setLocation("/");
     return null;
   }
 
   const { user, userType } = userResponse as any;
   const isEmployee = userType === "employee";
   
-  // Redirect to appropriate dashboard
+  // Secure redirect to appropriate dashboard
   if (isEmployee) {
-    window.location.href = "/summary";
+    setLocation("/summary");
     return null;
   } else {
-    window.location.href = "/company-dashboard";
+    setLocation("/company-dashboard");
     return null;
   }
 

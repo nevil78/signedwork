@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -60,6 +61,7 @@ const priorities = [
 
 export default function FeedbackPage() {
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const [step, setStep] = useState(1);
   const [selectedType, setSelectedType] = useState<string>("");
   const [showRating, setShowRating] = useState(false);
@@ -163,7 +165,7 @@ export default function FeedbackPage() {
                       if (window.history.length > 1) {
                         window.history.back();
                       } else {
-                        window.location.href = '/';
+                        setLocation('/');
                       }
                     }}
                     className="flex items-center font-medium"
@@ -205,7 +207,7 @@ export default function FeedbackPage() {
                 if (window.history.length > 1) {
                   window.history.back();
                 } else {
-                  window.location.href = '/';
+                  setLocation('/');
                 }
               }}
               className="flex items-center text-gray-700 hover:text-gray-900 hover:bg-gray-50 border-gray-300 font-medium"

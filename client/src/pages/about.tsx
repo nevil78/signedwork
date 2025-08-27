@@ -1,10 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { CheckCircle, Users, Building2, UserCheck, Shield, Star, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import signedworkLogo from "@assets/Signed-Logo_1755167773532.png";
 
 export default function AboutPage() {
+  const [, setLocation] = useLocation();
+  
   // Check if user is authenticated
   const { data: authUser } = useQuery({
     queryKey: ["/api/auth/user"],
@@ -187,7 +189,7 @@ export default function AboutPage() {
           {/* CTA Button */}
           <div className="flex justify-center">
             <Button
-              onClick={() => window.location.href = authUser ? "/dashboard" : "/"}
+              onClick={() => setLocation(authUser ? "/dashboard" : "/")}
               className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-semibold flex items-center"
               data-testid="button-get-started"
             >

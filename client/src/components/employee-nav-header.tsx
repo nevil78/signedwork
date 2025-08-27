@@ -103,7 +103,7 @@ export default function EmployeeNavHeader({ employeeId, employeeName }: Employee
       return await apiRequest("POST", "/api/auth/logout", {});
     },
     onSuccess: () => {
-      window.location.href = "/";
+      setLocation("/");
     },
     onError: (error: any) => {
       toast({

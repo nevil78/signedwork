@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Plus, Award, Briefcase, GraduationCap, FolderOpen, MessageSquare, User, Calendar, MapPin, Globe, Building, ExternalLink, Trash2, Camera, Upload, Edit2, Phone, Heart, Github, Linkedin, Twitter, Folder, Languages, Trophy, Home, Flag, BookOpen } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -44,6 +44,7 @@ export default function Profile() {
   const [activeSection, setActiveSection] = useState<ProfileSection>("overview");
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [, setLocation] = useLocation();
   
   // Fetch user data
   const { data: userResponse, isLoading: userLoading } = useQuery({
@@ -75,7 +76,7 @@ export default function Profile() {
     },
     onSuccess: () => {
       queryClient.clear();
-      window.location.href = "/";
+      setLocation("/");
     },
     onError: () => {
       toast({

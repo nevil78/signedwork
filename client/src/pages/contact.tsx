@@ -11,7 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Mail, Send, CheckCircle } from "lucide-react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import signedworkLogo from "@assets/Signed-Logo_1755167773532.png";
 
 const contactSchema = z.object({
@@ -25,6 +25,7 @@ type ContactFormData = z.infer<typeof contactSchema>;
 export default function ContactPage() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
 
   // Check if user is authenticated
   const { data: authUser } = useQuery({
@@ -224,7 +225,7 @@ export default function ContactPage() {
                     Send Another Message
                   </Button>
                   <Button
-                    onClick={() => window.location.href = getHomeUrl()}
+                    onClick={() => setLocation(getHomeUrl())}
                     data-testid="button-back-home"
                   >
                     Back to Home

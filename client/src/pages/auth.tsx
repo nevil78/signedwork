@@ -95,6 +95,7 @@ export default function AuthPage() {
   // Check URL parameters for initial view
   const urlParams = new URLSearchParams(window.location.search);
   const viewParam = urlParams.get('view') as AuthView | null;
+  const [, setLocation] = useLocation();
   
   const [currentView, setCurrentView] = useState<AuthView>(viewParam || "login");
   const [loginError, setLoginError] = useState<boolean>(false);
@@ -324,7 +325,7 @@ export default function AuthPage() {
       
       // Direct redirect to employee dashboard after successful signup
       setTimeout(() => {
-        window.location.href = "/summary";
+        setLocation("/summary");
       }, 1000);
     },
     onError: (error: any) => {
@@ -378,10 +379,10 @@ export default function AuthPage() {
       // Redirect based on user type
       if (response.userType === "employee") {
         console.log("Redirecting to employee summary dashboard");
-        window.location.href = "/summary";
+        setLocation("/summary");
       } else {
         console.log("Redirecting to company dashboard");
-        window.location.href = "/company-dashboard";
+        setLocation("/company-dashboard");
       }
     },
     onError: (error: any) => {
