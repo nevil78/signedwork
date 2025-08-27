@@ -29,6 +29,7 @@ import { z } from 'zod';
 import EmployeeNavHeader from '@/components/employee-nav-header';
 import { useSocket } from '@/hooks/useSocket';
 import { insertWorkEntrySchema } from '@shared/schema';
+import { CompanyVerificationBadge } from '@/components/CompanyVerificationBadge';
 
 type WorkEntryFormData = z.infer<typeof insertWorkEntrySchema>;
 
@@ -512,9 +513,27 @@ export default function ProfessionalWorkDiary() {
                             </div>
                             
                             {/* Company Name */}
-                            <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">
-                              {company.companyName || company.name}
-                            </h3>
+                            <div className="flex items-center gap-2 mb-2">
+                              <h3 className="text-xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors">
+                                {company.companyName || company.name}
+                              </h3>
+                              {/* Show verification badge if company has verification data */}
+                              {(company as any)?.panVerificationStatus && (
+                                <CompanyVerificationBadge 
+                                  status={
+                                    ((company as any).panVerificationStatus === "verified" || (company as any).cinVerificationStatus === "verified") 
+                                      ? "verified" 
+                                      : ((company as any).panVerificationStatus === "pending" || (company as any).cinVerificationStatus === "pending")
+                                      ? "pending"
+                                      : ((company as any).panVerificationStatus === "rejected" || (company as any).cinVerificationStatus === "rejected")
+                                      ? "rejected"
+                                      : "unverified"
+                                  }
+                                  size="sm"
+                                  showText={false}
+                                />
+                              )}
+                            </div>
                             
                             {/* Company Details */}
                             <div className="space-y-2 mb-4">

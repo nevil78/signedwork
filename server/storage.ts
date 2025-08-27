@@ -1978,7 +1978,10 @@ export class DatabaseStorage implements IStorage {
       applicationsCount: jobListings.applicationsCount,
       createdAt: jobListings.createdAt,
       updatedAt: jobListings.updatedAt,
-      companyName: companies.name
+      companyName: companies.name,
+      // Add company verification fields for badges
+      panVerificationStatus: companies.panVerificationStatus,
+      cinVerificationStatus: companies.cinVerificationStatus
     })
     .from(jobListings)
     .innerJoin(companies, eq(jobListings.companyId, companies.id));
@@ -2035,7 +2038,10 @@ export class DatabaseStorage implements IStorage {
       applicationsCount: jobListings.applicationsCount,
       createdAt: jobListings.createdAt,
       updatedAt: jobListings.updatedAt,
-      companyName: companies.name
+      companyName: companies.name,
+      // Add company verification fields for badges
+      panVerificationStatus: companies.panVerificationStatus,
+      cinVerificationStatus: companies.cinVerificationStatus
     })
     .from(jobListings)
     .innerJoin(companies, eq(jobListings.companyId, companies.id))
