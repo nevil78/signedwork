@@ -1540,11 +1540,19 @@ function JobCard({ job }: { job: JobListing & { company?: any } }) {
                 <Building2 className="h-4 w-4 text-muted-foreground" />
                 <span className="font-medium text-gray-900">{(job as any).companyName || 'Company Name'}</span>
               </div>
+              
+              {/* TEST: Always show a verified badge for debugging */}
               <CompanyVerificationBadge 
-                status={getCompanyVerificationStatus()}
+                status="verified"
                 size="sm"
                 showText={false}
               />
+
+              {/* Debug: Show verification status */}
+              <span className="text-xs bg-yellow-100 px-2 py-1 rounded ml-2">
+                PAN: {(job as any)?.panVerificationStatus || 'none'} | 
+                CIN: {(job as any)?.cinVerificationStatus || 'none'}
+              </span>
             </div>
 
             <div className="flex items-center gap-4 text-sm text-muted-foreground mb-3">

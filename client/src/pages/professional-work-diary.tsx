@@ -527,22 +527,19 @@ export default function ProfessionalWorkDiary() {
                               <h3 className="text-xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors">
                                 {company.companyName || company.name}
                               </h3>
-                              {/* Show verification badge if company has verification data */}
-                              {((company as any)?.panVerificationStatus || (company as any)?.cinVerificationStatus) && (
-                                <CompanyVerificationBadge 
-                                  status={
-                                    ((company as any).panVerificationStatus === "verified" || (company as any).cinVerificationStatus === "verified") 
-                                      ? "verified" 
-                                      : ((company as any).panVerificationStatus === "pending" || (company as any).cinVerificationStatus === "pending")
-                                      ? "pending"
-                                      : ((company as any).panVerificationStatus === "rejected" || (company as any).cinVerificationStatus === "rejected")
-                                      ? "rejected"
-                                      : "unverified"
-                                  }
-                                  size="sm"
-                                  showText={false}
-                                />
-                              )}
+                              
+                              {/* TEST: Always show a verified badge for debugging */}
+                              <CompanyVerificationBadge 
+                                status="verified"
+                                size="sm" 
+                                showText={false}
+                              />
+
+                              {/* Debug: Show verification status */}
+                              <span className="text-xs bg-yellow-100 px-2 py-1 rounded">
+                                PAN: {(company as any)?.panVerificationStatus || 'none'} | 
+                                CIN: {(company as any)?.cinVerificationStatus || 'none'}
+                              </span>
                             </div>
                             
                             {/* Company Details */}
