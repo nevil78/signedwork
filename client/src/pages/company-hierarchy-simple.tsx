@@ -211,8 +211,13 @@ export default function CompanyHierarchySimple() {
     try {
       await apiRequest("DELETE", `/api/company/teams/${teamId}/members/${employeeId}`);
       
+      // Invalidate all relevant caches
       queryClient.invalidateQueries({ queryKey: ["/api/company/employees"] });
       queryClient.invalidateQueries({ queryKey: ["/api/company/teams"] });
+      // CRITICAL: Invalidate employee teams cache for work diary
+      queryClient.invalidateQueries({ queryKey: ["/api/employee/teams"] });
+      queryClient.invalidateQueries({ queryKey: ["teams"] }); // Any other team-related queries
+      
       toast({ title: "Success", description: "Employee removed from team" });
     } catch (error: any) {
       toast({ title: "Error", description: error.message || "Failed to remove employee from team", variant: "destructive" });
@@ -253,6 +258,8 @@ export default function CompanyHierarchySimple() {
       }
       
       queryClient.invalidateQueries({ queryKey: ["/api/company/employees"] });
+      // CRITICAL: Invalidate employee teams cache for work diary
+      queryClient.invalidateQueries({ queryKey: ["/api/employee/teams"] });
       toast({ title: "Success", description: "Team manager updated successfully" });
     } catch (error: any) {
       toast({ title: "Error", description: error.message || "Failed to update team manager", variant: "destructive" });
@@ -297,6 +304,8 @@ export default function CompanyHierarchySimple() {
         queryClient.invalidateQueries({ queryKey: ["/api/company/employees"] });
         queryClient.invalidateQueries({ queryKey: ["/api/company/teams"] });
         queryClient.invalidateQueries({ queryKey: ["/api/company/managers"] });
+        // CRITICAL: Invalidate employee teams cache for work diary
+        queryClient.invalidateQueries({ queryKey: ["/api/employee/teams"] });
         
         toast({ title: "Success", description: `Added ${selectedEmployees.length} members to ${selectedTeam.name}` });
         setIsAddMembersOpen(false);

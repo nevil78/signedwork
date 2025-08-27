@@ -209,8 +209,9 @@ export default function ProfessionalWorkDiary() {
     queryKey: ["/api/employee/teams", selectedCompany],
     queryFn: () => apiRequest("GET", `/api/employee/teams?companyId=${selectedCompany}`),
     enabled: !!selectedCompany,
-    refetchOnWindowFocus: false, // Prevent unnecessary refetches
-    staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
+    refetchOnWindowFocus: true, // Refetch when window gains focus
+    staleTime: 0, // Always check for fresh data to prevent security issues
+    refetchInterval: 30000, // Auto-refresh every 30 seconds to catch team changes
   });
 
   // Debug logging for team selection
