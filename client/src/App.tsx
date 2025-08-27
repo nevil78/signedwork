@@ -4,6 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { AuthenticatedRedirect } from "@/components/AuthenticatedRedirect";
 import { useSessionHeartbeat } from "@/hooks/useSessionHeartbeat";
 import AuthPage from "@/pages/auth";
 import { ForgotPasswordPage } from "@/pages/forgot-password";
@@ -120,8 +121,8 @@ function Router() {
       <Route path="/manager/work-entries" component={() => <ProtectedRoute requireUserType="manager"><ManagerWorkEntries /></ProtectedRoute>} />
       <Route path="/manager/employees" component={() => <ProtectedRoute requireUserType="manager"><ManagerEmployees /></ProtectedRoute>} />
       
-      {/* Legacy redirect */}
-      <Route path="/employee-profile" component={() => { window.location.href = "/profile"; return null; }} />
+      {/* Legacy redirect - now protected */}
+      <Route path="/employee-profile" component={() => <ProtectedRoute requireUserType="employee"><AuthenticatedRedirect to="/profile" requireUserType="employee" /></ProtectedRoute>} />
 
       <Route component={NotFound} />
     </Switch>

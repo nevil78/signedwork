@@ -1,5 +1,6 @@
 import { useAuth } from "@/hooks/useAuth";
 import { useEffect } from "react";
+import { useLocation } from "wouter";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -13,20 +14,21 @@ export function ProtectedRoute({
   fallbackPath = "/" 
 }: ProtectedRouteProps) {
   const { user, userType, isLoading, isAuthenticated, error } = useAuth();
+  const [, setLocation] = useLocation();
 
   useEffect(() => {
     // If there's an authentication error or user is not authenticated, redirect
     if (!isLoading && (!isAuthenticated || error)) {
-      window.location.href = fallbackPath;
+      setLocation(fallbackPath);
       return;
     }
 
     // If a specific user type is required and user doesn't match, redirect
     if (!isLoading && isAuthenticated && requireUserType && userType !== requireUserType) {
-      window.location.href = fallbackPath;
+      setLocation(fallbackPath);
       return;
     }
-  }, [isLoading, isAuthenticated, userType, requireUserType, error, fallbackPath]);
+  }, [isLoading, isAuthenticated, userType, requireUserType, error, fallbackPath, setLocation]);
 
   // Show loading state while checking authentication
   if (isLoading) {
