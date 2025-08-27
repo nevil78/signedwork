@@ -736,6 +736,28 @@ export default function CompanyHierarchy() {
     }
   });
 
+  const fixManagerAssignmentsMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest("POST", "/api/company/fix-team-assignments", {});
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/company/employees"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/manager/employees"] });
+      toast({ 
+        title: "Manager Assignments Synced", 
+        description: `Fixed ${data.fixed || 0} employee assignments. Manager pages will now show assigned employees.`,
+        variant: "default"
+      });
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Sync Failed", 
+        description: error.message || "Failed to sync manager assignments", 
+        variant: "destructive" 
+      });
+    }
+  });
+
   const toggleManagerStatusMutation = useMutation({
     mutationFn: async ({ managerId, isActive }: { managerId: string; isActive: boolean }) => {
       return apiRequest("PATCH", `/api/company/managers/${managerId}/status`, { isActive });
@@ -1638,6 +1660,19 @@ export default function CompanyHierarchy() {
           >
             <Activity className="h-3 w-3" />
             Refresh
+          </Button>
+
+          {/* Sync Manager Assignments */}
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => fixManagerAssignmentsMutation.mutate()}
+            disabled={fixManagerAssignmentsMutation.isPending}
+            className="flex items-center gap-2"
+            title="Fix employee-manager assignments for existing team members"
+          >
+            <UserCheck className="h-3 w-3" />
+            {fixManagerAssignmentsMutation.isPending ? 'Syncing...' : 'Sync Managers'}
           </Button>
         </div>
       </div>

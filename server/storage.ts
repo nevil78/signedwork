@@ -4338,9 +4338,34 @@ export class DatabaseStorage implements IStorage {
     branchId?: string;
     teamId?: string;
   }): Promise<CompanyEmployee> {
+    // If teamId is being updated, automatically set the assignedManagerId
+    const finalUpdates = { ...updates };
+    
+    if (updates.teamId !== undefined) {
+      if (updates.teamId === null || updates.teamId === "") {
+        // Employee removed from team - clear manager assignment
+        finalUpdates.assignedManagerId = null;
+      } else {
+        // Employee assigned to team - get team's manager
+        try {
+          const [team] = await db
+            .select({ teamManagerId: companyTeams.teamManagerId })
+            .from(companyTeams)
+            .where(eq(companyTeams.id, updates.teamId));
+          
+          if (team?.teamManagerId) {
+            finalUpdates.assignedManagerId = team.teamManagerId;
+          }
+        } catch (error) {
+          console.error("Error getting team manager for assignment:", error);
+          // Continue with update even if manager lookup fails
+        }
+      }
+    }
+    
     const [updatedRole] = await db
       .update(companyEmployees)
-      .set(updates)
+      .set(finalUpdates)
       .where(and(
         eq(companyEmployees.employeeId, employeeId),
         eq(companyEmployees.companyId, companyId)
