@@ -45,6 +45,9 @@ const ManagerEmployees = memo(function ManagerEmployees() {
     enabled: isAuthenticated,
   });
 
+  // Debug: Log the actual employee data structure
+  console.log("Manager employees data:", employees);
+
   if (isLoading || employeesLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -108,13 +111,13 @@ const ManagerEmployees = memo(function ManagerEmployees() {
               </div>
               <div className="text-center">
                 <p className="text-2xl font-bold text-green-600">
-                  {employees?.filter((emp: any) => emp.isCurrent)?.length || 0}
+                  {employees?.filter((emp: any) => emp.status === 'employed' || emp.leftAt === null)?.length || 0}
                 </p>
                 <p className="text-sm text-gray-600">Active Members</p>
               </div>
               <div className="text-center">
                 <p className="text-2xl font-bold text-orange-600">
-                  {employees?.filter((emp: any) => !emp.isCurrent)?.length || 0}
+                  {employees?.filter((emp: any) => emp.status === 'left' || emp.leftAt !== null)?.length || 0}
                 </p>
                 <p className="text-sm text-gray-600">Ex-Employees</p>
               </div>
@@ -150,34 +153,34 @@ const ManagerEmployees = memo(function ManagerEmployees() {
                       </Avatar>
                       <div className="flex-1 min-w-0">
                         <h3 className="font-semibold text-gray-900 truncate">
-                          {employee.firstName} {employee.lastName}
+                          {employee.employee?.firstName || employee.firstName || 'Unknown'} {employee.employee?.lastName || employee.lastName || 'User'}
                         </h3>
                         <p className="text-sm text-gray-600 truncate">
                           {employee.position || 'No position set'}
                         </p>
                         <div className="mt-2">
                           <Badge 
-                            variant={employee.isCurrent ? "default" : "secondary"}
-                            className={employee.isCurrent ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-600"}
+                            variant={(employee.status === 'employed' || employee.leftAt === null) ? "default" : "secondary"}
+                            className={(employee.status === 'employed' || employee.leftAt === null) ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-600"}
                           >
-                            {employee.isCurrent ? 'Active' : 'Ex-Employee'}
+                            {(employee.status === 'employed' || employee.leftAt === null) ? 'Active' : 'Ex-Employee'}
                           </Badge>
                         </div>
                       </div>
                     </div>
 
                     <div className="space-y-3">
-                      {employee.email && (
+                      {(employee.employee?.email || employee.email) && (
                         <div className="flex items-center gap-2 text-sm text-gray-600">
                           <Mail className="h-4 w-4" />
-                          <span className="truncate">{employee.email}</span>
+                          <span className="truncate">{employee.employee?.email || employee.email}</span>
                         </div>
                       )}
                       
-                      {employee.phone && (
+                      {(employee.employee?.phone || employee.phone) && (
                         <div className="flex items-center gap-2 text-sm text-gray-600">
                           <Phone className="h-4 w-4" />
-                          <span>{employee.phone}</span>
+                          <span>{employee.employee?.phone || employee.phone}</span>
                         </div>
                       )}
                       
