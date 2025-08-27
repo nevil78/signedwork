@@ -27,8 +27,8 @@ import CompanyRecruiterPage from "@/pages/company-recruiter";
 import CompanySharedDocumentsPage from "@/pages/company-shared-documents";
 import CompanyEmployeeWorkDiary from "@/pages/company-employee-work-diary";
 import CompanyEmployees from "@/pages/company-employees";
+import CompanyHierarchy from "@/pages/company-hierarchy";
 import CompanyHierarchySimple from "@/pages/company-hierarchy-simple";
-import CompanyHierarchyTest from "@/pages/company-hierarchy-test";
 import WorkVerification from "@/pages/work-verification";
 import { EmployeeSummaryDashboard } from "@/pages/employee-summary-dashboard";
 import AdminLogin from "@/pages/admin-login";
@@ -89,8 +89,8 @@ function Router() {
       <Route path="/company-shared-documents/:applicationId" component={CompanySharedDocumentsPage} />
       <Route path="/company-employees" component={CompanyEmployees} />
 {/* /company-managers route removed - functionality consolidated into /company-hierarchy */}
-      <Route path="/company-hierarchy" component={CompanyHierarchySimple} />
-      <Route path="/company-hierarchy-test" component={CompanyHierarchyTest} />
+      <Route path="/company-hierarchy" component={CompanyHierarchy} />
+      <Route path="/company-hierarchy-simple" component={CompanyHierarchySimple} />
       <Route path="/work-verification" component={WorkVerification} />
       <Route path="/company-employee/:employeeId" component={CompanyEmployeeProfile} />
       <Route path="/employee-work-diary/:employeeId" component={CompanyEmployeeWorkDiary} />
