@@ -45,8 +45,6 @@ const ManagerEmployees = memo(function ManagerEmployees() {
     enabled: isAuthenticated,
   });
 
-  // Debug: Log the actual employee data structure
-  console.log("Manager employees data:", employees);
 
   if (isLoading || employeesLoading) {
     return (
