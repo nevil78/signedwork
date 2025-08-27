@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
+  <!-- Background circle -->
+  <circle cx="24" cy="24" r="22" fill="#2563eb" stroke="#1d4ed8" stroke-width="2"/>
+  
+  <!-- Signature/Document icon -->
+  <rect x="12" y="14" width="24" height="20" rx="2" fill="white"/>
+  
+  <!-- Signature line -->
+  <path d="M16 26 C18 24, 20 28, 22 26 C24 24, 26 28, 28 26 C30 24, 32 26, 32 26" 
+        stroke="#2563eb" stroke-width="2" fill="none" stroke-linecap="round"/>
+  
+  <!-- Document lines -->
+  <line x1="16" y1="19" x2="32" y2="19" stroke="#e5e7eb" stroke-width="1"/>
+  <line x1="16" y1="22" x2="24" y2="22" stroke="#e5e7eb" stroke-width="1"/>
+  <line x1="16" y1="30" x2="28" y2="30" stroke="#e5e7eb" stroke-width="1"/>
+</svg>
