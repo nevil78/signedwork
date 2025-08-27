@@ -3,6 +3,7 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { useSessionHeartbeat } from "@/hooks/useSessionHeartbeat";
 import AuthPage from "@/pages/auth";
 import { ForgotPasswordPage } from "@/pages/forgot-password";
@@ -64,6 +65,7 @@ import NotFound from "@/pages/not-found";
 function Router() {
   return (
     <Switch>
+      {/* Public Routes - No authentication required */}
       <Route path="/" component={AuthPage} />
       <Route path="/auth" component={AuthPage} />
       <Route path="/forgot-password" component={ForgotPasswordPage} />
@@ -73,38 +75,6 @@ function Router() {
       <Route path="/email-otp-verification" component={EmailOTPVerificationPage} />
       <Route path="/verify-email-change" component={VerifyEmailChangePage} />
       <Route path="/email-verification" component={EmailVerificationPage} />
-      <Route path="/dashboard" component={Dashboard} />
-      <Route path="/profile" component={ProfessionalProfile} />
-      <Route path="/summary" component={EmployeeSummaryDashboard} />
-      <Route path="/work-diary" component={ProfessionalWorkDiary} />
-      <Route path="/work-diary/:companyId" component={WorkDiaryCompany} />
-      <Route path="/legacy-profile" component={Profile} />
-      <Route path="/job-discovery" component={JobDiscoveryPage} />
-      <Route path="/company-dashboard" component={CompanyDashboard} />
-      <Route path="/company-settings" component={CompanySettings} />
-      <Route path="/company-work-entries" component={CompanyWorkEntries} />
-      <Route path="/company-jobs" component={CompanyJobsPage} />
-      <Route path="/company-recruiter" component={CompanyRecruiterPage} />
-      <Route path="/company-shared-documents/:applicationId" component={CompanySharedDocumentsPage} />
-      <Route path="/company-employees" component={CompanyEmployees} />
-{/* /company-managers route removed - functionality consolidated into /company-hierarchy */}
-      <Route path="/company-hierarchy" component={CompanyHierarchySimple} />
-      <Route path="/work-verification" component={WorkVerification} />
-      <Route path="/company-employee/:employeeId" component={CompanyEmployeeProfile} />
-      <Route path="/employee-work-diary/:employeeId" component={CompanyEmployeeWorkDiary} />
-      <Route path="/employee-profile" component={() => { window.location.href = "/profile"; return null; }} />
-      <Route path="/admin/login" component={AdminLogin} />
-      <Route path="/admin/dashboard" component={AdminDashboard} />
-      <Route path="/admin/verifications" component={AdminVerifications} />
-      <Route path="/admin/feedback" component={AdminFeedback} />
-      <Route path="/admin/setup" component={AdminSetup} />
-      
-      {/* Manager Portal Routes */}
-      <Route path="/manager/login" component={ManagerLogin} />
-      <Route path="/manager/dashboard" component={ManagerDashboard} />
-      <Route path="/manager/work-entries" component={ManagerWorkEntries} />
-      <Route path="/manager/employees" component={ManagerEmployees} />
-      
       <Route path="/feedback" component={FeedbackPage} />
       <Route path="/contact" component={ContactPage} />
       <Route path="/about" component={AboutPage} />
@@ -112,6 +82,46 @@ function Router() {
       <Route path="/help" component={HelpSettingsPage} />
       <Route path="/terms" component={() => <Suspense fallback={<PageLoader />}><TermsOfService /></Suspense>} />
       <Route path="/privacy" component={() => <Suspense fallback={<PageLoader />}><PrivacyPolicy /></Suspense>} />
+      
+      {/* Protected Routes - Authentication required */}
+      <Route path="/dashboard" component={() => <ProtectedRoute><Dashboard /></ProtectedRoute>} />
+      
+      {/* Employee Protected Routes */}
+      <Route path="/profile" component={() => <ProtectedRoute requireUserType="employee"><ProfessionalProfile /></ProtectedRoute>} />
+      <Route path="/summary" component={() => <ProtectedRoute requireUserType="employee"><EmployeeSummaryDashboard /></ProtectedRoute>} />
+      <Route path="/work-diary" component={() => <ProtectedRoute requireUserType="employee"><ProfessionalWorkDiary /></ProtectedRoute>} />
+      <Route path="/work-diary/:companyId" component={() => <ProtectedRoute requireUserType="employee"><WorkDiaryCompany /></ProtectedRoute>} />
+      <Route path="/legacy-profile" component={() => <ProtectedRoute requireUserType="employee"><Profile /></ProtectedRoute>} />
+      <Route path="/job-discovery" component={() => <ProtectedRoute requireUserType="employee"><JobDiscoveryPage /></ProtectedRoute>} />
+      
+      {/* Company Protected Routes */}
+      <Route path="/company-dashboard" component={() => <ProtectedRoute requireUserType="company"><CompanyDashboard /></ProtectedRoute>} />
+      <Route path="/company-settings" component={() => <ProtectedRoute requireUserType="company"><CompanySettings /></ProtectedRoute>} />
+      <Route path="/company-work-entries" component={() => <ProtectedRoute requireUserType="company"><CompanyWorkEntries /></ProtectedRoute>} />
+      <Route path="/company-jobs" component={() => <ProtectedRoute requireUserType="company"><CompanyJobsPage /></ProtectedRoute>} />
+      <Route path="/company-recruiter" component={() => <ProtectedRoute requireUserType="company"><CompanyRecruiterPage /></ProtectedRoute>} />
+      <Route path="/company-shared-documents/:applicationId" component={() => <ProtectedRoute requireUserType="company"><CompanySharedDocumentsPage /></ProtectedRoute>} />
+      <Route path="/company-employees" component={() => <ProtectedRoute requireUserType="company"><CompanyEmployees /></ProtectedRoute>} />
+      <Route path="/company-hierarchy" component={() => <ProtectedRoute requireUserType="company"><CompanyHierarchySimple /></ProtectedRoute>} />
+      <Route path="/work-verification" component={() => <ProtectedRoute requireUserType="company"><WorkVerification /></ProtectedRoute>} />
+      <Route path="/company-employee/:employeeId" component={() => <ProtectedRoute requireUserType="company"><CompanyEmployeeProfile /></ProtectedRoute>} />
+      <Route path="/employee-work-diary/:employeeId" component={() => <ProtectedRoute requireUserType="company"><CompanyEmployeeWorkDiary /></ProtectedRoute>} />
+      
+      {/* Admin Protected Routes */}
+      <Route path="/admin/login" component={AdminLogin} />
+      <Route path="/admin/dashboard" component={() => <ProtectedRoute requireUserType="admin"><AdminDashboard /></ProtectedRoute>} />
+      <Route path="/admin/verifications" component={() => <ProtectedRoute requireUserType="admin"><AdminVerifications /></ProtectedRoute>} />
+      <Route path="/admin/feedback" component={() => <ProtectedRoute requireUserType="admin"><AdminFeedback /></ProtectedRoute>} />
+      <Route path="/admin/setup" component={() => <ProtectedRoute requireUserType="admin"><AdminSetup /></ProtectedRoute>} />
+      
+      {/* Manager Protected Routes */}
+      <Route path="/manager/login" component={ManagerLogin} />
+      <Route path="/manager/dashboard" component={() => <ProtectedRoute requireUserType="manager"><ManagerDashboard /></ProtectedRoute>} />
+      <Route path="/manager/work-entries" component={() => <ProtectedRoute requireUserType="manager"><ManagerWorkEntries /></ProtectedRoute>} />
+      <Route path="/manager/employees" component={() => <ProtectedRoute requireUserType="manager"><ManagerEmployees /></ProtectedRoute>} />
+      
+      {/* Legacy redirect */}
+      <Route path="/employee-profile" component={() => { window.location.href = "/profile"; return null; }} />
 
       <Route component={NotFound} />
     </Switch>

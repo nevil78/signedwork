@@ -1,9 +1,16 @@
 import { useQuery } from "@tanstack/react-query";
 
+interface AuthResponse {
+  user: any;
+  userType: string;
+}
+
 export function useAuth() {
-  const { data: response, isLoading, error } = useQuery({
+  const { data: response, isLoading, error } = useQuery<AuthResponse>({
     queryKey: ["/api/auth/user"],
     retry: false,
+    staleTime: 30000, // Consider data fresh for 30 seconds
+    gcTime: 300000, // Keep in cache for 5 minutes
   });
 
   const user = response?.user;
@@ -13,7 +20,7 @@ export function useAuth() {
     user,
     userType,
     isLoading,
-    isAuthenticated: !!user,
+    isAuthenticated: !!user && !error,
     error,
   };
 }
