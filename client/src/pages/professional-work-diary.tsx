@@ -103,6 +103,16 @@ export default function ProfessionalWorkDiary() {
     refetchOnReconnect: true,
   });
 
+  // Debug logging for companies data
+  console.log('Companies data:', companies);
+  if (companies && companies.length > 0) {
+    console.log('First company verification data:', {
+      name: companies[0].companyName || companies[0].name,
+      panStatus: (companies[0] as any).panVerificationStatus,
+      cinStatus: (companies[0] as any).cinVerificationStatus
+    });
+  }
+
   // Get current user for WebSocket integration
   const { data: currentUser } = useQuery<{id: string}>({
     queryKey: ['/api/auth/user'],

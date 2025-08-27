@@ -1470,6 +1470,12 @@ function JobCard({ job }: { job: JobListing & { company?: any } }) {
     const panVerificationStatus = (job as any).panVerificationStatus;
     const cinVerificationStatus = (job as any).cinVerificationStatus;
     
+    console.log('Job verification data:', {
+      company: (job as any).companyName,
+      panStatus: panVerificationStatus,
+      cinStatus: cinVerificationStatus
+    });
+    
     // Company is verified if either PAN or CIN is verified
     if (panVerificationStatus === "verified" || cinVerificationStatus === "verified") {
       return "verified";
