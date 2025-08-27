@@ -1789,9 +1789,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Employee Profile Routes
   
-  // Get employee profile data - PUBLIC ROUTE (for company viewing)
-  app.get("/api/employee/profile/:id", async (req, res) => {
+  // Get employee profile data - PROTECTED ROUTE with ownership validation
+  app.get("/api/employee/profile/:id", requireAuth, async (req: any, res) => {
     try {
+      // Validate ownership: only the employee themselves or companies can view profiles
+      if (req.user.type === 'employee' && req.user.id !== req.params.id) {
+        return res.status(403).json({ message: "Access denied: Can only view your own profile" });
+      }
+      
       const profileData = await storage.getEmployeeProfile(req.params.id);
       res.json(profileData);
     } catch (error) {
@@ -1847,18 +1852,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/employee/experience/:id", async (req, res) => {
+  app.patch("/api/employee/experience/:id", requireEmployee, async (req: any, res) => {
     try {
-      const experience = await storage.updateExperience(req.params.id, req.body);
-      res.json(experience);
+      // Validate ownership: only the employee can update their own experience
+      const experience = await storage.getExperience(req.params.id);
+      if (!experience || experience.employeeId !== req.user.id) {
+        return res.status(403).json({ message: "Access denied: Can only update your own experience" });
+      }
+      
+      const updatedExperience = await storage.updateExperience(req.params.id, req.body);
+      res.json(updatedExperience);
     } catch (error) {
       console.error("Update experience error:", error);
       res.status(500).json({ message: "Failed to update experience" });
     }
   });
 
-  app.delete("/api/employee/experience/:id", async (req, res) => {
+  app.delete("/api/employee/experience/:id", requireEmployee, async (req: any, res) => {
     try {
+      // Validate ownership: only the employee can delete their own experience
+      const experience = await storage.getExperience(req.params.id);
+      if (!experience || experience.employeeId !== req.user.id) {
+        return res.status(403).json({ message: "Access denied: Can only delete your own experience" });
+      }
+      
       await storage.deleteExperience(req.params.id);
       res.json({ message: "Experience deleted successfully" });
     } catch (error) {
@@ -1892,18 +1909,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/employee/education/:id", async (req, res) => {
+  app.patch("/api/employee/education/:id", requireEmployee, async (req: any, res) => {
     try {
-      const education = await storage.updateEducation(req.params.id, req.body);
-      res.json(education);
+      // Validate ownership: only the employee can update their own education
+      const education = await storage.getEducation(req.params.id);
+      if (!education || education.employeeId !== req.user.id) {
+        return res.status(403).json({ message: "Access denied: Can only update your own education" });
+      }
+      
+      const updatedEducation = await storage.updateEducation(req.params.id, req.body);
+      res.json(updatedEducation);
     } catch (error) {
       console.error("Update education error:", error);
       res.status(500).json({ message: "Failed to update education" });
     }
   });
 
-  app.delete("/api/employee/education/:id", async (req, res) => {
+  app.delete("/api/employee/education/:id", requireEmployee, async (req: any, res) => {
     try {
+      // Validate ownership: only the employee can delete their own education
+      const education = await storage.getEducation(req.params.id);
+      if (!education || education.employeeId !== req.user.id) {
+        return res.status(403).json({ message: "Access denied: Can only delete your own education" });
+      }
+      
       await storage.deleteEducation(req.params.id);
       res.json({ message: "Education deleted successfully" });
     } catch (error) {
@@ -1937,18 +1966,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/employee/certification/:id", async (req, res) => {
+  app.patch("/api/employee/certification/:id", requireEmployee, async (req: any, res) => {
     try {
-      const certification = await storage.updateCertification(req.params.id, req.body);
-      res.json(certification);
+      // Validate ownership: only the employee can update their own certification
+      const certification = await storage.getCertification(req.params.id);
+      if (!certification || certification.employeeId !== req.user.id) {
+        return res.status(403).json({ message: "Access denied: Can only update your own certification" });
+      }
+      
+      const updatedCertification = await storage.updateCertification(req.params.id, req.body);
+      res.json(updatedCertification);
     } catch (error) {
       console.error("Update certification error:", error);
       res.status(500).json({ message: "Failed to update certification" });
     }
   });
 
-  app.delete("/api/employee/certification/:id", async (req, res) => {
+  app.delete("/api/employee/certification/:id", requireEmployee, async (req: any, res) => {
     try {
+      // Validate ownership: only the employee can delete their own certification
+      const certification = await storage.getCertification(req.params.id);
+      if (!certification || certification.employeeId !== req.user.id) {
+        return res.status(403).json({ message: "Access denied: Can only delete your own certification" });
+      }
+      
       await storage.deleteCertification(req.params.id);
       res.json({ message: "Certification deleted successfully" });
     } catch (error) {
@@ -1982,18 +2023,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/employee/project/:id", async (req, res) => {
+  app.patch("/api/employee/project/:id", requireEmployee, async (req: any, res) => {
     try {
-      const project = await storage.updateProject(req.params.id, req.body);
-      res.json(project);
+      // Validate ownership: only the employee can update their own project
+      const project = await storage.getProject(req.params.id);
+      if (!project || project.employeeId !== req.user.id) {
+        return res.status(403).json({ message: "Access denied: Can only update your own project" });
+      }
+      
+      const updatedProject = await storage.updateProject(req.params.id, req.body);
+      res.json(updatedProject);
     } catch (error) {
       console.error("Update project error:", error);
       res.status(500).json({ message: "Failed to update project" });
     }
   });
 
-  app.delete("/api/employee/project/:id", async (req, res) => {
+  app.delete("/api/employee/project/:id", requireEmployee, async (req: any, res) => {
     try {
+      // Validate ownership: only the employee can delete their own project
+      const project = await storage.getProject(req.params.id);
+      if (!project || project.employeeId !== req.user.id) {
+        return res.status(403).json({ message: "Access denied: Can only delete your own project" });
+      }
+      
       await storage.deleteProject(req.params.id);
       res.json({ message: "Project deleted successfully" });
     } catch (error) {
@@ -2027,8 +2080,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/employee/endorsement/:id", async (req, res) => {
+  app.delete("/api/employee/endorsement/:id", requireEmployee, async (req: any, res) => {
     try {
+      // Validate ownership: only the employee can delete their own endorsement
+      const endorsement = await storage.getEndorsement(req.params.id);
+      if (!endorsement || endorsement.employeeId !== req.user.id) {
+        return res.status(403).json({ message: "Access denied: Can only delete your own endorsement" });
+      }
+      
       await storage.deleteEndorsement(req.params.id);
       res.json({ message: "Endorsement deleted successfully" });
     } catch (error) {

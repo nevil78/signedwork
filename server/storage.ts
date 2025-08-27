@@ -199,26 +199,31 @@ export interface IStorage {
   }>;
   
   // Experience operations
+  getExperience(id: string): Promise<Experience | undefined>;
   createExperience(experience: InsertExperience): Promise<Experience>;
   updateExperience(id: string, data: Partial<Experience>): Promise<Experience>;
   deleteExperience(id: string): Promise<void>;
   
   // Education operations
+  getEducation(id: string): Promise<Education | undefined>;
   createEducation(education: InsertEducation): Promise<Education>;
   updateEducation(id: string, data: Partial<Education>): Promise<Education>;
   deleteEducation(id: string): Promise<void>;
   
   // Certification operations
+  getCertification(id: string): Promise<Certification | undefined>;
   createCertification(certification: InsertCertification): Promise<Certification>;
   updateCertification(id: string, data: Partial<Certification>): Promise<Certification>;
   deleteCertification(id: string): Promise<void>;
   
   // Project operations
+  getProject(id: string): Promise<Project | undefined>;
   createProject(project: InsertProject): Promise<Project>;
   updateProject(id: string, data: Partial<Project>): Promise<Project>;
   deleteProject(id: string): Promise<void>;
   
   // Endorsement operations
+  getEndorsement(id: string): Promise<Endorsement | undefined>;
   createEndorsement(endorsement: InsertEndorsement): Promise<Endorsement>;
   deleteEndorsement(id: string): Promise<void>;
   
@@ -1223,6 +1228,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Experience operations
+  async getExperience(id: string): Promise<Experience | undefined> {
+    const [experience] = await db.select().from(experiences).where(eq(experiences.id, id));
+    return experience;
+  }
+
   async createExperience(experience: InsertExperience): Promise<Experience> {
     const [newExperience] = await db
       .insert(experiences)
@@ -1245,6 +1255,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Education operations
+  async getEducation(id: string): Promise<Education | undefined> {
+    const [education] = await db.select().from(educations).where(eq(educations.id, id));
+    return education;
+  }
+
   async createEducation(education: InsertEducation): Promise<Education> {
     const [newEducation] = await db
       .insert(educations)
@@ -1267,6 +1282,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Certification operations
+  async getCertification(id: string): Promise<Certification | undefined> {
+    const [certification] = await db.select().from(certifications).where(eq(certifications.id, id));
+    return certification;
+  }
+
   async createCertification(certification: InsertCertification): Promise<Certification> {
     const [newCertification] = await db
       .insert(certifications)
@@ -1289,6 +1309,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Project operations
+  async getProject(id: string): Promise<Project | undefined> {
+    const [project] = await db.select().from(projects).where(eq(projects.id, id));
+    return project;
+  }
+
   async createProject(project: InsertProject): Promise<Project> {
     const [newProject] = await db
       .insert(projects)
@@ -1311,6 +1336,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Endorsement operations
+  async getEndorsement(id: string): Promise<Endorsement | undefined> {
+    const [endorsement] = await db.select().from(endorsements).where(eq(endorsements.id, id));
+    return endorsement;
+  }
+
   async createEndorsement(endorsement: InsertEndorsement): Promise<Endorsement> {
     const [newEndorsement] = await db
       .insert(endorsements)
