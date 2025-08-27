@@ -382,7 +382,17 @@ export default function JobDiscoveryPage() {
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-2">
                   <Building2 className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">{job.companyName}</span>
+                  <span className="text-sm text-muted-foreground">{(job as any).companyName}</span>
+                  
+                  {/* Show verification badge if PAN OR CIN is verified */}
+                  {((job as any)?.panVerificationStatus === "verified" || (job as any)?.cinVerificationStatus === "verified") && (
+                    <div className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1">
+                      <svg className="w-3 h-3" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                      Verified
+                    </div>
+                  )}
                 </div>
                 <h3 className="text-xl font-semibold mb-2 cursor-pointer hover:text-blue-600" 
                     onClick={() => setSelectedJobId(job.id)}
