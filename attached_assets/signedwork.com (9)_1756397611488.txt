@@ -1,0 +1,67 @@
+; Domain: signedwork.com
+; Exported (y-m-d hh:mm:ss): 2025-08-28 09:13:25
+;
+; This file is intended for use for informational and archival
+; purposes ONLY and MUST be edited before use on a production
+; DNS server.
+;
+; In particular, you must update the SOA record with the correct
+; authoritative name server and contact e-mail address information,
+; and add the correct NS records for the name servers which will
+; be authoritative for this domain.
+;
+; For further information, please consult the BIND documentation
+; located on the following website:
+;
+; http://www.isc.org/
+;
+; And RFC 1035:
+;
+; http://www.ietf.org/rfc/rfc1035.txt
+;
+; Please note that we do NOT offer technical support for any use
+; of this zone data, the BIND name server, or any other third-
+; party DNS software.
+;
+; Use at your own risk.
+
+
+$ORIGIN signedwork.com.
+
+; SOA Record
+@	3600	 IN 	SOA	ns39.domaincontrol.com.	dns.jomax.net. (
+					2025082706
+					28800
+					7200
+					604800
+					3600
+					) 
+
+; A Record
+@	600	 IN 	A	34.111.179.208
+www	600	 IN 	A	34.111.179.208
+
+; TXT Record
+@	3600	 IN 	TXT	"replit-verify=c215d8b8-7b6c-48"
+@	3600	 IN 	TXT	"v=spf1 include:dc-8e814c8572._spfm.signedwork.com ~all"
+@	3600	 IN 	TXT	"zoho-verification=zb11073483.zmverify.zoho.in"
+dc-8e814c8572._spfm	3600	 IN 	TXT	"v=spf1 include:zoho.in ~all"
+zmail._domainkey	600	 IN 	TXT	"v=DKIM1; k=rsa; p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC2dUf3HzD03dcGQUF4OangQQgSp4CyzVsXqbgHXspHu5PDTiIaOSW8nXoS1e91HWdNWDFmzS8IwdB3i0zB3bJ2+0Lfoe9Oint/791GqlWBBb8hfrQOOYxzEkkFuygvLh4EUCt2+oZLDOmOiIBc77Zt8huPU6SfdWYvO/zNPKp4sQIDAQAB"
+_dmarc	3600	 IN 	TXT	"v=DMARC1; p=quarantine; adkim=r; aspf=r; rua=mailto:dmarc_rua@onsecureserver.net;"
+
+; CNAME Record
+em7720	3600	 IN 	CNAME	u54939372.wl123.sendgrid.net.
+s1._domainkey	3600	 IN 	CNAME	s1.domainkey.u54939372.wl123.sendgrid.net.
+s2._domainkey	3600	 IN 	CNAME	s2.domainkey.u54939372.wl123.sendgrid.net.
+zb11073483	600	 IN 	CNAME	zmverify.zoho.in.
+_domainconnect	3600	 IN 	CNAME	_domainconnect.gd.domaincontrol.com.
+
+; NS Record
+@	3600	 IN 	NS	ns39.domaincontrol.com.
+@	3600	 IN 	NS	ns40.domaincontrol.com.
+
+; MX Record
+@	600	 IN 	MX	10	mx.zoho.in.
+@	600	 IN 	MX	20	mx2.zoho.in.
+@	600	 IN 	MX	50	mx3.zoho.in.
+
