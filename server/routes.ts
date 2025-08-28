@@ -2308,6 +2308,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
           message: "Work entry is already approved and immutable" 
         });
       }
+
+      // 🚨 SECURITY CHECK: Only verified companies can approve work entries
+      const company = await storage.getCompany(req.user.id);
+      if (!company) {
+        return res.status(404).json({ message: "Company not found" });
+      }
+      
+      if (company.verificationStatus !== 'verified') {
+        return res.status(403).json({ 
+          message: "Only verified companies can approve work entries. Please complete company verification first.",
+          companyVerificationStatus: company.verificationStatus,
+          requiresVerification: true
+        });
+      }
       
       // Approve as company admin (makes it immutable with "Verified by Company" status)
       const updatedEntry = await storage.approveWorkEntryAsCompany(id, req.user.id, {
@@ -4032,6 +4046,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const canVerify = await storage.canEmployeeVerifyWork(verifierId, workEntry.employeeId, req.user.id);
       if (!canVerify) {
         return res.status(403).json({ message: "Insufficient permissions to verify this work entry" });
+      }
+
+      // 🚨 SECURITY CHECK: Only verified companies can perform hierarchical verification
+      const company = await storage.getCompany(req.user.id);
+      if (!company) {
+        return res.status(404).json({ message: "Company not found" });
+      }
+      
+      if (company.verificationStatus !== 'verified') {
+        return res.status(403).json({ 
+          message: "Only verified companies can verify work entries. Please complete company verification first.",
+          companyVerificationStatus: company.verificationStatus,
+          requiresVerification: true
+        });
       }
       
       const verifiedWorkEntry = await storage.verifyWorkEntryHierarchical(id, verifierId, {

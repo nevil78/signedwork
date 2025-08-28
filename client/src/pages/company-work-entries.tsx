@@ -11,9 +11,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { CheckCircle, AlertCircle, Clock, Calendar, User, Users, Building, ArrowLeft, Building2, Lock, Star, Briefcase, Target, DollarSign, Tag, Trophy, BookOpen, AlertTriangle, FileText, Paperclip, Shield, Search, Filter } from 'lucide-react';
+import { CheckCircle, AlertCircle, Clock, Calendar, User, Users, Building, ArrowLeft, Building2, Lock, Star, Briefcase, Target, DollarSign, Tag, Trophy, BookOpen, AlertTriangle, FileText, Paperclip, Shield, Search, Filter, Settings, HelpCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import CompanyNavHeader from '@/components/company-nav-header';
+import { useAuth } from "@/hooks/useAuth";
+import { CompanyVerificationBadge } from "@/components/CompanyVerificationBadge";
 
 type ApprovalStatus = "pending_review" | "approved" | "needs_changes";
 type EmployeeTaskStatus = "pending" | "in_progress" | "completed" | "on_hold" | "cancelled";
@@ -61,6 +63,7 @@ interface Employee {
 export default function CompanyWorkEntries() {
   const { toast } = useToast();
   const [location, navigate] = useLocation();
+  const { user: authUser } = useAuth(); // Get company verification status
   const [selectedEntry, setSelectedEntry] = useState<WorkEntry | null>(null);
   const [showApprovalDialog, setShowApprovalDialog] = useState(false);
   const [showChangesDialog, setShowChangesDialog] = useState(false);
@@ -90,6 +93,9 @@ export default function CompanyWorkEntries() {
     queryKey: ['/api/company/employees'],
   });
 
+  // Check company verification status for security gates
+  const isCompanyVerified = authUser?.verificationStatus === 'verified';
+  const companyVerificationStatus = authUser?.verificationStatus || 'unverified';
 
 
   const getEmployeeName = (entry: any) => {
@@ -588,23 +594,64 @@ export default function CompanyWorkEntries() {
           {/* Action Buttons - Only show for pending entries */}
           {showActions && entry.approvalStatus === 'pending_review' && entry.status !== 'approved' && (
             <div className="flex gap-2 pt-4 border-t">
-              <Button 
-                onClick={() => handleApprove(entry)}
-                className="bg-green-600 hover:bg-green-700"
-                data-testid={`approve-button-${entry.id}`}
-              >
-                <CheckCircle className="w-4 h-4 mr-1" />
-                Approve & Lock Entry
-              </Button>
-              <Button 
-                onClick={() => handleRequestChanges(entry)}
-                variant="outline"
-                className="border-red-200 text-red-600 hover:bg-red-50"
-                data-testid={`request-changes-button-${entry.id}`}
-              >
-                <AlertCircle className="w-4 h-4 mr-1" />
-                Request Changes
-              </Button>
+              {/* 🚨 SECURITY: Only verified companies can approve work entries */}
+              {!isCompanyVerified && (
+                <div className="w-full bg-red-50 border border-red-200 rounded-lg p-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Shield className="w-4 h-4 text-red-600" />
+                    <span className="text-sm font-medium text-red-800">Verification Required</span>
+                  </div>
+                  <p className="text-xs text-red-700 mb-3">
+                    Complete company verification to approve work entries and prevent fraudulent self-verification.
+                  </p>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      disabled
+                      className="opacity-50 cursor-not-allowed bg-gray-300 text-gray-500"
+                      data-testid={`approve-button-disabled-${entry.id}`}
+                      title="Company verification required to approve work entries"
+                    >
+                      <CheckCircle className="w-4 h-4 mr-1" />
+                      Approve & Lock Entry
+                    </Button>
+                    <Button
+                      size="sm"
+                      disabled
+                      variant="outline"
+                      className="opacity-50 cursor-not-allowed border-gray-300 text-gray-500"
+                      data-testid={`request-changes-button-disabled-${entry.id}`}
+                      title="Company verification required to request changes"
+                    >
+                      <AlertCircle className="w-4 h-4 mr-1" />
+                      Request Changes
+                    </Button>
+                  </div>
+                </div>
+              )}
+              
+              {/* Normal approval buttons for verified companies */}
+              {isCompanyVerified && (
+                <>
+                  <Button 
+                    onClick={() => handleApprove(entry)}
+                    className="bg-green-600 hover:bg-green-700"
+                    data-testid={`approve-button-${entry.id}`}
+                  >
+                    <CheckCircle className="w-4 h-4 mr-1" />
+                    Approve & Lock Entry
+                  </Button>
+                  <Button 
+                    onClick={() => handleRequestChanges(entry)}
+                    variant="outline"
+                    className="border-red-200 text-red-600 hover:bg-red-50"
+                    data-testid={`request-changes-button-${entry.id}`}
+                  >
+                    <AlertCircle className="w-4 h-4 mr-1" />
+                    Request Changes
+                  </Button>
+                </>
+              )}
             </div>
           )}
           
@@ -738,6 +785,53 @@ export default function CompanyWorkEntries() {
           </CardContent>
         </Card>
 
+
+        {/* 🚨 SECURITY WARNING: Company Verification Required */}
+        {!isCompanyVerified && (
+          <Card className="bg-gradient-to-r from-red-50 to-orange-50 border-red-200 mb-6">
+            <CardContent className="p-6">
+              <div className="flex items-start space-x-4">
+                <div className="flex-shrink-0">
+                  <Shield className="h-6 w-6 text-red-600" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-red-900 mb-2">
+                    🔒 Company Verification Required
+                  </h3>
+                  <p className="text-red-800 mb-4">
+                    Your company must be verified before you can approve work entries. This security measure prevents fraudulent self-verification schemes.
+                  </p>
+                  <div className="flex items-center space-x-4 mb-3">
+                    <span className="text-sm font-medium text-red-900">Current Status:</span>
+                    <CompanyVerificationBadge status={companyVerificationStatus as any} size="sm" />
+                  </div>
+                  <div className="flex space-x-3">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => navigate('/company/settings')}
+                      className="border-red-300 text-red-700 hover:bg-red-50"
+                      data-testid="button-goto-verification"
+                    >
+                      <Settings className="h-4 w-4 mr-2" />
+                      Complete Verification
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => window.open('/help/verification', '_blank')}
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      data-testid="button-verification-help"
+                    >
+                      <HelpCircle className="h-4 w-4 mr-2" />
+                      Learn More
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Enhanced Work Entries List - Grouped by Employee */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

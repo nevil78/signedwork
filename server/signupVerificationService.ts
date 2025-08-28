@@ -20,6 +20,110 @@ export class SignupVerificationService {
   }
 
   /**
+   * 🚨 FRAUD DETECTION: Detect suspicious company registration patterns
+   * This helps prevent self-verification schemes where someone creates both employee + company accounts
+   */
+  private static async detectSuspiciousCompanyRegistration(
+    email: string, 
+    companyName: string, 
+    userData: any
+  ): Promise<{ isSuspicious: boolean; reason?: string }> {
+    try {
+      const suspiciousReasons: string[] = [];
+      
+      // Check 1: Company name suspiciously similar to existing employee names
+      const emailPrefix = email.split('@')[0].toLowerCase();
+      const employees = await storage.getAllEmployees(); // Get recent employees for pattern matching
+      
+      for (const employee of employees.slice(-50)) { // Check last 50 employees for performance
+        const employeeName = `${employee.firstName} ${employee.lastName}`.toLowerCase();
+        const employeeEmailPrefix = employee.email.split('@')[0].toLowerCase();
+        
+        // Pattern 1: Company name matches employee name closely
+        if (companyName && this.calculateSimilarity(companyName, employeeName) > 0.7) {
+          suspiciousReasons.push(`Company name "${companyName}" highly similar to employee "${employeeName}"`);
+        }
+        
+        // Pattern 2: Email prefixes are suspiciously similar
+        if (this.calculateSimilarity(emailPrefix, employeeEmailPrefix) > 0.8) {
+          suspiciousReasons.push(`Email prefix similarity detected: ${emailPrefix} vs ${employeeEmailPrefix}`);
+        }
+      }
+      
+      // Check 2: Rapid succession registration pattern (same day employee + company signup)
+      const recentEmployees = employees.filter(emp => {
+        const timeDiff = new Date().getTime() - new Date(emp.createdAt).getTime();
+        return timeDiff < 24 * 60 * 60 * 1000; // Last 24 hours
+      });
+      
+      if (recentEmployees.length > 0) {
+        suspiciousReasons.push(`Rapid succession pattern: ${recentEmployees.length} employee(s) registered in last 24h`);
+      }
+      
+      // Check 3: Company name contains personal indicators
+      const personalIndicators = ['personal', 'self', 'freelance', 'individual', 'myself', 'own'];
+      const containsPersonalIndicator = personalIndicators.some(indicator => 
+        companyName?.toLowerCase().includes(indicator)
+      );
+      
+      if (containsPersonalIndicator) {
+        suspiciousReasons.push(`Company name contains personal indicators: "${companyName}"`);
+      }
+      
+      return {
+        isSuspicious: suspiciousReasons.length > 0,
+        reason: suspiciousReasons.join('; ')
+      };
+      
+    } catch (error) {
+      console.error('Error in fraud detection:', error);
+      return { isSuspicious: false };
+    }
+  }
+
+  /**
+   * Calculate string similarity using Levenshtein distance
+   */
+  private static calculateSimilarity(str1: string, str2: string): number {
+    const maxLen = Math.max(str1.length, str2.length);
+    if (maxLen === 0) return 1.0;
+    
+    const distance = this.levenshteinDistance(str1.toLowerCase(), str2.toLowerCase());
+    return (maxLen - distance) / maxLen;
+  }
+  
+  /**
+   * Levenshtein distance implementation for similarity detection
+   */
+  private static levenshteinDistance(str1: string, str2: string): number {
+    const matrix = [];
+    
+    for (let i = 0; i <= str2.length; i++) {
+      matrix[i] = [i];
+    }
+    
+    for (let j = 0; j <= str1.length; j++) {
+      matrix[0][j] = j;
+    }
+    
+    for (let i = 1; i <= str2.length; i++) {
+      for (let j = 1; j <= str1.length; j++) {
+        if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
+          matrix[i][j] = matrix[i - 1][j - 1];
+        } else {
+          matrix[i][j] = Math.min(
+            matrix[i - 1][j - 1] + 1,
+            matrix[i][j - 1] + 1,
+            matrix[i - 1][j] + 1
+          );
+        }
+      }
+    }
+    
+    return matrix[str2.length][str1.length];
+  }
+
+  /**
    * Store user data temporarily and send verification email
    */
   static async initiateSignup(
@@ -29,6 +133,8 @@ export class SignupVerificationService {
     userData: any
   ): Promise<{ success: boolean; message: string; token?: string }> {
     try {
+      // 🚨 ENHANCED SECURITY: Multi-layer identity verification to prevent self-verification fraud
+      
       // Check if email already exists in main tables
       const existingEmployee = await storage.getEmployeeByEmail(email);
       const existingCompany = await storage.getCompanyByEmail(email);
@@ -38,6 +144,28 @@ export class SignupVerificationService {
           success: false,
           message: "Email already registered. Please use a different email or login."
         };
+      }
+
+      // 🚨 FRAUD DETECTION: Cross-account identity verification
+      if (userType === "company") {
+        // Check if someone is trying to create a company account with similar personal info
+        const companyName = userData.name?.toLowerCase().trim();
+        const suspiciousPattern = await this.detectSuspiciousCompanyRegistration(email, companyName, userData);
+        
+        if (suspiciousPattern.isSuspicious) {
+          console.warn(`🚨 Suspicious company registration detected:`, {
+            email,
+            reason: suspiciousPattern.reason,
+            companyName,
+            timestamp: new Date()
+          });
+          
+          // For now, just log - later can add admin review
+          // return {
+          //   success: false,
+          //   message: "Your registration requires additional verification. Please contact support."
+          // };
+        }
       }
 
       // Check if there's already a pending signup for this email
