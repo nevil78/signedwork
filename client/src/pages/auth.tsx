@@ -208,7 +208,7 @@ export default function AuthPage() {
 
   const companyForm = useForm<InsertCompany>({
     resolver: zodResolver(insertCompanySchema),
-    mode: "onChange", // Enable real-time validation
+    mode: "onSubmit", // Only validate on submit, not on every change
     defaultValues: {
       name: "",
       industry: "",
