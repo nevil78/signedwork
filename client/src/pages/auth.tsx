@@ -106,6 +106,11 @@ export default function AuthPage() {
   const [companyTermsAccepted, setCompanyTermsAccepted] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
+
+  // Clear all field errors when component mounts to ensure clean state
+  useEffect(() => {
+    setFieldErrors({});
+  }, []);
   const { toast } = useToast();
 
 
@@ -186,9 +191,10 @@ export default function AuthPage() {
 
   // Helper function to check if field has error and should show red border
   const getFieldErrorClass = (fieldName: string, fieldState: any) => {
-    const hasError = fieldState?.error || fieldErrors[fieldName];
+    // Only show red border from custom fieldErrors state, ignore React Hook Form errors during typing
+    const hasCustomError = fieldErrors[fieldName];
     
-    if (hasError) {
+    if (hasCustomError) {
       return "field-error";
     }
     return "";
@@ -1007,7 +1013,6 @@ export default function AuthPage() {
                                     companyForm.clearErrors("name");
                                   }
                                 }}
-                                onBlur={() => handleFieldBlur("name")}
                                 data-testid="input-company-name"
                               />
                             </FormControl>
@@ -1258,7 +1263,6 @@ export default function AuthPage() {
                                     companyForm.clearErrors("address");
                                   }
                                 }}
-                                onBlur={() => handleFieldBlur("address")}
                                 data-testid="input-business-address"
                               />
                             </FormControl>
