@@ -1047,7 +1047,7 @@ export default function AuthPage() {
                                 if (value) {
                                   setFieldErrors(prev => ({ ...prev, industry: false }));
                                 }
-                              }} value={field.value}>
+                              }} value={field.value || ""}>
                                 <FormControl>
                                   <SelectTrigger className={getFieldErrorClass("industry", fieldState)}>
                                     <SelectValue placeholder="Select industry" />
@@ -1077,7 +1077,7 @@ export default function AuthPage() {
                                 if (value) {
                                   setFieldErrors(prev => ({ ...prev, size: false }));
                                 }
-                              }} value={field.value}>
+                              }} value={field.value || ""}>
                                 <FormControl>
                                   <SelectTrigger className={getFieldErrorClass("size", fieldState)}>
                                     <SelectValue placeholder="Select size" />
@@ -1266,19 +1266,25 @@ export default function AuthPage() {
                         <FormField
                           control={companyForm.control}
                           name="city"
-                          render={({ field }) => (
+                          render={({ field, fieldState }) => (
                             <FormItem>
                               <FormLabel>City *</FormLabel>
                               <FormControl>
                                 <Input 
                                   placeholder="Mumbai" 
                                   {...field}
+                                  value={field.value || ""}
+                                  className={getFieldErrorClass("city", fieldState)}
                                   onChange={(e) => {
                                     // Auto-capitalize first letter of each word
                                     const value = e.target.value;
                                     const capitalized = value.replace(/\b\w/g, l => l.toUpperCase());
                                     field.onChange(capitalized);
+                                    if (capitalized.trim()) {
+                                      setFieldErrors(prev => ({ ...prev, city: false }));
+                                    }
                                   }}
+                                  onBlur={() => handleFieldBlur("city")}
                                 />
                               </FormControl>
                               <FormMessage />
@@ -1292,7 +1298,12 @@ export default function AuthPage() {
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel>State *</FormLabel>
-                              <Select onValueChange={field.onChange} value={field.value}>
+                              <Select onValueChange={(value) => {
+                                field.onChange(value);
+                                if (value) {
+                                  setFieldErrors(prev => ({ ...prev, state: false }));
+                                }
+                              }} value={field.value || ""}>
                                 <FormControl>
                                   <SelectTrigger>
                                     <SelectValue placeholder="Select state" />

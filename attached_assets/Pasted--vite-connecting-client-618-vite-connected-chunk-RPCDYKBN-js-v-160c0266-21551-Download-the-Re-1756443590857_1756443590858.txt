@@ -1,0 +1,150 @@
+[vite] connecting...
+client:618 [vite] connected.
+chunk-RPCDYKBN.js?v=160c0266:21551 Download the React DevTools for a better development experience: https://reactjs.org/link/react-devtools
+chunk-RPCDYKBN.js?v=160c0266:521 Warning: A component is changing an uncontrolled input to be controlled. This is likely caused by the value changing from undefined to a defined value, which should not happen. Decide between using a controlled or uncontrolled input element for the lifetime of the component. More info: https://reactjs.org/link/controlled-components
+    at input
+    at _c (https://a8e25821-8eed-450f-9d50-5ca4929f4242-00-ks1dbum0ifnq.riker.replit.dev/src/components/ui/input.tsx:20:11)
+    at https://a8e25821-8eed-450f-9d50-5ca4929f4242-00-ks1dbum0ifnq.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-2K77HOHX.js?v=160c0266:79:13
+    at https://a8e25821-8eed-450f-9d50-5ca4929f4242-00-ks1dbum0ifnq.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-2K77HOHX.js?v=160c0266:56:13
+    at https://a8e25821-8eed-450f-9d50-5ca4929f4242-00-ks1dbum0ifnq.riker.replit.dev/src/components/ui/form.tsx:130:9
+    at div
+    at https://a8e25821-8eed-450f-9d50-5ca4929f4242-00-ks1dbum0ifnq.riker.replit.dev/src/components/ui/form.tsx:72:6
+    at Controller (https://a8e25821-8eed-450f-9d50-5ca4929f4242-00-ks1dbum0ifnq.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-4BFJKWC4.js?v=160c0266:298:35)
+    at FormField (https://a8e25821-8eed-450f-9d50-5ca4929f4242-00-ks1dbum0ifnq.riker.replit.dev/src/components/ui/form.tsx:33:6)
+    at div
+    at div
+    at form
+    at FormProvider (https://a8e25821-8eed-450f-9d50-5ca4929f4242-00-ks1dbum0ifnq.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-4BFJKWC4.js?v=160c0266:102:11)
+    at div
+    at _c9 (https://a8e25821-8eed-450f-9d50-5ca4929f4242-00-ks1dbum0ifnq.riker.replit.dev/src/components/ui/card.tsx:114:12)
+    at div
+    at _c (https://a8e25821-8eed-450f-9d50-5ca4929f4242-00-ks1dbum0ifnq.riker.replit.dev/src/components/ui/card.tsx:20:11)
+    at div
+    at main
+    at div
+    at AuthPage (https://a8e25821-8eed-450f-9d50-5ca4929f4242-00-ks1dbum0ifnq.riker.replit.dev/src/pages/auth.tsx:140:27)
+    at Route (https://a8e25821-8eed-450f-9d50-5ca4929f4242-00-ks1dbum0ifnq.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=160c0266:191:16)
+    at Switch (https://a8e25821-8eed-450f-9d50-5ca4929f4242-00-ks1dbum0ifnq.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=160c0266:247:17)
+    at Router
+    at Provider (https://a8e25821-8eed-450f-9d50-5ca4929f4242-00-ks1dbum0ifnq.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-OXZDJRWN.js?v=160c0266:38:15)
+    at TooltipProvider (https://a8e25821-8eed-450f-9d50-5ca4929f4242-00-ks1dbum0ifnq.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=160c0266:64:5)
+    at QueryClientProvider (https://a8e25821-8eed-450f-9d50-5ca4929f4242-00-ks1dbum0ifnq.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=160c0266:2805:3)
+    at App (https://a8e25821-8eed-450f-9d50-5ca4929f4242-00-ks1dbum0ifnq.riker.replit.dev/src/App.tsx?v=e0js1JpJXxDF9S2E9IJ_A:554:3)
+printWarning @ chunk-RPCDYKBN.js?v=160c0266:521
+Show 1 more frame
+Show less
+client:223 [vite] hot updated: /src/pages/auth.tsx
+client:223 [vite] hot updated: /src/index.css?v=e0js1JpJXxDF9S2E9IJ_A
+client:223 [vite] hot updated: /src/pages/auth.tsx
+client:223 [vite] hot updated: /src/index.css?v=e0js1JpJXxDF9S2E9IJ_A
+client:223 [vite] hot updated: /src/pages/auth.tsx
+client:223 [vite] hot updated: /src/index.css?v=e0js1JpJXxDF9S2E9IJ_A
+auth.tsx?t=1756442878532:447 🔍 DEBUGGING TEXT FIELD VALIDATION:
+auth.tsx?t=1756442878532:448 Full form data: {
+  "name": "",
+  "address": "",
+  "pincode": "",
+  "registrationNumber": "",
+  "cin": "",
+  "panNumber": "",
+  "email": "",
+  "size": "",
+  "establishmentYear": "",
+  "password": ""
+}
+auth.tsx?t=1756442878532:454 🔍 Field 'name': value="", type=string, isEmpty=true
+auth.tsx?t=1756442878532:456 ❌ FAILED: Field 'name' is empty/invalid
+auth.tsx?t=1756442878532:454 🔍 Field 'industry': value="undefined", type=undefined, isEmpty=true
+auth.tsx?t=1756442878532:456 ❌ FAILED: Field 'industry' is empty/invalid
+auth.tsx?t=1756442878532:454 🔍 Field 'size': value="", type=string, isEmpty=true
+auth.tsx?t=1756442878532:456 ❌ FAILED: Field 'size' is empty/invalid
+auth.tsx?t=1756442878532:454 🔍 Field 'establishmentYear': value="", type=string, isEmpty=true
+auth.tsx?t=1756442878532:456 ❌ FAILED: Field 'establishmentYear' is empty/invalid
+auth.tsx?t=1756442878532:454 🔍 Field 'address': value="", type=string, isEmpty=true
+auth.tsx?t=1756442878532:456 ❌ FAILED: Field 'address' is empty/invalid
+auth.tsx?t=1756442878532:454 🔍 Field 'city': value="undefined", type=undefined, isEmpty=true
+auth.tsx?t=1756442878532:456 ❌ FAILED: Field 'city' is empty/invalid
+auth.tsx?t=1756442878532:454 🔍 Field 'state': value="undefined", type=undefined, isEmpty=true
+auth.tsx?t=1756442878532:456 ❌ FAILED: Field 'state' is empty/invalid
+auth.tsx?t=1756442878532:454 🔍 Field 'pincode': value="", type=string, isEmpty=true
+auth.tsx?t=1756442878532:456 ❌ FAILED: Field 'pincode' is empty/invalid
+auth.tsx?t=1756442878532:454 🔍 Field 'email': value="", type=string, isEmpty=true
+auth.tsx?t=1756442878532:456 ❌ FAILED: Field 'email' is empty/invalid
+auth.tsx?t=1756442878532:454 🔍 Field 'password': value="", type=string, isEmpty=true
+auth.tsx?t=1756442878532:456 ❌ FAILED: Field 'password' is empty/invalid
+auth.tsx?t=1756442878532:466 ❌ FAILED: Terms checkbox not checked
+auth.tsx?t=1756442878532:473 🔍 FINAL VALIDATION RESULT: Object
+auth.tsx?t=1756442878532:447 🔍 DEBUGGING TEXT FIELD VALIDATION:
+auth.tsx?t=1756442878532:448 Full form data: {
+  "name": "",
+  "address": "",
+  "pincode": "",
+  "registrationNumber": "",
+  "cin": "",
+  "panNumber": "",
+  "email": "",
+  "size": "",
+  "establishmentYear": "",
+  "password": ""
+}
+auth.tsx?t=1756442878532:454 🔍 Field 'name': value="", type=string, isEmpty=true
+auth.tsx?t=1756442878532:456 ❌ FAILED: Field 'name' is empty/invalid
+auth.tsx?t=1756442878532:454 🔍 Field 'industry': value="undefined", type=undefined, isEmpty=true
+auth.tsx?t=1756442878532:456 ❌ FAILED: Field 'industry' is empty/invalid
+auth.tsx?t=1756442878532:454 🔍 Field 'size': value="", type=string, isEmpty=true
+auth.tsx?t=1756442878532:456 ❌ FAILED: Field 'size' is empty/invalid
+auth.tsx?t=1756442878532:454 🔍 Field 'establishmentYear': value="", type=string, isEmpty=true
+auth.tsx?t=1756442878532:456 ❌ FAILED: Field 'establishmentYear' is empty/invalid
+auth.tsx?t=1756442878532:454 🔍 Field 'address': value="", type=string, isEmpty=true
+auth.tsx?t=1756442878532:456 ❌ FAILED: Field 'address' is empty/invalid
+auth.tsx?t=1756442878532:454 🔍 Field 'city': value="undefined", type=undefined, isEmpty=true
+auth.tsx?t=1756442878532:456 ❌ FAILED: Field 'city' is empty/invalid
+auth.tsx?t=1756442878532:454 🔍 Field 'state': value="undefined", type=undefined, isEmpty=true
+auth.tsx?t=1756442878532:456 ❌ FAILED: Field 'state' is empty/invalid
+auth.tsx?t=1756442878532:454 🔍 Field 'pincode': value="", type=string, isEmpty=true
+auth.tsx?t=1756442878532:456 ❌ FAILED: Field 'pincode' is empty/invalid
+auth.tsx?t=1756442878532:454 🔍 Field 'email': value="", type=string, isEmpty=true
+auth.tsx?t=1756442878532:456 ❌ FAILED: Field 'email' is empty/invalid
+auth.tsx?t=1756442878532:454 🔍 Field 'password': value="", type=string, isEmpty=true
+auth.tsx?t=1756442878532:456 ❌ FAILED: Field 'password' is empty/invalid
+auth.tsx?t=1756442878532:466 ❌ FAILED: Terms checkbox not checked
+auth.tsx?t=1756442878532:473 🔍 FINAL VALIDATION RESULT: Object
+auth.tsx?t=1756442878532:447 🔍 DEBUGGING TEXT FIELD VALIDATION:
+auth.tsx?t=1756442878532:448 Full form data: {
+  "name": "inine",
+  "address": "807,titanium business hub",
+  "pincode": "395017",
+  "registrationNumber": "",
+  "cin": "",
+  "panNumber": "",
+  "email": "inine@gmail.com",
+  "size": "11-50",
+  "establishmentYear": "2025",
+  "password": "Nevil@786"
+}
+auth.tsx?t=1756442878532:454 🔍 Field 'name': value="inine", type=string, isEmpty=false
+auth.tsx?t=1756442878532:460 ✅ PASSED: Field 'name' = "inine"
+auth.tsx?t=1756442878532:454 🔍 Field 'industry': value="undefined", type=undefined, isEmpty=true
+auth.tsx?t=1756442878532:456 ❌ FAILED: Field 'industry' is empty/invalid
+auth.tsx?t=1756442878532:454 🔍 Field 'size': value="11-50", type=string, isEmpty=false
+auth.tsx?t=1756442878532:460 ✅ PASSED: Field 'size' = "11-50"
+auth.tsx?t=1756442878532:454 🔍 Field 'establishmentYear': value="2025", type=string, isEmpty=false
+auth.tsx?t=1756442878532:460 ✅ PASSED: Field 'establishmentYear' = "2025"
+auth.tsx?t=1756442878532:454 🔍 Field 'address': value="807,titanium business hub", type=string, isEmpty=false
+auth.tsx?t=1756442878532:460 ✅ PASSED: Field 'address' = "807,titanium business hub"
+auth.tsx?t=1756442878532:454 🔍 Field 'city': value="undefined", type=undefined, isEmpty=true
+auth.tsx?t=1756442878532:456 ❌ FAILED: Field 'city' is empty/invalid
+auth.tsx?t=1756442878532:454 🔍 Field 'state': value="undefined", type=undefined, isEmpty=true
+auth.tsx?t=1756442878532:456 ❌ FAILED: Field 'state' is empty/invalid
+auth.tsx?t=1756442878532:454 🔍 Field 'pincode': value="395017", type=string, isEmpty=false
+auth.tsx?t=1756442878532:460 ✅ PASSED: Field 'pincode' = "395017"
+auth.tsx?t=1756442878532:454 🔍 Field 'email': value="inine@gmail.com", type=string, isEmpty=false
+auth.tsx?t=1756442878532:460 ✅ PASSED: Field 'email' = "inine@gmail.com"
+auth.tsx?t=1756442878532:454 🔍 Field 'password': value="Nevil@786", type=string, isEmpty=false
+auth.tsx?t=1756442878532:460 ✅ PASSED: Field 'password' = "Nevil@786"
+auth.tsx?t=1756442878532:466 ❌ FAILED: Terms checkbox not checked
+auth.tsx?t=1756442878532:473 🔍 FINAL VALIDATION RESULT: Object
+client:223 [vite] hot updated: /src/pages/auth.tsx
+client:223 [vite] hot updated: /src/index.css?v=e0js1JpJXxDF9S2E9IJ_A
+client:223 [vite] hot updated: /src/pages/auth.tsx
+client:223 [vite] hot updated: /src/index.css?v=e0js1JpJXxDF9S2E9IJ_A
