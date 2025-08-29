@@ -103,6 +103,7 @@ export default function AuthPage() {
   const [otp, setOTP] = useState("");
   const [countdown, setCountdown] = useState(60); // 1 minute
   const [fieldErrors, setFieldErrors] = useState<Record<string, boolean>>({});
+  const [companyTermsAccepted, setCompanyTermsAccepted] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
   const { toast } = useToast();
@@ -477,9 +478,8 @@ export default function AuthPage() {
       }
     });
     
-    // Check company terms checkbox
-    const companyTermsCheckbox = document.getElementById('company-terms') as HTMLInputElement;
-    if (!companyTermsCheckbox?.checked) {
+    // Check company terms checkbox using React state
+    if (!companyTermsAccepted) {
       newErrors.companyTerms = true;
       hasEmptyFields = true;
     } else {
@@ -1406,8 +1406,10 @@ export default function AuthPage() {
                       <Checkbox 
                         id="company-terms" 
                         required 
+                        checked={companyTermsAccepted}
                         className={fieldErrors.companyTerms ? "field-error" : ""}
                         onCheckedChange={(checked) => {
+                          setCompanyTermsAccepted(checked === true);
                           if (checked) {
                             setFieldErrors(prev => ({ ...prev, companyTerms: false }));
                           }
@@ -1438,10 +1440,6 @@ export default function AuthPage() {
                       type="submit" 
                       className="w-full py-3" 
                       disabled={companyRegistration.isPending}
-                      onClick={(e) => {
-                        // Validate immediately when button is clicked to show red borders
-                        validateCompanyForm();
-                      }}
                       data-testid="button-create-company-account"
                     >
                       {companyRegistration.isPending ? "Creating Account..." : "Create Company Account"}
