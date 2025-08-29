@@ -458,6 +458,11 @@ export default function AuthPage() {
   // Function to validate all required company fields and show errors immediately
   const validateCompanyForm = () => {
     const data = companyForm.getValues();
+    
+    // 🐛 Debug: Check what's actually in the form data
+    console.log("🔍 DEBUGGING TEXT FIELD VALIDATION:");
+    console.log("Full form data:", JSON.stringify(data, null, 2));
+    
     // Include all required fields including address components
     const requiredFields = ['name', 'industry', 'size', 'establishmentYear', 'address', 'city', 'state', 'pincode', 'email', 'password'];
     let hasEmptyFields = false;
@@ -465,10 +470,14 @@ export default function AuthPage() {
     
     requiredFields.forEach(field => {
       const value = data[field as keyof InsertCompany];
+      console.log(`🔍 Field '${field}': value="${value}", type=${typeof value}, isEmpty=${!value || value.toString().trim() === ""}`);
+      
       if (!value || value.toString().trim() === "") {
+        console.log(`❌ FAILED: Field '${field}' is empty/invalid`);
         newErrors[field] = true;
         hasEmptyFields = true;
       } else {
+        console.log(`✅ PASSED: Field '${field}' = "${value}"`);
         newErrors[field] = false;
       }
     });
@@ -476,12 +485,15 @@ export default function AuthPage() {
     // Check company terms checkbox
     const companyTermsCheckbox = document.getElementById('company-terms') as HTMLInputElement;
     if (!companyTermsCheckbox?.checked) {
+      console.log("❌ FAILED: Terms checkbox not checked");
       newErrors.companyTerms = true;
       hasEmptyFields = true;
     } else {
+      console.log("✅ PASSED: Terms checkbox checked");
       newErrors.companyTerms = false;
     }
     
+    console.log("🔍 FINAL VALIDATION RESULT:", { hasEmptyFields, newErrors });
     setFieldErrors(prev => ({ ...prev, ...newErrors }));
     return !hasEmptyFields;
   };
