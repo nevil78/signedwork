@@ -251,15 +251,15 @@ export default function AuthPage() {
     const values = companyForm.getValues();
     const errors: Record<string, boolean> = {};
     
-    // Check all required fields
-    if (!values.name?.trim()) errors.name = true;
-    if (!values.industry) errors.industry = true;
-    if (!values.size) errors.size = true;
-    if (!values.establishmentYear) errors.establishmentYear = true;
-    if (!values.address?.trim()) errors.address = true;
-    if (!values.city?.trim()) errors.city = true;
-    if (!values.email?.trim()) errors.email = true;
-    if (!values.password?.trim()) errors.password = true;
+    // Only show red borders for truly empty required fields
+    if (!values.name || values.name.trim() === "") errors.name = true;
+    if (!values.industry || values.industry === "") errors.industry = true;
+    if (!values.size || values.size === "") errors.size = true;
+    if (!values.establishmentYear || values.establishmentYear === "") errors.establishmentYear = true;
+    if (!values.address || values.address.trim() === "") errors.address = true;
+    if (!values.city || values.city.trim() === "") errors.city = true;
+    if (!values.email || values.email.trim() === "") errors.email = true;
+    if (!values.password || values.password.trim() === "") errors.password = true;
     
     setFieldErrors(errors);
   };
@@ -275,10 +275,15 @@ export default function AuthPage() {
     }
   }, [currentView, companyForm]);
 
-  // Initial validation when switching to company view
+  // Initial validation when switching to company view - delay to avoid showing errors on fresh form
   useEffect(() => {
     if (currentView === "company") {
-      validateRequiredFields();
+      // Clear errors first, then validate after a short delay to allow form reset
+      setFieldErrors({});
+      const timer = setTimeout(() => {
+        validateRequiredFields();
+      }, 100); // Small delay to let form reset complete
+      return () => clearTimeout(timer);
     }
   }, [currentView]);
 
@@ -300,6 +305,10 @@ export default function AuthPage() {
   // Reset company form on page load/view change to company view
   useEffect(() => {
     if (currentView === "company") {
+      // Clear errors first
+      setFieldErrors({});
+      companyForm.clearErrors();
+      
       // Complete form reset with all fields
       companyForm.reset({
         name: "",
@@ -315,10 +324,14 @@ export default function AuthPage() {
         panNumber: "",
         email: "",
         password: "",
+      }, {
+        keepErrors: false,
+        keepDirty: false,
+        keepIsSubmitted: false,
+        keepTouched: false,
+        keepIsValid: false,
+        keepSubmitCount: false,
       });
-      setFieldErrors({});
-      // Force form to clear all errors
-      companyForm.clearErrors();
     }
   }, [currentView, companyForm]);
 
