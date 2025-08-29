@@ -106,6 +106,7 @@ export default function AuthPage() {
   const [companyTermsAccepted, setCompanyTermsAccepted] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
+  const [hasUserStartedFilling, setHasUserStartedFilling] = useState(false);
 
   // Initialize with empty field errors
   useEffect(() => {
@@ -246,7 +247,7 @@ export default function AuthPage() {
 
   // Validate required fields and show red borders for empty ones
   const validateRequiredFields = () => {
-    if (currentView !== "company") return;
+    if (currentView !== "company" || !hasUserStartedFilling) return;
     
     const values = companyForm.getValues();
     const errors: Record<string, boolean> = {};
@@ -275,17 +276,7 @@ export default function AuthPage() {
     }
   }, [currentView, companyForm]);
 
-  // Initial validation when switching to company view - delay to avoid showing errors on fresh form
-  useEffect(() => {
-    if (currentView === "company") {
-      // Clear errors first, then validate after a short delay to allow form reset
-      setFieldErrors({});
-      const timer = setTimeout(() => {
-        validateRequiredFields();
-      }, 100); // Small delay to let form reset complete
-      return () => clearTimeout(timer);
-    }
-  }, [currentView]);
+  // Don't run any initial validation - only validate after user starts interacting
 
   // Reset employee form on page load/view change to employee view
   useEffect(() => {
@@ -308,6 +299,7 @@ export default function AuthPage() {
       // Clear errors first
       setFieldErrors({});
       companyForm.clearErrors();
+      setHasUserStartedFilling(false); // Reset interaction flag
       
       // Complete form reset with all fields
       companyForm.reset({
@@ -1068,6 +1060,10 @@ export default function AuthPage() {
                                 className={getFieldErrorClass("name", fieldState)}
                                 onChange={(e) => {
                                   field.onChange(e);
+                                  // Mark that user has started filling the form
+                                  if (!hasUserStartedFilling) {
+                                    setHasUserStartedFilling(true);
+                                  }
                                   // Immediate validation on field change
                                   setTimeout(() => validateRequiredFields(), 0);
                                 }}
@@ -1108,10 +1104,12 @@ export default function AuthPage() {
                               <FormLabel>Industry Sector *</FormLabel>
                               <Select onValueChange={(value) => {
                                 field.onChange(value);
-                                if (value) {
-                                  setFieldErrors(prev => ({ ...prev, industry: false }));
-                                  companyForm.clearErrors("industry");
+                                // Mark that user has started filling the form
+                                if (!hasUserStartedFilling) {
+                                  setHasUserStartedFilling(true);
                                 }
+                                // Immediate validation
+                                setTimeout(() => validateRequiredFields(), 0);
                               }} value={field.value || ""}>
                                 <FormControl>
                                   <SelectTrigger className={getFieldErrorClass("industry", fieldState)}>
@@ -1139,10 +1137,12 @@ export default function AuthPage() {
                               <FormLabel>Company Size *</FormLabel>
                               <Select onValueChange={(value) => {
                                 field.onChange(value);
-                                if (value) {
-                                  setFieldErrors(prev => ({ ...prev, size: false }));
-                                  companyForm.clearErrors("size");
+                                // Mark that user has started filling the form
+                                if (!hasUserStartedFilling) {
+                                  setHasUserStartedFilling(true);
                                 }
+                                // Immediate validation
+                                setTimeout(() => validateRequiredFields(), 0);
                               }} value={field.value || ""}>
                                 <FormControl>
                                   <SelectTrigger className={getFieldErrorClass("size", fieldState)}>
