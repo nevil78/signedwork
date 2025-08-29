@@ -458,7 +458,8 @@ export default function AuthPage() {
   // Function to validate all required company fields and show errors immediately
   const validateCompanyForm = () => {
     const data = companyForm.getValues();
-    const requiredFields = ['name', 'industry', 'size', 'establishmentYear', 'address', 'email', 'password'];
+    // Include all required fields including address components
+    const requiredFields = ['name', 'industry', 'size', 'establishmentYear', 'address', 'city', 'state', 'pincode', 'email', 'password'];
     let hasEmptyFields = false;
     const newErrors: Record<string, boolean> = {};
     
