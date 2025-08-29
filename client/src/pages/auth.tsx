@@ -107,36 +107,10 @@ export default function AuthPage() {
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
 
-  // Validate required fields and show red borders for empty ones
-  const validateRequiredFields = () => {
-    const values = companyForm.getValues();
-    const errors: Record<string, boolean> = {};
-    
-    // Check all required fields
-    if (!values.name?.trim()) errors.name = true;
-    if (!values.industry) errors.industry = true;
-    if (!values.size) errors.size = true;
-    if (!values.establishmentYear) errors.establishmentYear = true;
-    if (!values.address?.trim()) errors.address = true;
-    if (!values.city?.trim()) errors.city = true;
-    if (!values.email?.trim()) errors.email = true;
-    if (!values.password?.trim()) errors.password = true;
-    
-    setFieldErrors(errors);
-  };
-
-  // Validate required fields when component mounts
+  // Initialize with empty field errors
   useEffect(() => {
-    validateRequiredFields();
+    setFieldErrors({});
   }, []);
-
-  // Watch form values and validate in real-time
-  useEffect(() => {
-    const subscription = companyForm.watch(() => {
-      validateRequiredFields();
-    });
-    return () => subscription.unsubscribe();
-  }, [companyForm]);
   const { toast } = useToast();
 
 
@@ -269,6 +243,43 @@ export default function AuthPage() {
       accountType: "employee",
     },
   });
+
+  // Validate required fields and show red borders for empty ones
+  const validateRequiredFields = () => {
+    if (currentView !== "company") return;
+    
+    const values = companyForm.getValues();
+    const errors: Record<string, boolean> = {};
+    
+    // Check all required fields
+    if (!values.name?.trim()) errors.name = true;
+    if (!values.industry) errors.industry = true;
+    if (!values.size) errors.size = true;
+    if (!values.establishmentYear) errors.establishmentYear = true;
+    if (!values.address?.trim()) errors.address = true;
+    if (!values.city?.trim()) errors.city = true;
+    if (!values.email?.trim()) errors.email = true;
+    if (!values.password?.trim()) errors.password = true;
+    
+    setFieldErrors(errors);
+  };
+
+  // Watch form values and validate in real-time for company form only
+  useEffect(() => {
+    if (currentView === "company") {
+      const subscription = companyForm.watch(() => {
+        validateRequiredFields();
+      });
+      return () => subscription.unsubscribe();
+    }
+  }, [currentView, companyForm]);
+
+  // Initial validation when switching to company view
+  useEffect(() => {
+    if (currentView === "company") {
+      validateRequiredFields();
+    }
+  }, [currentView]);
 
   // Reset employee form on page load/view change to employee view
   useEffect(() => {
