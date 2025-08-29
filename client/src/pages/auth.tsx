@@ -107,10 +107,36 @@ export default function AuthPage() {
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
 
-  // Clear all field errors when component mounts to ensure clean state
+  // Validate required fields and show red borders for empty ones
+  const validateRequiredFields = () => {
+    const values = companyForm.getValues();
+    const errors: Record<string, boolean> = {};
+    
+    // Check all required fields
+    if (!values.name?.trim()) errors.name = true;
+    if (!values.industry) errors.industry = true;
+    if (!values.size) errors.size = true;
+    if (!values.establishmentYear) errors.establishmentYear = true;
+    if (!values.address?.trim()) errors.address = true;
+    if (!values.city?.trim()) errors.city = true;
+    if (!values.email?.trim()) errors.email = true;
+    if (!values.password?.trim()) errors.password = true;
+    
+    setFieldErrors(errors);
+  };
+
+  // Validate required fields when component mounts
   useEffect(() => {
-    setFieldErrors({});
+    validateRequiredFields();
   }, []);
+
+  // Watch form values and validate in real-time
+  useEffect(() => {
+    const subscription = companyForm.watch(() => {
+      validateRequiredFields();
+    });
+    return () => subscription.unsubscribe();
+  }, [companyForm]);
   const { toast } = useToast();
 
 
@@ -191,10 +217,13 @@ export default function AuthPage() {
 
   // Helper function to check if field has error and should show red border
   const getFieldErrorClass = (fieldName: string, fieldState: any) => {
-    // Only show red border from custom fieldErrors state, ignore React Hook Form errors during typing
+    // Show red border for:
+    // 1. Custom field errors (for empty required fields)
+    // 2. Form submission errors (after user tries to submit)
     const hasCustomError = fieldErrors[fieldName];
+    const hasSubmissionError = fieldState?.error && companyForm.formState.isSubmitted;
     
-    if (hasCustomError) {
+    if (hasCustomError || hasSubmissionError) {
       return "field-error";
     }
     return "";
@@ -1006,13 +1035,7 @@ export default function AuthPage() {
                                 placeholder="Acme Corporation Pvt Ltd" 
                                 {...field}
                                 className={getFieldErrorClass("name", fieldState)}
-                                onChange={(e) => {
-                                  field.onChange(e);
-                                  if (e.target.value.trim()) {
-                                    setFieldErrors(prev => ({ ...prev, name: false }));
-                                    companyForm.clearErrors("name");
-                                  }
-                                }}
+                                onChange={field.onChange}
                                 data-testid="input-company-name"
                               />
                             </FormControl>
@@ -1256,13 +1279,7 @@ export default function AuthPage() {
                                 rows={3}
                                 className={`resize-none ${getFieldErrorClass("address", fieldState)}`}
                                 {...field}
-                                onChange={(e) => {
-                                  field.onChange(e);
-                                  if (e.target.value.trim()) {
-                                    setFieldErrors(prev => ({ ...prev, address: false }));
-                                    companyForm.clearErrors("address");
-                                  }
-                                }}
+                                onChange={field.onChange}
                                 data-testid="input-business-address"
                               />
                             </FormControl>
