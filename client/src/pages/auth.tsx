@@ -267,8 +267,9 @@ export default function AuthPage() {
   // Watch form values and validate in real-time for company form only
   useEffect(() => {
     if (currentView === "company") {
-      const subscription = companyForm.watch(() => {
-        validateRequiredFields();
+      const subscription = companyForm.watch((values, { name, type }) => {
+        // Immediate validation when any field changes
+        setTimeout(() => validateRequiredFields(), 0);
       });
       return () => subscription.unsubscribe();
     }
@@ -299,19 +300,25 @@ export default function AuthPage() {
   // Reset company form on page load/view change to company view
   useEffect(() => {
     if (currentView === "company") {
+      // Complete form reset with all fields
       companyForm.reset({
         name: "",
+        industry: "",
+        size: "",
+        establishmentYear: "",
         address: "",
+        city: "",
+        state: "",
         pincode: "",
         registrationNumber: "",
         cin: "",
         panNumber: "",
         email: "",
-        size: "",
-        establishmentYear: "",
         password: "",
       });
       setFieldErrors({});
+      // Force form to clear all errors
+      companyForm.clearErrors();
     }
   }, [currentView, companyForm]);
 
@@ -1046,7 +1053,11 @@ export default function AuthPage() {
                                 placeholder="Acme Corporation Pvt Ltd" 
                                 {...field}
                                 className={getFieldErrorClass("name", fieldState)}
-                                onChange={field.onChange}
+                                onChange={(e) => {
+                                  field.onChange(e);
+                                  // Immediate validation on field change
+                                  setTimeout(() => validateRequiredFields(), 0);
+                                }}
                                 data-testid="input-company-name"
                               />
                             </FormControl>
