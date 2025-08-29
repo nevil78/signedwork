@@ -1004,6 +1004,7 @@ export default function AuthPage() {
                                   field.onChange(e);
                                   if (e.target.value.trim()) {
                                     setFieldErrors(prev => ({ ...prev, name: false }));
+                                    companyForm.clearErrors("name");
                                   }
                                 }}
                                 onBlur={() => handleFieldBlur("name")}
@@ -1046,6 +1047,7 @@ export default function AuthPage() {
                                 field.onChange(value);
                                 if (value) {
                                   setFieldErrors(prev => ({ ...prev, industry: false }));
+                                  companyForm.clearErrors("industry");
                                 }
                               }} value={field.value || ""}>
                                 <FormControl>
@@ -1076,6 +1078,7 @@ export default function AuthPage() {
                                 field.onChange(value);
                                 if (value) {
                                   setFieldErrors(prev => ({ ...prev, size: false }));
+                                  companyForm.clearErrors("size");
                                 }
                               }} value={field.value || ""}>
                                 <FormControl>
@@ -1119,6 +1122,7 @@ export default function AuthPage() {
                                   field.onChange(value);
                                   if (value.trim()) {
                                     setFieldErrors(prev => ({ ...prev, establishmentYear: false }));
+                                    companyForm.clearErrors("establishmentYear");
                                   }
                                 }}
                                 onBlur={() => handleFieldBlur("establishmentYear")}
@@ -1251,6 +1255,7 @@ export default function AuthPage() {
                                   field.onChange(e);
                                   if (e.target.value.trim()) {
                                     setFieldErrors(prev => ({ ...prev, address: false }));
+                                    companyForm.clearErrors("address");
                                   }
                                 }}
                                 onBlur={() => handleFieldBlur("address")}
@@ -1282,6 +1287,7 @@ export default function AuthPage() {
                                     field.onChange(capitalized);
                                     if (capitalized.trim()) {
                                       setFieldErrors(prev => ({ ...prev, city: false }));
+                                      companyForm.clearErrors("city");
                                     }
                                   }}
                                   onBlur={() => handleFieldBlur("city")}
@@ -1302,6 +1308,7 @@ export default function AuthPage() {
                                 field.onChange(value);
                                 if (value) {
                                   setFieldErrors(prev => ({ ...prev, state: false }));
+                                  companyForm.clearErrors("state");
                                 }
                               }} value={field.value || ""}>
                                 <FormControl>
@@ -1361,6 +1368,7 @@ export default function AuthPage() {
                                   field.onChange(e);
                                   if (e.target.value.trim()) {
                                     setFieldErrors(prev => ({ ...prev, email: false }));
+                                    companyForm.clearErrors("email");
                                   }
                                 }}
                                 onBlur={() => handleFieldBlur("email")}
@@ -1387,6 +1395,7 @@ export default function AuthPage() {
                                     // Clear error on change
                                     if (e.target.value.trim()) {
                                       setFieldErrors(prev => ({ ...prev, password: false }));
+                                      companyForm.clearErrors("password");
                                     }
                                   },
                                   onBlur: () => handleFieldBlur("password")
