@@ -1068,15 +1068,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Admin authentication routes
   
-  // Create first admin
+  // Create first admin - HIGHLY RESTRICTED
   app.post("/api/admin/auth/create-first", async (req, res) => {
     try {
+      // SECURITY CHECK 1: Check if any admin already exists
       const adminExists = await storage.checkAdminExists();
       if (adminExists) {
-        return res.status(409).json({ message: "Admin already exists" });
+        return res.status(409).json({ message: "Admin already exists. Only one super admin is allowed." });
+      }
+
+      // SECURITY CHECK 2: Validate admin count (should be 0)
+      const adminCount = await storage.getAdminCount();
+      if (adminCount > 0) {
+        return res.status(409).json({ message: "Admin creation blocked. System already has an administrator." });
       }
 
       const { username, email, password } = req.body;
+
+      // SECURITY CHECK 3: Email validation (only authorized email allowed)
+      const authorizedEmail = process.env.AUTHORIZED_ADMIN_EMAIL || "admin@signedwork.com";
+      if (email !== authorizedEmail) {
+        return res.status(403).json({ 
+          message: "Unauthorized email. Only the system owner can create admin account." 
+        });
+      }
+
+      // SECURITY CHECK 4: Username validation (must be "admin" or "superadmin")
+      const allowedUsernames = ["admin", "superadmin", "administrator"];
+      if (!allowedUsernames.includes(username.toLowerCase())) {
+        return res.status(400).json({ 
+          message: "Invalid username. Use: admin, superadmin, or administrator" 
+        });
+      }
+
+      // SECURITY CHECK 5: Password strength validation
+      if (password.length < 12 || 
+          !/[A-Z]/.test(password) || 
+          !/[a-z]/.test(password) || 
+          !/\d/.test(password) || 
+          !/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+        return res.status(400).json({ 
+          message: "Password must be at least 12 characters with uppercase, lowercase, number, and special character" 
+        });
+      }
 
       const admin = await storage.createAdmin({
         username,
@@ -1085,9 +1119,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         role: "super_admin"
       });
 
-      res.json({ message: "Admin created successfully", admin });
-    } catch (error) {
+      // Remove password from response
+      const { password: _, ...adminResponse } = admin;
+      
+      res.status(201).json({ 
+        message: "Super admin created successfully. This route is now permanently disabled.",
+        admin: adminResponse
+      });
+    } catch (error: any) {
       console.error("Create admin error:", error);
+      
+      // Additional security: Log attempted unauthorized admin creation
+      if (error.message?.includes("duplicate") || error.message?.includes("unique")) {
+        console.warn("SECURITY ALERT: Attempted duplicate admin creation", {
+          timestamp: new Date().toISOString(),
+          ip: req.ip,
+          userAgent: req.headers['user-agent']
+        });
+      }
+      
       res.status(500).json({ message: "Failed to create admin" });
     }
   });

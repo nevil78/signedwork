@@ -2517,6 +2517,18 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createAdmin(adminData: InsertAdmin): Promise<Admin> {
+    // SECURITY CHECK: Prevent multiple admin creation at database level
+    const adminCount = await this.getAdminCount();
+    if (adminCount > 0) {
+      throw new Error("SECURITY VIOLATION: Only one admin account is allowed. Admin already exists.");
+    }
+    
+    // Additional check using checkAdminExists
+    const adminExists = await this.checkAdminExists();
+    if (adminExists) {
+      throw new Error("SECURITY VIOLATION: Admin account already exists. Cannot create duplicate.");
+    }
+    
     const hashedPassword = await bcrypt.hash(adminData.password, 10);
     
     // Generate a unique admin ID

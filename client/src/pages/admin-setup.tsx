@@ -15,13 +15,22 @@ import { useToast } from "@/hooks/use-toast";
 
 const createAdminSchema = z.object({
   username: z.string()
-    .min(3, "Username must be at least 3 characters"),
+    .min(3, "Username must be at least 3 characters")
+    .refine((val) => ["admin", "superadmin", "administrator"].includes(val.toLowerCase()), {
+      message: "Username must be: admin, superadmin, or administrator"
+    }),
   email: z.string()
-    .email("Invalid email format"),
+    .email("Invalid email format")
+    .refine((val) => {
+      // Allow any email during validation, server will check authorization
+      return true;
+    }, "Invalid email format"),
   password: z.string()
-    .min(8, "Password must be at least 8 characters")
+    .min(12, "Password must be at least 12 characters")
     .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
-    .regex(/\d/, "Password must contain at least one number"),
+    .regex(/[a-z]/, "Password must contain at least one lowercase letter")
+    .regex(/\d/, "Password must contain at least one number")
+    .regex(/[!@#$%^&*(),.?":{}|<>]/, "Password must contain at least one special character"),
   confirmPassword: z.string()
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
@@ -46,15 +55,27 @@ export default function AdminSetup() {
     },
   });
 
-  // Check if admin already exists
+  // Check if admin already exists - ENHANCED SECURITY CHECK
   const checkAdminMutation = useMutation({
     mutationFn: () => 
       apiRequest("GET", "/api/admin/stats").then(() => true).catch(() => false),
     onSuccess: (exists) => {
       setAdminExists(exists);
       if (exists) {
-        setTimeout(() => navigate("/admin/login"), 2000);
+        // Immediate redirect - no delay to prevent unauthorized access
+        navigate("/admin/login");
       }
+    },
+    onError: () => {
+      // If stats endpoint fails, try direct admin check
+      apiRequest("POST", "/api/admin/auth/create-first", { test: true })
+        .then(() => setAdminExists(false))
+        .catch((error) => {
+          if (error.message?.includes("Admin already exists")) {
+            setAdminExists(true);
+            navigate("/admin/login");
+          }
+        });
     },
   });
 
@@ -101,19 +122,23 @@ export default function AdminSetup() {
             <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
               <ShieldCheck className="h-6 w-6 text-blue-600" />
             </div>
-            <CardTitle className="text-2xl font-bold">Admin Already Set Up</CardTitle>
-            <CardDescription>
-              An admin account has already been created for this platform
+            <CardTitle className="text-2xl font-bold text-red-700">Access Restricted</CardTitle>
+            <CardDescription className="text-red-600">
+              Admin account already exists. Only one super admin is allowed.
             </CardDescription>
           </CardHeader>
           <CardContent className="text-center space-y-4">
+            <Alert className="border-red-200 bg-red-50">
+              <ShieldCheck className="h-4 w-4 text-red-600" />
+              <AlertDescription className="text-red-700">
+                <strong>Security Notice:</strong> This system allows only one administrator account for maximum security.
+              </AlertDescription>
+            </Alert>
             <p className="text-sm text-muted-foreground">
-              You can now log in with your admin credentials to access the dashboard.
+              Please use the existing admin login.
             </p>
-            <Button asChild className="w-full">
-              <a href="/admin/login">
-                Go to Admin Login
-              </a>
+            <Button className="w-full bg-red-600 hover:bg-red-700" onClick={() => navigate("/admin/login")}>
+              Go to Admin Login
             </Button>
           </CardContent>
           <CardFooter className="text-center">
@@ -134,7 +159,9 @@ export default function AdminSetup() {
             <ShieldCheck className="h-6 w-6 text-green-600" />
           </div>
           <CardTitle className="text-2xl font-bold">Admin Setup</CardTitle>
-          <CardDescription>Create the first super admin account</CardDescription>
+          <CardDescription className="text-orange-600">
+            <strong>RESTRICTED:</strong> Only authorized system owner can create admin account
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
