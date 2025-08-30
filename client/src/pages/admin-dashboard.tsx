@@ -43,6 +43,7 @@ export default function AdminDashboard() {
   const [companySearch, setCompanySearch] = useState("");
   const [cinVerificationNotes, setCinVerificationNotes] = useState<Record<string, string>>({});
   const [panVerificationNotes, setPanVerificationNotes] = useState<Record<string, string>>({});
+  const [gstVerificationNotes, setGstVerificationNotes] = useState<Record<string, string>>({});
 
   // Fetch current admin user
   const { data: userData, isLoading: userLoading } = useQuery<UserData>({
@@ -216,6 +217,12 @@ export default function AdminDashboard() {
     enabled: userData?.userType === "admin" && activeTab === "pan-verification",
   });
 
+  // Fetch companies pending GST verification
+  const { data: pendingGstCompanies } = useQuery<Company[]>({
+    queryKey: ["/api/admin/companies/pending-gst-verification"],
+    enabled: userData?.userType === "admin" && activeTab === "gst-verification",
+  });
+
   // CIN verification mutation
   const cinVerificationMutation = useMutation({
     mutationFn: ({ companyId, status, notes }: { companyId: string; status: string; notes?: string }) =>
@@ -240,6 +247,20 @@ export default function AdminDashboard() {
       toast({
         title: "PAN verification updated",
         description: "Company PAN verification status has been updated successfully",
+      });
+    },
+  });
+
+  // GST verification mutation
+  const gstVerificationMutation = useMutation({
+    mutationFn: ({ companyId, status, notes }: { companyId: string; status: string; notes?: string }) =>
+      apiRequest("PATCH", `/api/admin/companies/${companyId}/gst-verification`, { status, notes }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/companies/pending-gst-verification"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/companies"] });
+      toast({
+        title: "GST verification updated",
+        description: "Company GST verification status has been updated successfully",
       });
     },
   });
@@ -307,6 +328,7 @@ export default function AdminDashboard() {
               <TabsTrigger value="company-management" className="text-xs">Company Mgmt</TabsTrigger>
               <TabsTrigger value="cin-verification" className="text-xs">CIN</TabsTrigger>
               <TabsTrigger value="pan-verification" className="text-xs">PAN</TabsTrigger>
+              <TabsTrigger value="gst-verification" className="text-xs">GST</TabsTrigger>
               <TabsTrigger value="verifications" className="text-xs">Verifications</TabsTrigger>
               <TabsTrigger value="feedback" className="text-xs">Feedback</TabsTrigger>
             </TabsList>
@@ -327,6 +349,7 @@ export default function AdminDashboard() {
                 <option value="company-management">Company Management</option>
                 <option value="cin-verification">CIN Verification</option>
                 <option value="pan-verification">PAN Verification</option>
+                <option value="gst-verification">GST Verification</option>
                 <option value="verifications">Verifications</option>
                 <option value="feedback">Feedback</option>
               </select>
@@ -908,6 +931,103 @@ export default function AdminDashboard() {
                     <h3 className="text-lg font-semibold mb-2">No Pending PAN Verifications</h3>
                     <p className="text-muted-foreground">
                       All PAN verification requests have been processed or no companies have submitted PAN numbers for verification.
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* GST Verification Tab */}
+          <TabsContent value="gst-verification">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Shield className="h-5 w-5 mr-2" />
+                  GST Verification Management
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {pendingGstCompanies && pendingGstCompanies.length > 0 ? (
+                  <div className="space-y-4">
+                    {pendingGstCompanies.map((company) => (
+                      <div key={company.id} className="p-6 border rounded-lg bg-white shadow-sm">
+                        <div className="space-y-4">
+                          <div className="flex items-start justify-between">
+                            <div className="space-y-2">
+                              <h3 className="font-semibold text-lg">{company.name}</h3>
+                              <div className="space-y-1 text-sm text-gray-600">
+                                <p><span className="font-medium">Company ID:</span> {company.companyId}</p>
+                                <p><span className="font-medium">Email:</span> {company.email}</p>
+                                <p><span className="font-medium">GST Number:</span> {company.registrationNumber || 'Not provided'}</p>
+                                <p><span className="font-medium">Registration Type:</span> {company.registrationType}</p>
+                                <p><span className="font-medium">Industry:</span> {company.industry}</p>
+                                <p><span className="font-medium">Address:</span> {company.address}, {company.city}, {company.state} - {company.pincode}</p>
+                                <p><span className="font-medium">Establishment Year:</span> {company.establishmentYear}</p>
+                                <p><span className="font-medium">Company Size:</span> {company.size}</p>
+                                <p><span className="font-medium">Submitted:</span> {format(new Date(company.createdAt), "PPp")}</p>
+                              </div>
+                            </div>
+                            <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
+                              Pending GST Verification
+                            </Badge>
+                          </div>
+                          
+                          <div className="space-y-3">
+                            <div>
+                              <label className="block text-sm font-medium mb-2">Admin Notes (Optional)</label>
+                              <Input
+                                placeholder="Add verification notes..."
+                                value={gstVerificationNotes[company.id] || ""}
+                                onChange={(e) => setGstVerificationNotes(prev => ({
+                                  ...prev,
+                                  [company.id]: e.target.value
+                                }))}
+                                data-testid={`input-gst-notes-${company.id}`}
+                              />
+                            </div>
+                            
+                            <div className="flex gap-3">
+                              <Button
+                                onClick={() => gstVerificationMutation.mutate({
+                                  companyId: company.id,
+                                  status: "verified",
+                                  notes: gstVerificationNotes[company.id]
+                                })}
+                                disabled={gstVerificationMutation.isPending}
+                                className="bg-green-600 hover:bg-green-700 flex-1"
+                                data-testid={`button-approve-gst-${company.id}`}
+                              >
+                                <UserCheck className="h-4 w-4 mr-2" />
+                                {gstVerificationMutation.isPending ? "Processing..." : "Approve GST"}
+                              </Button>
+                              
+                              <Button
+                                onClick={() => gstVerificationMutation.mutate({
+                                  companyId: company.id,
+                                  status: "rejected",
+                                  notes: gstVerificationNotes[company.id]
+                                })}
+                                disabled={gstVerificationMutation.isPending}
+                                variant="destructive"
+                                className="flex-1"
+                                data-testid={`button-reject-gst-${company.id}`}
+                              >
+                                <UserX className="h-4 w-4 mr-2" />
+                                {gstVerificationMutation.isPending ? "Processing..." : "Reject GST"}
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <Shield className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">No Pending GST Verifications</h3>
+                    <p className="text-muted-foreground">
+                      All GST verification requests have been processed or no companies have submitted GST numbers for verification.
                     </p>
                   </div>
                 )}

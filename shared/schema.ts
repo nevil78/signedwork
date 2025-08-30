@@ -202,7 +202,7 @@ export const companies = pgTable("companies", {
   city: text("city").notNull(),
   state: text("state").notNull(),
   pincode: text("pincode").notNull(),
-  registrationType: text("registration_type"), // CIN or PAN (optional)
+  registrationType: text("registration_type"), // CIN, PAN, or GST (optional)
   registrationNumber: text("registration_number"), // Registration number (optional)
   cin: text("cin").unique(), // Corporate Identification Number (21 characters) - Optional
   cinVerificationStatus: text("cin_verification_status", { 
@@ -216,6 +216,13 @@ export const companies = pgTable("companies", {
   }).default("pending"),
   panVerifiedAt: timestamp("pan_verified_at"),
   panVerifiedBy: varchar("pan_verified_by"), // Admin ID who verified
+  // GST verification fields
+  gstNumber: text("gst_number"), // GST Number (15 characters) - Optional
+  gstVerificationStatus: text("gst_verification_status", {
+    enum: ["pending", "verified", "rejected"]
+  }).default("pending"),
+  gstVerifiedAt: timestamp("gst_verified_at"),
+  gstVerifiedBy: varchar("gst_verified_by"), // Admin ID who verified
   isBasicDetailsLocked: boolean("is_basic_details_locked").default(false),
   industry: text("industry").notNull(),
   email: text("email").notNull().unique(),
@@ -842,7 +849,7 @@ export const insertCompanySchema = createInsertSchema(companies).omit({
     .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
     .regex(/\d/, "Password must contain at least one number"),
   pincode: z.string().min(5, "Pincode must be at least 5 digits"),
-  registrationType: z.enum(["CIN", "PAN"]).optional(),
+  registrationType: z.enum(["CIN", "PAN", "GST"]).optional(),
   registrationNumber: z.string().optional(),
   industry: z.string().min(1, "Please select an industry"),
   establishmentYear: z.string()

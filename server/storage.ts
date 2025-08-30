@@ -441,6 +441,16 @@ export interface IStorage {
     verificationNotes?: string;
   }): Promise<Company>;
   
+  // GST verification methods
+  getCompaniesByGSTVerificationStatus(status: string): Promise<Company[]>;
+  updateCompanyGSTVerification(companyId: string, data: {
+    gstVerificationStatus: string;
+    gstVerifiedAt: Date;
+    gstVerifiedBy: string;
+    isBasicDetailsLocked: boolean;
+    verificationNotes?: string;
+  }): Promise<Company>;
+  
   // User feedback operations
   createFeedback(feedback: InsertFeedback): Promise<UserFeedback>;
   getAllFeedback(): Promise<UserFeedback[]>;
@@ -3252,6 +3262,38 @@ export class DatabaseStorage implements IStorage {
         panVerificationStatus: data.panVerificationStatus,
         panVerifiedAt: data.panVerifiedAt,
         panVerifiedBy: data.panVerifiedBy,
+        isBasicDetailsLocked: data.isBasicDetailsLocked,
+        verificationNotes: data.verificationNotes,
+        updatedAt: new Date()
+      })
+      .where(eq(companies.id, companyId))
+      .returning();
+    
+    return updatedCompany;
+  }
+
+  // GST verification operations
+  async getCompaniesByGSTVerificationStatus(status: string): Promise<Company[]> {
+    return await db
+      .select()
+      .from(companies)
+      .where(eq(companies.gstVerificationStatus, status))
+      .orderBy(desc(companies.createdAt));
+  }
+
+  async updateCompanyGSTVerification(companyId: string, data: {
+    gstVerificationStatus: string;
+    gstVerifiedAt: Date;
+    gstVerifiedBy: string;
+    isBasicDetailsLocked: boolean;
+    verificationNotes?: string;
+  }): Promise<Company> {
+    const [updatedCompany] = await db
+      .update(companies)
+      .set({
+        gstVerificationStatus: data.gstVerificationStatus,
+        gstVerifiedAt: data.gstVerifiedAt,
+        gstVerifiedBy: data.gstVerifiedBy,
         isBasicDetailsLocked: data.isBasicDetailsLocked,
         verificationNotes: data.verificationNotes,
         updatedAt: new Date()

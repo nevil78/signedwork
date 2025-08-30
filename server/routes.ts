@@ -4222,6 +4222,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // GST verification admin routes - PROTECTED ROUTE
+  app.get("/api/admin/companies/pending-gst-verification", requireAdmin, async (req: any, res) => {
+    
+    try {
+      const pendingCompanies = await storage.getCompaniesByGSTVerificationStatus("pending");
+      res.json(pendingCompanies);
+    } catch (error) {
+      console.error("Get pending GST verifications error:", error);
+      res.status(500).json({ message: "Failed to fetch pending GST verifications" });
+    }
+  });
+
+  app.patch("/api/admin/companies/:id/gst-verification", requireAdmin, async (req: any, res) => {
+    
+    try {
+      const { id } = req.params;
+      const { status, notes } = req.body;
+      
+      if (!["verified", "rejected"].includes(status)) {
+        return res.status(400).json({ message: "Invalid verification status" });
+      }
+
+      const updatedCompany = await storage.updateCompanyGSTVerification(id, {
+        gstVerificationStatus: status,
+        gstVerifiedAt: new Date(),
+        gstVerifiedBy: req.user.id,
+        isBasicDetailsLocked: status === "verified",
+        verificationNotes: notes
+      });
+
+      // Emit real-time update
+      emitRealTimeUpdate("gst_verification_updated", {
+        companyId: id,
+        status,
+        timestamp: new Date().toISOString()
+      }, [`company-${id}`]);
+
+      res.json({
+        message: `Company GST ${status === "verified" ? "verified" : "rejected"} successfully`,
+        company: updatedCompany
+      });
+    } catch (error) {
+      console.error("Update GST verification error:", error);
+      res.status(500).json({ message: "Failed to update GST verification" });
+    }
+  });
+
   // =====================================================
   // ENHANCED ADMIN EMPLOYEE-COMPANY MANAGEMENT ROUTES
   // =====================================================
