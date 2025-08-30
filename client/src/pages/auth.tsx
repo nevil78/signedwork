@@ -252,29 +252,35 @@ export default function AuthPage() {
     const values = companyForm.getValues();
     const errors: Record<string, boolean> = {};
     
-    // Only show red borders for truly empty required fields
-    if (!values.name || values.name.trim() === "") errors.name = true;
-    if (!values.industry || values.industry === "") errors.industry = true;
-    if (!values.size || values.size === "") errors.size = true;
-    if (!values.establishmentYear || values.establishmentYear === "") errors.establishmentYear = true;
-    if (!values.address || values.address.trim() === "") errors.address = true;
-    if (!values.city || values.city.trim() === "") errors.city = true;
-    if (!values.email || values.email.trim() === "") errors.email = true;
-    if (!values.password || values.password.trim() === "") errors.password = true;
+    // Debug: Log form values to understand what's happening
+    console.log("Form validation - current values:", values);
     
+    // Only show red borders for truly empty required fields
+    const isEmpty = (value: string | undefined | null) => !value || value.trim() === "";
+    
+    if (isEmpty(values.name)) errors.name = true;
+    if (isEmpty(values.industry)) errors.industry = true;
+    if (isEmpty(values.size)) errors.size = true;
+    if (isEmpty(values.establishmentYear)) errors.establishmentYear = true;
+    if (isEmpty(values.address)) errors.address = true;
+    if (isEmpty(values.city)) errors.city = true;
+    if (isEmpty(values.email)) errors.email = true;
+    if (isEmpty(values.password)) errors.password = true;
+    
+    console.log("Field errors being set:", errors);
     setFieldErrors(errors);
   };
 
   // Watch form values and validate in real-time for company form only
   useEffect(() => {
-    if (currentView === "company") {
+    if (currentView === "company" && hasUserStartedFilling) {
       const subscription = companyForm.watch((values, { name, type }) => {
         // Immediate validation when any field changes
         setTimeout(() => validateRequiredFields(), 0);
       });
       return () => subscription.unsubscribe();
     }
-  }, [currentView, companyForm]);
+  }, [currentView, companyForm, hasUserStartedFilling]);
 
   // Don't run any initial validation - only validate after user starts interacting
 
@@ -1314,7 +1320,15 @@ export default function AuthPage() {
                                 rows={3}
                                 className={`resize-none ${getFieldErrorClass("address", fieldState)}`}
                                 {...field}
-                                onChange={field.onChange}
+                                onChange={(e) => {
+                                  field.onChange(e);
+                                  // Mark that user has started filling the form
+                                  if (!hasUserStartedFilling) {
+                                    setHasUserStartedFilling(true);
+                                  }
+                                  // Immediate validation
+                                  setTimeout(() => validateRequiredFields(), 0);
+                                }}
                                 data-testid="input-business-address"
                               />
                             </FormControl>
