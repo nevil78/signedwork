@@ -661,8 +661,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Email verification is optional - users can login without verification
-      // They can verify their email later in their profile page
+      // Email verification requirement - Companies must verify email before login
+      if (userType === "company" && !user.emailVerified) {
+        return res.status(403).json({ 
+          message: "Email verification required. Please check your email and verify your account before logging in.",
+          requiresVerification: true
+        });
+      }
       
       // Store user session
       (req.session as any).user = {
