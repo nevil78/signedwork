@@ -461,10 +461,23 @@ export default function AuthPage() {
       }
     },
     onError: (error: any) => {
-      // Always show user-friendly message for authentication errors
+      // Check for email verification requirement
+      const requiresEmailVerification = error.message?.includes("Email verification required") || 
+                                       error.status === 403;
+      
+      // Check for authentication errors
       const isAuthError = error.message?.includes("Invalid email or password") || 
                          error.message?.includes("401") ||
                          error.status === 401;
+      
+      if (requiresEmailVerification) {
+        toast({
+          title: "Email Verification Required",
+          description: "Please verify your email address before logging in. Check your email for verification instructions.",
+          variant: "destructive",
+        });
+        return;
+      }
       
       // Set login error state to trigger visual feedback
       setLoginError(true);
