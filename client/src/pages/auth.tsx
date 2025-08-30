@@ -1245,7 +1245,7 @@ export default function AuthPage() {
                               <FormLabel>GST Number</FormLabel>
                               <FormControl>
                                 <Input 
-                                  placeholder="Optional - can be added later" 
+                                  placeholder="22AAAAA0000A1Z5 (OPTIONAL)" 
                                   {...field}
                                 />
                               </FormControl>
