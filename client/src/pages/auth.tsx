@@ -421,12 +421,19 @@ export default function AuthPage() {
       });
     },
     onSuccess: (response: any) => {
-      setVerificationEmail(companyForm.getValues("email"));
-      setCurrentView("verification-pending");
+      // Invalidate auth queries to refresh authentication state
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/session-status"] });
+      
       toast({
-        title: "Verification Email Sent!",
-        description: response.message || "Please check your email to verify your account.",
+        title: "Account Created Successfully!",
+        description: response.message || "Your company account has been created. You can verify your email later to unlock all features.",
       });
+      
+      // Direct redirect to company login instead of verification screen
+      setTimeout(() => {
+        setCurrentView("company-login");
+      }, 1500);
     },
     onError: (error: any) => {
       const isEmailAlreadyRegistered = error.message && error.message.includes("Email already registered");
