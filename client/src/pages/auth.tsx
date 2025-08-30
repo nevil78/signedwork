@@ -1229,6 +1229,7 @@ export default function AuthPage() {
                                 <SelectContent>
                                   <SelectItem value="CIN">CIN (Corporate Identification Number)</SelectItem>
                                   <SelectItem value="PAN">PAN (Permanent Account Number)</SelectItem>
+                                  <SelectItem value="GST">GST (Goods and Services Tax)</SelectItem>
                                 </SelectContent>
                               </Select>
                               <FormMessage />
@@ -1241,7 +1242,7 @@ export default function AuthPage() {
                           name="registrationNumber"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Registration Number</FormLabel>
+                              <FormLabel>GST Number</FormLabel>
                               <FormControl>
                                 <Input 
                                   placeholder="Optional - can be added later" 
