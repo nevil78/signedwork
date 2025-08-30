@@ -550,10 +550,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Company signup - direct account creation (no verification required)
   app.post("/api/auth/signup/company", async (req, res) => {
     try {
-      const validatedData = companySignupSchema.parse(req.body);
+      const { 
+        name, description, industryType, companySize, location, 
+        email, password, cin, panNumber, gstNumber
+      } = req.body;
       
+      // Basic validation
+      if (!name || !email || !password || !industryType) {
+        return res.status(400).json({ 
+          message: "Company name, email, password, and industry type are required" 
+        });
+      }
+
       // Check if company with this email already exists
-      const existingCompany = await storage.getCompanyByEmail(validatedData.email);
+      const existingCompany = await storage.getCompanyByEmail(email);
       if (existingCompany) {
         return res.status(400).json({ 
           message: "An account with this email already exists" 
@@ -562,31 +572,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Parse location into components
       const [address = '', city = '', state = '', pincode = ''] = 
-        validatedData.location ? validatedData.location.split(', ') : [];
+        location ? location.split(', ') : [];
 
       // Create company account directly
       const company = await storage.createCompany({
-        name: validatedData.name,
-        description: validatedData.description || '',
+        name: name.trim(),
+        description: description?.trim() || '',
         address: address.trim(),
         city: city.trim(), 
         state: state.trim(),
         pincode: pincode.trim(),
         registrationType: 'other',
         registrationNumber: '',
-        industry: validatedData.industryType,
-        email: validatedData.email.toLowerCase(),
-        size: validatedData.companySize || '',
+        industry: industryType,
+        email: email.toLowerCase().trim(),
+        size: companySize || '',
         establishmentYear: new Date().getFullYear(),
-        password: validatedData.password,
+        password: password,
         isActive: true,
         emailVerified: false, // Will verify later via OTP
         verificationStatus: 'unverified',
-        cin: validatedData.cin || null,
+        cin: cin?.trim() || null,
         cinVerificationStatus: 'pending',
-        panNumber: validatedData.panNumber || null,
+        panNumber: panNumber?.trim() || null,
         panVerificationStatus: 'pending',
-        gstNumber: validatedData.gstNumber || null,
+        gstNumber: gstNumber?.trim() || null,
         gstVerificationStatus: 'pending'
       });
 
@@ -600,14 +610,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       });
     } catch (error: any) {
-      if (error.name === "ZodError") {
-        const validationError = fromZodError(error);
-        return res.status(400).json({ 
-          message: validationError.message,
-          errors: error.errors
-        });
-      }
-      
       console.error("Company signup error:", error);
       res.status(500).json({ message: "Failed to create company account" });
     }
