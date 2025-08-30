@@ -547,70 +547,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Company signup - immediate account creation without email verification
+  // Company signup - direct account creation (no verification required)
   app.post("/api/auth/signup/company", async (req, res) => {
     try {
-      const { 
-        name, description, industryType, companySize, location, 
-        email, password, cin, panNumber, gstNumber
-      } = req.body;
+      const validatedData = companySignupSchema.parse(req.body);
       
-      if (!name || !email || !password || !industryType) {
-        return res.status(400).json({ 
-          message: "Company name, email, password, and industry type are required" 
-        });
-      }
-
       // Check if company with this email already exists
-      const existingCompany = await storage.getCompanyByEmail(email);
+      const existingCompany = await storage.getCompanyByEmail(validatedData.email);
       if (existingCompany) {
         return res.status(400).json({ 
           message: "An account with this email already exists" 
         });
       }
 
-      // Parse and structure the location data
-      const [address, city, state, pincode] = location ? location.split(', ') : ['', '', '', ''];
+      // Parse location into components
+      const [address = '', city = '', state = '', pincode = ''] = 
+        validatedData.location ? validatedData.location.split(', ') : [];
 
-      // Create company account directly (without email verification)
+      // Create company account directly
       const company = await storage.createCompany({
-        name: name?.trim(),
-        description: description?.trim() || '',
-        address: address?.trim() || '',
-        city: city?.trim() || '',
-        state: state?.trim() || '',
-        pincode: pincode?.trim() || '',
-        registrationType: 'other', // Default since we removed the dropdown
+        name: validatedData.name,
+        description: validatedData.description || '',
+        address: address.trim(),
+        city: city.trim(), 
+        state: state.trim(),
+        pincode: pincode.trim(),
+        registrationType: 'other',
         registrationNumber: '',
-        industry: industryType,
-        email: email.toLowerCase().trim(),
-        size: companySize || '',
+        industry: validatedData.industryType,
+        email: validatedData.email.toLowerCase(),
+        size: validatedData.companySize || '',
         establishmentYear: new Date().getFullYear(),
-        password, // Will be hashed in storage.createCompany
+        password: validatedData.password,
         isActive: true,
-        emailVerified: false, // Company must verify email later to login
+        emailVerified: false, // Will verify later via OTP
         verificationStatus: 'unverified',
-        cin: cin?.trim() || null,
+        cin: validatedData.cin || null,
         cinVerificationStatus: 'pending',
-        panNumber: panNumber?.trim() || null,
+        panNumber: validatedData.panNumber || null,
         panVerificationStatus: 'pending',
-        gstNumber: gstNumber?.trim() || null,
+        gstNumber: validatedData.gstNumber || null,
         gstVerificationStatus: 'pending'
       });
 
-      let message = "Company account created successfully! You can edit your email freely until verification is required.";
-
       res.status(201).json({ 
-        message,
+        message: "Company account created successfully! You can verify your email later to unlock all features.",
         user: {
           id: company.id,
           name: company.name,
           email: company.email,
-          emailVerified: company.emailVerified
-        },
-        verificationRequired: false // Account created, verification can be done later
+          emailVerified: false
+        }
       });
     } catch (error: any) {
+      if (error.name === "ZodError") {
+        const validationError = fromZodError(error);
+        return res.status(400).json({ 
+          message: validationError.message,
+          errors: error.errors
+        });
+      }
+      
       console.error("Company signup error:", error);
       res.status(500).json({ message: "Failed to create company account" });
     }
