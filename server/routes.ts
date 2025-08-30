@@ -547,12 +547,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Company signup with email verification (Step 1)
+  // Company signup - immediate account creation without email verification
   app.post("/api/auth/signup/company", async (req, res) => {
     try {
       const { 
         name, description, industryType, companySize, location, 
-        email, password, cin, panNumber 
+        email, password, cin, panNumber, gstNumber
       } = req.body;
       
       if (!name || !email || !password || !industryType) {
@@ -561,28 +561,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      const result = await SignupVerificationService.initiateSignup(
-        email,
-        password,
-        "company",
-        { 
-          name, description, industryType, companySize, location, 
-          cin: cin?.trim() || undefined, 
-          panNumber: panNumber?.trim() || undefined 
-        }
-      );
-
-      if (!result.success) {
-        return res.status(400).json({ message: result.message });
+      // Check if company with this email already exists
+      const existingCompany = await storage.getCompanyByEmail(email);
+      if (existingCompany) {
+        return res.status(400).json({ 
+          message: "An account with this email already exists" 
+        });
       }
 
-      res.status(200).json({ 
-        message: result.message,
-        verificationRequired: true
+      // Parse and structure the location data
+      const [address, city, state, pincode] = location ? location.split(', ') : ['', '', '', ''];
+
+      // Create company account directly (without email verification)
+      const company = await storage.createCompany({
+        name: name?.trim(),
+        description: description?.trim() || '',
+        address: address?.trim() || '',
+        city: city?.trim() || '',
+        state: state?.trim() || '',
+        pincode: pincode?.trim() || '',
+        registrationType: 'other', // Default since we removed the dropdown
+        registrationNumber: '',
+        industry: industryType,
+        email: email.toLowerCase().trim(),
+        size: companySize || '',
+        establishmentYear: new Date().getFullYear(),
+        password, // Will be hashed in storage.createCompany
+        isActive: true,
+        emailVerified: false, // Company must verify email later to login
+        verificationStatus: 'unverified',
+        cin: cin?.trim() || null,
+        cinVerificationStatus: 'pending',
+        panNumber: panNumber?.trim() || null,
+        panVerificationStatus: 'pending',
+        gstNumber: gstNumber?.trim() || null,
+        gstVerificationStatus: 'pending'
+      });
+
+      let message = "Company account created successfully! You can edit your email freely until verification is required.";
+
+      res.status(201).json({ 
+        message,
+        user: {
+          id: company.id,
+          name: company.name,
+          email: company.email,
+          emailVerified: company.emailVerified
+        },
+        verificationRequired: false // Account created, verification can be done later
       });
     } catch (error: any) {
       console.error("Company signup error:", error);
-      res.status(500).json({ message: "Failed to initiate signup" });
+      res.status(500).json({ message: "Failed to create company account" });
     }
   });
 
