@@ -1213,47 +1213,22 @@ export default function AuthPage() {
                         </p>
                       </div>
                       
-                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                        <FormField
-                          control={companyForm.control}
-                          name="registrationType"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Registration Type</FormLabel>
-                              <Select onValueChange={field.onChange} value={field.value}>
-                                <FormControl>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Skip or select type" />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  <SelectItem value="CIN">CIN (Corporate Identification Number)</SelectItem>
-                                  <SelectItem value="PAN">PAN (Permanent Account Number)</SelectItem>
-                                  <SelectItem value="GST">GST (Goods and Services Tax)</SelectItem>
-                                </SelectContent>
-                              </Select>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        
-                        <FormField
-                          control={companyForm.control}
-                          name="registrationNumber"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>GST Number</FormLabel>
-                              <FormControl>
-                                <Input 
-                                  placeholder="22AAAAA0000A1Z5 (OPTIONAL)" 
-                                  {...field}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
+                      <FormField
+                        control={companyForm.control}
+                        name="registrationNumber"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>GST Number</FormLabel>
+                            <FormControl>
+                              <Input 
+                                placeholder="22AAAAA0000A1Z5 (OPTIONAL)" 
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
                       
                       <FormField
                         control={companyForm.control}

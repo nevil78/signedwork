@@ -849,7 +849,6 @@ export const insertCompanySchema = createInsertSchema(companies).omit({
     .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
     .regex(/\d/, "Password must contain at least one number"),
   pincode: z.string().min(5, "Pincode must be at least 5 digits"),
-  registrationType: z.enum(["CIN", "PAN", "GST"]).optional(),
   registrationNumber: z.string().optional(),
   industry: z.string().min(1, "Please select an industry"),
   establishmentYear: z.string()
