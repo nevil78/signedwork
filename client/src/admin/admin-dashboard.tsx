@@ -573,7 +573,7 @@ export default function AdminDashboard() {
                                       <div>
                                         <p className="text-sm font-medium">Work Diary Access</p>
                                         <p className="text-xs text-muted-foreground">
-                                          Enable after manual verification is complete
+                                          Enable after verification is complete
                                         </p>
                                       </div>
                                       <Switch

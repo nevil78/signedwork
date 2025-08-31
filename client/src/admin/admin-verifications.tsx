@@ -96,8 +96,8 @@ export default function AdminVerifications() {
       : /^[LUF]\d{5}[A-Z]{2}\d{4}[A-Z]{3}\d{6}$/.test(company.registrationNumber || '');
     
     return {
-      canVerify: true, // Allow manual verification even if format is wrong
-      reason: isValidFormat ? 'Valid format - ready for verification' : 'Format may need review - manual verification available'
+      canVerify: true, // Allow admin verification even if format is wrong
+      reason: isValidFormat ? 'Valid format - ready for verification' : 'Format may need review - admin verification available'
     };
   };
 

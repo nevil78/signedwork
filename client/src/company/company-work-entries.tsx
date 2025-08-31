@@ -703,10 +703,10 @@ export default function CompanyWorkEntries() {
                 <div className="space-y-4">
                   <div className="p-4 bg-white dark:bg-gray-800 rounded-lg border border-orange-200 dark:border-orange-700">
                     <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-2">
-                      📋 Manual Verification Required
+                      📋 Document Verification Required
                     </h3>
                     <p className="text-sm text-gray-600 dark:text-gray-400">
-                      Our admin team is manually reviewing your company documents:
+                      Our admin team is currently reviewing your company documents:
                     </p>
                     <div className="mt-3 flex justify-center space-x-4 text-xs">
                       <Badge variant="outline">PAN Verification</Badge>
@@ -720,7 +720,7 @@ export default function CompanyWorkEntries() {
                       🔐 Premium Feature Access
                     </h3>
                     <p className="text-sm text-blue-700 dark:text-blue-300">
-                      Work diary access will be enabled once our admin team completes the manual verification 
+                      Work diary access will be enabled once our admin team completes the verification 
                       of your business documents and approves your company profile.
                     </p>
                   </div>

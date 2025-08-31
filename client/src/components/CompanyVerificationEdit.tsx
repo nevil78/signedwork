@@ -731,7 +731,7 @@ export function CompanyVerificationEdit({ company }: CompanyVerificationEditProp
               <li>• <strong>GST Number</strong> - Goods and Services Tax Number (15 characters)</li>
             </ul>
             <p className="text-blue-700 text-sm mt-2">
-              All provided documents will be manually verified by our admin team before approval.
+              All provided documents will be securely verified by our admin team before approval.
             </p>
           </div>
           
