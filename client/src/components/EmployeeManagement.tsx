@@ -77,16 +77,21 @@ export default function EmployeeManagement() {
   const [showCareerReportDialog, setShowCareerReportDialog] = useState(false);
 
   // Fetch employees with company details
-  const { data: employees, isLoading: employeesLoading } = useQuery<Employee[]>({
+  const { data: employees, isLoading: employeesLoading, error: employeesError } = useQuery<Employee[]>({
     queryKey: ["/api/admin/employees-with-companies", searchTerm, sortBy, sortOrder],
-    queryFn: () => {
+    queryFn: async () => {
       const params = new URLSearchParams();
       if (searchTerm.trim()) params.append('search', searchTerm.trim());
       if (sortBy) params.append('sortBy', sortBy);
       if (sortOrder) params.append('sortOrder', sortOrder);
       
       const url = `/api/admin/employees-with-companies${params.toString() ? `?${params.toString()}` : ''}`;
-      return fetch(url).then(res => res.json());
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch employees: ${response.status}`);
+      }
+      const data = await response.json();
+      return Array.isArray(data) ? data : [];
     }
   });
 
@@ -211,7 +216,7 @@ export default function EmployeeManagement() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {employees?.map((employee) => (
+              {Array.isArray(employees) && employees.map((employee) => (
                 <TableRow key={employee.id} data-testid={`row-employee-${employee.id}`}>
                   <TableCell>
                     <div className="flex items-center gap-3">
