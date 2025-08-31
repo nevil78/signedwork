@@ -278,7 +278,7 @@ export const companyTeams = pgTable("company_teams", {
   branchId: varchar("branch_id").references(() => companyBranches.id, { onDelete: "cascade" }), // Can be null for HQ teams
   name: text("name").notNull(), // "Sales Team A", "Development Team 1"
   description: text("description"),
-  teamManagerId: varchar("team_manager_id").references(() => companyManagers.id), // Team manager ID
+  teamManagerId: varchar("team_manager_id"), // Team manager ID - reference added in relations
   maxMembers: integer("max_members").default(10), // Team size limit
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
@@ -340,7 +340,7 @@ export const companyManagers = pgTable("company_managers", {
   managerName: text("manager_name").notNull(),
   managerEmail: text("manager_email").notNull(),
   branchId: varchar("branch_id").references(() => companyBranches.id), // Manager's branch (null for HQ)
-  teamId: varchar("team_id").references(() => companyTeams.id), // Manager's team (null if branch-level)
+  teamId: varchar("team_id"), // Manager's team (null if branch-level) - reference added in relations
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -887,8 +887,6 @@ export const insertCompanyTeamSchema = createInsertSchema(companyTeams).omit({
 export const insertCompanyManagerSchema = createInsertSchema(companyManagers).omit({
   id: true,
   createdAt: true,
-  updatedAt: true,
-  lastLoginAt: true,
 }).extend({
   managerName: z.string().min(2, "Manager name must be at least 2 characters"),
   managerEmail: z.string().email("Invalid email format"),
@@ -901,8 +899,6 @@ export const insertCompanyManagerSchema = createInsertSchema(companyManagers).om
 
 export const insertManagerPermissionSchema = createInsertSchema(managerPermissions).omit({
   id: true,
-  createdAt: true,
-  updatedAt: true,
 });
 
 export const insertCompanyEmployeeSchema = createInsertSchema(companyEmployees).omit({
