@@ -23,6 +23,13 @@ export default function LandingPage() {
     { icon: <Shield className="w-6 h-6" />, title: "Enterprise Security", desc: "Role-based access control with audit trails" }
   ];
 
+  const recruiterFeatures = [
+    { icon: <Users className="w-6 h-6" />, title: "Talent Discovery", desc: "Access verified professionals with immutable work history" },
+    { icon: <Network className="w-6 h-6" />, title: "Company Network", desc: "Connect with hiring companies across all industries" },
+    { icon: <TrendingUp className="w-6 h-6" />, title: "Recruitment Analytics", desc: "Data-driven insights for better talent matching" },
+    { icon: <CheckCircle2 className="w-6 h-6" />, title: "Verified Credentials", desc: "Trust in candidate profiles with company endorsements" }
+  ];
+
   const stats = [
     { number: "10K+", label: "Active Professionals" },
     { number: "500+", label: "Companies" },
@@ -131,15 +138,15 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl lg:text-4xl font-bold text-slate-900 mb-4" data-testid="text-features-title">
-              One Platform, Two Powerful Solutions
+              One Platform, Three Powerful Ecosystems
             </h2>
             <p className="text-xl text-slate-600 max-w-3xl mx-auto" data-testid="text-features-description">
-              Whether you're a professional building your career or an enterprise managing complex organizations, 
-              Signedwork provides the tools you need to succeed.
+              Professionals build verified careers, enterprises manage complex organizations, and recruiters 
+              connect talent with opportunities—all on one trusted platform.
             </p>
           </div>
 
-          <div className="grid lg:grid-cols-2 gap-12">
+          <div className="grid lg:grid-cols-3 gap-8">
             {/* For Professionals */}
             <Card className="border-2 border-blue-100 hover:border-blue-200 transition-colors">
               <CardHeader>
@@ -222,6 +229,50 @@ export default function LandingPage() {
                 <Link href="/auth?view=company" className="block mt-6" data-testid="link-register-company">
                   <Button className="w-full bg-purple-600 hover:bg-purple-700 text-white">
                     Register Your Company
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+
+            {/* For Recruiters */}
+            <Card className="border-2 border-green-100 hover:border-green-200 transition-colors">
+              <CardHeader>
+                <div className="flex items-center mb-4">
+                  <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                    <Users className="w-6 h-6 text-green-600" />
+                  </div>
+                  <div className="ml-4">
+                    <CardTitle className="text-2xl text-slate-900" data-testid="text-recruiters-title">
+                      For Recruiters
+                    </CardTitle>
+                    <CardDescription data-testid="text-recruiters-description">
+                      Connect verified talent with opportunities
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {recruiterFeatures.map((feature, index) => (
+                    <div key={index} className="flex items-start">
+                      <div className="w-10 h-10 bg-green-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                        {feature.icon}
+                      </div>
+                      <div className="ml-4">
+                        <h4 className="font-semibold text-slate-900" data-testid={`recruiter-feature-title-${index}`}>
+                          {feature.title}
+                        </h4>
+                        <p className="text-slate-600 text-sm" data-testid={`recruiter-feature-desc-${index}`}>
+                          {feature.desc}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <Link href="/auth?view=employee" className="block mt-6" data-testid="link-join-recruiter">
+                  <Button className="w-full bg-green-600 hover:bg-green-700 text-white">
+                    Join as Recruiter
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
                 </Link>
