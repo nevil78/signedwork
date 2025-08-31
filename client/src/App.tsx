@@ -112,6 +112,7 @@ function Router() {
       
       {/* Admin Protected Routes */}
       <Route path="/admin/login" component={AdminLogin} />
+      <Route path="/admin" component={() => <ProtectedRoute requireUserType="admin"><AdminDashboard /></ProtectedRoute>} />
       <Route path="/admin/dashboard" component={() => <ProtectedRoute requireUserType="admin"><AdminDashboard /></ProtectedRoute>} />
       <Route path="/admin/verifications" component={() => <ProtectedRoute requireUserType="admin"><AdminVerifications /></ProtectedRoute>} />
       <Route path="/admin/feedback" component={() => <ProtectedRoute requireUserType="admin"><AdminFeedback /></ProtectedRoute>} />
