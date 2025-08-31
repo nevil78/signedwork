@@ -1838,9 +1838,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             currentCompany?.cinVerificationStatus === 'verified' && 
             currentCompany?.gstVerificationStatus === 'verified') {
           await storage.updateCompany(id, { 
-            verificationStatus: 'verified',
-            verifiedAt: new Date(),
-            verifiedBy: req.user.id
+            verificationStatus: 'verified'
           });
         }
       }

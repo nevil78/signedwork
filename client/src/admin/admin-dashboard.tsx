@@ -144,11 +144,12 @@ export default function AdminDashboard() {
       status,
       notes
     }),
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/companies"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
       toast({
         title: "Document verification updated",
-        description: "Company document verification status has been updated successfully",
+        description: `${data.docType.toUpperCase()} ${data.status === 'approved' ? 'approved' : 'rejected'} successfully`,
       });
     },
   });
