@@ -999,20 +999,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Missing required fields" });
       }
 
-      // Get stored OTP
-      const verification = await storage.getEmailVerificationByEmail(email);
+      // Get and verify OTP in one step
+      const verification = await storage.getEmailVerification(email, otpCode, purpose);
       if (!verification) {
-        return res.status(400).json({ message: "No verification code found for this email" });
+        return res.status(400).json({ message: "Invalid verification code or no verification found" });
       }
 
       // Check if OTP has expired
       if (new Date() > verification.expiresAt) {
         return res.status(400).json({ message: "Verification code has expired" });
-      }
-
-      // Verify OTP code
-      if (verification.otpCode !== otpCode) {
-        return res.status(400).json({ message: "Invalid verification code" });
       }
 
       // Mark email as verified based on user type
