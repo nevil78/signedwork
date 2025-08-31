@@ -238,6 +238,7 @@ export const companies = pgTable("companies", {
   verificationDocuments: text("verification_documents").array().default(sql`'{}'::text[]`), // Uploaded document URLs
   rejectionReason: text("rejection_reason"), // If verification is rejected
   isActive: boolean("is_active").default(true),
+  workDiaryAccess: boolean("work_diary_access").default(false), // Admin-controlled access to work diary features
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

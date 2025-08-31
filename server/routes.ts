@@ -1596,6 +1596,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Toggle company work diary access (admin only) - PROTECTED ROUTE  
+  app.patch("/api/admin/companies/:id/toggle-work-diary", requireAdmin, async (req: any, res) => {
+    
+    try {
+      const { id } = req.params;
+      const { workDiaryAccess } = req.body;
+      
+      // Validate input
+      if (typeof workDiaryAccess !== 'boolean') {
+        return res.status(400).json({ message: "workDiaryAccess must be a boolean" });
+      }
+
+      // Update company work diary access
+      await storage.updateCompany(id, { workDiaryAccess });
+      
+      res.json({ 
+        message: `Company work diary access ${workDiaryAccess ? 'enabled' : 'disabled'} successfully`,
+        workDiaryAccess 
+      });
+    } catch (error) {
+      console.error("Toggle company work diary access error:", error);
+      res.status(500).json({ message: "Failed to update company work diary access" });
+    }
+  });
+
   // Get company backup data (admin only) - PROTECTED ROUTE
   app.get("/api/admin/companies/:id/backup", requireAdmin, async (req: any, res) => {
     

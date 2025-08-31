@@ -117,6 +117,19 @@ export default function AdminDashboard() {
     },
   });
 
+  // Toggle company work diary access
+  const toggleWorkDiaryMutation = useMutation({
+    mutationFn: ({ id, workDiaryAccess }: { id: string; workDiaryAccess: boolean }) =>
+      apiRequest("PATCH", `/api/admin/companies/${id}/toggle-work-diary`, { workDiaryAccess }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/companies"] });
+      toast({
+        title: "Work diary access updated",
+        description: "Company work diary access has been updated successfully",
+      });
+    },
+  });
+
   // Delete employee
   const deleteEmployeeMutation = useMutation({
     mutationFn: (id: string) =>
@@ -619,6 +632,7 @@ export default function AdminDashboard() {
                         <TableHead>Location</TableHead>
                         <TableHead>Industry</TableHead>
                         <TableHead>Status</TableHead>
+                        <TableHead>Work Diary</TableHead>
                         <TableHead>Created</TableHead>
                         <TableHead>Actions</TableHead>
                       </TableRow>
@@ -640,6 +654,24 @@ export default function AdminDashboard() {
                             <Badge variant={company.isActive ? "default" : "secondary"}>
                               {company.isActive ? "Active" : "Inactive"}
                             </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center space-x-2">
+                              <Switch
+                                checked={company.workDiaryAccess ?? false}
+                                onCheckedChange={(checked) =>
+                                  toggleWorkDiaryMutation.mutate({
+                                    id: company.id,
+                                    workDiaryAccess: checked,
+                                  })
+                                }
+                                disabled={toggleWorkDiaryMutation.isPending}
+                                data-testid={`switch-work-diary-${company.id}`}
+                              />
+                              <span className="text-sm text-muted-foreground">
+                                {company.workDiaryAccess ? "Enabled" : "Disabled"}
+                              </span>
+                            </div>
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center text-sm text-muted-foreground">
