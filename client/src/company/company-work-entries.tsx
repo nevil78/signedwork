@@ -125,12 +125,12 @@ export default function CompanyWorkEntries() {
 
     return Object.entries(grouped).map(([employeeId, data]) => ({
       employeeId,
-      employee: data.employee,
-      entries: data.entries,
-      totalCount: data.entries.length,
-      pendingCount: data.entries.filter((e: any) => e.approvalStatus === 'pending_review').length,
-      approvedCount: data.entries.filter((e: any) => e.approvalStatus === 'approved').length,
-      needsChangesCount: data.entries.filter((e: any) => e.approvalStatus === 'needs_changes').length
+      employee: (data as any).employee,
+      entries: (data as any).entries,
+      totalCount: (data as any).entries.length,
+      pendingCount: (data as any).entries.filter((e: any) => e.approvalStatus === 'pending_review').length,
+      approvedCount: (data as any).entries.filter((e: any) => e.approvalStatus === 'approved').length,
+      needsChangesCount: (data as any).entries.filter((e: any) => e.approvalStatus === 'needs_changes').length
     }));
   };
 
@@ -595,7 +595,7 @@ export default function CompanyWorkEntries() {
           )}
 
           {/* Action Buttons - Only show for pending entries */}
-          {showActions && entry.approvalStatus === 'pending_review' && entry.status !== 'approved' && (
+          {showActions && entry.approvalStatus === 'pending_review' && (
             <div className="flex gap-2 pt-4 border-t">
               {/* 🚨 SECURITY: Only verified companies can approve work entries */}
               {!isCompanyVerified && (
@@ -659,7 +659,7 @@ export default function CompanyWorkEntries() {
           )}
           
           {/* Show immutable message for approved entries */}
-          {(entry.approvalStatus === 'approved' || entry.status === 'approved') && (
+          {entry.approvalStatus === 'approved' && (
             <div className="flex items-center gap-2 pt-4 border-t">
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2 text-blue-600">

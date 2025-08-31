@@ -178,10 +178,10 @@ export default function AdminDashboard() {
     return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
   }
 
-  const admin = userData?.user;
+  const admin = (userData as any)?.user;
 
   // Filter functions
-  const filteredEmployees = employees?.filter((employee: any) =>
+  const filteredEmployees = (employees as any[])?.filter((employee: any) =>
     employee.firstName?.toLowerCase().includes(employeeSearch.toLowerCase()) ||
     employee.lastName?.toLowerCase().includes(employeeSearch.toLowerCase()) ||
     employee.email?.toLowerCase().includes(employeeSearch.toLowerCase()) ||
@@ -189,7 +189,7 @@ export default function AdminDashboard() {
     employee.employeeId?.toLowerCase().includes(employeeSearch.toLowerCase())
   );
 
-  const filteredCompanies = companies?.filter((company: any) =>
+  const filteredCompanies = (companies as any[])?.filter((company: any) =>
     company.name?.toLowerCase().includes(companySearch.toLowerCase()) ||
     company.email?.toLowerCase().includes(companySearch.toLowerCase()) ||
     company.companyId?.toLowerCase().includes(companySearch.toLowerCase()) ||
@@ -270,7 +270,7 @@ export default function AdminDashboard() {
                   <Users className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{stats?.employees || 0}</div>
+                  <div className="text-2xl font-bold">{(stats as any)?.employees || 0}</div>
                   <p className="text-xs text-muted-foreground">Registered employees</p>
                 </CardContent>
               </Card>
@@ -281,7 +281,7 @@ export default function AdminDashboard() {
                   <Building className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{stats?.companies || 0}</div>
+                  <div className="text-2xl font-bold">{(stats as any)?.companies || 0}</div>
                   <p className="text-xs text-muted-foreground">Registered companies</p>
                 </CardContent>
               </Card>
@@ -292,7 +292,7 @@ export default function AdminDashboard() {
                   <Briefcase className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{stats?.totalJobs || 0}</div>
+                  <div className="text-2xl font-bold">{(stats as any)?.totalJobs || 0}</div>
                   <p className="text-xs text-muted-foreground">All job listings</p>
                 </CardContent>
               </Card>
@@ -303,7 +303,7 @@ export default function AdminDashboard() {
                   <TrendingUp className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{stats?.activeJobs || 0}</div>
+                  <div className="text-2xl font-bold">{(stats as any)?.activeJobs || 0}</div>
                   <p className="text-xs text-muted-foreground">Currently active</p>
                 </CardContent>
               </Card>

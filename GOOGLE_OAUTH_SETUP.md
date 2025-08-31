@@ -48,9 +48,15 @@ a8e25821-8eed-450f-9d50-5ca4929f4242-00-ks1dbum0ifnq.riker.replit.dev wants to a
 Our application is properly configured with:
 - ✅ Google OAuth strategy
 - ✅ Proper scopes (profile, email)
-- ✅ Account selection prompt
+- ✅ Account selection prompt (fixed re-authorization issue)
 - ✅ Secure callback handling
-- ⚠️ Missing: App name in Google Cloud Console
+- ✅ Data mapping fixes applied
+- ⚠️ **ACTION REQUIRED**: App name in Google Cloud Console needs to be changed
+
+## URGENT: Google Cloud Console Configuration Required
+**Issue**: OAuth consent screen shows ugly Replit URL instead of "Signedwork"
+**Impact**: Makes the platform look unprofessional and hurts user trust
+**Solution**: You need to update the app name in Google Cloud Console (see steps above)
 
 ## Note
 This is a one-time setup that requires access to the Google Cloud Console where the OAuth credentials were created.

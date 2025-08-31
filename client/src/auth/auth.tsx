@@ -20,7 +20,7 @@ import { PrefetchLink } from "@/components/PrefetchLink";
 import PrivacyPolicyModal from "@/components/PrivacyPolicyModal";
 import TermsOfServiceModal from "@/components/TermsOfServiceModal";
 
-type AuthView = "selection" | "employee" | "company" | "login" | "success" | "otp-verification" | "verification-pending" | "registration-success" | "employee-register" | "company-register";
+type AuthView = "selection" | "employee" | "company" | "login" | "success" | "otp-verification" | "verification-pending" | "registration-success" | "employee-register" | "company-register" | "company-login";
 
 interface PasswordRequirement {
   id: string;
@@ -1663,13 +1663,6 @@ export default function AuthPage() {
                               field={field} 
                               placeholder="••••••••"
                               className={getFieldErrorClass("password", fieldState)}
-                              onChange={(e) => {
-                                field.onChange(e);
-                                if (e.target.value.trim()) {
-                                  setLoginError(false);
-                                }
-                              }}
-                              data-testid="login-password-input"
                             />
                           </FormControl>
                           <FormMessage />
