@@ -1866,12 +1866,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const updatedCompany = await storage.updateCompany(id, updateData);
       
-      // If rejected, log rejection for future notification system
+      // If rejected, unlock editing and add rejection notification
       if (status === 'rejected') {
         const rejectionMessage = `Your ${docType.toUpperCase()} document has been rejected. Please recheck and submit valid ${docType.toUpperCase()} documents that match your company profile. Reason: ${notes || 'Document verification failed'}`;
         
+        // Unlock editing by resetting basic details lock and verification status to allow re-editing
+        await storage.updateCompany(id, { 
+          isBasicDetailsLocked: false,
+          [`${docType}VerificationStatus`]: 'pending'
+        });
+        
         // Log rejection for company (notification system can be added later)
         console.log(`Document rejected for company ${company.name}: ${rejectionMessage}`);
+        
+        // Add rejection message to response for frontend to show
+        res.json({
+          message: `${docType.toUpperCase()} rejected successfully`,
+          company: updatedCompany,
+          docType,
+          status,
+          rejectionMessage
+        });
+        return;
       }
       
       // Check if all documents are verified to update overall verification status

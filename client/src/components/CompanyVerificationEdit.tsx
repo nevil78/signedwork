@@ -234,7 +234,7 @@ export function CompanyVerificationEdit({ company }: CompanyVerificationEditProp
     return !gst || /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(gst);
   };
 
-  const getVerificationBadge = (status: string, type: 'PAN' | 'CIN') => {
+  const getVerificationBadge = (status: string, type: 'PAN' | 'CIN' | 'GST') => {
     switch (status) {
       case 'verified':
         return (
@@ -632,7 +632,7 @@ export function CompanyVerificationEdit({ company }: CompanyVerificationEditProp
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <Label>PAN Number</Label>
-              {company?.panNumber && getVerificationBadge(company.panVerificationStatus || 'pending', 'PAN')}
+              {company?.panNumber && company?.panVerificationStatus && getVerificationBadge(company.panVerificationStatus, 'PAN')}
             </div>
             {company?.panNumber ? (
               <code className="bg-gray-100 px-3 py-2 rounded text-sm block">{company.panNumber}</code>
@@ -642,7 +642,7 @@ export function CompanyVerificationEdit({ company }: CompanyVerificationEditProp
             
             <div className="flex items-center justify-between">
               <Label>CIN Number</Label>
-              {company?.cin && getVerificationBadge(company.cinVerificationStatus || 'pending', 'CIN')}
+              {company?.cin && company?.cinVerificationStatus && getVerificationBadge(company.cinVerificationStatus, 'CIN')}
             </div>
             {company?.cin ? (
               <code className="bg-gray-100 px-3 py-2 rounded text-sm block">{company.cin}</code>
@@ -652,24 +652,67 @@ export function CompanyVerificationEdit({ company }: CompanyVerificationEditProp
             
             <div className="flex items-center justify-between">
               <Label>GST Number</Label>
-              {company?.gstNumber && getVerificationBadge(company.gstVerificationStatus || 'pending', 'GST')}
+              {company?.gstNumber && company?.gstVerificationStatus && getVerificationBadge(company.gstVerificationStatus, 'GST')}
             </div>
             {company?.gstNumber ? (
               <code className="bg-gray-100 px-3 py-2 rounded text-sm block">{company.gstNumber}</code>
             ) : (
               <div className="text-gray-500 text-sm italic">No GST number provided</div>
             )}
+            
+            {/* Show rejection messages */}
+            {company?.panVerificationStatus === 'rejected' && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                <div className="flex items-center gap-2 text-red-800">
+                  <AlertCircle className="h-4 w-4" />
+                  <span className="font-medium">PAN Document Rejected</span>
+                </div>
+                <p className="text-red-700 text-sm mt-1">
+                  Your PAN document was rejected. Please provide a valid PAN number that matches your company profile.
+                </p>
+              </div>
+            )}
+            
+            {company?.cinVerificationStatus === 'rejected' && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                <div className="flex items-center gap-2 text-red-800">
+                  <AlertCircle className="h-4 w-4" />
+                  <span className="font-medium">CIN Document Rejected</span>
+                </div>
+                <p className="text-red-700 text-sm mt-1">
+                  Your CIN document was rejected. Please provide a valid CIN number that matches your company profile.
+                </p>
+              </div>
+            )}
+            
+            {company?.gstVerificationStatus === 'rejected' && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                <div className="flex items-center gap-2 text-red-800">
+                  <AlertCircle className="h-4 w-4" />
+                  <span className="font-medium">GST Document Rejected</span>
+                </div>
+                <p className="text-red-700 text-sm mt-1">
+                  Your GST document was rejected. Please provide a valid GST number that matches your company profile.
+                </p>
+              </div>
+            )}
           </div>
           
-          <Button 
-            onClick={() => setIsEditing(true)}
-            variant="outline"
-            className="w-full"
-            data-testid="button-edit-verification"
-          >
-            <Edit className="h-4 w-4 mr-2" />
-            Edit Verification Details
-          </Button>
+          {/* Show edit button if not locked OR if any document is rejected */}
+          {(!company?.isBasicDetailsLocked || 
+            company?.panVerificationStatus === 'rejected' || 
+            company?.cinVerificationStatus === 'rejected' || 
+            company?.gstVerificationStatus === 'rejected') && (
+            <Button 
+              onClick={() => setIsEditing(true)}
+              variant="outline"
+              className="w-full"
+              data-testid="button-edit-verification"
+            >
+              <Edit className="h-4 w-4 mr-2" />
+              Edit Verification Details
+            </Button>
+          )}
         </div>
       ) : (
         <div className="space-y-4">

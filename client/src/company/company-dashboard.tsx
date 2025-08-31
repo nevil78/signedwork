@@ -233,7 +233,7 @@ export default function CompanyDashboard() {
         </div>
 
         {/* Verification Status Summary - Compact */}
-        {!isUserLoading && (user?.emailVerified || user?.panVerificationStatus === 'verified' || user?.cinVerificationStatus === 'verified') && (
+        {!isUserLoading && (user?.emailVerified || (user?.panNumber && user?.panVerificationStatus) || (user?.cin && user?.cinVerificationStatus) || (user?.gstNumber && user?.gstVerificationStatus)) && (
           <Card className="mb-6">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
@@ -260,16 +260,22 @@ export default function CompanyDashboard() {
                     Email Verified
                   </Badge>
                 )}
-                {user?.panVerificationStatus === 'verified' && (
+                {user?.panNumber && user?.panVerificationStatus === 'verified' && (
                   <Badge variant="default" className="text-xs">
                     <CheckCircle className="w-3 h-3 mr-1" />
                     PAN Verified
                   </Badge>
                 )}
-                {user?.cinVerificationStatus === 'verified' && (
+                {user?.cin && user?.cinVerificationStatus === 'verified' && (
                   <Badge variant="default" className="text-xs">
                     <CheckCircle className="w-3 h-3 mr-1" />
                     CIN Verified
+                  </Badge>
+                )}
+                {user?.gstNumber && user?.gstVerificationStatus === 'verified' && (
+                  <Badge variant="default" className="text-xs">
+                    <CheckCircle className="w-3 h-3 mr-1" />
+                    GST Verified
                   </Badge>
                 )}
                 {user?.isBasicDetailsLocked && (
