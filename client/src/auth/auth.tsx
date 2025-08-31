@@ -19,6 +19,7 @@ import { Link, useLocation } from "wouter";
 import { PrefetchLink } from "@/components/PrefetchLink";
 import PrivacyPolicyModal from "@/components/PrivacyPolicyModal";
 import TermsOfServiceModal from "@/components/TermsOfServiceModal";
+import UnifiedHeader from "@/components/UnifiedHeader";
 
 type AuthView = "selection" | "employee" | "company" | "login" | "success" | "otp-verification" | "verification-pending" | "registration-success" | "employee-register" | "company-register" | "company-login";
 
@@ -596,22 +597,12 @@ export default function AuthPage() {
 
   if (currentView === "selection") {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
-        <header className="bg-white shadow-sm border-b border-slate-200">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center h-16">
-              <div className="flex items-center">
-                <img src={signedworkLogo} alt="Signedwork" className="h-8 w-8 mr-3" />
-                <span className="text-xl font-bold text-slate-800">Signedwork</span>
-              </div>
-              <nav className="hidden md:flex space-x-8">
-                <a href="/about" className="text-slate-600 hover:text-primary transition-colors">About</a>
-                <a href="/support" className="text-slate-600 hover:text-primary transition-colors">Support</a>
-                <a href="/contact" className="text-slate-600 hover:text-primary transition-colors">Contact</a>
-              </nav>
-            </div>
-          </div>
-        </header>
+      <div className="min-h-screen bg-slate-50">
+        <UnifiedHeader 
+          showBackButton={true} 
+          showAuthButtons={false}
+          currentPage="auth"
+        />
 
         <main className="flex-1 py-12 px-4 sm:px-6 lg:px-8">
           <div className="max-w-md mx-auto">
@@ -673,7 +664,7 @@ export default function AuthPage() {
 
   if (currentView === "employee") {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+      <div className="min-h-screen bg-slate-50">
         <header className="bg-white shadow-sm border-b border-slate-200">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center h-16">
@@ -1033,7 +1024,7 @@ export default function AuthPage() {
     ];
 
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+      <div className="min-h-screen bg-slate-50">
         <header className="bg-white shadow-sm border-b border-slate-200">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center h-16">
@@ -1552,22 +1543,12 @@ export default function AuthPage() {
 
   if (currentView === "login") {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
-        <header className="bg-white shadow-sm border-b border-slate-200">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center h-16">
-              <div className="flex items-center">
-                <img src={signedworkLogo} alt="Signedwork" className="h-8 w-8 mr-3" />
-                <span className="text-xl font-bold text-slate-800">Signedwork</span>
-              </div>
-              <nav className="hidden md:flex space-x-8">
-                <a href="/about" className="text-slate-600 hover:text-primary transition-colors">About</a>
-                <a href="/support" className="text-slate-600 hover:text-primary transition-colors">Support</a>
-                <a href="/contact" className="text-slate-600 hover:text-primary transition-colors">Contact</a>
-              </nav>
-            </div>
-          </div>
-        </header>
+      <div className="min-h-screen bg-slate-50">
+        <UnifiedHeader 
+          showBackButton={true} 
+          showAuthButtons={false}
+          currentPage="auth"
+        />
 
         <main className="flex-1 py-12 px-4 sm:px-6 lg:px-8">
           <div className="max-w-md mx-auto space-y-6">
@@ -1769,7 +1750,7 @@ export default function AuthPage() {
 
   if (currentView === "success") {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+      <div className="min-h-screen bg-slate-50">
         <header className="bg-white shadow-sm border-b border-slate-200">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center h-16">
@@ -1824,7 +1805,7 @@ export default function AuthPage() {
     };
 
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+      <div className="min-h-screen bg-slate-50">
         <header className="bg-white shadow-sm border-b border-slate-200">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center h-16">
@@ -1967,7 +1948,7 @@ export default function AuthPage() {
 
   if (currentView === "registration-success") {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+      <div className="min-h-screen bg-slate-50">
         <header className="bg-white shadow-sm border-b border-slate-200">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center h-16">
@@ -2010,7 +1991,7 @@ export default function AuthPage() {
 
   if (currentView === "verification-pending") {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+      <div className="min-h-screen bg-slate-50">
         <header className="bg-white shadow-sm border-b border-slate-200">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center h-16">

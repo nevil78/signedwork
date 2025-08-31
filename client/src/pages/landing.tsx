@@ -77,13 +77,13 @@ export default function LandingPage() {
               to manage complex hierarchical organizations with advanced work tracking.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-              <Link href="/signup/employee" data-testid="button-get-started-employee">
+              <Link href="/auth?view=employee" data-testid="button-get-started-employee">
                 <Button className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 text-lg">
                   <Users className="w-5 h-5 mr-2" />
                   Get Started Free - For Professionals
                 </Button>
               </Link>
-              <Link href="/signup/company" data-testid="button-enterprise-solution">
+              <Link href="/auth?view=company" data-testid="button-enterprise-solution">
                 <Button variant="outline" className="border-blue-600 text-blue-600 hover:bg-blue-50 px-8 py-3 text-lg">
                   <Building className="w-5 h-5 mr-2" />
                   Enterprise Solution
@@ -175,7 +175,7 @@ export default function LandingPage() {
                     </div>
                   ))}
                 </div>
-                <Link href="/signup/employee" className="block mt-6" data-testid="link-join-professional">
+                <Link href="/auth?view=employee" className="block mt-6" data-testid="link-join-professional">
                   <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white">
                     Join as Professional
                     <ArrowRight className="w-4 h-4 ml-2" />
@@ -219,7 +219,7 @@ export default function LandingPage() {
                     </div>
                   ))}
                 </div>
-                <Link href="/signup/company" className="block mt-6" data-testid="link-register-company">
+                <Link href="/auth?view=company" className="block mt-6" data-testid="link-register-company">
                   <Button className="w-full bg-purple-600 hover:bg-purple-700 text-white">
                     Register Your Company
                     <ArrowRight className="w-4 h-4 ml-2" />
@@ -374,7 +374,7 @@ export default function LandingPage() {
                     Work verification system
                   </div>
                 </div>
-                <Link href="/signup/employee" className="block" data-testid="link-join-professional-cta">
+                <Link href="/auth?view=employee" className="block" data-testid="link-join-professional-cta">
                   <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white">
                     Join as Professional
                   </Button>
@@ -409,7 +409,7 @@ export default function LandingPage() {
                     Enterprise support
                   </div>
                 </div>
-                <Link href="/signup/company" className="block" data-testid="link-enterprise-demo-cta">
+                <Link href="/auth?view=company" className="block" data-testid="link-enterprise-demo-cta">
                   <Button className="w-full bg-purple-600 hover:bg-purple-700 text-white">
                     Get Enterprise Demo
                   </Button>
@@ -440,10 +440,10 @@ export default function LandingPage() {
             <div>
               <h4 className="font-semibold mb-4">Platform</h4>
               <div className="space-y-2 text-sm text-slate-400">
-                <Link href="/signup/employee" data-testid="footer-link-professionals">
+                <Link href="/auth?view=employee" data-testid="footer-link-professionals">
                   <div className="hover:text-white cursor-pointer">For Professionals</div>
                 </Link>
-                <Link href="/signup/company" data-testid="footer-link-enterprises">
+                <Link href="/auth?view=company" data-testid="footer-link-enterprises">
                   <div className="hover:text-white cursor-pointer">For Enterprises</div>
                 </Link>
               </div>
