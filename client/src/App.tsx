@@ -62,12 +62,13 @@ function PageLoader() {
 }
 
 import NotFound from "@/pages/not-found";
+import LandingPage from "@/pages/landing";
 
 function Router() {
   return (
     <Switch>
       {/* Public Routes - No authentication required */}
-      <Route path="/" component={AuthPage} />
+      <Route path="/" component={LandingPage} />
       <Route path="/auth" component={AuthPage} />
       <Route path="/forgot-password" component={ForgotPasswordPage} />
       <Route path="/change-password" component={ChangePasswordPage} />
