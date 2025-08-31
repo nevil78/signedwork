@@ -10,7 +10,7 @@ export default function LandingPage() {
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
 
   const professionalFeatures = [
-    { icon: <UserCheck className="w-6 h-6" />, title: "Professional Profiles", desc: "Complete LinkedIn-style profiles with verified work experience" },
+    { icon: <UserCheck className="w-6 h-6" />, title: "Professional Profiles", desc: "Comprehensive verified profiles with immutable work credentials" },
     { icon: <Briefcase className="w-6 h-6" />, title: "Job Discovery", desc: "AI-powered job matching with career growth tracking" },
     { icon: <Award className="w-6 h-6" />, title: "Verified Experience", desc: "Immutable work verification with company endorsements" },
     { icon: <Network className="w-6 h-6" />, title: "Professional Network", desc: "Connect with verified professionals and industry experts" }
@@ -68,9 +68,9 @@ export default function LandingPage() {
               The Complete Professional Networking & HRMS Platform
             </Badge>
             <h1 className="text-4xl lg:text-6xl font-bold text-slate-900 mb-6" data-testid="text-hero-title">
-              LinkedIn meets
-              <span className="text-blue-600"> Enterprise </span>
-              Work Management
+              Professional Credibility meets
+              <span className="text-blue-600"> Work </span>
+              Transparency
             </h1>
             <p className="text-xl text-slate-600 mb-8 max-w-3xl mx-auto" data-testid="text-hero-description">
               Empower professionals with verified profiles and career growth while enabling enterprises 
