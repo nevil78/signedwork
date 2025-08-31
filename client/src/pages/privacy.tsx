@@ -15,7 +15,7 @@ export default function PrivacyPolicy() {
     // Prefetch the registration page for instant navigation
     if (fromParam === 'employee-registration' || fromParam === 'company-registration') {
       // Preload the auth page for instant navigation
-      import('@/pages/auth').catch(() => {
+      import('@/auth/auth').catch(() => {
         // Silently fail if prefetch doesn't work
       });
     }
