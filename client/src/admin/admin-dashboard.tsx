@@ -593,19 +593,19 @@ export default function AdminDashboard() {
                                     Document Verification
                                   </h4>
                                   
-                                  {/* PAN Verification */}
-                                  <div className="mb-6 p-4 border border-gray-200 rounded-md">
-                                    <div className="flex items-center justify-between mb-3">
-                                      <h5 className="font-medium flex items-center">
-                                        <FileText className="h-4 w-4 mr-2" />
-                                        PAN Verification
-                                      </h5>
-                                      <Badge variant={company.panVerificationStatus === 'approved' ? 'default' : company.panVerificationStatus === 'rejected' ? 'destructive' : 'outline'}>
-                                        {company.panVerificationStatus || 'pending'}
-                                      </Badge>
-                                    </div>
-                                    
-                                    {company.panNumber && (
+                                  {/* PAN Verification - Only show if company provided PAN number */}
+                                  {company.panNumber && (
+                                    <div className="mb-6 p-4 border border-gray-200 rounded-md">
+                                      <div className="flex items-center justify-between mb-3">
+                                        <h5 className="font-medium flex items-center">
+                                          <FileText className="h-4 w-4 mr-2" />
+                                          PAN Verification
+                                        </h5>
+                                        <Badge variant={company.panVerificationStatus === 'approved' ? 'default' : company.panVerificationStatus === 'rejected' ? 'destructive' : 'outline'}>
+                                          {company.panVerificationStatus || 'pending'}
+                                        </Badge>
+                                      </div>
+                                      
                                       <div className="mb-3">
                                         <p className="text-sm"><strong>PAN Number:</strong> 
                                           <span className="font-mono ml-2 bg-gray-100 px-2 py-1 rounded text-xs">
@@ -613,56 +613,56 @@ export default function AdminDashboard() {
                                           </span>
                                         </p>
                                       </div>
-                                    )}
-                                    
-                                    {company.panVerificationStatus !== 'approved' && (
-                                      <div className="flex space-x-2">
-                                        <Button
-                                          onClick={() => verifyDocumentMutation.mutate({
-                                            companyId: company.id,
-                                            docType: 'pan',
-                                            status: 'approved'
-                                          })}
-                                          disabled={verifyDocumentMutation.isPending}
-                                          size="sm"
-                                          className="flex-1"
-                                          data-testid={`button-approve-pan-${company.id}`}
-                                        >
-                                          <UserCheck className="h-4 w-4 mr-2" />
-                                          Approve PAN
-                                        </Button>
-                                        <Button
-                                          onClick={() => verifyDocumentMutation.mutate({
-                                            companyId: company.id,
-                                            docType: 'pan',
-                                            status: 'rejected'
-                                          })}
-                                          disabled={verifyDocumentMutation.isPending}
-                                          variant="destructive"
-                                          size="sm"
-                                          className="flex-1"
-                                          data-testid={`button-reject-pan-${company.id}`}
-                                        >
-                                          <UserX className="h-4 w-4 mr-2" />
-                                          Reject PAN
-                                        </Button>
-                                      </div>
-                                    )}
-                                  </div>
-
-                                  {/* CIN Verification */}
-                                  <div className="mb-6 p-4 border border-gray-200 rounded-md">
-                                    <div className="flex items-center justify-between mb-3">
-                                      <h5 className="font-medium flex items-center">
-                                        <FileText className="h-4 w-4 mr-2" />
-                                        CIN Verification
-                                      </h5>
-                                      <Badge variant={company.cinVerificationStatus === 'approved' ? 'default' : company.cinVerificationStatus === 'rejected' ? 'destructive' : 'outline'}>
-                                        {company.cinVerificationStatus || 'pending'}
-                                      </Badge>
+                                      
+                                      {company.panVerificationStatus !== 'approved' && (
+                                        <div className="flex space-x-2">
+                                          <Button
+                                            onClick={() => verifyDocumentMutation.mutate({
+                                              companyId: company.id,
+                                              docType: 'pan',
+                                              status: 'approved'
+                                            })}
+                                            disabled={verifyDocumentMutation.isPending}
+                                            size="sm"
+                                            className="flex-1"
+                                            data-testid={`button-approve-pan-${company.id}`}
+                                          >
+                                            <UserCheck className="h-4 w-4 mr-2" />
+                                            Approve PAN
+                                          </Button>
+                                          <Button
+                                            onClick={() => verifyDocumentMutation.mutate({
+                                              companyId: company.id,
+                                              docType: 'pan',
+                                              status: 'rejected'
+                                            })}
+                                            disabled={verifyDocumentMutation.isPending}
+                                            variant="destructive"
+                                            size="sm"
+                                            className="flex-1"
+                                            data-testid={`button-reject-pan-${company.id}`}
+                                          >
+                                            <UserX className="h-4 w-4 mr-2" />
+                                            Reject PAN
+                                          </Button>
+                                        </div>
+                                      )}
                                     </div>
-                                    
-                                    {company.cin && (
+                                  )}
+
+                                  {/* CIN Verification - Only show if company provided CIN number */}
+                                  {company.cin && (
+                                    <div className="mb-6 p-4 border border-gray-200 rounded-md">
+                                      <div className="flex items-center justify-between mb-3">
+                                        <h5 className="font-medium flex items-center">
+                                          <FileText className="h-4 w-4 mr-2" />
+                                          CIN Verification
+                                        </h5>
+                                        <Badge variant={company.cinVerificationStatus === 'approved' ? 'default' : company.cinVerificationStatus === 'rejected' ? 'destructive' : 'outline'}>
+                                          {company.cinVerificationStatus || 'pending'}
+                                        </Badge>
+                                      </div>
+                                      
                                       <div className="mb-3">
                                         <p className="text-sm"><strong>CIN Number:</strong> 
                                           <span className="font-mono ml-2 bg-gray-100 px-2 py-1 rounded text-xs">
@@ -670,56 +670,56 @@ export default function AdminDashboard() {
                                           </span>
                                         </p>
                                       </div>
-                                    )}
-                                    
-                                    {company.cinVerificationStatus !== 'approved' && (
-                                      <div className="flex space-x-2">
-                                        <Button
-                                          onClick={() => verifyDocumentMutation.mutate({
-                                            companyId: company.id,
-                                            docType: 'cin',
-                                            status: 'approved'
-                                          })}
-                                          disabled={verifyDocumentMutation.isPending}
-                                          size="sm"
-                                          className="flex-1"
-                                          data-testid={`button-approve-cin-${company.id}`}
-                                        >
-                                          <UserCheck className="h-4 w-4 mr-2" />
-                                          Approve CIN
-                                        </Button>
-                                        <Button
-                                          onClick={() => verifyDocumentMutation.mutate({
-                                            companyId: company.id,
-                                            docType: 'cin',
-                                            status: 'rejected'
-                                          })}
-                                          disabled={verifyDocumentMutation.isPending}
-                                          variant="destructive"
-                                          size="sm"
-                                          className="flex-1"
-                                          data-testid={`button-reject-cin-${company.id}`}
-                                        >
-                                          <UserX className="h-4 w-4 mr-2" />
-                                          Reject CIN
-                                        </Button>
-                                      </div>
-                                    )}
-                                  </div>
-
-                                  {/* GST Verification */}
-                                  <div className="mb-6 p-4 border border-gray-200 rounded-md">
-                                    <div className="flex items-center justify-between mb-3">
-                                      <h5 className="font-medium flex items-center">
-                                        <FileText className="h-4 w-4 mr-2" />
-                                        GST Verification
-                                      </h5>
-                                      <Badge variant={company.gstVerificationStatus === 'approved' ? 'default' : company.gstVerificationStatus === 'rejected' ? 'destructive' : 'outline'}>
-                                        {company.gstVerificationStatus || 'pending'}
-                                      </Badge>
+                                      
+                                      {company.cinVerificationStatus !== 'approved' && (
+                                        <div className="flex space-x-2">
+                                          <Button
+                                            onClick={() => verifyDocumentMutation.mutate({
+                                              companyId: company.id,
+                                              docType: 'cin',
+                                              status: 'approved'
+                                            })}
+                                            disabled={verifyDocumentMutation.isPending}
+                                            size="sm"
+                                            className="flex-1"
+                                            data-testid={`button-approve-cin-${company.id}`}
+                                          >
+                                            <UserCheck className="h-4 w-4 mr-2" />
+                                            Approve CIN
+                                          </Button>
+                                          <Button
+                                            onClick={() => verifyDocumentMutation.mutate({
+                                              companyId: company.id,
+                                              docType: 'cin',
+                                              status: 'rejected'
+                                            })}
+                                            disabled={verifyDocumentMutation.isPending}
+                                            variant="destructive"
+                                            size="sm"
+                                            className="flex-1"
+                                            data-testid={`button-reject-cin-${company.id}`}
+                                          >
+                                            <UserX className="h-4 w-4 mr-2" />
+                                            Reject CIN
+                                          </Button>
+                                        </div>
+                                      )}
                                     </div>
-                                    
-                                    {company.gstNumber && (
+                                  )}
+
+                                  {/* GST Verification - Only show if company provided GST number */}
+                                  {company.gstNumber && (
+                                    <div className="mb-6 p-4 border border-gray-200 rounded-md">
+                                      <div className="flex items-center justify-between mb-3">
+                                        <h5 className="font-medium flex items-center">
+                                          <FileText className="h-4 w-4 mr-2" />
+                                          GST Verification
+                                        </h5>
+                                        <Badge variant={company.gstVerificationStatus === 'approved' ? 'default' : company.gstVerificationStatus === 'rejected' ? 'destructive' : 'outline'}>
+                                          {company.gstVerificationStatus || 'pending'}
+                                        </Badge>
+                                      </div>
+                                      
                                       <div className="mb-3">
                                         <p className="text-sm"><strong>GST Number:</strong> 
                                           <span className="font-mono ml-2 bg-gray-100 px-2 py-1 rounded text-xs">
@@ -727,42 +727,42 @@ export default function AdminDashboard() {
                                           </span>
                                         </p>
                                       </div>
-                                    )}
-                                    
-                                    {company.gstVerificationStatus !== 'approved' && (
-                                      <div className="flex space-x-2">
-                                        <Button
-                                          onClick={() => verifyDocumentMutation.mutate({
-                                            companyId: company.id,
-                                            docType: 'gst',
-                                            status: 'approved'
-                                          })}
-                                          disabled={verifyDocumentMutation.isPending}
-                                          size="sm"
-                                          className="flex-1"
-                                          data-testid={`button-approve-gst-${company.id}`}
-                                        >
-                                          <UserCheck className="h-4 w-4 mr-2" />
-                                          Approve GST
-                                        </Button>
-                                        <Button
-                                          onClick={() => verifyDocumentMutation.mutate({
-                                            companyId: company.id,
-                                            docType: 'gst',
-                                            status: 'rejected'
-                                          })}
-                                          disabled={verifyDocumentMutation.isPending}
-                                          variant="destructive"
-                                          size="sm"
-                                          className="flex-1"
-                                          data-testid={`button-reject-gst-${company.id}`}
-                                        >
-                                          <UserX className="h-4 w-4 mr-2" />
-                                          Reject GST
-                                        </Button>
-                                      </div>
-                                    )}
-                                  </div>
+                                      
+                                      {company.gstVerificationStatus !== 'approved' && (
+                                        <div className="flex space-x-2">
+                                          <Button
+                                            onClick={() => verifyDocumentMutation.mutate({
+                                              companyId: company.id,
+                                              docType: 'gst',
+                                              status: 'approved'
+                                            })}
+                                            disabled={verifyDocumentMutation.isPending}
+                                            size="sm"
+                                            className="flex-1"
+                                            data-testid={`button-approve-gst-${company.id}`}
+                                          >
+                                            <UserCheck className="h-4 w-4 mr-2" />
+                                            Approve GST
+                                          </Button>
+                                          <Button
+                                            onClick={() => verifyDocumentMutation.mutate({
+                                              companyId: company.id,
+                                              docType: 'gst',
+                                              status: 'rejected'
+                                            })}
+                                            disabled={verifyDocumentMutation.isPending}
+                                            variant="destructive"
+                                            size="sm"
+                                            className="flex-1"
+                                            data-testid={`button-reject-gst-${company.id}`}
+                                          >
+                                            <UserX className="h-4 w-4 mr-2" />
+                                            Reject GST
+                                          </Button>
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
 
                                   {/* Company Actions */}
                                   <div className="flex justify-end pt-4 border-t border-gray-200">
