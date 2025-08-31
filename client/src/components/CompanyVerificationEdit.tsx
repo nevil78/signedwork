@@ -649,6 +649,16 @@ export function CompanyVerificationEdit({ company }: CompanyVerificationEditProp
             ) : (
               <div className="text-gray-500 text-sm italic">No CIN number provided</div>
             )}
+            
+            <div className="flex items-center justify-between">
+              <Label>GST Number</Label>
+              {company?.gstNumber && getVerificationBadge(company.gstVerificationStatus || 'pending', 'GST')}
+            </div>
+            {company?.gstNumber ? (
+              <code className="bg-gray-100 px-3 py-2 rounded text-sm block">{company.gstNumber}</code>
+            ) : (
+              <div className="text-gray-500 text-sm italic">No GST number provided</div>
+            )}
           </div>
           
           <Button 
