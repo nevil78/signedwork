@@ -404,6 +404,7 @@ export interface IStorage {
   createEmailVerification(data: InsertEmailVerification): Promise<EmailVerification>;
   getEmailVerification(email: string, otpCode: string, purpose: string): Promise<EmailVerification | undefined>;
   markEmailVerificationUsed(id: string): Promise<void>;
+  deleteEmailVerification(id: string): Promise<void>;
   cleanupExpiredVerifications(): Promise<void>;
   updateUserPassword(userId: string, userType: 'employee' | 'company', hashedPassword: string): Promise<void>;
   getEmployeeById(id: string): Promise<Employee | undefined>;
@@ -3059,6 +3060,10 @@ export class DatabaseStorage implements IStorage {
 
   async markEmailVerificationUsed(id: string): Promise<void> {
     await db.update(emailVerifications).set({ isUsed: true }).where(eq(emailVerifications.id, id));
+  }
+
+  async deleteEmailVerification(id: string): Promise<void> {
+    await db.delete(emailVerifications).where(eq(emailVerifications.id, id));
   }
 
   async cleanupExpiredVerifications(): Promise<void> {
