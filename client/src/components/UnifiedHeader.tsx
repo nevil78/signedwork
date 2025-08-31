@@ -54,9 +54,9 @@ export default function UnifiedHeader({
                 </Link>
               )}
               {currentPage !== "signup" && currentPage !== "auth" && (
-                <Link href="/auth?view=employee" data-testid="link-signup">
+                <Link href="/auth?view=selection" data-testid="link-signup">
                   <Button className="bg-blue-600 hover:bg-blue-700 text-white">
-                    Get Started Free
+                    Get Started
                   </Button>
                 </Link>
               )}
