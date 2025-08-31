@@ -63,12 +63,21 @@ function PageLoader() {
 
 import NotFound from "@/pages/not-found";
 import LandingPage from "@/pages/landing";
+import LoginPage from "@/pages/login";
+import SignupPage from "@/pages/signup";
+import EmployeeSignupPage from "@/pages/signup-employee";
+import CompanySignupPage from "@/pages/signup-company";
 
 function Router() {
   return (
     <Switch>
       {/* Public Routes - No authentication required */}
       <Route path="/" component={LandingPage} />
+      <Route path="/login" component={LoginPage} />
+      <Route path="/signup" component={SignupPage} />
+      <Route path="/signup/employee" component={EmployeeSignupPage} />
+      <Route path="/signup/company" component={CompanySignupPage} />
+      {/* Legacy route for backwards compatibility */}
       <Route path="/auth" component={AuthPage} />
       <Route path="/forgot-password" component={ForgotPasswordPage} />
       <Route path="/change-password" component={ChangePasswordPage} />
