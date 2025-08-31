@@ -18,6 +18,7 @@ export function CompanyVerificationEdit({ company }: CompanyVerificationEditProp
   const [isEditing, setIsEditing] = useState(false);
   const [panNumber, setPanNumber] = useState(company?.panNumber || '');
   const [cin, setCin] = useState(company?.cin || '');
+  const [gstNumber, setGstNumber] = useState(company?.gstNumber || '');
   const [otpCode, setOtpCode] = useState("");
   const [isVerifyingEmail, setIsVerifyingEmail] = useState(false);
   const [isEditingEmail, setIsEditingEmail] = useState(false);
@@ -34,12 +35,15 @@ export function CompanyVerificationEdit({ company }: CompanyVerificationEditProp
     console.log('CompanyVerificationEdit - company data updated:', {
       panNumber: company?.panNumber,
       cin: company?.cin,
+      gstNumber: company?.gstNumber,
       panVerificationStatus: company?.panVerificationStatus,
-      cinVerificationStatus: company?.cinVerificationStatus
+      cinVerificationStatus: company?.cinVerificationStatus,
+      gstVerificationStatus: company?.gstVerificationStatus
     });
     setPanNumber(company?.panNumber || '');
     setCin(company?.cin || '');
-  }, [company?.panNumber, company?.cin, company?.panVerificationStatus, company?.cinVerificationStatus]);
+    setGstNumber(company?.gstNumber || '');
+  }, [company?.panNumber, company?.cin, company?.gstNumber, company?.panVerificationStatus, company?.cinVerificationStatus, company?.gstVerificationStatus]);
 
   // Email update mutation
   const updateEmailMutation = useMutation({
@@ -113,7 +117,7 @@ export function CompanyVerificationEdit({ company }: CompanyVerificationEditProp
   });
 
   const updateVerificationMutation = useMutation({
-    mutationFn: async (data: { panNumber?: string; cin?: string }) => {
+    mutationFn: async (data: { panNumber?: string; cin?: string; gstNumber?: string }) => {
       const response = await fetch('/api/company/verification-details', {
         method: 'PATCH',
         headers: {
@@ -151,12 +155,14 @@ export function CompanyVerificationEdit({ company }: CompanyVerificationEditProp
     updateVerificationMutation.mutate({
       panNumber: panNumber.trim() || undefined,
       cin: cin.trim() || undefined,
+      gstNumber: gstNumber.trim() || undefined,
     });
   };
 
   const handleCancel = () => {
     setPanNumber(company?.panNumber || '');
     setCin(company?.cin || '');
+    setGstNumber(company?.gstNumber || '');
     setIsEditing(false);
   };
 
@@ -166,6 +172,10 @@ export function CompanyVerificationEdit({ company }: CompanyVerificationEditProp
 
   const formatCinInput = (value: string) => {
     return value.toUpperCase().slice(0, 21);
+  };
+
+  const formatGstInput = (value: string) => {
+    return value.toUpperCase().slice(0, 15);
   };
 
   // Email verification handlers
@@ -218,6 +228,10 @@ export function CompanyVerificationEdit({ company }: CompanyVerificationEditProp
 
   const isCinValid = (cin: string) => {
     return !cin || /^[A-Z][0-9]{5}[A-Z]{2}[0-9]{4}[A-Z]{3}[0-9]{6}$/.test(cin);
+  };
+
+  const isGstValid = (gst: string) => {
+    return !gst || /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(gst);
   };
 
   const getVerificationBadge = (status: string, type: 'PAN' | 'CIN') => {
@@ -429,6 +443,14 @@ export function CompanyVerificationEdit({ company }: CompanyVerificationEditProp
             <Label>CIN Number:</Label>
             <code className="bg-gray-100 px-2 py-1 rounded text-sm">{company.cin}</code>
             {getVerificationBadge(company.cinVerificationStatus || 'pending', 'CIN')}
+          </div>
+        )}
+        
+        {company.gstNumber && (
+          <div className="flex items-center gap-2">
+            <Label>GST Number:</Label>
+            <code className="bg-gray-100 px-2 py-1 rounded text-sm">{company.gstNumber}</code>
+            {getVerificationBadge(company.gstVerificationStatus || 'pending', 'GST' as any)}
           </div>
         )}
       </div>
@@ -677,12 +699,30 @@ export function CompanyVerificationEdit({ company }: CompanyVerificationEditProp
                 <p className="text-xs text-red-600">Invalid CIN format</p>
               )}
             </div>
+            
+            <div>
+              <Label htmlFor="gstNumber">GST Number (Optional)</Label>
+              <Input
+                id="gstNumber"
+                value={gstNumber}
+                onChange={(e) => setGstNumber(formatGstInput(e.target.value))}
+                placeholder="22AAAAA0000A1Z5"
+                className={`mt-1 ${!isGstValid(gstNumber) ? 'border-red-500' : ''}`}
+                data-testid="input-gst-number"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                15-character GST format: 22AAAAA0000A1Z5
+              </p>
+              {!isGstValid(gstNumber) && (
+                <p className="text-xs text-red-600">Invalid GST format</p>
+              )}
+            </div>
           </div>
           
           <div className="flex gap-2">
             <Button 
               onClick={handleSave}
-              disabled={updateVerificationMutation.isPending || !isPanValid(panNumber) || !isCinValid(cin)}
+              disabled={updateVerificationMutation.isPending || !isPanValid(panNumber) || !isCinValid(cin) || !isGstValid(gstNumber)}
               className="flex-1"
               data-testid="button-save-verification"
             >

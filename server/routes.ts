@@ -1336,7 +1336,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/company/verification-details", requireCompany, async (req: any, res) => {
     
     try {
-      const { cin, panNumber } = req.body;
+      const { cin, panNumber, gstNumber } = req.body;
       
       // Get current company details
       const company = await storage.getCompany(req.user.id);
@@ -1386,6 +1386,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
+      if (gstNumber !== undefined) {
+        if (gstNumber && gstNumber.trim()) {
+          // Validate GST format
+          if (gstNumber.length !== 15 || !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(gstNumber)) {
+            return res.status(400).json({ 
+              message: "Invalid GST format. Must be 15 characters: 22AAAAA0000A1Z5" 
+            });
+          }
+          updateData.gstNumber = gstNumber.trim().toUpperCase();
+          updateData.gstVerificationStatus = "pending";
+        } else {
+          updateData.gstNumber = null;
+          updateData.gstVerificationStatus = "pending";
+        }
+      }
+      
       // Update company details
       const updatedCompany = await storage.updateCompany(req.user.id, updateData);
       
@@ -1404,6 +1420,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           companyId: updatedCompany.id,
           companyName: updatedCompany.name,
           panNumber: updateData.panNumber,
+          timestamp: new Date().toISOString()
+        });
+      }
+      
+      if (updateData.gstNumber) {
+        emitRealTimeUpdate("gst_verification_pending", {
+          companyId: updatedCompany.id,
+          companyName: updatedCompany.name,
+          gstNumber: updateData.gstNumber,
           timestamp: new Date().toISOString()
         });
       }
@@ -1798,6 +1823,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const company = await storage.getCompany(id);
       if (!company) {
         return res.status(404).json({ message: "Company not found" });
+      }
+      
+      // Validate that company actually provided the document before approving
+      if (status === 'approved') {
+        if (docType === 'pan' && !company.panNumber) {
+          return res.status(400).json({ message: "Cannot approve PAN - company has not provided PAN number" });
+        }
+        if (docType === 'cin' && !company.cin) {
+          return res.status(400).json({ message: "Cannot approve CIN - company has not provided CIN number" });
+        }
+        if (docType === 'gst' && !company.gstNumber) {
+          return res.status(400).json({ message: "Cannot approve GST - company has not provided GST number" });
+        }
       }
       
       // Update specific document verification
