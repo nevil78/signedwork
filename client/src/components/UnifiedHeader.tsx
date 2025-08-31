@@ -46,15 +46,15 @@ export default function UnifiedHeader({
           {/* Auth Buttons */}
           {showAuthButtons && (
             <div className="flex space-x-4">
-              {currentPage !== "login" && (
-                <Link href="/login" data-testid="link-login">
+              {currentPage !== "login" && currentPage !== "auth" && (
+                <Link href="/auth?view=login" data-testid="link-login">
                   <Button variant="ghost" className="text-slate-600 hover:text-slate-900">
                     Login
                   </Button>
                 </Link>
               )}
               {currentPage !== "signup" && currentPage !== "auth" && (
-                <Link href="/signup" data-testid="link-signup">
+                <Link href="/auth?view=employee" data-testid="link-signup">
                   <Button className="bg-blue-600 hover:bg-blue-700 text-white">
                     Get Started Free
                   </Button>

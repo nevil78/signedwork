@@ -93,10 +93,10 @@ const PasswordInput = memo(({ field, placeholder, className = "" }: { field: any
 PasswordInput.displayName = "PasswordInput";
 
 export default function AuthPage() {
-  // Check URL parameters for initial view
-  const urlParams = new URLSearchParams(window.location.search);
+  // Check URL parameters for initial view using wouter
+  const [location, setLocation] = useLocation();
+  const urlParams = new URLSearchParams(location.split('?')[1] || '');
   const viewParam = urlParams.get('view') as AuthView | null;
-  const [, setLocation] = useLocation();
   
   const [currentView, setCurrentView] = useState<AuthView>(viewParam || "login");
   const [loginError, setLoginError] = useState<boolean>(false);
@@ -118,7 +118,7 @@ export default function AuthPage() {
 
   // Handle URL view parameters dynamically
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
+    const urlParams = new URLSearchParams(location.split('?')[1] || '');
     const currentViewParam = urlParams.get('view') as AuthView | null;
     
     if (currentViewParam) {
@@ -131,10 +131,11 @@ export default function AuthPage() {
         setCurrentView(currentViewParam as AuthView);
       }
     }
-  }, []);
+  }, [location]);
 
   // Handle OAuth error redirects
   useEffect(() => {
+    const urlParams = new URLSearchParams(location.split('?')[1] || '');
     const error = urlParams.get('error');
     
     if (error) {
