@@ -1773,6 +1773,130 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin document verification endpoint (PAN/CIN/GST) - PROTECTED ROUTE
+  app.post("/api/admin/companies/:id/verify-document", requireAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { docType, status, notes } = req.body;
+      
+      // Validate document type
+      if (!['pan', 'cin', 'gst'].includes(docType)) {
+        return res.status(400).json({ message: "Invalid document type" });
+      }
+      
+      // Validate status
+      if (!['approved', 'rejected'].includes(status)) {
+        return res.status(400).json({ message: "Invalid verification status" });
+      }
+      
+      // Get company to check if it exists
+      const company = await storage.getCompany(id);
+      if (!company) {
+        return res.status(404).json({ message: "Company not found" });
+      }
+      
+      // Update specific document verification
+      let updateData: any = {};
+      
+      if (docType === 'pan') {
+        updateData = {
+          panVerificationStatus: status === 'approved' ? 'verified' : 'rejected',
+          panVerifiedAt: new Date(),
+          panVerifiedBy: req.user.id,
+          verificationNotes: notes
+        };
+      } else if (docType === 'cin') {
+        updateData = {
+          cinVerificationStatus: status === 'approved' ? 'verified' : 'rejected',
+          cinVerifiedAt: new Date(),
+          cinVerifiedBy: req.user.id,
+          verificationNotes: notes
+        };
+      } else if (docType === 'gst') {
+        updateData = {
+          gstVerificationStatus: status === 'approved' ? 'verified' : 'rejected',
+          gstVerifiedAt: new Date(),
+          gstVerifiedBy: req.user.id,
+          verificationNotes: notes
+        };
+      }
+      
+      const updatedCompany = await storage.updateCompany(id, updateData);
+      
+      // If rejected, log rejection for future notification system
+      if (status === 'rejected') {
+        const rejectionMessage = `Your ${docType.toUpperCase()} document has been rejected. Please recheck and submit valid ${docType.toUpperCase()} documents that match your company profile. Reason: ${notes || 'Document verification failed'}`;
+        
+        // Log rejection for company (notification system can be added later)
+        console.log(`Document rejected for company ${company.name}: ${rejectionMessage}`);
+      }
+      
+      // Check if all documents are verified to update overall verification status
+      if (status === 'approved') {
+        const currentCompany = await storage.getCompany(id);
+        if (currentCompany?.panVerificationStatus === 'verified' && 
+            currentCompany?.cinVerificationStatus === 'verified' && 
+            currentCompany?.gstVerificationStatus === 'verified') {
+          await storage.updateCompany(id, { 
+            verificationStatus: 'verified',
+            verifiedAt: new Date(),
+            verifiedBy: req.user.id
+          });
+        }
+      }
+      
+      res.json({
+        message: `${docType.toUpperCase()} ${status === 'approved' ? 'approved' : 'rejected'} successfully`,
+        company: updatedCompany,
+        docType,
+        status
+      });
+      
+    } catch (error) {
+      console.error("Document verification error:", error);
+      res.status(500).json({ message: "Failed to update document verification" });
+    }
+  });
+
+  // Admin work diary access toggle - PROTECTED ROUTE
+  app.post("/api/admin/companies/:id/toggle-work-diary", requireAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      
+      // Get company current status
+      const company = await storage.getCompany(id);
+      if (!company) {
+        return res.status(404).json({ message: "Company not found" });
+      }
+      
+      // Check if company is verified before enabling work diary access
+      if (!company.workDiaryAccess && company.verificationStatus !== 'verified') {
+        return res.status(403).json({ 
+          message: "Company must be fully verified before enabling work diary access" 
+        });
+      }
+      
+      // Toggle work diary access
+      const newWorkDiaryAccess = !company.workDiaryAccess;
+      const updatedCompany = await storage.updateCompany(id, { 
+        workDiaryAccess: newWorkDiaryAccess 
+      });
+      
+      // Log admin action
+      console.log(`Admin ${req.user.id} ${newWorkDiaryAccess ? 'enabled' : 'disabled'} work diary access for company ${company.name}`);
+      
+      res.json({
+        message: `Work diary access ${newWorkDiaryAccess ? 'enabled' : 'disabled'} successfully`,
+        company: updatedCompany,
+        workDiaryAccess: newWorkDiaryAccess
+      });
+      
+    } catch (error) {
+      console.error("Toggle work diary access error:", error);
+      res.status(500).json({ message: "Failed to toggle work diary access" });
+    }
+  });
+
   // Update employee email - PROTECTED ROUTE
   app.post("/api/employee/update-email", requireEmployee, async (req: any, res) => {
 
