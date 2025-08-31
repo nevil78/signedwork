@@ -809,7 +809,7 @@ export default function CompanyWorkEntries() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => navigate('/company/settings')}
+                      onClick={() => navigate('/company-settings')}
                       className="border-red-300 text-red-700 hover:bg-red-50"
                       data-testid="button-goto-verification"
                     >
