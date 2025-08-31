@@ -97,7 +97,9 @@ function Router() {
       
       {/* Company Protected Routes */}
       <Route path="/company-dashboard" component={() => <ProtectedRoute requireUserType="company"><CompanyDashboard /></ProtectedRoute>} />
+      {/* Company Settings - Multiple Route Support */}
       <Route path="/company-settings" component={() => <ProtectedRoute requireUserType="company"><CompanySettings /></ProtectedRoute>} />
+      <Route path="/company/settings" component={() => <ProtectedRoute requireUserType="company"><CompanySettings /></ProtectedRoute>} />
       <Route path="/company-work-entries" component={() => <ProtectedRoute requireUserType="company"><CompanyWorkEntries /></ProtectedRoute>} />
       <Route path="/company-jobs" component={() => <ProtectedRoute requireUserType="company"><CompanyJobsPage /></ProtectedRoute>} />
       <Route path="/company-recruiter" component={() => <ProtectedRoute requireUserType="company"><CompanyRecruiterPage /></ProtectedRoute>} />
