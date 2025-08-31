@@ -1,39 +1,78 @@
-import { useEffect, useState } from "react";
-import { useLocation } from "wouter";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { format } from "date-fns";
+import { useLocation } from "wouter";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import signedworkLogo from "@assets/Signed-work-Logo (1)_1755168042120.png";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import EmployeeManagement from "@/components/EmployeeManagement";
-import CompanyManagement from "@/components/CompanyManagement";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
-import { useToast } from "@/hooks/use-toast";
-import { 
-  Users, Building, Briefcase, TrendingUp, LogOut, 
-  ShieldCheck, UserCheck, UserX, Calendar, Mail, Search, Shield, MessageSquare, Menu, Trash2, Download
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import {
+  Users,
+  Building,
+  Briefcase,
+  TrendingUp,
+  LogOut,
+  Search,
+  Mail,
+  Calendar,
+  Trash2,
+  MapPin,
+  Phone,
+  Shield,
+  ShieldCheck,
+  UserCheck,
+  UserX,
+  CheckCircle,
+  XCircle,
+  MessageSquare,
+  ChevronDown,
+  ChevronUp,
+  FileText,
+  Globe,
+  CreditCard,
+  Eye,
+  Settings,
 } from "lucide-react";
-import signedworkLogo from "@assets/Signed-work-Logo (1)_1755168042120.png";
-import { format } from "date-fns";
-import type { Employee, Company, Admin } from "@shared/schema";
-
-interface AdminStats {
-  employees: number;
-  companies: number;
-  totalJobs: number;
-  activeJobs: number;
-}
-
-interface UserData {
-  user: Employee | Company | Admin;
-  userType: "employee" | "company" | "admin";
-}
 
 export default function AdminDashboard() {
   const [, navigate] = useLocation();
@@ -41,86 +80,82 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
   const [employeeSearch, setEmployeeSearch] = useState("");
   const [companySearch, setCompanySearch] = useState("");
-  const [cinVerificationNotes, setCinVerificationNotes] = useState<Record<string, string>>({});
-  const [panVerificationNotes, setPanVerificationNotes] = useState<Record<string, string>>({});
-  const [gstVerificationNotes, setGstVerificationNotes] = useState<Record<string, string>>({});
+  const [expandedCompany, setExpandedCompany] = useState<string | null>(null);
 
-  // Fetch current admin user
-  const { data: userData, isLoading: userLoading } = useQuery<UserData>({
+  // Fetch admin user
+  const { data: userData, isLoading: userLoading } = useQuery({
     queryKey: ["/api/auth/user"],
+    retry: false,
   });
 
-  // Redirect if not admin
-  useEffect(() => {
-    if (!userLoading && (!userData || userData.userType !== "admin")) {
-      navigate("/admin/login");
-    }
-  }, [userData, userLoading, navigate]);
-
-  // Fetch admin stats
-  const { data: stats } = useQuery<AdminStats>({
+  // Fetch stats for overview
+  const { data: stats } = useQuery({
     queryKey: ["/api/admin/stats"],
-    enabled: userData?.userType === "admin",
+    retry: false,
   });
 
-  // Fetch employees with search
-  const { data: employees } = useQuery<Employee[]>({
-    queryKey: ["/api/admin/employees", employeeSearch],
-    queryFn: () => {
-      const params = new URLSearchParams();
-      if (employeeSearch.trim()) {
-        params.append('search', employeeSearch.trim());
-      }
-      const url = `/api/admin/employees${params.toString() ? `?${params.toString()}` : ''}`;
-      return fetch(url).then(res => res.json());
-    },
-    enabled: userData?.userType === "admin" && activeTab === "employees",
+  // Fetch employees
+  const { data: employees } = useQuery({
+    queryKey: ["/api/admin/employees"],
+    retry: false,
   });
 
-  // Fetch companies with search
-  const { data: companies } = useQuery<Company[]>({
-    queryKey: ["/api/admin/companies", companySearch],
-    queryFn: () => {
-      const params = new URLSearchParams();
-      if (companySearch.trim()) {
-        params.append('search', companySearch.trim());
-      }
-      const url = `/api/admin/companies${params.toString() ? `?${params.toString()}` : ''}`;
-      return fetch(url).then(res => res.json());
-    },
-    enabled: userData?.userType === "admin" && activeTab === "companies",
+  // Fetch companies
+  const { data: companies } = useQuery({
+    queryKey: ["/api/admin/companies"],
+    retry: false,
   });
 
-  // Toggle employee status
-  const toggleEmployeeMutation = useMutation({
-    mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) =>
-      apiRequest("PATCH", `/api/admin/employees/${id}/toggle-status`, { isActive }),
+  // Delete employee mutation
+  const deleteEmployeeMutation = useMutation({
+    mutationFn: (id: string) => apiRequest("DELETE", `/api/admin/employees/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/employees"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
       toast({
-        title: "Status updated",
-        description: "Employee status has been updated successfully",
+        title: "Employee deleted",
+        description: "Employee has been permanently deleted",
       });
     },
   });
 
-  // Toggle company status
-  const toggleCompanyMutation = useMutation({
-    mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) =>
-      apiRequest("PATCH", `/api/admin/companies/${id}/toggle-status`, { isActive }),
+  // Delete company mutation
+  const deleteCompanyMutation = useMutation({
+    mutationFn: (id: string) => apiRequest("DELETE", `/api/admin/companies/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/companies"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
+      toast({
+        title: "Company deleted",
+        description: "Company has been permanently deleted",
+      });
+    },
+  });
+
+  // Company verification mutations
+  const verifyDocumentMutation = useMutation({
+    mutationFn: ({ companyId, docType, status, notes }: { 
+      companyId: string; 
+      docType: 'pan' | 'cin' | 'gst'; 
+      status: 'approved' | 'rejected';
+      notes?: string;
+    }) => apiRequest("POST", `/api/admin/companies/${companyId}/verify-document`, {
+      docType,
+      status,
+      notes
+    }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/companies"] });
       toast({
-        title: "Status updated",
-        description: "Company status has been updated successfully",
+        title: "Document verification updated",
+        description: "Company document verification status has been updated successfully",
       });
     },
   });
 
-  // Toggle company work diary access
+  // Work diary access toggle mutation
   const toggleWorkDiaryMutation = useMutation({
-    mutationFn: ({ id, workDiaryAccess }: { id: string; workDiaryAccess: boolean }) =>
-      apiRequest("PATCH", `/api/admin/companies/${id}/toggle-work-diary`, { workDiaryAccess }),
+    mutationFn: (companyId: string) => apiRequest("POST", `/api/admin/companies/${companyId}/toggle-work-diary`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/companies"] });
       toast({
@@ -130,155 +165,7 @@ export default function AdminDashboard() {
     },
   });
 
-  // Delete employee
-  const deleteEmployeeMutation = useMutation({
-    mutationFn: (id: string) =>
-      apiRequest("DELETE", `/api/admin/employees/${id}`, {}),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/employees"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
-      toast({
-        title: "Employee deleted",
-        description: "Employee has been permanently deleted",
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Delete company
-  const deleteCompanyMutation = useMutation({
-    mutationFn: (id: string) =>
-      apiRequest("DELETE", `/api/admin/companies/${id}`, {}),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/companies"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
-      toast({
-        title: "Company deleted",
-        description: "Company has been permanently deleted",
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Download employee backup
-  const downloadEmployeeBackup = async (employeeId: string, employeeName: string) => {
-    try {
-      const response = await fetch(`/api/admin/employees/${employeeId}/backup`);
-      if (!response.ok) throw new Error('Failed to download backup');
-      
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `employee_backup_${employeeName.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.json`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-      
-      toast({
-        title: "Backup downloaded",
-        description: `Employee backup for ${employeeName} downloaded successfully`,
-      });
-    } catch (error) {
-      toast({
-        title: "Download failed",
-        description: "Failed to download employee backup",
-        variant: "destructive",
-      });
-    }
-  };
-
-  // Download company backup
-  const downloadCompanyBackup = async (companyId: string, companyName: string) => {
-    try {
-      const response = await fetch(`/api/admin/companies/${companyId}/backup`);
-      if (!response.ok) throw new Error('Failed to download backup');
-      
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `company_backup_${companyName.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.json`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-      
-      toast({
-        title: "Backup downloaded",
-        description: `Company backup for ${companyName} downloaded successfully`,
-      });
-    } catch (error) {
-      toast({
-        title: "Download failed",
-        description: "Failed to download company backup",
-        variant: "destructive",
-      });
-    }
-  };
-
-  // Fetch companies pending CIN verification
-  const { data: pendingCinCompanies } = useQuery<Company[]>({
-    queryKey: ["/api/admin/companies/pending-cin-verification"],
-    enabled: userData?.userType === "admin" && activeTab === "cin-verification",
-  });
-
-  // Fetch companies pending PAN verification
-  const { data: pendingPanCompanies } = useQuery<Company[]>({
-    queryKey: ["/api/admin/companies/pending-pan-verification"],
-    enabled: userData?.userType === "admin" && activeTab === "pan-verification",
-  });
-
-  // Fetch companies pending GST verification
-  const { data: pendingGstCompanies } = useQuery<Company[]>({
-    queryKey: ["/api/admin/companies/pending-gst-verification"],
-    enabled: userData?.userType === "admin" && activeTab === "gst-verification",
-  });
-
-  // CIN verification mutation
-  const cinVerificationMutation = useMutation({
-    mutationFn: ({ companyId, status, notes }: { companyId: string; status: string; notes?: string }) =>
-      apiRequest("PATCH", `/api/admin/companies/${companyId}/cin-verification`, { status, notes }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/companies/pending-cin-verification"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/companies"] });
-      toast({
-        title: "CIN verification updated",
-        description: "Company CIN verification status has been updated successfully",
-      });
-    },
-  });
-
-  // PAN verification mutation
-  const panVerificationMutation = useMutation({
-    mutationFn: ({ companyId, status, notes }: { companyId: string; status: string; notes?: string }) =>
-      apiRequest("PATCH", `/api/admin/companies/${companyId}/pan-verification`, { status, notes }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/companies/pending-pan-verification"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/companies"] });
-      toast({
-        title: "PAN verification updated",
-        description: "Company PAN verification status has been updated successfully",
-      });
-    },
-  });
-
-  // GST verification mutation
-  const gstVerificationMutation = useMutation({
-    mutationFn: ({ companyId, status, notes }: { companyId: string; status: string; notes?: string }) =>
-      apiRequest("PATCH", `/api/admin/companies/${companyId}/gst-verification`, { status, notes }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/companies/pending-gst-verification"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/companies"] });
-      toast({
-        title: "GST verification updated",
-        description: "Company GST verification status has been updated successfully",
-      });
-    },
-  });
-
-  // Logout
+  // Logout mutation
   const logoutMutation = useMutation({
     mutationFn: () => apiRequest("POST", "/api/auth/logout"),
     onSuccess: () => {
@@ -290,7 +177,23 @@ export default function AdminDashboard() {
     return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
   }
 
-  const admin = userData?.user as Admin;
+  const admin = userData?.user;
+
+  // Filter functions
+  const filteredEmployees = employees?.filter((employee: any) =>
+    employee.firstName?.toLowerCase().includes(employeeSearch.toLowerCase()) ||
+    employee.lastName?.toLowerCase().includes(employeeSearch.toLowerCase()) ||
+    employee.email?.toLowerCase().includes(employeeSearch.toLowerCase()) ||
+    employee.phone?.includes(employeeSearch) ||
+    employee.employeeId?.toLowerCase().includes(employeeSearch.toLowerCase())
+  );
+
+  const filteredCompanies = companies?.filter((company: any) =>
+    company.name?.toLowerCase().includes(companySearch.toLowerCase()) ||
+    company.email?.toLowerCase().includes(companySearch.toLowerCase()) ||
+    company.companyId?.toLowerCase().includes(companySearch.toLowerCase()) ||
+    company.industry?.toLowerCase().includes(companySearch.toLowerCase())
+  );
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -309,7 +212,7 @@ export default function AdminDashboard() {
                     </span>
                   )}
                 </div>
-                <p className="text-xs md:text-sm text-gray-500 hidden md:block">Welcome back!</p>
+                <p className="text-xs md:text-sm text-gray-500 hidden md:block">Platform Management Center</p>
               </div>
             </div>
             <Button
@@ -333,17 +236,11 @@ export default function AdminDashboard() {
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           {/* Desktop Tabs */}
           <div className="hidden lg:block mb-8">
-            <TabsList className="grid grid-cols-9 w-full">
-              <TabsTrigger value="overview" className="text-xs">Overview</TabsTrigger>
-              <TabsTrigger value="employees" className="text-xs">Employees</TabsTrigger>
-              <TabsTrigger value="companies" className="text-xs">Companies</TabsTrigger>
-              <TabsTrigger value="employee-management" className="text-xs">Employee Mgmt</TabsTrigger>
-              <TabsTrigger value="company-management" className="text-xs">Company Mgmt</TabsTrigger>
-              <TabsTrigger value="cin-verification" className="text-xs">CIN</TabsTrigger>
-              <TabsTrigger value="pan-verification" className="text-xs">PAN</TabsTrigger>
-              <TabsTrigger value="gst-verification" className="text-xs">GST</TabsTrigger>
-              <TabsTrigger value="verifications" className="text-xs">Verifications</TabsTrigger>
-              <TabsTrigger value="feedback" className="text-xs">Feedback</TabsTrigger>
+            <TabsList className="grid grid-cols-4 w-full">
+              <TabsTrigger value="overview" className="text-sm">Overview</TabsTrigger>
+              <TabsTrigger value="employees" className="text-sm">Employees</TabsTrigger>
+              <TabsTrigger value="companies" className="text-sm">Companies</TabsTrigger>
+              <TabsTrigger value="feedback" className="text-sm">Feedback</TabsTrigger>
             </TabsList>
           </div>
           
@@ -358,12 +255,6 @@ export default function AdminDashboard() {
                 <option value="overview">Overview</option>
                 <option value="employees">Employees</option>
                 <option value="companies">Companies</option>
-                <option value="employee-management">Employee Management</option>
-                <option value="company-management">Company Management</option>
-                <option value="cin-verification">CIN Verification</option>
-                <option value="pan-verification">PAN Verification</option>
-                <option value="gst-verification">GST Verification</option>
-                <option value="verifications">Verifications</option>
                 <option value="feedback">Feedback</option>
               </select>
             </div>
@@ -422,7 +313,7 @@ export default function AdminDashboard() {
                 <CardTitle>Admin Information</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-2">
+                <div className="space-y-4">
                   <div className="flex justify-between">
                     <span className="text-sm font-medium">Admin ID:</span>
                     <span className="text-sm text-muted-foreground">{admin?.adminId}</span>
@@ -452,11 +343,12 @@ export default function AdminDashboard() {
             </Card>
           </TabsContent>
 
-          {/* Employees Tab */}
+          {/* Employees Tab - Simple tracking only */}
           <TabsContent value="employees">
             <Card>
               <CardHeader>
-                <CardTitle>Manage Employees</CardTitle>
+                <CardTitle>Employee Management</CardTitle>
+                <p className="text-sm text-muted-foreground">Track registered employees on the platform</p>
               </CardHeader>
               <CardContent>
                 {/* Employee Search */}
@@ -475,7 +367,8 @@ export default function AdminDashboard() {
                     Search employees by name, email, phone number, or employee ID
                   </p>
                 </div>
-                {employees && employees.length > 0 ? (
+                
+                {filteredEmployees && filteredEmployees.length > 0 ? (
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -483,13 +376,12 @@ export default function AdminDashboard() {
                         <TableHead>Name</TableHead>
                         <TableHead>Email</TableHead>
                         <TableHead>Phone</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Created</TableHead>
+                        <TableHead>Joined</TableHead>
                         <TableHead>Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {employees.map((employee) => (
+                      {filteredEmployees.map((employee: any) => (
                         <TableRow key={employee.id}>
                           <TableCell className="font-medium">{employee.employeeId}</TableCell>
                           <TableCell>{`${employee.firstName} ${employee.lastName}`}</TableCell>
@@ -499,12 +391,7 @@ export default function AdminDashboard() {
                               {employee.email}
                             </div>
                           </TableCell>
-                          <TableCell>{employee.phone}</TableCell>
-                          <TableCell>
-                            <Badge variant={employee.isActive ? "default" : "secondary"}>
-                              {employee.isActive ? "Active" : "Inactive"}
-                            </Badge>
-                          </TableCell>
+                          <TableCell>{employee.phone || "N/A"}</TableCell>
                           <TableCell>
                             <div className="flex items-center text-sm text-muted-foreground">
                               <Calendar className="h-3 w-3 mr-1" />
@@ -512,79 +399,50 @@ export default function AdminDashboard() {
                             </div>
                           </TableCell>
                           <TableCell>
-                            <div className="flex items-center space-x-2">
-                              <Switch
-                                checked={employee.isActive ?? true}
-                                onCheckedChange={(checked) =>
-                                  toggleEmployeeMutation.mutate({
-                                    id: employee.id,
-                                    isActive: checked,
-                                  })
-                                }
-                                disabled={toggleEmployeeMutation.isPending}
-                              />
-                              <span className="text-sm text-muted-foreground">
-                                {employee.isActive ? "Deactivate" : "Activate"}
-                              </span>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                data-testid={`button-download-employee-${employee.id}`}
-                                onClick={() => downloadEmployeeBackup(employee.id, `${employee.firstName} ${employee.lastName}`)}
-                                className="ml-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                                title="Download Backup"
-                              >
-                                <Download className="h-4 w-4" />
-                              </Button>
-                              <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                  <Button 
-                                    variant="outline" 
-                                    size="sm" 
-                                    data-testid={`button-delete-employee-${employee.id}`}
-                                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                    title="Delete Employee"
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm" 
+                                  data-testid={`button-delete-employee-${employee.id}`}
+                                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                  title="Delete Employee"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Delete Employee - Confirmation Required</AlertDialogTitle>
+                                  <AlertDialogDescription className="space-y-3">
+                                    <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+                                      <p className="font-semibold text-red-800">⚠️ PERMANENT DELETION WARNING</p>
+                                      <p className="text-red-700">You are about to permanently delete <strong>{employee.firstName} {employee.lastName}</strong> and ALL associated data.</p>
+                                    </div>
+                                    <div className="space-y-2">
+                                      <p className="font-medium">This will remove:</p>
+                                      <ul className="list-disc pl-5 space-y-1 text-sm">
+                                        <li>Employee profile and personal information</li>
+                                        <li>Work entries and employment history</li>
+                                        <li>Job applications and saved jobs</li>
+                                        <li>Education, certifications, and projects</li>
+                                        <li>All feedback and skill preferences</li>
+                                      </ul>
+                                    </div>
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => deleteEmployeeMutation.mutate(employee.id)}
+                                    className="bg-red-600 hover:bg-red-700 text-white"
+                                    disabled={deleteEmployeeMutation.isPending}
                                   >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle>Delete Employee - Confirmation Required</AlertDialogTitle>
-                                    <AlertDialogDescription className="space-y-3">
-                                      <div className="p-3 bg-red-50 border border-red-200 rounded-md">
-                                        <p className="font-semibold text-red-800">⚠️ PERMANENT DELETION WARNING</p>
-                                        <p className="text-red-700">You are about to permanently delete <strong>{employee.firstName} {employee.lastName}</strong> and ALL associated data.</p>
-                                      </div>
-                                      <div className="space-y-2">
-                                        <p className="font-medium">This will remove:</p>
-                                        <ul className="list-disc pl-5 space-y-1 text-sm">
-                                          <li>Employee profile and personal information</li>
-                                          <li>Work entries and employment history</li>
-                                          <li>Job applications and saved jobs</li>
-                                          <li>Education, certifications, and projects</li>
-                                          <li>All feedback and skill preferences</li>
-                                        </ul>
-                                      </div>
-                                      <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
-                                        <p className="font-medium text-blue-800">💡 Recommendation</p>
-                                        <p className="text-blue-700">Download a backup first using the blue download button to preserve the data locally.</p>
-                                      </div>
-                                    </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction
-                                      onClick={() => deleteEmployeeMutation.mutate(employee.id)}
-                                      className="bg-red-600 hover:bg-red-700 text-white"
-                                      disabled={deleteEmployeeMutation.isPending}
-                                    >
-                                      {deleteEmployeeMutation.isPending ? "Deleting..." : "I Understand - Delete Permanently"}
-                                    </AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
-                            </div>
+                                    {deleteEmployeeMutation.isPending ? "Deleting..." : "Delete Permanently"}
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -599,11 +457,14 @@ export default function AdminDashboard() {
             </Card>
           </TabsContent>
 
-          {/* Companies Tab */}
+          {/* Companies Tab - Unified management with integrated verification */}
           <TabsContent value="companies">
             <Card>
               <CardHeader>
-                <CardTitle>Manage Companies</CardTitle>
+                <CardTitle>Company Management</CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Manage companies, verify documents, and control work diary access
+                </p>
               </CardHeader>
               <CardContent>
                 {/* Company Search */}
@@ -619,479 +480,349 @@ export default function AdminDashboard() {
                     />
                   </div>
                   <p className="text-sm text-muted-foreground mt-2">
-                    Search companies by name, email, company ID, or industry
+                    Click on any company name to view all verification details and manage work diary access
                   </p>
                 </div>
-                {companies && companies.length > 0 ? (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Company ID</TableHead>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Email</TableHead>
-                        <TableHead>Location</TableHead>
-                        <TableHead>Industry</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Work Diary</TableHead>
-                        <TableHead>Created</TableHead>
-                        <TableHead>Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {companies.map((company) => (
-                        <TableRow key={company.id}>
-                          <TableCell className="font-medium">{company.id}</TableCell>
-                          <TableCell>{company.name}</TableCell>
-                          <TableCell>
-                            <div className="flex items-center">
-                              <Mail className="h-3 w-3 mr-1 text-muted-foreground" />
-                              {company.email}
+
+                {filteredCompanies && filteredCompanies.length > 0 ? (
+                  <div className="space-y-4">
+                    {filteredCompanies.map((company: any) => (
+                      <Collapsible key={company.id} open={expandedCompany === company.id} onOpenChange={(open) => setExpandedCompany(open ? company.id : null)}>
+                        <Card className="border-l-4 border-l-blue-500">
+                          <CollapsibleTrigger asChild>
+                            <div className="cursor-pointer hover:bg-gray-50 transition-colors">
+                              <CardHeader className="pb-4">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center space-x-3">
+                                    <Building className="h-5 w-5 text-blue-600" />
+                                    <div>
+                                      <h3 className="text-lg font-semibold text-blue-700 hover:text-blue-800">
+                                        {company.name}
+                                      </h3>
+                                      <p className="text-sm text-muted-foreground">{company.industry}</p>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center space-x-4">
+                                    {/* Verification Status Indicators */}
+                                    <div className="flex items-center space-x-2">
+                                      <Badge variant={company.panVerificationStatus === 'approved' ? 'default' : company.panVerificationStatus === 'rejected' ? 'destructive' : 'outline'}>
+                                        PAN: {company.panVerificationStatus || 'pending'}
+                                      </Badge>
+                                      <Badge variant={company.cinVerificationStatus === 'approved' ? 'default' : company.cinVerificationStatus === 'rejected' ? 'destructive' : 'outline'}>
+                                        CIN: {company.cinVerificationStatus || 'pending'}
+                                      </Badge>
+                                      <Badge variant={company.gstVerificationStatus === 'approved' ? 'default' : company.gstVerificationStatus === 'rejected' ? 'destructive' : 'outline'}>
+                                        GST: {company.gstVerificationStatus || 'pending'}
+                                      </Badge>
+                                    </div>
+                                    
+                                    {/* Work Diary Access Status */}
+                                    <div className="flex items-center space-x-2">
+                                      <Badge variant={company.workDiaryAccess ? 'default' : 'secondary'}>
+                                        Work Diary: {company.workDiaryAccess ? 'Enabled' : 'Disabled'}
+                                      </Badge>
+                                    </div>
+                                    
+                                    {expandedCompany === company.id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                                  </div>
+                                </div>
+                              </CardHeader>
                             </div>
-                          </TableCell>
-                          <TableCell>{company.city || 'N/A'}</TableCell>
-                          <TableCell>{company.industry}</TableCell>
-                          <TableCell>
-                            <Badge variant={company.isActive ? "default" : "secondary"}>
-                              {company.isActive ? "Active" : "Inactive"}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center space-x-2">
-                              <Switch
-                                checked={company.workDiaryAccess ?? false}
-                                onCheckedChange={(checked) =>
-                                  toggleWorkDiaryMutation.mutate({
-                                    id: company.id,
-                                    workDiaryAccess: checked,
-                                  })
-                                }
-                                disabled={toggleWorkDiaryMutation.isPending}
-                                data-testid={`switch-work-diary-${company.id}`}
-                              />
-                              <span className="text-sm text-muted-foreground">
-                                {company.workDiaryAccess ? "Enabled" : "Disabled"}
-                              </span>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center text-sm text-muted-foreground">
-                              <Calendar className="h-3 w-3 mr-1" />
-                              {company.createdAt ? format(new Date(company.createdAt), "PP") : "N/A"}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center space-x-2">
-                              <Switch
-                                checked={company.isActive ?? true}
-                                onCheckedChange={(checked) =>
-                                  toggleCompanyMutation.mutate({
-                                    id: company.id,
-                                    isActive: checked,
-                                  })
-                                }
-                                disabled={toggleCompanyMutation.isPending}
-                              />
-                              <span className="text-sm text-muted-foreground">
-                                {company.isActive ? "Deactivate" : "Activate"}
-                              </span>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                data-testid={`button-download-company-${company.id}`}
-                                onClick={() => downloadCompanyBackup(company.id, company.name)}
-                                className="ml-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                                title="Download Backup"
-                              >
-                                <Download className="h-4 w-4" />
-                              </Button>
-                              <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                  <Button 
-                                    variant="outline" 
-                                    size="sm" 
-                                    data-testid={`button-delete-company-${company.id}`}
-                                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                    title="Delete Company"
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle>Delete Company - Confirmation Required</AlertDialogTitle>
-                                    <AlertDialogDescription className="space-y-3">
-                                      <div className="p-3 bg-red-50 border border-red-200 rounded-md">
-                                        <p className="font-semibold text-red-800">⚠️ PERMANENT DELETION WARNING</p>
-                                        <p className="text-red-700">You are about to permanently delete <strong>{company.name}</strong> and ALL associated data.</p>
+                          </CollapsibleTrigger>
+                          
+                          <CollapsibleContent>
+                            <CardContent className="pt-0">
+                              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                                {/* Company Information */}
+                                <div>
+                                  <h4 className="text-md font-semibold mb-4 flex items-center">
+                                    <Building className="h-4 w-4 mr-2" />
+                                    Company Information
+                                  </h4>
+                                  <div className="space-y-3 text-sm">
+                                    <div className="flex justify-between">
+                                      <span className="font-medium">Company ID:</span>
+                                      <span className="text-muted-foreground font-mono">{company.companyId}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                      <span className="font-medium">Email:</span>
+                                      <span className="text-muted-foreground">{company.email}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                      <span className="font-medium">Founded:</span>
+                                      <span className="text-muted-foreground">{company.establishmentYear}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                      <span className="font-medium">Location:</span>
+                                      <span className="text-muted-foreground">{company.city}, {company.state}, {company.country}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                      <span className="font-medium">Registered:</span>
+                                      <span className="text-muted-foreground">{format(new Date(company.createdAt), "PP")}</span>
+                                    </div>
+                                  </div>
+
+                                  {/* Work Diary Access Control */}
+                                  <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-md">
+                                    <h5 className="font-semibold mb-3 flex items-center">
+                                      <Settings className="h-4 w-4 mr-2" />
+                                      Work Diary Access Control
+                                    </h5>
+                                    <div className="flex items-center justify-between">
+                                      <div>
+                                        <p className="text-sm font-medium">Work Diary Access</p>
+                                        <p className="text-xs text-muted-foreground">
+                                          Enable after manual verification is complete
+                                        </p>
                                       </div>
-                                      <div className="space-y-2">
-                                        <p className="font-medium">This will remove:</p>
-                                        <ul className="list-disc pl-5 space-y-1 text-sm">
-                                          <li>Company profile and business information</li>
-                                          <li>All employee relationships and work entries</li>
-                                          <li>Job listings and applications</li>
-                                          <li>Invitation codes and access permissions</li>
-                                          <li>All company feedback and analytics</li>
-                                        </ul>
+                                      <Switch
+                                        checked={company.workDiaryAccess || false}
+                                        onCheckedChange={() => toggleWorkDiaryMutation.mutate(company.id)}
+                                        disabled={toggleWorkDiaryMutation.isPending}
+                                        data-testid={`toggle-work-diary-${company.id}`}
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Document Verification Section */}
+                                <div>
+                                  <h4 className="text-md font-semibold mb-4 flex items-center">
+                                    <Shield className="h-4 w-4 mr-2" />
+                                    Document Verification
+                                  </h4>
+                                  
+                                  {/* PAN Verification */}
+                                  <div className="mb-6 p-4 border border-gray-200 rounded-md">
+                                    <div className="flex items-center justify-between mb-3">
+                                      <h5 className="font-medium flex items-center">
+                                        <FileText className="h-4 w-4 mr-2" />
+                                        PAN Verification
+                                      </h5>
+                                      <Badge variant={company.panVerificationStatus === 'approved' ? 'default' : company.panVerificationStatus === 'rejected' ? 'destructive' : 'outline'}>
+                                        {company.panVerificationStatus || 'pending'}
+                                      </Badge>
+                                    </div>
+                                    
+                                    {company.panNumber && (
+                                      <div className="mb-3">
+                                        <p className="text-sm"><strong>PAN Number:</strong> 
+                                          <span className="font-mono ml-2 bg-gray-100 px-2 py-1 rounded text-xs">
+                                            {company.panNumber}
+                                          </span>
+                                        </p>
                                       </div>
-                                      <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
-                                        <p className="font-medium text-blue-800">💡 Recommendation</p>
-                                        <p className="text-blue-700">Download a backup first using the blue download button to preserve the data locally.</p>
+                                    )}
+                                    
+                                    {company.panVerificationStatus !== 'approved' && (
+                                      <div className="flex space-x-2">
+                                        <Button
+                                          onClick={() => verifyDocumentMutation.mutate({
+                                            companyId: company.id,
+                                            docType: 'pan',
+                                            status: 'approved'
+                                          })}
+                                          disabled={verifyDocumentMutation.isPending}
+                                          size="sm"
+                                          className="flex-1"
+                                          data-testid={`button-approve-pan-${company.id}`}
+                                        >
+                                          <UserCheck className="h-4 w-4 mr-2" />
+                                          Approve PAN
+                                        </Button>
+                                        <Button
+                                          onClick={() => verifyDocumentMutation.mutate({
+                                            companyId: company.id,
+                                            docType: 'pan',
+                                            status: 'rejected'
+                                          })}
+                                          disabled={verifyDocumentMutation.isPending}
+                                          variant="destructive"
+                                          size="sm"
+                                          className="flex-1"
+                                          data-testid={`button-reject-pan-${company.id}`}
+                                        >
+                                          <UserX className="h-4 w-4 mr-2" />
+                                          Reject PAN
+                                        </Button>
                                       </div>
-                                    </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction
-                                      onClick={() => deleteCompanyMutation.mutate(company.id)}
-                                      className="bg-red-600 hover:bg-red-700 text-white"
-                                      disabled={deleteCompanyMutation.isPending}
-                                    >
-                                      {deleteCompanyMutation.isPending ? "Deleting..." : "I Understand - Delete Permanently"}
-                                    </AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                                    )}
+                                  </div>
+
+                                  {/* CIN Verification */}
+                                  <div className="mb-6 p-4 border border-gray-200 rounded-md">
+                                    <div className="flex items-center justify-between mb-3">
+                                      <h5 className="font-medium flex items-center">
+                                        <FileText className="h-4 w-4 mr-2" />
+                                        CIN Verification
+                                      </h5>
+                                      <Badge variant={company.cinVerificationStatus === 'approved' ? 'default' : company.cinVerificationStatus === 'rejected' ? 'destructive' : 'outline'}>
+                                        {company.cinVerificationStatus || 'pending'}
+                                      </Badge>
+                                    </div>
+                                    
+                                    {company.cin && (
+                                      <div className="mb-3">
+                                        <p className="text-sm"><strong>CIN Number:</strong> 
+                                          <span className="font-mono ml-2 bg-gray-100 px-2 py-1 rounded text-xs">
+                                            {company.cin}
+                                          </span>
+                                        </p>
+                                      </div>
+                                    )}
+                                    
+                                    {company.cinVerificationStatus !== 'approved' && (
+                                      <div className="flex space-x-2">
+                                        <Button
+                                          onClick={() => verifyDocumentMutation.mutate({
+                                            companyId: company.id,
+                                            docType: 'cin',
+                                            status: 'approved'
+                                          })}
+                                          disabled={verifyDocumentMutation.isPending}
+                                          size="sm"
+                                          className="flex-1"
+                                          data-testid={`button-approve-cin-${company.id}`}
+                                        >
+                                          <UserCheck className="h-4 w-4 mr-2" />
+                                          Approve CIN
+                                        </Button>
+                                        <Button
+                                          onClick={() => verifyDocumentMutation.mutate({
+                                            companyId: company.id,
+                                            docType: 'cin',
+                                            status: 'rejected'
+                                          })}
+                                          disabled={verifyDocumentMutation.isPending}
+                                          variant="destructive"
+                                          size="sm"
+                                          className="flex-1"
+                                          data-testid={`button-reject-cin-${company.id}`}
+                                        >
+                                          <UserX className="h-4 w-4 mr-2" />
+                                          Reject CIN
+                                        </Button>
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  {/* GST Verification */}
+                                  <div className="mb-6 p-4 border border-gray-200 rounded-md">
+                                    <div className="flex items-center justify-between mb-3">
+                                      <h5 className="font-medium flex items-center">
+                                        <FileText className="h-4 w-4 mr-2" />
+                                        GST Verification
+                                      </h5>
+                                      <Badge variant={company.gstVerificationStatus === 'approved' ? 'default' : company.gstVerificationStatus === 'rejected' ? 'destructive' : 'outline'}>
+                                        {company.gstVerificationStatus || 'pending'}
+                                      </Badge>
+                                    </div>
+                                    
+                                    {company.gstNumber && (
+                                      <div className="mb-3">
+                                        <p className="text-sm"><strong>GST Number:</strong> 
+                                          <span className="font-mono ml-2 bg-gray-100 px-2 py-1 rounded text-xs">
+                                            {company.gstNumber}
+                                          </span>
+                                        </p>
+                                      </div>
+                                    )}
+                                    
+                                    {company.gstVerificationStatus !== 'approved' && (
+                                      <div className="flex space-x-2">
+                                        <Button
+                                          onClick={() => verifyDocumentMutation.mutate({
+                                            companyId: company.id,
+                                            docType: 'gst',
+                                            status: 'approved'
+                                          })}
+                                          disabled={verifyDocumentMutation.isPending}
+                                          size="sm"
+                                          className="flex-1"
+                                          data-testid={`button-approve-gst-${company.id}`}
+                                        >
+                                          <UserCheck className="h-4 w-4 mr-2" />
+                                          Approve GST
+                                        </Button>
+                                        <Button
+                                          onClick={() => verifyDocumentMutation.mutate({
+                                            companyId: company.id,
+                                            docType: 'gst',
+                                            status: 'rejected'
+                                          })}
+                                          disabled={verifyDocumentMutation.isPending}
+                                          variant="destructive"
+                                          size="sm"
+                                          className="flex-1"
+                                          data-testid={`button-reject-gst-${company.id}`}
+                                        >
+                                          <UserX className="h-4 w-4 mr-2" />
+                                          Reject GST
+                                        </Button>
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  {/* Company Actions */}
+                                  <div className="flex justify-end pt-4 border-t border-gray-200">
+                                    <AlertDialog>
+                                      <AlertDialogTrigger asChild>
+                                        <Button 
+                                          variant="outline" 
+                                          size="sm" 
+                                          data-testid={`button-delete-company-${company.id}`}
+                                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                        >
+                                          <Trash2 className="h-4 w-4 mr-2" />
+                                          Delete Company
+                                        </Button>
+                                      </AlertDialogTrigger>
+                                      <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                          <AlertDialogTitle>Delete Company - Confirmation Required</AlertDialogTitle>
+                                          <AlertDialogDescription className="space-y-3">
+                                            <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+                                              <p className="font-semibold text-red-800">⚠️ PERMANENT DELETION WARNING</p>
+                                              <p className="text-red-700">You are about to permanently delete <strong>{company.name}</strong> and ALL associated data.</p>
+                                            </div>
+                                            <div className="space-y-2">
+                                              <p className="font-medium">This will remove:</p>
+                                              <ul className="list-disc pl-5 space-y-1 text-sm">
+                                                <li>Company profile and business information</li>
+                                                <li>All verification documents and status</li>
+                                                <li>Employee work entries and company data</li>
+                                                <li>Job postings and applications</li>
+                                                <li>All company-related feedback</li>
+                                              </ul>
+                                            </div>
+                                          </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                          <AlertDialogAction
+                                            onClick={() => deleteCompanyMutation.mutate(company.id)}
+                                            className="bg-red-600 hover:bg-red-700 text-white"
+                                            disabled={deleteCompanyMutation.isPending}
+                                          >
+                                            {deleteCompanyMutation.isPending ? "Deleting..." : "Delete Permanently"}
+                                          </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                      </AlertDialogContent>
+                                    </AlertDialog>
+                                  </div>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </CollapsibleContent>
+                        </Card>
+                      </Collapsible>
+                    ))}
+                  </div>
                 ) : (
                   <Alert>
                     <AlertDescription>No companies found</AlertDescription>
                   </Alert>
                 )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Employee Management Tab */}
-          <TabsContent value="employee-management">
-            <EmployeeManagement />
-          </TabsContent>
-
-          {/* Company Management Tab */}
-          <TabsContent value="company-management">
-            <CompanyManagement />
-          </TabsContent>
-
-          {/* CIN Verification Tab */}
-          <TabsContent value="cin-verification">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Shield className="h-5 w-5 mr-2" />
-                  CIN Verification Management
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {pendingCinCompanies && pendingCinCompanies.length > 0 ? (
-                  <div className="space-y-6">
-                    {pendingCinCompanies.map((company) => (
-                      <div key={company.id} className="border rounded-lg p-6 bg-white">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                          <div>
-                            <h3 className="text-lg font-semibold mb-4">{company.name}</h3>
-                            <div className="space-y-2 text-sm">
-                              <div><strong>Company ID:</strong> {company.companyId}</div>
-                              <div><strong>Email:</strong> {company.email}</div>
-                              <div><strong>Industry:</strong> {company.industry}</div>
-                              <div><strong>Establishment Year:</strong> {company.establishmentYear}</div>
-                              <div><strong>Location:</strong> {company.city}, {company.state}, {company.country}</div>
-                              <div><strong>CIN Number:</strong> 
-                                <Badge variant="outline" className="ml-2 font-mono">
-                                  {company.cin}
-                                </Badge>
-                              </div>
-                              <div><strong>Registration Date:</strong> {format(new Date(company.createdAt), "PPP")}</div>
-                            </div>
-                          </div>
-                          
-                          <div>
-                            <div className="mb-4">
-                              <label className="block text-sm font-medium mb-2">
-                                Verification Notes (Optional)
-                              </label>
-                              <textarea
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-                                rows={4}
-                                placeholder="Add verification notes, MCA portal findings, or rejection reasons..."
-                                value={cinVerificationNotes[company.id] || ""}
-                                onChange={(e) => setCinVerificationNotes(prev => ({
-                                  ...prev,
-                                  [company.id]: e.target.value
-                                }))}
-                              />
-                            </div>
-                            
-                            <div className="flex space-x-3">
-                              <Button
-                                onClick={() => cinVerificationMutation.mutate({
-                                  companyId: company.id,
-                                  status: "verified",
-                                  notes: cinVerificationNotes[company.id]
-                                })}
-                                disabled={cinVerificationMutation.isPending}
-                                className="bg-green-600 hover:bg-green-700"
-                                data-testid={`button-verify-cin-${company.id}`}
-                              >
-                                <ShieldCheck className="h-4 w-4 mr-2" />
-                                Verify CIN
-                              </Button>
-                              
-                              <Button
-                                variant="destructive"
-                                onClick={() => cinVerificationMutation.mutate({
-                                  companyId: company.id,
-                                  status: "rejected",
-                                  notes: cinVerificationNotes[company.id]
-                                })}
-                                disabled={cinVerificationMutation.isPending}
-                                data-testid={`button-reject-cin-${company.id}`}
-                              >
-                                <UserX className="h-4 w-4 mr-2" />
-                                Reject CIN
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <Alert>
-                    <ShieldCheck className="h-4 w-4" />
-                    <AlertTitle>No Pending CIN Verifications</AlertTitle>
-                    <AlertDescription>
-                      All company CIN numbers have been processed. New registrations requiring CIN verification will appear here.
-                    </AlertDescription>
-                  </Alert>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* PAN Verification Tab */}
-          <TabsContent value="pan-verification">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Shield className="h-5 w-5 mr-2" />
-                  PAN Verification Management
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {pendingPanCompanies && pendingPanCompanies.length > 0 ? (
-                  <div className="space-y-6">
-                    {pendingPanCompanies.map((company) => (
-                      <div key={company.id} className="border rounded-lg p-6 bg-white">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                          <div>
-                            <h3 className="text-lg font-semibold mb-4">{company.name}</h3>
-                            <div className="space-y-2 text-sm">
-                              <div><strong>Company ID:</strong> {company.companyId}</div>
-                              <div><strong>Email:</strong> {company.email}</div>
-                              <div><strong>Industry:</strong> {company.industry}</div>
-                              <div><strong>Establishment Year:</strong> {company.establishmentYear}</div>
-                              <div><strong>Location:</strong> {company.city}, {company.state}, {company.country}</div>
-                              <div><strong>PAN Number:</strong> 
-                                <Badge variant="outline" className="ml-2 font-mono">
-                                  {company.panNumber}
-                                </Badge>
-                              </div>
-                              <div><strong>Registration Date:</strong> {format(new Date(company.createdAt), "PPP")}</div>
-                            </div>
-                          </div>
-                          
-                          <div>
-                            <div className="mb-4">
-                              <label className="block text-sm font-medium mb-2">
-                                Verification Notes (Optional)
-                              </label>
-                              <textarea
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-                                rows={4}
-                                placeholder="Add verification notes, tax portal findings, or rejection reasons..."
-                                value={panVerificationNotes[company.id] || ""}
-                                onChange={(e) => setPanVerificationNotes(prev => ({
-                                  ...prev,
-                                  [company.id]: e.target.value
-                                }))}
-                              />
-                            </div>
-                            
-                            <div className="flex gap-3">
-                              <Button
-                                onClick={() => panVerificationMutation.mutate({
-                                  companyId: company.id,
-                                  status: "verified",
-                                  notes: panVerificationNotes[company.id]
-                                })}
-                                disabled={panVerificationMutation.isPending}
-                                className="flex-1 bg-green-600 hover:bg-green-700"
-                                data-testid={`button-approve-pan-${company.id}`}
-                              >
-                                <UserCheck className="h-4 w-4 mr-2" />
-                                {panVerificationMutation.isPending ? "Processing..." : "Approve PAN"}
-                              </Button>
-                              
-                              <Button
-                                onClick={() => panVerificationMutation.mutate({
-                                  companyId: company.id,
-                                  status: "rejected",
-                                  notes: panVerificationNotes[company.id]
-                                })}
-                                disabled={panVerificationMutation.isPending}
-                                variant="destructive"
-                                className="flex-1"
-                                data-testid={`button-reject-pan-${company.id}`}
-                              >
-                                <UserX className="h-4 w-4 mr-2" />
-                                {panVerificationMutation.isPending ? "Processing..." : "Reject PAN"}
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-12">
-                    <Shield className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">No Pending PAN Verifications</h3>
-                    <p className="text-muted-foreground">
-                      All PAN verification requests have been processed or no companies have submitted PAN numbers for verification.
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* GST Verification Tab */}
-          <TabsContent value="gst-verification">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Shield className="h-5 w-5 mr-2" />
-                  GST Verification Management
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {pendingGstCompanies && pendingGstCompanies.length > 0 ? (
-                  <div className="space-y-4">
-                    {pendingGstCompanies.map((company) => (
-                      <div key={company.id} className="p-6 border rounded-lg bg-white shadow-sm">
-                        <div className="space-y-4">
-                          <div className="flex items-start justify-between">
-                            <div className="space-y-2">
-                              <h3 className="font-semibold text-lg">{company.name}</h3>
-                              <div className="space-y-1 text-sm text-gray-600">
-                                <p><span className="font-medium">Company ID:</span> {company.companyId}</p>
-                                <p><span className="font-medium">Email:</span> {company.email}</p>
-                                <p><span className="font-medium">GST Number:</span> {company.registrationNumber || 'Not provided'}</p>
-                                <p><span className="font-medium">Registration Type:</span> {company.registrationType}</p>
-                                <p><span className="font-medium">Industry:</span> {company.industry}</p>
-                                <p><span className="font-medium">Address:</span> {company.address}, {company.city}, {company.state} - {company.pincode}</p>
-                                <p><span className="font-medium">Establishment Year:</span> {company.establishmentYear}</p>
-                                <p><span className="font-medium">Company Size:</span> {company.size}</p>
-                                <p><span className="font-medium">Submitted:</span> {format(new Date(company.createdAt), "PPp")}</p>
-                              </div>
-                            </div>
-                            <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
-                              Pending GST Verification
-                            </Badge>
-                          </div>
-                          
-                          <div className="space-y-3">
-                            <div>
-                              <label className="block text-sm font-medium mb-2">Admin Notes (Optional)</label>
-                              <Input
-                                placeholder="Add verification notes..."
-                                value={gstVerificationNotes[company.id] || ""}
-                                onChange={(e) => setGstVerificationNotes(prev => ({
-                                  ...prev,
-                                  [company.id]: e.target.value
-                                }))}
-                                data-testid={`input-gst-notes-${company.id}`}
-                              />
-                            </div>
-                            
-                            <div className="flex gap-3">
-                              <Button
-                                onClick={() => gstVerificationMutation.mutate({
-                                  companyId: company.id,
-                                  status: "verified",
-                                  notes: gstVerificationNotes[company.id]
-                                })}
-                                disabled={gstVerificationMutation.isPending}
-                                className="bg-green-600 hover:bg-green-700 flex-1"
-                                data-testid={`button-approve-gst-${company.id}`}
-                              >
-                                <UserCheck className="h-4 w-4 mr-2" />
-                                {gstVerificationMutation.isPending ? "Processing..." : "Approve GST"}
-                              </Button>
-                              
-                              <Button
-                                onClick={() => gstVerificationMutation.mutate({
-                                  companyId: company.id,
-                                  status: "rejected",
-                                  notes: gstVerificationNotes[company.id]
-                                })}
-                                disabled={gstVerificationMutation.isPending}
-                                variant="destructive"
-                                className="flex-1"
-                                data-testid={`button-reject-gst-${company.id}`}
-                              >
-                                <UserX className="h-4 w-4 mr-2" />
-                                {gstVerificationMutation.isPending ? "Processing..." : "Reject GST"}
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-12">
-                    <Shield className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">No Pending GST Verifications</h3>
-                    <p className="text-muted-foreground">
-                      All GST verification requests have been processed or no companies have submitted GST numbers for verification.
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Verifications Tab */}
-          <TabsContent value="verifications">
-            <Card>
-              <CardHeader>
-                <CardTitle>Company Verification Management</CardTitle>
-                <p className="text-sm text-muted-foreground">
-                  Review and manage company verification requests
-                </p>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-8">
-                  <ShieldCheck className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">Company Verification System</h3>
-                  <p className="text-muted-foreground mb-6">
-                    Access the dedicated verification interface to review pending company verification requests
-                  </p>
-                  <Button 
-                    onClick={() => navigate("/admin/verifications")}
-                    className="bg-blue-600 hover:bg-blue-700"
-                    data-testid="button-admin-verifications"
-                  >
-                    <Shield className="h-4 w-4 mr-2" />
-                    Open Verification Center
-                  </Button>
-                </div>
               </CardContent>
             </Card>
           </TabsContent>

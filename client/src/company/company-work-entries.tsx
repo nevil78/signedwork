@@ -96,6 +96,9 @@ export default function CompanyWorkEntries() {
   // Check company verification status for security gates
   const isCompanyVerified = authUser?.verificationStatus === 'verified';
   const companyVerificationStatus = authUser?.verificationStatus || 'unverified';
+  
+  // Check work diary access control - Premium feature gated by admin
+  const workDiaryAccess = authUser?.workDiaryAccess || false;
 
 
   const getEmployeeName = (entry: any) => {
@@ -674,6 +677,87 @@ export default function CompanyWorkEntries() {
       </CardContent>
     </Card>
   );
+
+  // If work diary access is disabled, show locked page
+  if (!workDiaryAccess) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        {/* Navigation Header */}
+        <CompanyNavHeader />
+
+        <div className="container mx-auto p-6 max-w-4xl">
+          <div className="flex items-center justify-center min-h-[60vh]">
+            <Card className="w-full max-w-2xl border-2 border-orange-200 bg-orange-50 dark:bg-orange-900/20 dark:border-orange-800">
+              <CardHeader className="text-center pb-6">
+                <div className="mx-auto mb-4 p-4 bg-orange-100 dark:bg-orange-900/40 rounded-full w-20 h-20 flex items-center justify-center">
+                  <Lock className="h-10 w-10 text-orange-600 dark:text-orange-400" />
+                </div>
+                <CardTitle className="text-2xl font-bold text-orange-800 dark:text-orange-200">
+                  Work Diary Access Pending
+                </CardTitle>
+                <CardDescription className="text-lg text-orange-700 dark:text-orange-300 mt-2">
+                  Your work diary access is currently disabled
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="text-center space-y-6">
+                <div className="space-y-4">
+                  <div className="p-4 bg-white dark:bg-gray-800 rounded-lg border border-orange-200 dark:border-orange-700">
+                    <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-2">
+                      📋 Manual Verification Required
+                    </h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Our admin team is manually reviewing your company documents:
+                    </p>
+                    <div className="mt-3 flex justify-center space-x-4 text-xs">
+                      <Badge variant="outline">PAN Verification</Badge>
+                      <Badge variant="outline">CIN Verification</Badge>
+                      <Badge variant="outline">GST Verification</Badge>
+                    </div>
+                  </div>
+                  
+                  <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-700">
+                    <h3 className="font-semibold text-blue-800 dark:text-blue-200 mb-2">
+                      🔐 Premium Feature Access
+                    </h3>
+                    <p className="text-sm text-blue-700 dark:text-blue-300">
+                      Work diary access will be enabled once our admin team completes the manual verification 
+                      of your business documents and approves your company profile.
+                    </p>
+                  </div>
+
+                  <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-700">
+                    <h3 className="font-semibold text-green-800 dark:text-green-200 mb-2">
+                      ⏰ What Happens Next?
+                    </h3>
+                    <ul className="text-sm text-green-700 dark:text-green-300 space-y-1 text-left">
+                      <li>• Admin reviews your PAN, CIN, and GST documents</li>
+                      <li>• If documents are verified, admin will enable work diary access</li>
+                      <li>• You'll receive access to track and manage employee work entries</li>
+                      <li>• This typically takes 1-2 business days</li>
+                    </ul>
+                  </div>
+                </div>
+                
+                <div className="pt-4 border-t border-orange-200 dark:border-orange-700">
+                  <p className="text-sm text-orange-600 dark:text-orange-400 mb-4">
+                    Questions about verification status? Contact our support team.
+                  </p>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => navigate("/company")}
+                    className="border-orange-300 text-orange-700 hover:bg-orange-100 dark:border-orange-600 dark:text-orange-300 dark:hover:bg-orange-900/30"
+                    data-testid="button-back-to-dashboard"
+                  >
+                    Back to Dashboard
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">

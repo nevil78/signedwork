@@ -2363,8 +2363,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Company Work Entry Verification Routes - PROTECTED ROUTE
   app.get("/api/company/work-entries", requireCompany, async (req: any, res) => {
-    
     try {
+      // Check if company has work diary access enabled by admin
+      const company = await storage.getCompany(req.user.id);
+      if (!company?.workDiaryAccess) {
+        return res.status(403).json({ 
+          message: "Work diary access is disabled. Please contact admin for approval.",
+          workDiaryAccess: false,
+          requiresAdminApproval: true
+        });
+      }
+      
       const workEntries = await storage.getWorkEntriesForCompany(req.user.id);
       res.json(workEntries);
     } catch (error) {
@@ -2374,8 +2383,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.get("/api/company/work-entries/pending", requireCompany, async (req: any, res) => {
-    
     try {
+      // Check if company has work diary access enabled by admin
+      const company = await storage.getCompany(req.user.id);
+      if (!company?.workDiaryAccess) {
+        return res.status(403).json({ 
+          message: "Work diary access is disabled. Please contact admin for approval.",
+          workDiaryAccess: false,
+          requiresAdminApproval: true
+        });
+      }
+      
       const pendingEntries = await storage.getPendingWorkEntriesForCompany(req.user.id);
       res.json(pendingEntries);
     } catch (error) {
@@ -2407,10 +2425,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // 🚨 SECURITY CHECK: Only verified companies can approve work entries
+      // 🚨 SECURITY CHECK: Company must have work diary access enabled by admin
       const company = await storage.getCompany(req.user.id);
       if (!company) {
         return res.status(404).json({ message: "Company not found" });
+      }
+      
+      if (!company.workDiaryAccess) {
+        return res.status(403).json({ 
+          message: "Work diary access is disabled. Please contact admin for approval.",
+          workDiaryAccess: false,
+          requiresAdminApproval: true
+        });
       }
       
       if (company.verificationStatus !== 'verified') {
