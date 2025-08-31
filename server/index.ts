@@ -1,6 +1,19 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
-import { setupVite, serveStatic, log } from "./vite";
+import { setupVite, serveStatic } from "./vite";
+
+// Custom IST logging function
+function log(message: string, source = "express") {
+  const formattedTime = new Date().toLocaleTimeString("en-IN", {
+    hour: "numeric",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true,
+    timeZone: "Asia/Kolkata"
+  });
+
+  console.log(`${formattedTime} IST [${source}] ${message}`);
+}
 
 const app = express();
 app.use(express.json());
