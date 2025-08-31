@@ -716,6 +716,25 @@ export function CompanyVerificationEdit({ company }: CompanyVerificationEditProp
         </div>
       ) : (
         <div className="space-y-4">
+          {/* Document Requirements Information */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="flex items-center gap-2 text-blue-800 mb-2">
+              <CheckCircle className="h-5 w-5" />
+              <span className="font-medium">Document Requirements</span>
+            </div>
+            <p className="text-blue-700 text-sm">
+              For company verification, you need to provide <strong>at least one</strong> of the following documents:
+            </p>
+            <ul className="text-blue-700 text-sm mt-2 space-y-1">
+              <li>• <strong>PAN Number</strong> - Permanent Account Number (10 characters)</li>
+              <li>• <strong>CIN Number</strong> - Corporate Identity Number (21 characters)</li>
+              <li>• <strong>GST Number</strong> - Goods and Services Tax Number (15 characters)</li>
+            </ul>
+            <p className="text-blue-700 text-sm mt-2">
+              All provided documents will be manually verified by our admin team before approval.
+            </p>
+          </div>
+          
           <div className="space-y-3">
             <div>
               <Label htmlFor="panNumber">PAN Number (Optional)</Label>
