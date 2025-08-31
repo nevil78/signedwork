@@ -1890,14 +1890,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return;
       }
       
-      // Check if all documents are verified to update overall verification status
+      // Check if all PROVIDED documents are verified to update overall verification status
       if (status === 'approved') {
         const currentCompany = await storage.getCompany(id);
-        if (currentCompany?.panVerificationStatus === 'verified' && 
-            currentCompany?.cinVerificationStatus === 'verified' && 
-            currentCompany?.gstVerificationStatus === 'verified') {
+        
+        // Only require verification for documents that were actually provided
+        const panRequired = currentCompany?.panNumber;
+        const cinRequired = currentCompany?.cin;
+        const gstRequired = currentCompany?.gstNumber;
+        
+        const panVerified = !panRequired || currentCompany?.panVerificationStatus === 'verified';
+        const cinVerified = !cinRequired || currentCompany?.cinVerificationStatus === 'verified';
+        const gstVerified = !gstRequired || currentCompany?.gstVerificationStatus === 'verified';
+        
+        // At least one document must be provided and all provided documents must be verified
+        const hasAnyDocument = panRequired || cinRequired || gstRequired;
+        const allProvidedDocumentsVerified = panVerified && cinVerified && gstVerified;
+        
+        if (hasAnyDocument && allProvidedDocumentsVerified) {
           await storage.updateCompany(id, { 
-            verificationStatus: 'verified'
+            verificationStatus: 'verified',
+            isBasicDetailsLocked: true
           });
         }
       }
