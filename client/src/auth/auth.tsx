@@ -600,7 +600,6 @@ export default function AuthPage() {
     return (
       <div className="min-h-screen bg-slate-50">
         <UnifiedHeader 
-          showBackButton={true} 
           showAuthButtons={false}
           currentPage="auth"
         />
@@ -1546,7 +1545,6 @@ export default function AuthPage() {
     return (
       <div className="min-h-screen bg-slate-50">
         <UnifiedHeader 
-          showBackButton={true} 
           showAuthButtons={false}
           currentPage="auth"
         />
