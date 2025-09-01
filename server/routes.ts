@@ -1936,12 +1936,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Company not found" });
       }
       
-      // Check if company is verified before enabling work diary access
-      if (!company.workDiaryAccess && company.verificationStatus !== 'verified') {
-        return res.status(403).json({ 
-          message: "Company must be fully verified before enabling work diary access" 
-        });
-      }
+      // Admin can enable work diary access for any company regardless of verification status
       
       // Toggle work diary access
       const newWorkDiaryAccess = !company.workDiaryAccess;
