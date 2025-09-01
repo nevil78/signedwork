@@ -238,12 +238,19 @@ export default function AuthPage() {
     },
   });
 
+  // Get account type from URL parameter
+  const getDefaultAccountType = () => {
+    const urlParams = new URLSearchParams(location.split('?')[1] || '');
+    const accountTypeParam = urlParams.get('accountType');
+    return accountTypeParam === "company" ? "company" : "employee";
+  };
+
   const loginForm = useForm<LoginData>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
       email: "",
       password: "",
-      accountType: currentView === "company" ? "company" : "employee",
+      accountType: getDefaultAccountType(),
     },
   });
 
