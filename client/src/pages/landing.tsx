@@ -148,7 +148,7 @@ export default function LandingPage() {
 
           <div className="grid lg:grid-cols-3 gap-8">
             {/* For Professionals */}
-            <Card className="border-2 border-blue-100 hover:border-blue-200 transition-colors">
+            <Card className="border-2 border-blue-100 hover:border-blue-200 transition-colors flex flex-col h-full">
               <CardHeader>
                 <div className="flex items-center mb-4">
                   <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -164,8 +164,8 @@ export default function LandingPage() {
                   </div>
                 </div>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
+              <CardContent className="flex-grow flex flex-col">
+                <div className="space-y-4 flex-grow">
                   {professionalFeatures.map((feature, index) => (
                     <div key={index} className="flex items-start">
                       <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -183,7 +183,7 @@ export default function LandingPage() {
                   ))}
                 </div>
                 <Link href="/auth?view=employee" className="block mt-6" data-testid="link-join-professional">
-                  <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white">
+                  <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white h-12 flex items-center justify-center">
                     Join as Professional
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
@@ -192,7 +192,7 @@ export default function LandingPage() {
             </Card>
 
             {/* For Enterprises */}
-            <Card className="border-2 border-purple-100 hover:border-purple-200 transition-colors">
+            <Card className="border-2 border-purple-100 hover:border-purple-200 transition-colors flex flex-col h-full">
               <CardHeader>
                 <div className="flex items-center mb-4">
                   <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
@@ -208,8 +208,8 @@ export default function LandingPage() {
                   </div>
                 </div>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
+              <CardContent className="flex-grow flex flex-col">
+                <div className="space-y-4 flex-grow">
                   {enterpriseFeatures.map((feature, index) => (
                     <div key={index} className="flex items-start">
                       <div className="w-10 h-10 bg-purple-50 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -227,7 +227,7 @@ export default function LandingPage() {
                   ))}
                 </div>
                 <Link href="/auth?view=company" className="block mt-6" data-testid="link-register-company">
-                  <Button className="w-full bg-purple-600 hover:bg-purple-700 text-white">
+                  <Button className="w-full bg-purple-600 hover:bg-purple-700 text-white h-12 flex items-center justify-center">
                     Register Your Company
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
@@ -236,7 +236,7 @@ export default function LandingPage() {
             </Card>
 
             {/* For Recruiters */}
-            <Card className="border-2 border-green-100 hover:border-green-200 transition-colors">
+            <Card className="border-2 border-green-100 hover:border-green-200 transition-colors flex flex-col h-full">
               <CardHeader>
                 <div className="flex items-center mb-4">
                   <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
@@ -252,8 +252,8 @@ export default function LandingPage() {
                   </div>
                 </div>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
+              <CardContent className="flex-grow flex flex-col">
+                <div className="space-y-4 flex-grow">
                   {recruiterFeatures.map((feature, index) => (
                     <div key={index} className="flex items-start">
                       <div className="w-10 h-10 bg-green-50 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -271,7 +271,7 @@ export default function LandingPage() {
                   ))}
                 </div>
                 <Link href="/auth?view=employee" className="block mt-6" data-testid="link-join-recruiter">
-                  <Button className="w-full bg-green-600 hover:bg-green-700 text-white">
+                  <Button className="w-full bg-green-600 hover:bg-green-700 text-white h-12 flex items-center justify-center">
                     Join as Recruiter
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
