@@ -321,6 +321,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         panNumber: panNumber && panNumber.trim() ? panNumber.trim() : undefined,
         cinVerificationStatus: "pending" as const,
         panVerificationStatus: "pending" as const,
+        workDiaryAccess: false, // Explicitly disable work diary access - admin must enable it
       };
 
       const company = await storage.createCompany(companyData);
