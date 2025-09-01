@@ -1936,13 +1936,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Company not found" });
       }
       
+      console.log(`Toggle work diary - Company: ${company.name}, Current access: ${company.workDiaryAccess}`);
+      
       // Admin can enable work diary access for any company regardless of verification status
       
       // Toggle work diary access
       const newWorkDiaryAccess = !company.workDiaryAccess;
+      console.log(`Toggling to: ${newWorkDiaryAccess}`);
+      
       const updatedCompany = await storage.updateCompany(id, { 
         workDiaryAccess: newWorkDiaryAccess 
       });
+      
+      console.log(`Updated company workDiaryAccess: ${updatedCompany.workDiaryAccess}`);
       
       // Log admin action
       console.log(`Admin ${req.user.id} ${newWorkDiaryAccess ? 'enabled' : 'disabled'} work diary access for company ${company.name}`);
