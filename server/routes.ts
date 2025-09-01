@@ -1627,8 +1627,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/admin/companies/:id/toggle-work-diary", requireAdmin, async (req: any, res) => {
     
     try {
+      console.log("PATCH toggle-work-diary hit!");
       const { id } = req.params;
       const { workDiaryAccess } = req.body;
+      console.log(`PATCH Request body:`, req.body);
       
       // Validate input
       if (typeof workDiaryAccess !== 'boolean') {
@@ -1928,6 +1930,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Admin work diary access toggle - PROTECTED ROUTE
   app.post("/api/admin/companies/:id/toggle-work-diary", requireAdmin, async (req: any, res) => {
     try {
+      console.log("POST toggle-work-diary hit!");
       const { id } = req.params;
       
       // Get company current status
