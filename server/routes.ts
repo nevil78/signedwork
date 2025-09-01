@@ -1625,12 +1625,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Toggle company work diary access (admin only) - PROTECTED ROUTE  
   app.patch("/api/admin/companies/:id/toggle-work-diary", requireAdmin, async (req: any, res) => {
-    console.log("🔥 PATCH ROUTE HIT - VERY FIRST LINE!");
     try {
-      console.log("PATCH toggle-work-diary hit!");
       const { id } = req.params;
       const { workDiaryAccess } = req.body;
-      console.log(`PATCH Request body:`, req.body);
       
       // Validate input
       if (typeof workDiaryAccess !== 'boolean') {
@@ -1929,9 +1926,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Admin work diary access toggle - PROTECTED ROUTE
   app.post("/api/admin/companies/:id/toggle-work-diary", requireAdmin, async (req: any, res) => {
-    console.log("🚀 POST ROUTE HIT - VERY FIRST LINE!");
     try {
-      console.log("POST toggle-work-diary hit!");
       const { id } = req.params;
       
       // Get company current status
@@ -1940,19 +1935,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Company not found" });
       }
       
-      console.log(`Toggle work diary - Company: ${company.name}, Current access: ${company.workDiaryAccess}`);
-      
       // Admin can enable work diary access for any company regardless of verification status
       
       // Toggle work diary access
       const newWorkDiaryAccess = !company.workDiaryAccess;
-      console.log(`Toggling to: ${newWorkDiaryAccess}`);
       
       const updatedCompany = await storage.updateCompany(id, { 
         workDiaryAccess: newWorkDiaryAccess 
       });
-      
-      console.log(`Updated company workDiaryAccess: ${updatedCompany.workDiaryAccess}`);
       
       // Log admin action
       console.log(`Admin ${req.user.id} ${newWorkDiaryAccess ? 'enabled' : 'disabled'} work diary access for company ${company.name}`);

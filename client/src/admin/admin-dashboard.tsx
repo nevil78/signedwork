@@ -145,11 +145,21 @@ export default function AdminDashboard() {
       notes
     }),
     onSuccess: (data: any) => {
+      console.log("Verification mutation success:", data);
       queryClient.invalidateQueries({ queryKey: ["/api/admin/companies"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/verifications"] });
       toast({
         title: "Document verification updated",
-        description: `${data.docType.toUpperCase()} ${data.status === 'approved' ? 'approved' : 'rejected'} successfully`,
+        description: `${data.docType?.toUpperCase() || 'Document'} ${data.status === 'approved' ? 'approved' : 'rejected'} successfully`,
+      });
+    },
+    onError: (error: any) => {
+      console.error("Verification mutation error:", error);
+      toast({
+        title: "Verification failed",
+        description: error.message || "Failed to update document verification",
+        variant: "destructive"
       });
     },
   });
