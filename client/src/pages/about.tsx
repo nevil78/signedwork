@@ -189,7 +189,7 @@ export default function AboutPage() {
           {/* CTA Button */}
           <div className="flex justify-center">
             <Button
-              onClick={() => setLocation(authUser ? "/dashboard" : "/")}
+              onClick={() => setLocation(authUser ? "/auth?view=login" : "/")}
               className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-semibold flex items-center"
               data-testid="button-get-started"
             >
