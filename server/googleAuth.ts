@@ -51,6 +51,14 @@ export function setupGoogleAuth() {
         
         return done(null, { employee, isNew: false });
       } else {
+        // Check if email exists as a company account
+        const existingCompany = await storage.getCompanyByEmail(email);
+        
+        if (existingCompany) {
+          console.error(`Google OAuth failed: Email ${email} already registered as company account`);
+          return done(new Error("This email is already registered as a company account. Please use a different email or login with your company credentials."), false);
+        }
+        
         // Create new employee account - OAuth users don't need password
         const newEmployee = await storage.createEmployee({
           firstName,

@@ -249,11 +249,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Check if email already exists
-      const existingEmployee = await storage.getEmployeeByEmail(email);
-      const existingCompany = await storage.getCompanyByEmail(email);
-      
-      if (existingEmployee || existingCompany) {
+      // Check if email already exists across all user types
+      const emailExists = await storage.checkEmailExists(email);
+      if (emailExists) {
         return res.status(400).json({ message: "Email already registered" });
       }
 
@@ -297,11 +295,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Check if email already exists
-      const existingEmployee = await storage.getEmployeeByEmail(email);
-      const existingCompany = await storage.getCompanyByEmail(email);
-      
-      if (existingEmployee || existingCompany) {
+      // Check if email already exists across all user types
+      const emailExists = await storage.checkEmailExists(email);
+      if (emailExists) {
         return res.status(400).json({ message: "Email already registered" });
       }
 
@@ -443,11 +439,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Check if email already exists in users
-      const existingEmployee = await storage.getEmployeeByEmail(email);
-      const existingCompany = await storage.getCompanyByEmail(email);
-      
-      if (existingEmployee || existingCompany) {
+      // Check if email already exists across all user types
+      const emailExists = await storage.checkEmailExists(email);
+      if (emailExists) {
         return res.status(400).json({ message: "Email already registered" });
       }
 
@@ -563,9 +557,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Check if company with this email already exists
-      const existingCompany = await storage.getCompanyByEmail(email);
-      if (existingCompany) {
+      // Check if email already exists across all user types
+      const emailExists = await storage.checkEmailExists(email);
+      if (emailExists) {
         return res.status(400).json({ 
           message: "An account with this email already exists" 
         });

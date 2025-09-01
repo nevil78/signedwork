@@ -161,6 +161,10 @@ function generateTeamId(): string {
 }
 
 export interface IStorage {
+  // Email uniqueness check across all user types
+  checkEmailExists(email: string): Promise<boolean>;
+  getExistingUserByEmail(email: string): Promise<{ type: 'employee' | 'company', user: Employee | Company } | null>;
+  
   // Employee operations
   getEmployee(id: string): Promise<Employee | undefined>;
   getEmployeeById(id: string): Promise<Employee | undefined>;
@@ -731,6 +735,27 @@ export interface TalentSearchFilters {
 }
 
 export class DatabaseStorage implements IStorage {
+  // Email uniqueness check across all user types
+  async checkEmailExists(email: string): Promise<boolean> {
+    const employee = await this.getEmployeeByEmail(email);
+    const company = await this.getCompanyByEmail(email);
+    return !!(employee || company);
+  }
+
+  async getExistingUserByEmail(email: string): Promise<{ type: 'employee' | 'company', user: Employee | Company } | null> {
+    const employee = await this.getEmployeeByEmail(email);
+    if (employee) {
+      return { type: 'employee', user: employee };
+    }
+    
+    const company = await this.getCompanyByEmail(email);
+    if (company) {
+      return { type: 'company', user: company };
+    }
+    
+    return null;
+  }
+
   async getEmployee(id: string): Promise<Employee | undefined> {
     const [employee] = await db.select().from(employees).where(eq(employees.id, id));
     return employee || undefined;
