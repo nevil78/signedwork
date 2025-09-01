@@ -243,7 +243,7 @@ export default function AuthPage() {
     defaultValues: {
       email: "",
       password: "",
-      accountType: "employee",
+      accountType: currentView === "company" ? "company" : "employee",
     },
   });
 
