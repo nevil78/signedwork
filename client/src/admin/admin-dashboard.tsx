@@ -157,11 +157,20 @@ export default function AdminDashboard() {
   // Work diary access toggle mutation
   const toggleWorkDiaryMutation = useMutation({
     mutationFn: (companyId: string) => apiRequest("POST", `/api/admin/companies/${companyId}/toggle-work-diary`),
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log("Toggle mutation success:", data);
       queryClient.invalidateQueries({ queryKey: ["/api/admin/companies"] });
       toast({
         title: "Work diary access updated",
         description: "Company work diary access has been updated successfully",
+      });
+    },
+    onError: (error) => {
+      console.error("Toggle mutation error:", error);
+      toast({
+        title: "Failed to update work diary access",
+        description: error.message || "An error occurred",
+        variant: "destructive"
       });
     },
   });
