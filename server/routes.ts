@@ -1520,13 +1520,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         );
       }
       
-      // Only show companies that have provided verification documents
-      const companiesWithDocuments = filteredCompanies.filter(comp => 
-        comp.panNumber || comp.cin || comp.gstNumber
-      );
-      
+      // Show all companies (admin can see companies without verification documents)
       // Remove passwords from response
-      const companiesResponse = companiesWithDocuments.map(({ password, ...comp }) => comp);
+      const companiesResponse = filteredCompanies.map(({ password, ...comp }) => comp);
       res.json(companiesResponse);
     } catch (error) {
       console.error("Get companies error:", error);
