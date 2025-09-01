@@ -744,7 +744,7 @@ export default function CompanyWorkEntries() {
                   </p>
                   <Button 
                     variant="outline" 
-                    onClick={() => navigate("/company")}
+                    onClick={() => navigate("/company-dashboard")}
                     className="border-orange-300 text-orange-700 hover:bg-orange-100 dark:border-orange-600 dark:text-orange-300 dark:hover:bg-orange-900/30"
                     data-testid="button-back-to-dashboard"
                   >
