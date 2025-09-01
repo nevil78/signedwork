@@ -620,7 +620,7 @@ export default function AdminDashboard() {
                                           <FileText className="h-4 w-4 mr-2" />
                                           PAN Verification
                                         </h5>
-                                        <Badge variant={company.panVerificationStatus === 'approved' ? 'default' : company.panVerificationStatus === 'rejected' ? 'destructive' : 'outline'}>
+                                        <Badge variant={company.panVerificationStatus === 'verified' ? 'default' : company.panVerificationStatus === 'rejected' ? 'destructive' : 'outline'}>
                                           {company.panVerificationStatus || 'pending'}
                                         </Badge>
                                       </div>
@@ -633,7 +633,7 @@ export default function AdminDashboard() {
                                         </p>
                                       </div>
                                       
-                                      {company.panVerificationStatus !== 'approved' && (
+                                      {company.panVerificationStatus !== 'verified' && (
                                         <div className="flex space-x-2">
                                           <Button
                                             onClick={() => verifyDocumentMutation.mutate({
@@ -677,7 +677,7 @@ export default function AdminDashboard() {
                                           <FileText className="h-4 w-4 mr-2" />
                                           CIN Verification
                                         </h5>
-                                        <Badge variant={company.cinVerificationStatus === 'approved' ? 'default' : company.cinVerificationStatus === 'rejected' ? 'destructive' : 'outline'}>
+                                        <Badge variant={company.cinVerificationStatus === 'verified' ? 'default' : company.cinVerificationStatus === 'rejected' ? 'destructive' : 'outline'}>
                                           {company.cinVerificationStatus || 'pending'}
                                         </Badge>
                                       </div>
@@ -690,7 +690,7 @@ export default function AdminDashboard() {
                                         </p>
                                       </div>
                                       
-                                      {company.cinVerificationStatus !== 'approved' && (
+                                      {company.cinVerificationStatus !== 'verified' && (
                                         <div className="flex space-x-2">
                                           <Button
                                             onClick={() => verifyDocumentMutation.mutate({
@@ -734,7 +734,7 @@ export default function AdminDashboard() {
                                           <FileText className="h-4 w-4 mr-2" />
                                           GST Verification
                                         </h5>
-                                        <Badge variant={company.gstVerificationStatus === 'approved' ? 'default' : company.gstVerificationStatus === 'rejected' ? 'destructive' : 'outline'}>
+                                        <Badge variant={company.gstVerificationStatus === 'verified' ? 'default' : company.gstVerificationStatus === 'rejected' ? 'destructive' : 'outline'}>
                                           {company.gstVerificationStatus || 'pending'}
                                         </Badge>
                                       </div>
@@ -747,7 +747,7 @@ export default function AdminDashboard() {
                                         </p>
                                       </div>
                                       
-                                      {company.gstVerificationStatus !== 'approved' && (
+                                      {company.gstVerificationStatus !== 'verified' && (
                                         <div className="flex space-x-2">
                                           <Button
                                             onClick={() => verifyDocumentMutation.mutate({
