@@ -14,14 +14,14 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { insertEmployeeSchema, insertCompanySchema, loginSchema, type InsertEmployee, type InsertCompany, type LoginData } from "@shared/schema";
+import { insertEmployeeSchema, insertCompanySchema, clientSignupSchema, loginSchema, type InsertEmployee, type InsertCompany, type ClientSignupData, type LoginData } from "@shared/schema";
 import { Link, useLocation } from "wouter";
 import { PrefetchLink } from "@/components/PrefetchLink";
 import PrivacyPolicyModal from "@/components/PrivacyPolicyModal";
 import TermsOfServiceModal from "@/components/TermsOfServiceModal";
 import UnifiedHeader from "@/components/UnifiedHeader";
 
-type AuthView = "selection" | "employee" | "company" | "login" | "success" | "otp-verification" | "verification-pending" | "registration-success" | "employee-register" | "company-register" | "company-login";
+type AuthView = "selection" | "employee" | "company" | "client" | "login" | "success" | "otp-verification" | "verification-pending" | "registration-success" | "employee-register" | "company-register" | "client-register" | "company-login";
 
 interface PasswordRequirement {
   id: string;
@@ -238,11 +238,29 @@ export default function AuthPage() {
     },
   });
 
+  const clientForm = useForm<ClientSignupData>({
+    resolver: zodResolver(clientSignupSchema),
+    mode: "onSubmit",
+    defaultValues: {
+      firstName: "",
+      lastName: "",
+      email: "",
+      phone: "",
+      countryCode: "+1",
+      password: "",
+      company: "",
+      jobTitle: "",
+      location: "",
+    },
+  });
+
   // Get account type from URL parameter
   const getDefaultAccountType = () => {
     const urlParams = new URLSearchParams(location.split('?')[1] || '');
     const accountTypeParam = urlParams.get('accountType');
-    return accountTypeParam === "company" ? "company" : "employee";
+    if (accountTypeParam === "company") return "company";
+    if (accountTypeParam === "client") return "client";
+    return "employee";
   };
 
   const loginForm = useForm<LoginData>({
@@ -454,6 +472,45 @@ export default function AuthPage() {
     },
   });
 
+  const clientRegistration = useMutation({
+    mutationFn: async (data: ClientSignupData) => {
+      return await apiRequest("POST", "/api/auth/signup/client", {
+        firstName: data.firstName,
+        lastName: data.lastName,
+        email: data.email,
+        phone: data.phone,
+        countryCode: data.countryCode,
+        password: data.password,
+        company: data.company,
+        jobTitle: data.jobTitle,
+        location: data.location,
+      });
+    },
+    onSuccess: (response: any) => {
+      // Invalidate auth queries to refresh authentication state
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/session-status"] });
+      
+      toast({
+        title: "Account Created Successfully!",
+        description: response.message || "Your client account has been created. You can start posting projects!",
+      });
+      
+      // Direct redirect to client dashboard
+      setTimeout(() => {
+        setLocation("/client/dashboard");
+      }, 1500);
+    },
+    onError: (error: any) => {
+      const isEmailAlreadyRegistered = error.message && error.message.includes("Email already registered");
+      toast({
+        title: isEmailAlreadyRegistered ? "Email Already Registered" : "Registration Failed", 
+        description: error.message || "Failed to create client account",
+        variant: "destructive",
+      });
+    },
+  });
+
   const login = useMutation({
     mutationFn: async (data: LoginData) => {
       return await apiRequest("POST", "/api/auth/login", data);
@@ -464,6 +521,9 @@ export default function AuthPage() {
       if (response.userType === "employee") {
         console.log("Redirecting to employee summary dashboard");
         setLocation("/summary");
+      } else if (response.userType === "client") {
+        console.log("Redirecting to client dashboard");
+        setLocation("/client/dashboard");
       } else {
         console.log("Redirecting to company dashboard");
         setLocation("/company-dashboard");
@@ -596,6 +656,10 @@ export default function AuthPage() {
     companyRegistration.mutate(data);
   };
 
+  const onClientSubmit = (data: ClientSignupData) => {
+    clientRegistration.mutate(data);
+  };
+
   const onLoginSubmit = (data: LoginData) => {
     // Clear previous login errors when attempting new login
     setLoginError(false);
@@ -618,7 +682,7 @@ export default function AuthPage() {
               <p className="text-slate-600">Choose your account type to get started</p>
             </div>
             
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 mb-8">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 mb-8">
               <Card 
                 className="cursor-pointer border-2 border-transparent hover:border-primary transition-all duration-300 group"
                 onClick={() => setCurrentView("employee")}
@@ -644,6 +708,20 @@ export default function AuthPage() {
                   </div>
                   <h3 className="text-lg font-semibold text-slate-900 mb-2">Company</h3>
                   <p className="text-sm text-slate-600">Organization account</p>
+                </CardContent>
+              </Card>
+
+              <Card 
+                className="cursor-pointer border-2 border-transparent hover:border-primary transition-all duration-300 group"
+                onClick={() => setCurrentView("client")}
+                data-testid="button-select-client"
+              >
+                <CardContent className="p-6 text-center">
+                  <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-purple-200 transition-colors">
+                    <Shield className="text-purple-600 text-2xl" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-slate-900 mb-2">Client</h3>
+                  <p className="text-sm text-slate-600">Hire freelancers for projects</p>
                 </CardContent>
               </Card>
             </div>
@@ -1548,6 +1626,201 @@ export default function AuthPage() {
     );
   }
 
+  if (currentView === "client") {
+    return (
+      <div className="min-h-screen bg-slate-50">
+        <header className="bg-white shadow-sm border-b border-slate-200">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between items-center h-16">
+              <div className="flex items-center">
+                <img src={signedworkLogo} alt="Signedwork" className="h-8 w-8 mr-3" />
+                <span className="text-xl font-bold text-slate-800">Signedwork</span>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <main className="flex-1 py-12 px-4 sm:px-6 lg:px-8">
+          <div className="max-w-2xl mx-auto">
+            <Card className="rounded-2xl shadow-xl min-h-[600px]">
+              <CardContent className="p-8">
+                <div className="text-center mb-8">
+                  <div className="w-20 h-20 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Shield className="text-purple-600 text-3xl" />
+                  </div>
+                  <h2 className="text-2xl font-bold text-slate-900">Join as a Client</h2>
+                  <p className="text-slate-600 mt-2">Create your client account to hire freelancers</p>
+                </div>
+                
+                <Form {...clientForm}>
+                  <form onSubmit={clientForm.handleSubmit(onClientSubmit)} className="space-y-6">
+                    
+                    {/* Name Fields */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <FormField
+                        control={clientForm.control}
+                        name="firstName"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>First Name *</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Enter your first name" {...field} data-testid="input-client-first-name" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={clientForm.control}
+                        name="lastName"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Last Name *</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Enter your last name" {...field} data-testid="input-client-last-name" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    {/* Contact Information */}
+                    <FormField
+                      control={clientForm.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Email Address *</FormLabel>
+                          <FormControl>
+                            <Input type="email" placeholder="your@email.com" {...field} data-testid="input-client-email" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <FormField
+                        control={clientForm.control}
+                        name="countryCode"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Country Code *</FormLabel>
+                            <FormControl>
+                              <Input placeholder="+1" {...field} data-testid="input-client-country-code" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={clientForm.control}
+                        name="phone"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Phone Number *</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Enter your phone number" {...field} data-testid="input-client-phone" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    {/* Company Information */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <FormField
+                        control={clientForm.control}
+                        name="company"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Company</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Your company name" {...field} data-testid="input-client-company" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={clientForm.control}
+                        name="jobTitle"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Job Title</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Your job title" {...field} data-testid="input-client-job-title" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <FormField
+                      control={clientForm.control}
+                      name="location"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Location</FormLabel>
+                          <FormControl>
+                            <Input placeholder="City, Country" {...field} data-testid="input-client-location" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {/* Password */}
+                    <FormField
+                      control={clientForm.control}
+                      name="password"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Password *</FormLabel>
+                          <FormControl>
+                            <Input type="password" placeholder="Create a password" {...field} data-testid="input-client-password" />
+                          </FormControl>
+                          <PasswordStrengthIndicator password={field.value || ""} />
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <Button 
+                      type="submit" 
+                      className="w-full py-3" 
+                      disabled={clientRegistration.isPending}
+                      data-testid="button-create-client-account"
+                    >
+                      {clientRegistration.isPending ? "Creating Account..." : "Create Client Account"}
+                    </Button>
+                    
+                    <div className="text-center text-sm text-slate-600">
+                      Already have an account?{" "}
+                      <Button 
+                        variant="link" 
+                        className="p-0 h-auto text-primary hover:text-primary-dark font-medium"
+                        onClick={() => setCurrentView("login")}
+                      >
+                        Sign in
+                      </Button>
+                    </div>
+                  </form>
+                </Form>
+              </CardContent>
+            </Card>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   if (currentView === "login") {
     return (
       <div className="min-h-screen bg-slate-50">
@@ -1592,7 +1865,7 @@ export default function AuthPage() {
                             <RadioGroup
                               onValueChange={field.onChange}
                               defaultValue={field.value}
-                              className="grid grid-cols-2 gap-2"
+                              className="grid grid-cols-1 sm:grid-cols-3 gap-2"
                             >
                               <label className="flex items-center justify-center p-3 border border-slate-300 rounded-lg cursor-pointer hover:bg-slate-50 transition-colors has-[:checked]:border-primary has-[:checked]:bg-blue-50" htmlFor="employee">
                                 <RadioGroupItem value="employee" id="employee" className="sr-only" />
@@ -1603,6 +1876,11 @@ export default function AuthPage() {
                                 <RadioGroupItem value="company" id="company" className="sr-only" />
                                 <Building className="text-primary mr-2" />
                                 <span className="text-sm font-medium">Company</span>
+                              </label>
+                              <label className="flex items-center justify-center p-3 border border-slate-300 rounded-lg cursor-pointer hover:bg-slate-50 transition-colors has-[:checked]:border-primary has-[:checked]:bg-blue-50" htmlFor="client">
+                                <RadioGroupItem value="client" id="client" className="sr-only" />
+                                <Shield className="text-purple-600 mr-2" />
+                                <span className="text-sm font-medium">Client</span>
                               </label>
                             </RadioGroup>
                           </FormControl>
