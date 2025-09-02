@@ -41,6 +41,14 @@ import ManagerLogin from "@/employee/manager-login";
 import ManagerDashboard from "@/employee/manager-dashboard";
 import ManagerWorkEntries from "@/employee/manager-work-entries";
 import ManagerEmployees from "@/employee/manager-employees";
+import ClientDashboard from "@/client/client-dashboard";
+import ClientProjects from "@/client/client-projects";
+import PostProject from "@/client/post-project";
+import ProjectDetails from "@/client/project-details";
+import ClientContracts from "@/client/client-contracts";
+import FreelanceProjects from "@/employee/freelance-projects";
+import FreelanceProjectDetails from "@/employee/freelance-project-details";
+import FreelanceApply from "@/employee/freelance-apply";
 {/* CompanyManagerManagement consolidated into CompanyHierarchy */}
 import FeedbackPage from "@/employee/feedback";
 import ContactPage from "@/pages/contact";
@@ -96,6 +104,11 @@ function Router() {
       <Route path="/legacy-profile" component={() => <ProtectedRoute requireUserType="employee"><Profile /></ProtectedRoute>} />
       <Route path="/job-discovery" component={() => <ProtectedRoute requireUserType="employee"><JobDiscoveryPage /></ProtectedRoute>} />
       
+      {/* Employee Freelance Routes */}
+      <Route path="/employee/freelance/projects" component={() => <ProtectedRoute requireUserType="employee"><FreelanceProjects /></ProtectedRoute>} />
+      <Route path="/employee/freelance/projects/:projectId" component={() => <ProtectedRoute requireUserType="employee"><FreelanceProjectDetails /></ProtectedRoute>} />
+      <Route path="/employee/freelance/projects/:projectId/apply" component={() => <ProtectedRoute requireUserType="employee"><FreelanceApply /></ProtectedRoute>} />
+      
       {/* Company Protected Routes */}
       <Route path="/company-dashboard" component={() => <ProtectedRoute requireUserType="company"><CompanyDashboard /></ProtectedRoute>} />
       {/* Company Settings - Multiple Route Support */}
@@ -124,6 +137,13 @@ function Router() {
       <Route path="/manager/dashboard" component={() => <ProtectedRoute requireUserType="manager"><ManagerDashboard /></ProtectedRoute>} />
       <Route path="/manager/work-entries" component={() => <ProtectedRoute requireUserType="manager"><ManagerWorkEntries /></ProtectedRoute>} />
       <Route path="/manager/employees" component={() => <ProtectedRoute requireUserType="manager"><ManagerEmployees /></ProtectedRoute>} />
+      
+      {/* Client Protected Routes - Freelancer Marketplace */}
+      <Route path="/client/dashboard" component={() => <ProtectedRoute requireUserType="client"><ClientDashboard /></ProtectedRoute>} />
+      <Route path="/client/projects" component={() => <ProtectedRoute requireUserType="client"><ClientProjects /></ProtectedRoute>} />
+      <Route path="/client/projects/new" component={() => <ProtectedRoute requireUserType="client"><PostProject /></ProtectedRoute>} />
+      <Route path="/client/projects/:projectId" component={() => <ProtectedRoute requireUserType="client"><ProjectDetails /></ProtectedRoute>} />
+      <Route path="/client/contracts" component={() => <ProtectedRoute requireUserType="client"><ClientContracts /></ProtectedRoute>} />
       
       {/* Legacy redirect - now protected */}
       <Route path="/employee-profile" component={() => <ProtectedRoute requireUserType="employee"><AuthenticatedRedirect to="/profile" requireUserType="employee" /></ProtectedRoute>} />

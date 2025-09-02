@@ -8,14 +8,16 @@ import passport from "passport";
 import { storage } from "./storage";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { 
-  insertEmployeeSchema, insertCompanySchema, loginSchema, adminLoginSchema,
+  insertEmployeeSchema, insertCompanySchema, insertClientSchema, loginSchema, adminLoginSchema,
   insertExperienceSchema, insertEducationSchema, insertCertificationSchema,
   insertProjectSchema, insertEndorsementSchema, insertWorkEntrySchema,
   insertEmployeeCompanySchema, insertJobListingSchema, insertJobApplicationSchema,
   insertSavedJobSchema, insertJobAlertSchema, insertAdminSchema,
   requestPasswordResetSchema, verifyOTPSchema, resetPasswordSchema, changePasswordSchema,
   insertFeedbackSchema, feedbackResponseSchema, contactFormSchema,
-  workEntries, employees, companies
+  insertFreelanceProjectSchema, insertProjectProposalSchema, insertFreelanceContractSchema,
+  insertLiveMonitorSessionSchema, insertFreelanceWorkDiarySchema,
+  workEntries, employees, companies, clients
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc } from "drizzle-orm";
@@ -33,7 +35,7 @@ let io: SocketIOServer;
 let connectedUsers = new Map<string, { 
   socketId: string; 
   userId?: string; 
-  userType?: 'employee' | 'company'; 
+  userType?: 'employee' | 'company' | 'client'; 
   joinedAt: Date;
   lastActivity: Date;
   companyId?: string;
@@ -120,6 +122,16 @@ function requireAdmin(req: any, res: any, next: any) {
   requireAuth(req, res, () => {
     if (req.user.type !== 'admin') {
       return res.status(403).json({ message: "Admin access required" });
+    }
+    next();
+  });
+}
+
+// Client-specific authentication middleware
+function requireClient(req: any, res: any, next: any) {
+  requireAuth(req, res, () => {
+    if (req.user.type !== 'client') {
+      return res.status(403).json({ message: "Client access required" });
     }
     next();
   });
@@ -361,6 +373,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Company registration error:", error);
       res.status(500).json({ 
         message: error.message || "Failed to create company account" 
+      });
+    }
+  });
+
+  // Client registration
+  app.post("/api/auth/register/client", async (req, res) => {
+    try {
+      const validatedData = insertClientSchema.parse(req.body);
+      const { email, password, firstName, lastName, companyName, phoneNumber, description } = validatedData;
+      
+      // Check if email already exists across all user types
+      const emailExists = await storage.checkEmailExists(email);
+      if (emailExists) {
+        return res.status(400).json({ message: "Email already registered" });
+      }
+
+      // Hash password
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      const clientData = {
+        email,
+        password: hashedPassword,
+        firstName,
+        lastName,
+        companyName: companyName || null,
+        phoneNumber: phoneNumber || null,
+        description: description || null,
+      };
+
+      const client = await storage.createClient(clientData);
+      
+      // Remove password from response
+      const { password: _, ...clientResponse } = client;
+      
+      res.status(201).json({ 
+        message: "Client account created successfully!",
+        client: clientResponse
+      });
+    } catch (error: any) {
+      console.error("Client registration error:", error);
+      res.status(500).json({ 
+        message: error.message || "Failed to create client account" 
       });
     }
   });
@@ -674,9 +728,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (accountType === "employee") {
         user = await storage.authenticateEmployee(normalizedEmail, password);
         userType = "employee";
-      } else {
+      } else if (accountType === "company") {
         user = await storage.authenticateCompany(normalizedEmail, password);
         userType = "company";
+      } else if (accountType === "client") {
+        user = await storage.authenticateClient(normalizedEmail, password);
+        userType = "client";
+      } else {
+        return res.status(400).json({ 
+          message: "Invalid account type. Must be 'employee', 'company', or 'client'" 
+        });
       }
       
       if (!user) {
@@ -8081,6 +8142,451 @@ This message was sent through the Signedwork contact form.
     } catch (error) {
       console.error('Error deleting saved search:', error);
       res.status(500).json({ message: 'Failed to delete saved search' });
+    }
+  });
+
+  // =============================================
+  // FREELANCER MARKETPLACE API ENDPOINTS
+  // =============================================
+
+  // ===== FREELANCE PROJECTS =====
+  
+  // Get all freelance projects with filters (public for employees to browse)
+  app.get("/api/freelance/projects", requireEmployee, async (req: any, res) => {
+    try {
+      const { clientId, status, category } = req.query;
+      const filters: any = {};
+      if (clientId) filters.clientId = clientId;
+      if (status) filters.status = status;
+      if (category) filters.category = category;
+      
+      const projects = await storage.getFreelanceProjects(filters);
+      res.json(projects);
+    } catch (error) {
+      console.error('Error fetching freelance projects:', error);
+      res.status(500).json({ message: 'Failed to fetch projects' });
+    }
+  });
+
+  // Search freelance projects (public for employees)
+  app.get("/api/freelance/projects/search", requireEmployee, async (req: any, res) => {
+    try {
+      const { keywords, category, budgetMin, budgetMax, experienceLevel, projectType, skills } = req.query;
+      const filters: any = {};
+      if (keywords) filters.keywords = keywords;
+      if (category) filters.category = category;
+      if (budgetMin) filters.budgetMin = parseFloat(budgetMin);
+      if (budgetMax) filters.budgetMax = parseFloat(budgetMax);
+      if (experienceLevel) filters.experienceLevel = experienceLevel;
+      if (projectType) filters.projectType = projectType;
+      if (skills) filters.skills = Array.isArray(skills) ? skills : [skills];
+      
+      const projects = await storage.searchFreelanceProjects(filters);
+      res.json(projects);
+    } catch (error) {
+      console.error('Error searching freelance projects:', error);
+      res.status(500).json({ message: 'Failed to search projects' });
+    }
+  });
+
+  // Get specific freelance project (public for employees)
+  app.get("/api/freelance/projects/:id", requireEmployee, async (req: any, res) => {
+    try {
+      const project = await storage.getFreelanceProject(req.params.id);
+      if (!project) {
+        return res.status(404).json({ message: 'Project not found' });
+      }
+      res.json(project);
+    } catch (error) {
+      console.error('Error fetching freelance project:', error);
+      res.status(500).json({ message: 'Failed to fetch project' });
+    }
+  });
+
+  // Create freelance project (clients only)
+  app.post("/api/freelance/projects", requireClient, async (req: any, res) => {
+    try {
+      const validatedData = insertFreelanceProjectSchema.parse(req.body);
+      
+      const projectData = {
+        ...validatedData,
+        clientId: req.user.id
+      };
+
+      const project = await storage.createFreelanceProject(projectData);
+      res.status(201).json(project);
+    } catch (error) {
+      console.error('Error creating freelance project:', error);
+      res.status(500).json({ message: 'Failed to create project' });
+    }
+  });
+
+  // Update freelance project (clients only, their own projects)
+  app.put("/api/freelance/projects/:id", requireClient, async (req: any, res) => {
+    try {
+      const project = await storage.getFreelanceProject(req.params.id);
+      if (!project) {
+        return res.status(404).json({ message: 'Project not found' });
+      }
+      if (project.clientId !== req.user.id) {
+        return res.status(403).json({ message: 'You can only update your own projects' });
+      }
+
+      const updatedProject = await storage.updateFreelanceProject(req.params.id, req.body);
+      res.json(updatedProject);
+    } catch (error) {
+      console.error('Error updating freelance project:', error);
+      res.status(500).json({ message: 'Failed to update project' });
+    }
+  });
+
+  // Delete freelance project (clients only, their own projects)
+  app.delete("/api/freelance/projects/:id", requireClient, async (req: any, res) => {
+    try {
+      const project = await storage.getFreelanceProject(req.params.id);
+      if (!project) {
+        return res.status(404).json({ message: 'Project not found' });
+      }
+      if (project.clientId !== req.user.id) {
+        return res.status(403).json({ message: 'You can only delete your own projects' });
+      }
+
+      await storage.deleteFreelanceProject(req.params.id);
+      res.json({ message: 'Project deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting freelance project:', error);
+      res.status(500).json({ message: 'Failed to delete project' });
+    }
+  });
+
+  // Get client's own projects
+  app.get("/api/client/projects", requireClient, async (req: any, res) => {
+    try {
+      const projects = await storage.getFreelanceProjects({ clientId: req.user.id });
+      res.json(projects);
+    } catch (error) {
+      console.error('Error fetching client projects:', error);
+      res.status(500).json({ message: 'Failed to fetch projects' });
+    }
+  });
+
+  // ===== PROJECT PROPOSALS =====
+
+  // Get proposals for a project (clients only, their own projects)
+  app.get("/api/freelance/projects/:projectId/proposals", requireClient, async (req: any, res) => {
+    try {
+      const project = await storage.getFreelanceProject(req.params.projectId);
+      if (!project) {
+        return res.status(404).json({ message: 'Project not found' });
+      }
+      if (project.clientId !== req.user.id) {
+        return res.status(403).json({ message: 'You can only view proposals for your own projects' });
+      }
+
+      const proposals = await storage.getProposalsForProject(req.params.projectId);
+      res.json(proposals);
+    } catch (error) {
+      console.error('Error fetching project proposals:', error);
+      res.status(500).json({ message: 'Failed to fetch proposals' });
+    }
+  });
+
+  // Submit proposal for a project (employees only)
+  app.post("/api/freelance/projects/:projectId/proposals", requireEmployee, async (req: any, res) => {
+    try {
+      const project = await storage.getFreelanceProject(req.params.projectId);
+      if (!project) {
+        return res.status(404).json({ message: 'Project not found' });
+      }
+      if (project.status !== 'active') {
+        return res.status(400).json({ message: 'Project is not accepting proposals' });
+      }
+
+      const validatedData = insertProjectProposalSchema.parse(req.body);
+      
+      const proposalData = {
+        ...validatedData,
+        projectId: req.params.projectId,
+        employeeId: req.user.id
+      };
+
+      const proposal = await storage.createProjectProposal(proposalData);
+      res.status(201).json(proposal);
+    } catch (error) {
+      console.error('Error submitting proposal:', error);
+      res.status(500).json({ message: 'Failed to submit proposal' });
+    }
+  });
+
+  // Get employee's own proposals
+  app.get("/api/employee/proposals", requireEmployee, async (req: any, res) => {
+    try {
+      const proposals = await storage.getProjectProposals({ employeeId: req.user.id });
+      res.json(proposals);
+    } catch (error) {
+      console.error('Error fetching employee proposals:', error);
+      res.status(500).json({ message: 'Failed to fetch proposals' });
+    }
+  });
+
+  // Update proposal status (clients only, for their projects)
+  app.put("/api/freelance/proposals/:proposalId/status", requireClient, async (req: any, res) => {
+    try {
+      const proposal = await storage.getProjectProposal(req.params.proposalId);
+      if (!proposal) {
+        return res.status(404).json({ message: 'Proposal not found' });
+      }
+
+      const project = await storage.getFreelanceProject(proposal.projectId);
+      if (!project || project.clientId !== req.user.id) {
+        return res.status(403).json({ message: 'You can only update proposals for your own projects' });
+      }
+
+      const { status } = req.body;
+      const updatedProposal = await storage.updateProjectProposal(req.params.proposalId, { status });
+      res.json(updatedProposal);
+    } catch (error) {
+      console.error('Error updating proposal status:', error);
+      res.status(500).json({ message: 'Failed to update proposal status' });
+    }
+  });
+
+  // ===== FREELANCE CONTRACTS =====
+
+  // Get contracts (filtered by user type)
+  app.get("/api/freelance/contracts", requireAuth, async (req: any, res) => {
+    try {
+      const filters: any = {};
+      if (req.user.type === 'client') {
+        filters.clientId = req.user.id;
+      } else if (req.user.type === 'employee') {
+        filters.employeeId = req.user.id;
+      } else {
+        return res.status(403).json({ message: 'Invalid user type for contracts' });
+      }
+
+      const contracts = await storage.getFreelanceContracts(filters);
+      res.json(contracts);
+    } catch (error) {
+      console.error('Error fetching contracts:', error);
+      res.status(500).json({ message: 'Failed to fetch contracts' });
+    }
+  });
+
+  // Create freelance contract (clients only, from accepted proposal)
+  app.post("/api/freelance/contracts", requireClient, async (req: any, res) => {
+    try {
+      const validatedData = insertFreelanceContractSchema.parse(req.body);
+      
+      const contractData = {
+        ...validatedData,
+        clientId: req.user.id
+      };
+
+      const contract = await storage.createFreelanceContract(contractData);
+      res.status(201).json(contract);
+    } catch (error) {
+      console.error('Error creating contract:', error);
+      res.status(500).json({ message: 'Failed to create contract' });
+    }
+  });
+
+  // Update contract status
+  app.put("/api/freelance/contracts/:id/status", requireAuth, async (req: any, res) => {
+    try {
+      const contract = await storage.getFreelanceContract(req.params.id);
+      if (!contract) {
+        return res.status(404).json({ message: 'Contract not found' });
+      }
+
+      // Allow both client and employee to update status
+      if (contract.clientId !== req.user.id && contract.employeeId !== req.user.id) {
+        return res.status(403).json({ message: 'You are not part of this contract' });
+      }
+
+      const { status } = req.body;
+      const updatedContract = await storage.updateFreelanceContract(req.params.id, { status });
+      res.json(updatedContract);
+    } catch (error) {
+      console.error('Error updating contract status:', error);
+      res.status(500).json({ message: 'Failed to update contract status' });
+    }
+  });
+
+  // ===== LIVE MONITORING =====
+
+  // Start live monitoring session (employees only, for their active contracts)
+  app.post("/api/freelance/contracts/:contractId/monitor/start", requireEmployee, async (req: any, res) => {
+    try {
+      const contract = await storage.getFreelanceContract(req.params.contractId);
+      if (!contract) {
+        return res.status(404).json({ message: 'Contract not found' });
+      }
+      if (contract.employeeId !== req.user.id) {
+        return res.status(403).json({ message: 'You are not part of this contract' });
+      }
+      if (contract.status !== 'active') {
+        return res.status(400).json({ message: 'Contract is not active' });
+      }
+
+      // Check if there's already an active session
+      const existingSession = await storage.getActiveMonitoringSession(req.params.contractId);
+      if (existingSession) {
+        return res.status(400).json({ message: 'There is already an active monitoring session for this contract' });
+      }
+
+      const validatedData = insertLiveMonitorSessionSchema.parse(req.body);
+      
+      const sessionData = {
+        ...validatedData,
+        contractId: req.params.contractId,
+        employeeId: req.user.id
+      };
+
+      const session = await storage.createLiveMonitorSession(sessionData);
+      res.status(201).json(session);
+    } catch (error) {
+      console.error('Error starting monitoring session:', error);
+      res.status(500).json({ message: 'Failed to start monitoring session' });
+    }
+  });
+
+  // Update live monitoring session (employees only)
+  app.put("/api/freelance/monitor/:sessionId", requireEmployee, async (req: any, res) => {
+    try {
+      const session = await storage.getLiveMonitorSession(req.params.sessionId);
+      if (!session) {
+        return res.status(404).json({ message: 'Monitoring session not found' });
+      }
+      if (session.employeeId !== req.user.id) {
+        return res.status(403).json({ message: 'You can only update your own monitoring sessions' });
+      }
+
+      const updatedSession = await storage.updateLiveMonitorSession(req.params.sessionId, req.body);
+      res.json(updatedSession);
+    } catch (error) {
+      console.error('Error updating monitoring session:', error);
+      res.status(500).json({ message: 'Failed to update monitoring session' });
+    }
+  });
+
+  // Get monitoring sessions for a contract (both client and employee)
+  app.get("/api/freelance/contracts/:contractId/monitor", requireAuth, async (req: any, res) => {
+    try {
+      const contract = await storage.getFreelanceContract(req.params.contractId);
+      if (!contract) {
+        return res.status(404).json({ message: 'Contract not found' });
+      }
+      if (contract.clientId !== req.user.id && contract.employeeId !== req.user.id) {
+        return res.status(403).json({ message: 'You are not part of this contract' });
+      }
+
+      const sessions = await storage.getLiveMonitorSessions({ contractId: req.params.contractId });
+      res.json(sessions);
+    } catch (error) {
+      console.error('Error fetching monitoring sessions:', error);
+      res.status(500).json({ message: 'Failed to fetch monitoring sessions' });
+    }
+  });
+
+  // ===== FREELANCE WORK DIARY =====
+
+  // Get work diary entries (filtered by user type)
+  app.get("/api/freelance/work-diary", requireAuth, async (req: any, res) => {
+    try {
+      const { contractId, status } = req.query;
+      const filters: any = {};
+      
+      if (req.user.type === 'client') {
+        filters.clientId = req.user.id;
+      } else if (req.user.type === 'employee') {
+        filters.employeeId = req.user.id;
+      } else {
+        return res.status(403).json({ message: 'Invalid user type for work diary' });
+      }
+
+      if (contractId) filters.contractId = contractId;
+      if (status) filters.status = status;
+
+      const entries = await storage.getFreelanceWorkDiary(filters);
+      res.json(entries);
+    } catch (error) {
+      console.error('Error fetching work diary:', error);
+      res.status(500).json({ message: 'Failed to fetch work diary' });
+    }
+  });
+
+  // Submit work diary entry (employees only)
+  app.post("/api/freelance/work-diary", requireEmployee, async (req: any, res) => {
+    try {
+      const validatedData = insertFreelanceWorkDiarySchema.parse(req.body);
+      
+      // Verify the contract exists and employee is part of it
+      const contract = await storage.getFreelanceContract(validatedData.contractId);
+      if (!contract) {
+        return res.status(404).json({ message: 'Contract not found' });
+      }
+      if (contract.employeeId !== req.user.id) {
+        return res.status(403).json({ message: 'You are not part of this contract' });
+      }
+
+      const entryData = {
+        ...validatedData,
+        employeeId: req.user.id,
+        clientId: contract.clientId
+      };
+
+      const entry = await storage.createFreelanceWorkDiaryEntry(entryData);
+      res.status(201).json(entry);
+    } catch (error) {
+      console.error('Error submitting work diary entry:', error);
+      res.status(500).json({ message: 'Failed to submit work diary entry' });
+    }
+  });
+
+  // Approve work diary entry (clients only)
+  app.post("/api/freelance/work-diary/:entryId/approve", requireClient, async (req: any, res) => {
+    try {
+      const entry = await storage.getFreelanceWorkDiaryEntry(req.params.entryId);
+      if (!entry) {
+        return res.status(404).json({ message: 'Work diary entry not found' });
+      }
+      if (entry.clientId !== req.user.id) {
+        return res.status(403).json({ message: 'You can only approve entries for your own projects' });
+      }
+
+      const { clientRating, clientFeedback } = req.body;
+      const approvedEntry = await storage.approveFreelanceWorkEntry(req.params.entryId, req.user.id, {
+        clientRating,
+        clientFeedback
+      });
+      
+      res.json(approvedEntry);
+    } catch (error) {
+      console.error('Error approving work diary entry:', error);
+      res.status(500).json({ message: 'Failed to approve work diary entry' });
+    }
+  });
+
+  // Update work diary entry (employees only, their own entries, before approval)
+  app.put("/api/freelance/work-diary/:entryId", requireEmployee, async (req: any, res) => {
+    try {
+      const entry = await storage.getFreelanceWorkDiaryEntry(req.params.entryId);
+      if (!entry) {
+        return res.status(404).json({ message: 'Work diary entry not found' });
+      }
+      if (entry.employeeId !== req.user.id) {
+        return res.status(403).json({ message: 'You can only update your own work diary entries' });
+      }
+      if (entry.clientApproved) {
+        return res.status(400).json({ message: 'Cannot update approved work diary entries' });
+      }
+
+      const updatedEntry = await storage.updateFreelanceWorkDiaryEntry(req.params.entryId, req.body);
+      res.json(updatedEntry);
+    } catch (error) {
+      console.error('Error updating work diary entry:', error);
+      res.status(500).json({ message: 'Failed to update work diary entry' });
     }
   });
 
