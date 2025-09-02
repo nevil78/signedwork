@@ -1,0 +1,97 @@
+Main Navigation Bar
+The main navigation bar at the top gives you access to all the primary functions of your Upwork client account. It's organized into logical sections: Hire talent, Manage work, Reports, and Messages.
+1. Hire Talent (Screenshot 1)
+This menu is your starting point for finding and hiring professionals.
+Feature
+Description
+How it's linked
+Manage jobs and offers
+A dashboard to see all your active job postings and the offers you've sent to freelancers.
+This is a high-level overview that links directly to Job posts and proposals and Pending offers.
+Job posts and proposals
+This is where you can view the jobs you've posted and review the proposals submitted by freelancers for each job.
+After you Post a job, freelancers submit proposals which appear here. From here, you can review profiles, message candidates, and send offers.
+Pending offers
+Shows a list of all the job offers you have extended to freelancers that have not yet been accepted or declined.
+This is the step after reviewing proposals and deciding to hire someone. If a freelancer accepts, a contract is created under the Manage work tab.
+Find freelancers
+This is a general category for sourcing talent.
+It contains the primary actions for finding people: Post a job and Search for talent.
+Post a job
+This takes you to the form (partially visible in the background of your screenshots) where you describe your project, budget, and required skills.
+This is the most common way to start. Once posted, it appears in Job posts and proposals and freelancers can apply.
+Search for talent
+Allows you to proactively browse freelancer profiles using filters like skills, location, and job success score, instead of waiting for them to apply.
+If you find a freelancer you like, you can invite them to your job or send them a direct offer. This is an alternative to just posting a job and waiting.
+Talent you've hired
+A list of all freelancers you have previously worked with.
+This is useful for quickly re-hiring someone for a new project. It's linked to your past contracts in the Manage work section.
+Talent you've saved
+A shortlist of freelancers you have bookmarked during your searches but haven't hired yet.
+This acts as a "favorites" list, allowing you to easily find promising candidates later when you're ready to Post a job or send an offer.
+Bring talent to Upwork (Any Hire)
+A feature that allows you to hire and pay a freelancer you already know (found outside of Upwork) through the platform, using Upwork's contract and payment infrastructure.
+This is for formalizing work with existing contacts and keeping all your freelance management in one place.
+2. Manage Work (Screenshot 2)
+Once you've hired a freelancer, this menu is where you manage the entire project lifecycle.
+Feature
+Description
+How it's linked
+Active and past work
+A comprehensive view of all your ongoing and completed contracts.
+This is the main dashboard for managing projects. It links to Your contracts, Timesheets, and Work diaries.
+Your contracts
+A detailed list of all your contracts, both active and ended.
+From here you can view contract terms, message the freelancer, approve milestones (for fixed-price jobs), or end a contract.
+Hourly contract activity
+A section specifically for monitoring your hourly projects.
+This is where you find Timesheets and Work diaries to track the hours your freelancers are logging.
+Timesheets
+A summary of the hours billed by your freelancers on a weekly basis.
+This is directly linked to the freelancer's Work diary. You review the timesheet before payment is processed.
+Work diaries
+A detailed, visual log of the freelancer's work on an hourly contract. It includes screenshots of their screen taken at intervals and memos about what they were working on.
+This provides transparency for hourly work and is the basis for the hours that appear on the Timesheet.
+Custom export
+Allows you to download your work data for offline analysis or record-keeping.
+This pulls data from your contracts and financial history.
+3. Reports (Screenshot 3)
+This menu provides financial oversight of your spending on the platform.
+Feature
+Description
+How it's linked
+Weekly financial summary
+A top-level overview of your spending on a week-by-week basis.
+This report pulls data from your approved Timesheets (for hourly jobs) and funded milestones (for fixed-price jobs).
+Transaction history
+A detailed, line-by-line log of every financial transaction on your account, including payments to freelancers, Upwork fees, and refunds.
+This is your complete financial ledger on Upwork and is the source for all other financial reports.
+Spending by activity
+A report that breaks down your spending by project, freelancer, or other categories, helping you understand where your money is going.
+This report organizes the data from your Transaction history into more insightful views.
+4. Profile & Account Settings (Screenshot 5)
+This menu, accessed by clicking your profile icon, manages your personal and company settings.
+Feature
+Description
+How it's linked
+Online for messages
+A toggle to show freelancers whether you are currently active on the platform.
+This can encourage faster communication from freelancers you are interviewing.
+Try Business Plus
+An advertisement to upgrade your account to a premium plan with more features like a dedicated account manager and advanced reporting.
+This is an optional upgrade to the standard client account.
+Membership plan
+This is where you can view your current plan (e.g., Basic or Plus) and manage your subscription.
+Linked to the Try Business Plus offer.
+Invite a coworker
+Allows you to add team members to your company's Upwork account so they can also hire and manage freelancers.
+This is for collaborative hiring within a team or organization.
+Theme: Light
+A setting to change the visual appearance of the Upwork interface (e.g., to a dark mode).
+This is a user preference setting and doesn't affect functionality.
+Account settings
+The central hub for managing your profile, company details, payment methods, security settings, and notification preferences.
+This is where you control the foundational aspects of your account.
+Log out
+Signs you out of your Upwork account.
+I hope this detailed explanation helps you understand the client-side features of Upwork and how they all work together to create a seamless hiring and project management workflow.

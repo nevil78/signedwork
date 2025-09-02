@@ -356,6 +356,230 @@ export const managerPermissions = pgTable("manager_permissions", {
   canManageTeams: boolean("can_manage_teams").default(false),
 });
 
+// ====================
+// FREELANCER MARKETPLACE TABLES
+// ====================
+
+// Clients table for individual users who hire employees for freelance projects
+export const clients = pgTable("clients", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  clientId: varchar("client_id").notNull().unique(), // CLI-ABC123 format
+  firstName: text("first_name").notNull(),
+  lastName: text("last_name").notNull(),
+  email: text("email").notNull().unique(),
+  phone: text("phone"),
+  countryCode: text("country_code").notNull().default("+1"),
+  password: text("password").notNull(),
+  profilePhoto: text("profile_photo"),
+  company: text("company"), // Optional - client's company name
+  jobTitle: text("job_title"), // Optional - client's job title
+  location: text("location"),
+  timezone: text("timezone"),
+  bio: text("bio"), // Short description about the client
+  website: text("website"),
+  linkedinUrl: text("linkedin_url"),
+  // Client preferences
+  projectTypes: text("project_types").array(), // Types of projects they usually post
+  budgetRange: text("budget_range"), // Typical budget range
+  communicationStyle: text("communication_style"), // How they prefer to communicate
+  workingHours: text("working_hours"), // Preferred working hours
+  // Verification and trust
+  emailVerified: boolean("email_verified").default(false),
+  phoneVerified: boolean("phone_verified").default(false),
+  identityVerified: boolean("identity_verified").default(false),
+  // Account status
+  isActive: boolean("is_active").default(true),
+  lastLoginAt: timestamp("last_login_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Freelance projects posted by clients
+export const freelanceProjects = pgTable("freelance_projects", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  projectId: varchar("project_id").notNull().unique(), // FP-ABC123 format
+  clientId: varchar("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  requirements: text("requirements").notNull(),
+  skillsRequired: text("skills_required").array(),
+  projectType: text("project_type").notNull(), // fixed_price, hourly, milestone_based
+  budgetType: text("budget_type").notNull(), // fixed, range, hourly_rate
+  budgetAmount: integer("budget_amount"), // In cents for fixed/hourly rate
+  budgetMin: integer("budget_min"), // In cents for range
+  budgetMax: integer("budget_max"), // In cents for range
+  currency: text("currency").notNull().default("USD"),
+  duration: text("duration"), // estimated project duration
+  urgency: text("urgency").notNull().default("medium"), // low, medium, high, urgent
+  experience_level: text("experience_level").notNull(), // entry, intermediate, expert
+  // Project specifics
+  category: text("category").notNull(), // development, design, writing, marketing, etc.
+  subcategory: text("subcategory"),
+  location_requirement: text("location_requirement").default("remote"), // remote, onsite, hybrid
+  time_zone_requirement: text("time_zone_requirement"),
+  // Status and lifecycle
+  status: text("status").notNull().default("active"), // draft, active, paused, closed, cancelled, completed
+  proposals_count: integer("proposals_count").default(0),
+  views_count: integer("views_count").default(0),
+  // Dates
+  deadline: timestamp("deadline"),
+  starts_at: timestamp("starts_at"),
+  posted_at: timestamp("posted_at").defaultNow(),
+  updated_at: timestamp("updated_at").defaultNow(),
+  // Project attachments and references
+  attachments: text("attachments").array().default(sql`'{}'::text[]`),
+  reference_links: text("reference_links").array().default(sql`'{}'::text[]`),
+});
+
+// Proposals submitted by employees for freelance projects
+export const projectProposals = pgTable("project_proposals", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  proposalId: varchar("proposal_id").notNull().unique(), // PP-ABC123 format
+  projectId: varchar("project_id").notNull().references(() => freelanceProjects.id, { onDelete: "cascade" }),
+  employeeId: varchar("employee_id").notNull().references(() => employees.id, { onDelete: "cascade" }),
+  // Proposal content
+  coverLetter: text("cover_letter").notNull(),
+  proposedRate: integer("proposed_rate"), // In cents - hourly rate or total amount
+  rateType: text("rate_type").notNull(), // hourly, fixed, milestone
+  estimatedDuration: text("estimated_duration"),
+  milestones: jsonb("milestones"), // For milestone-based projects
+  // Employee's approach and value proposition
+  approach: text("approach"), // How they plan to complete the project
+  relevant_experience: text("relevant_experience"),
+  portfolio_samples: text("portfolio_samples").array().default(sql`'{}'::text[]`),
+  questions_for_client: text("questions_for_client"),
+  // Availability and timing
+  availability: text("availability"), // When can start
+  weekly_hours: integer("weekly_hours"), // Hours per week they can dedicate
+  // Status tracking
+  status: text("status").notNull().default("submitted"), // submitted, shortlisted, interviewed, accepted, declined, withdrawn
+  client_feedback: text("client_feedback"), // Client's notes about this proposal
+  // Timestamps
+  submitted_at: timestamp("submitted_at").defaultNow(),
+  status_updated_at: timestamp("status_updated_at").defaultNow(),
+  client_viewed_at: timestamp("client_viewed_at"),
+  // Communication tracking
+  messages_count: integer("messages_count").default(0),
+  last_message_at: timestamp("last_message_at"),
+});
+
+// Active freelance contracts between clients and employees
+export const freelanceContracts = pgTable("freelance_contracts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  contractId: varchar("contract_id").notNull().unique(), // FC-ABC123 format
+  projectId: varchar("project_id").notNull().references(() => freelanceProjects.id, { onDelete: "cascade" }),
+  proposalId: varchar("proposal_id").notNull().references(() => projectProposals.id, { onDelete: "cascade" }),
+  clientId: varchar("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
+  employeeId: varchar("employee_id").notNull().references(() => employees.id, { onDelete: "cascade" }),
+  // Contract terms
+  contractType: text("contract_type").notNull(), // hourly, fixed_price, milestone_based
+  totalValue: integer("total_value"), // In cents - total contract value
+  hourlyRate: integer("hourly_rate"), // In cents - for hourly contracts
+  currency: text("currency").notNull().default("USD"),
+  // Timeline
+  startDate: timestamp("start_date").notNull(),
+  deadline: timestamp("deadline"),
+  estimatedHours: integer("estimated_hours"), // For hourly contracts
+  // Contract status
+  status: text("status").notNull().default("active"), // active, paused, completed, terminated, dispute
+  completionPercentage: integer("completion_percentage").default(0),
+  // Work tracking
+  totalHoursWorked: integer("total_hours_worked").default(0),
+  totalAmountEarned: integer("total_amount_earned").default(0), // In cents
+  // Payment and billing
+  paymentSchedule: text("payment_schedule"), // weekly, bi_weekly, upon_completion, milestone_based
+  lastPaymentDate: timestamp("last_payment_date"),
+  nextPaymentDue: timestamp("next_payment_due"),
+  // Ratings and feedback (populated after completion)
+  clientRating: integer("client_rating"), // 1-5 stars from client
+  employeeRating: integer("employee_rating"), // 1-5 stars from employee
+  clientFeedback: text("client_feedback"),
+  employeeFeedback: text("employee_feedback"),
+  // Contract lifecycle
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  completedAt: timestamp("completed_at"),
+});
+
+// Live Monitor sessions for real-time work tracking (Upwork-style)
+export const liveMonitorSessions = pgTable("live_monitor_sessions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  sessionId: varchar("session_id").notNull().unique(), // LM-ABC123 format
+  contractId: varchar("contract_id").notNull().references(() => freelanceContracts.id, { onDelete: "cascade" }),
+  employeeId: varchar("employee_id").notNull().references(() => employees.id, { onDelete: "cascade" }),
+  // Session details
+  startTime: timestamp("start_time").notNull(),
+  endTime: timestamp("end_time"),
+  duration: integer("duration").default(0), // Duration in minutes
+  status: text("status").notNull().default("active"), // active, paused, stopped, completed
+  // Work description
+  workDescription: text("work_description"),
+  tasksCompleted: text("tasks_completed").array().default(sql`'{}'::text[]`),
+  // Activity tracking
+  activityLevel: integer("activity_level").default(0), // 0-100 percentage
+  keyboardEvents: integer("keyboard_events").default(0),
+  mouseEvents: integer("mouse_events").default(0),
+  activeMinutes: integer("active_minutes").default(0),
+  idleMinutes: integer("idle_minutes").default(0),
+  // Screenshots and monitoring (stored as file references)
+  screenshots: jsonb("screenshots"), // Array of screenshot metadata
+  screenshotInterval: integer("screenshot_interval").default(10), // Minutes between screenshots
+  // Billing
+  billableMinutes: integer("billable_minutes").default(0),
+  manualTimeAdjustment: integer("manual_time_adjustment").default(0), // In minutes
+  adjustmentReason: text("adjustment_reason"),
+  // Client review and approval
+  clientReviewed: boolean("client_reviewed").default(false),
+  clientApproved: boolean("client_approved").default(false),
+  clientFeedback: text("client_feedback"),
+  reviewedAt: timestamp("reviewed_at"),
+  // Session metadata
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Freelance Work Diary - project completion reports for freelance work
+export const freelanceWorkDiary = pgTable("freelance_work_diary", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  entryId: varchar("entry_id").notNull().unique(), // FWD-ABC123 format
+  contractId: varchar("contract_id").notNull().references(() => freelanceContracts.id, { onDelete: "cascade" }),
+  clientId: varchar("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
+  employeeId: varchar("employee_id").notNull().references(() => employees.id, { onDelete: "cascade" }),
+  // Work summary
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  workCompleted: text("work_completed").notNull(),
+  deliverables: text("deliverables").array().default(sql`'{}'::text[]`),
+  achievements: text("achievements").array().default(sql`'{}'::text[]`),
+  challenges: text("challenges"),
+  learnings: text("learnings"),
+  nextSteps: text("next_steps"),
+  // Time and effort
+  totalHoursSpent: integer("total_hours_spent").notNull(),
+  workStartDate: timestamp("work_start_date").notNull(),
+  workEndDate: timestamp("work_end_date").notNull(),
+  // Quality and metrics
+  qualityScore: integer("quality_score"), // Self-assessed quality 1-10
+  complexityLevel: text("complexity_level"), // low, medium, high, expert
+  toolsUsed: text("tools_used").array().default(sql`'{}'::text[]`),
+  // Client feedback and verification
+  clientReviewed: boolean("client_reviewed").default(false),
+  clientApproved: boolean("client_approved").default(false),
+  clientRating: integer("client_rating"), // 1-5 stars
+  clientFeedback: text("client_feedback"),
+  verifiedAt: timestamp("verified_at"),
+  // Attachments and references
+  attachments: text("attachments").array().default(sql`'{}'::text[]`),
+  screenshots: text("screenshots").array().default(sql`'{}'::text[]`),
+  codeRepositories: text("code_repositories").array().default(sql`'{}'::text[]`),
+  liveLinks: text("live_links").array().default(sql`'{}'::text[]`),
+  // Status
+  status: text("status").notNull().default("submitted"), // submitted, reviewed, approved, needs_revision
+  // Timestamps
+  submittedAt: timestamp("submitted_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Job listings table for job discovery
 export const jobListings = pgTable("job_listings", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -430,7 +654,7 @@ export const emailVerifications = pgTable("email_verifications", {
   email: text("email").notNull(),
   otpCode: varchar("otp_code", { length: 6 }).notNull(),
   purpose: varchar("purpose", { length: 20 }).notNull(), // 'password_reset' or 'email_verification'
-  userType: varchar("user_type", { length: 10 }).notNull(), // 'employee' or 'company'
+  userType: varchar("user_type", { length: 10 }).notNull(), // 'employee', 'company', or 'client'
   userId: varchar("user_id"), // Can be null for new registrations
   isUsed: boolean("is_used").default(false),
   createdAt: timestamp("created_at").defaultNow(),
@@ -732,6 +956,109 @@ export const profileViewsRelations = relations(profileViews, ({ one }) => ({
   }),
 }));
 
+// ====================
+// FREELANCER MARKETPLACE RELATIONS
+// ====================
+
+export const clientsRelations = relations(clients, ({ many }) => ({
+  freelanceProjects: many(freelanceProjects),
+  freelanceContracts: many(freelanceContracts),
+  freelanceWorkDiary: many(freelanceWorkDiary),
+}));
+
+export const freelanceProjectsRelations = relations(freelanceProjects, ({ one, many }) => ({
+  client: one(clients, {
+    fields: [freelanceProjects.clientId],
+    references: [clients.id],
+  }),
+  proposals: many(projectProposals),
+  contracts: many(freelanceContracts),
+}));
+
+export const projectProposalsRelations = relations(projectProposals, ({ one }) => ({
+  project: one(freelanceProjects, {
+    fields: [projectProposals.projectId],
+    references: [freelanceProjects.id],
+  }),
+  employee: one(employees, {
+    fields: [projectProposals.employeeId],
+    references: [employees.id],
+  }),
+  contract: one(freelanceContracts, {
+    fields: [projectProposals.id],
+    references: [freelanceContracts.proposalId],
+  }),
+}));
+
+export const freelanceContractsRelations = relations(freelanceContracts, ({ one, many }) => ({
+  project: one(freelanceProjects, {
+    fields: [freelanceContracts.projectId],
+    references: [freelanceProjects.id],
+  }),
+  proposal: one(projectProposals, {
+    fields: [freelanceContracts.proposalId],
+    references: [projectProposals.id],
+  }),
+  client: one(clients, {
+    fields: [freelanceContracts.clientId],
+    references: [clients.id],
+  }),
+  employee: one(employees, {
+    fields: [freelanceContracts.employeeId],
+    references: [employees.id],
+  }),
+  liveMonitorSessions: many(liveMonitorSessions),
+  workDiaryEntries: many(freelanceWorkDiary),
+}));
+
+export const liveMonitorSessionsRelations = relations(liveMonitorSessions, ({ one }) => ({
+  contract: one(freelanceContracts, {
+    fields: [liveMonitorSessions.contractId],
+    references: [freelanceContracts.id],
+  }),
+  employee: one(employees, {
+    fields: [liveMonitorSessions.employeeId],
+    references: [employees.id],
+  }),
+}));
+
+export const freelanceWorkDiaryRelations = relations(freelanceWorkDiary, ({ one }) => ({
+  contract: one(freelanceContracts, {
+    fields: [freelanceWorkDiary.contractId],
+    references: [freelanceContracts.id],
+  }),
+  client: one(clients, {
+    fields: [freelanceWorkDiary.clientId],
+    references: [clients.id],
+  }),
+  employee: one(employees, {
+    fields: [freelanceWorkDiary.employeeId],
+    references: [employees.id],
+  }),
+}));
+
+// Update existing employee relations to include freelancer marketplace
+export const employeesRelationsUpdated = relations(employees, ({ many }) => ({
+  experiences: many(experiences),
+  educations: many(educations),
+  certifications: many(certifications),
+  projects: many(projects),
+  endorsements: many(endorsements),
+  employeeCompanies: many(employeeCompanies),
+  workEntries: many(workEntries),
+  companyEmployees: many(companyEmployees),
+  teamMemberships: many(teamMembers),
+  jobApplications: many(jobApplications),
+  savedJobs: many(savedJobs),
+  jobAlerts: many(jobAlerts),
+  profileViews: many(profileViews),
+  // New freelancer marketplace relations
+  projectProposals: many(projectProposals),
+  freelanceContracts: many(freelanceContracts),
+  liveMonitorSessions: many(liveMonitorSessions),
+  freelanceWorkDiary: many(freelanceWorkDiary),
+}));
+
 // Insert schemas
 export const insertEmployeeSchema = createInsertSchema(employees).omit({
   id: true,
@@ -968,7 +1295,7 @@ export const insertAdminSchema = createInsertSchema(admins).omit({
 export const loginSchema = z.object({
   email: z.string().email("Invalid email format"),
   password: z.string().min(1, "Password is required"),
-  accountType: z.enum(["employee", "company"], {
+  accountType: z.enum(["employee", "company", "client"], {
     required_error: "Please select an account type",
   }),
 });
@@ -1007,7 +1334,7 @@ export const insertEmailVerificationSchema = createInsertSchema(emailVerificatio
   email: z.string().email("Invalid email format"),
   otpCode: z.string().length(6, "OTP code must be 6 digits"),
   purpose: z.enum(["password_reset", "email_verification"]),
-  userType: z.enum(["employee", "company"]),
+  userType: z.enum(["employee", "company", "client"]),
 });
 
 export const insertLoginSessionSchema = createInsertSchema(loginSessions).omit({
@@ -1019,7 +1346,7 @@ export const verifyOTPSchema = z.object({
   email: z.string().email("Invalid email format"),
   otpCode: z.string().length(6, "OTP code must be 6 digits"),
   purpose: z.enum(["password_reset", "email_verification"]),
-  userType: z.enum(["employee", "company"]),
+  userType: z.enum(["employee", "company", "client"]),
 });
 
 export const resetPasswordSchema = z.object({
@@ -1031,7 +1358,7 @@ export const resetPasswordSchema = z.object({
     .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
     .regex(/\d/, "Password must contain at least one number"),
   confirmPassword: z.string().min(1, "Please confirm your password"),
-  userType: z.enum(["employee", "company"]),
+  userType: z.enum(["employee", "company", "client"]),
 }).refine((data) => data.newPassword === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
@@ -1492,3 +1819,132 @@ export type InsertCandidatePipeline = z.infer<typeof insertCandidatePipelineSche
 export type InsertCandidateInteraction = z.infer<typeof insertCandidateInteractionSchema>;
 export type InsertRecruitmentAnalytic = z.infer<typeof insertRecruitmentAnalyticSchema>;
 export type InsertSavedSearch = z.infer<typeof insertSavedSearchSchema>;
+
+// ====================
+// FREELANCER MARKETPLACE INSERT SCHEMAS & TYPES
+// ====================
+
+// Client authentication and account management
+export const insertClientSchema = createInsertSchema(clients).omit({
+  id: true,
+  clientId: true,
+  createdAt: true,
+  updatedAt: true,
+  emailVerified: true,
+  phoneVerified: true,
+  identityVerified: true,
+  isActive: true,
+  lastLoginAt: true,
+}).extend({
+  email: z.string().email("Invalid email format"),
+  password: z.string()
+    .min(8, "Password must be at least 8 characters")
+    .max(12, "Password max length should be 12")
+    .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+    .regex(/\d/, "Password must contain at least one number"),
+  phone: z.string()
+    .refine((val: string) => {
+      const digits = val.replace(/\D/g, '');
+      return digits.length >= 7 && digits.length <= 15;
+    }, "Phone number must be 7-15 digits"),
+});
+
+// Project management schemas
+export const insertFreelanceProjectSchema = createInsertSchema(freelanceProjects).omit({
+  id: true,
+  projectId: true,
+  posted_at: true,
+  updated_at: true,
+  proposals_count: true,
+  views_count: true,
+}).extend({
+  title: z.string().min(10, "Project title must be at least 10 characters").max(100, "Title too long"),
+  description: z.string().min(50, "Description must be at least 50 characters"),
+  requirements: z.string().min(20, "Requirements must be at least 20 characters"),
+  budgetAmount: z.number().min(500, "Minimum budget is $5.00").optional(),
+  budgetMin: z.number().min(500, "Minimum budget is $5.00").optional(),
+  budgetMax: z.number().min(1000, "Maximum budget must be at least $10.00").optional(),
+});
+
+export const insertProjectProposalSchema = createInsertSchema(projectProposals).omit({
+  id: true,
+  proposalId: true,
+  submitted_at: true,
+  status_updated_at: true,
+  client_viewed_at: true,
+  messages_count: true,
+  last_message_at: true,
+}).extend({
+  coverLetter: z.string().min(100, "Cover letter must be at least 100 characters"),
+  proposedRate: z.number().min(500, "Minimum rate is $5.00"),
+  estimatedDuration: z.string().min(3, "Please provide estimated duration"),
+});
+
+export const insertFreelanceContractSchema = createInsertSchema(freelanceContracts).omit({
+  id: true,
+  contractId: true,
+  createdAt: true,
+  updatedAt: true,
+  completedAt: true,
+  totalHoursWorked: true,
+  totalAmountEarned: true,
+  completionPercentage: true,
+});
+
+export const insertLiveMonitorSessionSchema = createInsertSchema(liveMonitorSessions).omit({
+  id: true,
+  sessionId: true,
+  createdAt: true,
+  updatedAt: true,
+  duration: true,
+  activityLevel: true,
+  keyboardEvents: true,
+  mouseEvents: true,
+  activeMinutes: true,
+  idleMinutes: true,
+  billableMinutes: true,
+  clientReviewed: true,
+  clientApproved: true,
+  reviewedAt: true,
+});
+
+export const insertFreelanceWorkDiarySchema = createInsertSchema(freelanceWorkDiary).omit({
+  id: true,
+  entryId: true,
+  submittedAt: true,
+  updatedAt: true,
+  clientReviewed: true,
+  clientApproved: true,
+  verifiedAt: true,
+}).extend({
+  title: z.string().min(10, "Title must be at least 10 characters"),
+  description: z.string().min(50, "Description must be at least 50 characters"),
+  workCompleted: z.string().min(30, "Work completed must be at least 30 characters"),
+  totalHoursSpent: z.number().min(1, "Must log at least 1 hour"),
+});
+
+// Types for freelancer marketplace
+export type Client = typeof clients.$inferSelect;
+export type FreelanceProject = typeof freelanceProjects.$inferSelect;
+export type ProjectProposal = typeof projectProposals.$inferSelect;
+export type FreelanceContract = typeof freelanceContracts.$inferSelect;
+export type LiveMonitorSession = typeof liveMonitorSessions.$inferSelect;
+export type FreelanceWorkDiary = typeof freelanceWorkDiary.$inferSelect;
+
+// Insert types
+export type InsertClient = z.infer<typeof insertClientSchema>;
+export type InsertFreelanceProject = z.infer<typeof insertFreelanceProjectSchema>;
+export type InsertProjectProposal = z.infer<typeof insertProjectProposalSchema>;
+export type InsertFreelanceContract = z.infer<typeof insertFreelanceContractSchema>;
+export type InsertLiveMonitorSession = z.infer<typeof insertLiveMonitorSessionSchema>;
+export type InsertFreelanceWorkDiary = z.infer<typeof insertFreelanceWorkDiarySchema>;
+
+// Additional client auth schemas
+export const clientSignupSchema = insertClientSchema.extend({
+  confirmPassword: z.string().min(1, "Please confirm your password"),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
+});
+
+export type ClientSignupData = z.infer<typeof clientSignupSchema>;

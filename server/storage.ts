@@ -3,6 +3,8 @@ import {
   companyInvitationCodes, companyEmployees, companyBranches, companyTeams, teamMembers, companyManagers, managerPermissions, jobListings, jobApplications, savedJobs, jobAlerts, profileViews, admins, emailVerifications, userFeedback, loginSessions,
   skills, skillTrends, userSkillPreferences, skillAnalytics, pendingUsers,
   recruiterProfiles, candidatePipelines, candidateInteractions, recruitmentAnalytics, savedSearches,
+  // Freelancer marketplace tables
+  clients, freelanceProjects, projectProposals, freelanceContracts, liveMonitorSessions, freelanceWorkDiary,
   type Employee, type Company, type InsertEmployee, type InsertCompany,
   type Experience, type Education, type Certification, type Project, type Endorsement, type WorkEntry, type EmployeeCompany,
   type InsertExperience, type InsertEducation, type InsertCertification, 
@@ -19,7 +21,10 @@ import {
   type PendingUser, type InsertPendingUser,
   type UserFeedback, type InsertFeedback,
   type RecruiterProfile, type CandidatePipeline, type CandidateInteraction, type RecruitmentAnalytic, type SavedSearch,
-  type InsertRecruiterProfile, type InsertCandidatePipeline, type InsertCandidateInteraction, type InsertRecruitmentAnalytic, type InsertSavedSearch
+  type InsertRecruiterProfile, type InsertCandidatePipeline, type InsertCandidateInteraction, type InsertRecruitmentAnalytic, type InsertSavedSearch,
+  // Freelancer marketplace types
+  type Client, type FreelanceProject, type ProjectProposal, type FreelanceContract, type LiveMonitorSession, type FreelanceWorkDiary,
+  type InsertClient, type InsertFreelanceProject, type InsertProjectProposal, type InsertFreelanceContract, type InsertLiveMonitorSession, type InsertFreelanceWorkDiary
 } from "@shared/schema";
 
 type EmailVerification = typeof emailVerifications.$inferSelect;
@@ -56,6 +61,27 @@ function generateCompanyId(): string {
   
   // Format: CMP-ABC123 (3 letters + 3 numbers)
   let result = 'CMP-';
+  
+  // Add 3 random letters
+  for (let i = 0; i < 3; i++) {
+    result += letters.charAt(Math.floor(Math.random() * letters.length));
+  }
+  
+  // Add 3 random numbers
+  for (let i = 0; i < 3; i++) {
+    result += numbers.charAt(Math.floor(Math.random() * numbers.length));
+  }
+  
+  return result;
+}
+
+// Generate a short, memorable client ID
+function generateClientId(): string {
+  const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const numbers = '0123456789';
+  
+  // Format: CLI-ABC123 (3 letters + 3 numbers)
+  let result = 'CLI-';
   
   // Add 3 random letters
   for (let i = 0; i < 3; i++) {
@@ -185,13 +211,25 @@ export interface IStorage {
   deleteCompany(id: string): Promise<void>;
   getCompanyBackupData(id: string): Promise<any>;
   
+  // Client operations
+  getClient(id: string): Promise<Client | undefined>;
+  getClientById(id: string): Promise<Client | undefined>;
+  getClientByEmail(email: string): Promise<Client | undefined>;
+  createClient(client: InsertClient): Promise<Client>;
+  createClientWithHashedPassword(client: InsertClient): Promise<Client>;
+  updateClient(id: string, data: Partial<Client>): Promise<Client>;
+  deleteClient(id: string): Promise<void>;
+  getClientBackupData(id: string): Promise<any>;
+
   // Authentication
   authenticateEmployee(email: string, password: string): Promise<Employee | null>;
   authenticateCompany(email: string, password: string): Promise<Company | null>;
+  authenticateClient(email: string, password: string): Promise<Client | null>;
   
   // Password management
   changeEmployeePassword(employeeId: string, currentPassword: string, newPassword: string): Promise<boolean>;
   changeCompanyPassword(companyId: string, currentPassword: string, newPassword: string): Promise<boolean>;
+  changeClientPassword(clientId: string, currentPassword: string, newPassword: string): Promise<boolean>;
   
   // Employee Profile Data
   getEmployeeProfile(employeeId: string): Promise<{
@@ -410,7 +448,7 @@ export interface IStorage {
   markEmailVerificationUsed(id: string): Promise<void>;
   deleteEmailVerification(id: string): Promise<void>;
   cleanupExpiredVerifications(): Promise<void>;
-  updateUserPassword(userId: string, userType: 'employee' | 'company', hashedPassword: string): Promise<void>;
+  updateUserPassword(userId: string, userType: 'employee' | 'company' | 'client', hashedPassword: string): Promise<void>;
   getEmployeeById(id: string): Promise<Employee | undefined>;
   getCompanyById(id: string): Promise<Company | undefined>;
   updateEmployeeProfilePicture(id: string, profilePictureURL: string): Promise<void>;
@@ -705,6 +743,59 @@ export interface IStorage {
   updateSavedSearch(id: string, data: Partial<SavedSearch>): Promise<SavedSearch>;
   deleteSavedSearch(id: string): Promise<void>;
   executeSavedSearch(searchId: string): Promise<Employee[]>;
+
+  // ====================
+  // FREELANCER MARKETPLACE OPERATIONS
+  // ====================
+
+  // Freelance Project operations
+  getFreelanceProjects(filters?: { clientId?: string; status?: string; category?: string }): Promise<FreelanceProject[]>;
+  getFreelanceProject(id: string): Promise<FreelanceProject | undefined>;
+  createFreelanceProject(project: InsertFreelanceProject): Promise<FreelanceProject>;
+  updateFreelanceProject(id: string, data: Partial<FreelanceProject>): Promise<FreelanceProject>;
+  deleteFreelanceProject(id: string): Promise<void>;
+  searchFreelanceProjects(filters: {
+    keywords?: string;
+    category?: string;
+    budgetMin?: number;
+    budgetMax?: number;
+    experienceLevel?: string;
+    projectType?: string;
+    skills?: string[];
+  }): Promise<FreelanceProject[]>;
+
+  // Project Proposal operations
+  getProjectProposals(filters?: { projectId?: string; employeeId?: string; status?: string }): Promise<ProjectProposal[]>;
+  getProjectProposal(id: string): Promise<ProjectProposal | undefined>;
+  createProjectProposal(proposal: InsertProjectProposal): Promise<ProjectProposal>;
+  updateProjectProposal(id: string, data: Partial<ProjectProposal>): Promise<ProjectProposal>;
+  deleteProjectProposal(id: string): Promise<void>;
+  getProposalsForProject(projectId: string): Promise<(ProjectProposal & { employee: Employee })[]>;
+
+  // Freelance Contract operations
+  getFreelanceContracts(filters?: { clientId?: string; employeeId?: string; status?: string }): Promise<FreelanceContract[]>;
+  getFreelanceContract(id: string): Promise<FreelanceContract | undefined>;
+  createFreelanceContract(contract: InsertFreelanceContract): Promise<FreelanceContract>;
+  updateFreelanceContract(id: string, data: Partial<FreelanceContract>): Promise<FreelanceContract>;
+  deleteFreelanceContract(id: string): Promise<void>;
+  getActiveContractsForEmployee(employeeId: string): Promise<FreelanceContract[]>;
+  getContractsForClient(clientId: string): Promise<FreelanceContract[]>;
+
+  // Live Monitor Session operations
+  getLiveMonitorSessions(filters?: { contractId?: string; employeeId?: string; status?: string }): Promise<LiveMonitorSession[]>;
+  getLiveMonitorSession(id: string): Promise<LiveMonitorSession | undefined>;
+  createLiveMonitorSession(session: InsertLiveMonitorSession): Promise<LiveMonitorSession>;
+  updateLiveMonitorSession(id: string, data: Partial<LiveMonitorSession>): Promise<LiveMonitorSession>;
+  deleteLiveMonitorSession(id: string): Promise<void>;
+  getActiveMonitoringSession(contractId: string): Promise<LiveMonitorSession | undefined>;
+
+  // Freelance Work Diary operations
+  getFreelanceWorkDiary(filters?: { contractId?: string; clientId?: string; employeeId?: string; status?: string }): Promise<FreelanceWorkDiary[]>;
+  getFreelanceWorkDiaryEntry(id: string): Promise<FreelanceWorkDiary | undefined>;
+  createFreelanceWorkDiaryEntry(entry: InsertFreelanceWorkDiary): Promise<FreelanceWorkDiary>;
+  updateFreelanceWorkDiaryEntry(id: string, data: Partial<FreelanceWorkDiary>): Promise<FreelanceWorkDiary>;
+  deleteFreelanceWorkDiaryEntry(id: string): Promise<void>;
+  approveFreelanceWorkEntry(entryId: string, clientId: string, data: { clientRating?: number; clientFeedback?: string }): Promise<FreelanceWorkDiary>;
 }
 
 export interface JobSearchFilters {
@@ -739,10 +830,11 @@ export class DatabaseStorage implements IStorage {
   async checkEmailExists(email: string): Promise<boolean> {
     const employee = await this.getEmployeeByEmail(email);
     const company = await this.getCompanyByEmail(email);
-    return !!(employee || company);
+    const client = await this.getClientByEmail(email);
+    return !!(employee || company || client);
   }
 
-  async getExistingUserByEmail(email: string): Promise<{ type: 'employee' | 'company', user: Employee | Company } | null> {
+  async getExistingUserByEmail(email: string): Promise<{ type: 'employee' | 'company' | 'client', user: Employee | Company | Client } | null> {
     const employee = await this.getEmployeeByEmail(email);
     if (employee) {
       return { type: 'employee', user: employee };
@@ -751,6 +843,11 @@ export class DatabaseStorage implements IStorage {
     const company = await this.getCompanyByEmail(email);
     if (company) {
       return { type: 'company', user: company };
+    }
+
+    const client = await this.getClientByEmail(email);
+    if (client) {
+      return { type: 'client', user: client };
     }
     
     return null;
@@ -1086,6 +1183,173 @@ export class DatabaseStorage implements IStorage {
       backupDate: new Date().toISOString(),
       backupType: 'company_full_backup'
     };
+  }
+
+  // ====================
+  // CLIENT OPERATIONS  
+  // ====================
+
+  async getClient(id: string): Promise<Client | undefined> {
+    const [client] = await db.select().from(clients).where(eq(clients.id, id));
+    return client || undefined;
+  }
+
+  async getClientByEmail(email: string): Promise<Client | undefined> {
+    const [client] = await db.select().from(clients).where(sql`LOWER(${clients.email}) = LOWER(${email})`);
+    return client || undefined;
+  }
+
+  async createClient(clientData: InsertClient): Promise<Client> {
+    const hashedPassword = await bcrypt.hash(clientData.password, 10);
+    
+    // Normalize email to lowercase for consistency
+    const normalizedEmail = clientData.email.toLowerCase();
+    
+    // Generate a unique client ID
+    let clientId = generateClientId();
+    let attempts = 0;
+    const maxAttempts = 10;
+    
+    // Ensure the client ID is unique
+    while (attempts < maxAttempts) {
+      const existing = await db.select().from(clients).where(eq(clients.clientId, clientId));
+      if (existing.length === 0) {
+        break;
+      }
+      clientId = generateClientId();
+      attempts++;
+    }
+    
+    if (attempts >= maxAttempts) {
+      throw new Error("Failed to generate unique client ID");
+    }
+    
+    const [client] = await db
+      .insert(clients)
+      .values({
+        ...clientData,
+        clientId,
+        email: normalizedEmail,
+        password: hashedPassword,
+      })
+      .returning();
+    return client;
+  }
+
+  async createClientWithHashedPassword(clientData: InsertClient): Promise<Client> {
+    // Password is already hashed, don't hash again
+    const normalizedEmail = clientData.email.toLowerCase();
+    
+    // Generate a unique client ID
+    let clientId = generateClientId();
+    let attempts = 0;
+    const maxAttempts = 10;
+    
+    // Ensure the client ID is unique
+    while (attempts < maxAttempts) {
+      const existing = await db.select().from(clients).where(eq(clients.clientId, clientId));
+      if (existing.length === 0) {
+        break;
+      }
+      clientId = generateClientId();
+      attempts++;
+    }
+    
+    if (attempts >= maxAttempts) {
+      throw new Error("Failed to generate unique client ID");
+    }
+    
+    const [client] = await db
+      .insert(clients)
+      .values({
+        ...clientData,
+        clientId,
+        email: normalizedEmail,
+        password: clientData.password, // Use password as-is (already hashed)
+      })
+      .returning();
+    return client;
+  }
+
+  async updateClient(id: string, data: Partial<Client>): Promise<Client> {
+    const [client] = await db
+      .update(clients)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(clients.id, id))
+      .returning();
+    return client;
+  }
+
+  async getClientById(id: string): Promise<Client | undefined> {
+    const [client] = await db.select().from(clients).where(eq(clients.id, id));
+    return client;
+  }
+
+  async deleteClient(id: string): Promise<void> {
+    await db.transaction(async (tx) => {
+      // Delete related freelancer marketplace data first due to foreign key constraints
+      await tx.delete(freelanceWorkDiary).where(eq(freelanceWorkDiary.clientId, id));
+      await tx.delete(liveMonitorSessions).where(eq(liveMonitorSessions.contractId, id)); // via contracts
+      await tx.delete(freelanceContracts).where(eq(freelanceContracts.clientId, id));
+      await tx.delete(freelanceProjects).where(eq(freelanceProjects.clientId, id));
+      
+      // Finally delete the client
+      await tx.delete(clients).where(eq(clients.id, id));
+    });
+  }
+
+  async getClientBackupData(id: string): Promise<any> {
+    const client = await this.getClientById(id);
+    if (!client) return null;
+
+    const [
+      clientProjects,
+      clientContracts,
+      clientWorkDiary
+    ] = await Promise.all([
+      db.select().from(freelanceProjects).where(eq(freelanceProjects.clientId, id)),
+      db.select().from(freelanceContracts).where(eq(freelanceContracts.clientId, id)),
+      db.select().from(freelanceWorkDiary).where(eq(freelanceWorkDiary.clientId, id))
+    ]);
+
+    // Remove password from client data
+    const { password, ...clientData } = client;
+
+    return {
+      client: clientData,
+      projects: clientProjects,
+      contracts: clientContracts,
+      workDiary: clientWorkDiary,
+      backupDate: new Date().toISOString(),
+      backupType: 'client_full_backup'
+    };
+  }
+
+  async authenticateClient(email: string, password: string): Promise<Client | null> {
+    const client = await this.getClientByEmail(email);
+    if (!client) return null;
+    
+    const isValid = await bcrypt.compare(password, client.password);
+    return isValid ? client : null;
+  }
+
+  async changeClientPassword(clientId: string, currentPassword: string, newPassword: string): Promise<boolean> {
+    const client = await this.getClient(clientId);
+    if (!client) return false;
+
+    // Verify current password
+    const isCurrentPasswordValid = await bcrypt.compare(currentPassword, client.password);
+    if (!isCurrentPasswordValid) return false;
+
+    // Hash new password
+    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update password
+    await db.update(clients)
+      .set({ password: hashedNewPassword, updatedAt: new Date() })
+      .where(eq(clients.id, clientId));
+
+    return true;
   }
 
   async authenticateEmployee(email: string, password: string): Promise<Employee | null> {
@@ -3095,11 +3359,13 @@ export class DatabaseStorage implements IStorage {
     await db.delete(emailVerifications).where(sql`expires_at < NOW()`);
   }
 
-  async updateUserPassword(userId: string, userType: 'employee' | 'company', hashedPassword: string): Promise<void> {
+  async updateUserPassword(userId: string, userType: 'employee' | 'company' | 'client', hashedPassword: string): Promise<void> {
     if (userType === 'employee') {
       await db.update(employees).set({ password: hashedPassword }).where(eq(employees.id, userId));
-    } else {
+    } else if (userType === 'company') {
       await db.update(companies).set({ password: hashedPassword }).where(eq(companies.id, userId));
+    } else {
+      await db.update(clients).set({ password: hashedPassword }).where(eq(clients.id, userId));
     }
   }
 
@@ -5783,6 +6049,407 @@ export class DatabaseStorage implements IStorage {
         )
       );
     return result.count;
+  }
+
+  // ====================
+  // FREELANCER MARKETPLACE OPERATIONS
+  // ====================
+
+  // Freelance Project operations
+  async getFreelanceProjects(filters?: { clientId?: string; status?: string; category?: string }): Promise<FreelanceProject[]> {
+    let query = db.select().from(freelanceProjects);
+    
+    if (filters?.clientId || filters?.status || filters?.category) {
+      const conditions = [];
+      if (filters.clientId) conditions.push(eq(freelanceProjects.clientId, filters.clientId));
+      if (filters.status) conditions.push(eq(freelanceProjects.status, filters.status));
+      if (filters.category) conditions.push(eq(freelanceProjects.category, filters.category));
+      query = query.where(and(...conditions));
+    }
+    
+    return await query.orderBy(desc(freelanceProjects.posted_at));
+  }
+
+  async getFreelanceProject(id: string): Promise<FreelanceProject | undefined> {
+    const [project] = await db.select().from(freelanceProjects).where(eq(freelanceProjects.id, id));
+    return project || undefined;
+  }
+
+  async createFreelanceProject(projectData: InsertFreelanceProject): Promise<FreelanceProject> {
+    // Generate a unique project ID
+    let projectId = `FP-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
+    let attempts = 0;
+    const maxAttempts = 10;
+    
+    while (attempts < maxAttempts) {
+      const existing = await db.select().from(freelanceProjects).where(eq(freelanceProjects.projectId, projectId));
+      if (existing.length === 0) break;
+      projectId = `FP-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
+      attempts++;
+    }
+    
+    if (attempts >= maxAttempts) {
+      throw new Error("Failed to generate unique project ID");
+    }
+    
+    const [project] = await db
+      .insert(freelanceProjects)
+      .values({ ...projectData, projectId })
+      .returning();
+    return project;
+  }
+
+  async updateFreelanceProject(id: string, data: Partial<FreelanceProject>): Promise<FreelanceProject> {
+    const [project] = await db
+      .update(freelanceProjects)
+      .set({ ...data, updated_at: new Date() })
+      .where(eq(freelanceProjects.id, id))
+      .returning();
+    return project;
+  }
+
+  async deleteFreelanceProject(id: string): Promise<void> {
+    await db.delete(freelanceProjects).where(eq(freelanceProjects.id, id));
+  }
+
+  async searchFreelanceProjects(filters: {
+    keywords?: string;
+    category?: string;
+    budgetMin?: number;
+    budgetMax?: number;
+    experienceLevel?: string;
+    projectType?: string;
+    skills?: string[];
+  }): Promise<FreelanceProject[]> {
+    let query = db.select().from(freelanceProjects).where(eq(freelanceProjects.status, 'active'));
+    
+    const conditions = [eq(freelanceProjects.status, 'active')];
+    
+    if (filters.keywords) {
+      conditions.push(
+        or(
+          ilike(freelanceProjects.title, `%${filters.keywords}%`),
+          ilike(freelanceProjects.description, `%${filters.keywords}%`)
+        )
+      );
+    }
+    
+    if (filters.category) conditions.push(eq(freelanceProjects.category, filters.category));
+    if (filters.experienceLevel) conditions.push(eq(freelanceProjects.experience_level, filters.experienceLevel));
+    if (filters.projectType) conditions.push(eq(freelanceProjects.projectType, filters.projectType));
+    if (filters.budgetMin) conditions.push(sql`${freelanceProjects.budgetMin} >= ${filters.budgetMin}`);
+    if (filters.budgetMax) conditions.push(sql`${freelanceProjects.budgetMax} <= ${filters.budgetMax}`);
+    
+    return await db.select().from(freelanceProjects).where(and(...conditions)).orderBy(desc(freelanceProjects.posted_at));
+  }
+
+  // Project Proposal operations
+  async getProjectProposals(filters?: { projectId?: string; employeeId?: string; status?: string }): Promise<ProjectProposal[]> {
+    let query = db.select().from(projectProposals);
+    
+    if (filters?.projectId || filters?.employeeId || filters?.status) {
+      const conditions = [];
+      if (filters.projectId) conditions.push(eq(projectProposals.projectId, filters.projectId));
+      if (filters.employeeId) conditions.push(eq(projectProposals.employeeId, filters.employeeId));
+      if (filters.status) conditions.push(eq(projectProposals.status, filters.status));
+      query = query.where(and(...conditions));
+    }
+    
+    return await query.orderBy(desc(projectProposals.submitted_at));
+  }
+
+  async getProjectProposal(id: string): Promise<ProjectProposal | undefined> {
+    const [proposal] = await db.select().from(projectProposals).where(eq(projectProposals.id, id));
+    return proposal || undefined;
+  }
+
+  async createProjectProposal(proposalData: InsertProjectProposal): Promise<ProjectProposal> {
+    // Generate a unique proposal ID
+    let proposalId = `PP-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
+    let attempts = 0;
+    const maxAttempts = 10;
+    
+    while (attempts < maxAttempts) {
+      const existing = await db.select().from(projectProposals).where(eq(projectProposals.proposalId, proposalId));
+      if (existing.length === 0) break;
+      proposalId = `PP-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
+      attempts++;
+    }
+    
+    if (attempts >= maxAttempts) {
+      throw new Error("Failed to generate unique proposal ID");
+    }
+    
+    const [proposal] = await db
+      .insert(projectProposals)
+      .values({ ...proposalData, proposalId })
+      .returning();
+    return proposal;
+  }
+
+  async updateProjectProposal(id: string, data: Partial<ProjectProposal>): Promise<ProjectProposal> {
+    const [proposal] = await db
+      .update(projectProposals)
+      .set({ ...data, status_updated_at: new Date() })
+      .where(eq(projectProposals.id, id))
+      .returning();
+    return proposal;
+  }
+
+  async deleteProjectProposal(id: string): Promise<void> {
+    await db.delete(projectProposals).where(eq(projectProposals.id, id));
+  }
+
+  async getProposalsForProject(projectId: string): Promise<(ProjectProposal & { employee: Employee })[]> {
+    return await db
+      .select({
+        id: projectProposals.id,
+        proposalId: projectProposals.proposalId,
+        projectId: projectProposals.projectId,
+        employeeId: projectProposals.employeeId,
+        coverLetter: projectProposals.coverLetter,
+        proposedRate: projectProposals.proposedRate,
+        rateType: projectProposals.rateType,
+        estimatedDuration: projectProposals.estimatedDuration,
+        status: projectProposals.status,
+        submitted_at: projectProposals.submitted_at,
+        employee: {
+          id: employees.id,
+          employeeId: employees.employeeId,
+          firstName: employees.firstName,
+          lastName: employees.lastName,
+          email: employees.email,
+          profilePhoto: employees.profilePhoto,
+        }
+      })
+      .from(projectProposals)
+      .innerJoin(employees, eq(projectProposals.employeeId, employees.id))
+      .where(eq(projectProposals.projectId, projectId))
+      .orderBy(desc(projectProposals.submitted_at));
+  }
+
+  // Freelance Contract operations
+  async getFreelanceContracts(filters?: { clientId?: string; employeeId?: string; status?: string }): Promise<FreelanceContract[]> {
+    let query = db.select().from(freelanceContracts);
+    
+    if (filters?.clientId || filters?.employeeId || filters?.status) {
+      const conditions = [];
+      if (filters.clientId) conditions.push(eq(freelanceContracts.clientId, filters.clientId));
+      if (filters.employeeId) conditions.push(eq(freelanceContracts.employeeId, filters.employeeId));
+      if (filters.status) conditions.push(eq(freelanceContracts.status, filters.status));
+      query = query.where(and(...conditions));
+    }
+    
+    return await query.orderBy(desc(freelanceContracts.created_at));
+  }
+
+  async getFreelanceContract(id: string): Promise<FreelanceContract | undefined> {
+    const [contract] = await db.select().from(freelanceContracts).where(eq(freelanceContracts.id, id));
+    return contract || undefined;
+  }
+
+  async createFreelanceContract(contractData: InsertFreelanceContract): Promise<FreelanceContract> {
+    // Generate a unique contract ID
+    let contractId = `FC-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
+    let attempts = 0;
+    const maxAttempts = 10;
+    
+    while (attempts < maxAttempts) {
+      const existing = await db.select().from(freelanceContracts).where(eq(freelanceContracts.contractId, contractId));
+      if (existing.length === 0) break;
+      contractId = `FC-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
+      attempts++;
+    }
+    
+    if (attempts >= maxAttempts) {
+      throw new Error("Failed to generate unique contract ID");
+    }
+    
+    const [contract] = await db
+      .insert(freelanceContracts)
+      .values({ ...contractData, contractId })
+      .returning();
+    return contract;
+  }
+
+  async updateFreelanceContract(id: string, data: Partial<FreelanceContract>): Promise<FreelanceContract> {
+    const [contract] = await db
+      .update(freelanceContracts)
+      .set({ ...data, updated_at: new Date() })
+      .where(eq(freelanceContracts.id, id))
+      .returning();
+    return contract;
+  }
+
+  async deleteFreelanceContract(id: string): Promise<void> {
+    await db.delete(freelanceContracts).where(eq(freelanceContracts.id, id));
+  }
+
+  async getActiveContractsForEmployee(employeeId: string): Promise<FreelanceContract[]> {
+    return await db
+      .select()
+      .from(freelanceContracts)
+      .where(and(
+        eq(freelanceContracts.employeeId, employeeId),
+        eq(freelanceContracts.status, 'active')
+      ))
+      .orderBy(desc(freelanceContracts.created_at));
+  }
+
+  async getContractsForClient(clientId: string): Promise<FreelanceContract[]> {
+    return await db
+      .select()
+      .from(freelanceContracts)
+      .where(eq(freelanceContracts.clientId, clientId))
+      .orderBy(desc(freelanceContracts.created_at));
+  }
+
+  // Live Monitor Session operations
+  async getLiveMonitorSessions(filters?: { contractId?: string; employeeId?: string; status?: string }): Promise<LiveMonitorSession[]> {
+    let query = db.select().from(liveMonitorSessions);
+    
+    if (filters?.contractId || filters?.employeeId || filters?.status) {
+      const conditions = [];
+      if (filters.contractId) conditions.push(eq(liveMonitorSessions.contractId, filters.contractId));
+      if (filters.employeeId) conditions.push(eq(liveMonitorSessions.employeeId, filters.employeeId));
+      if (filters.status) conditions.push(eq(liveMonitorSessions.status, filters.status));
+      query = query.where(and(...conditions));
+    }
+    
+    return await query.orderBy(desc(liveMonitorSessions.created_at));
+  }
+
+  async getLiveMonitorSession(id: string): Promise<LiveMonitorSession | undefined> {
+    const [session] = await db.select().from(liveMonitorSessions).where(eq(liveMonitorSessions.id, id));
+    return session || undefined;
+  }
+
+  async createLiveMonitorSession(sessionData: InsertLiveMonitorSession): Promise<LiveMonitorSession> {
+    // Generate a unique session ID
+    let sessionId = `LM-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
+    let attempts = 0;
+    const maxAttempts = 10;
+    
+    while (attempts < maxAttempts) {
+      const existing = await db.select().from(liveMonitorSessions).where(eq(liveMonitorSessions.sessionId, sessionId));
+      if (existing.length === 0) break;
+      sessionId = `LM-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
+      attempts++;
+    }
+    
+    if (attempts >= maxAttempts) {
+      throw new Error("Failed to generate unique session ID");
+    }
+    
+    const [session] = await db
+      .insert(liveMonitorSessions)
+      .values({ ...sessionData, sessionId })
+      .returning();
+    return session;
+  }
+
+  async updateLiveMonitorSession(id: string, data: Partial<LiveMonitorSession>): Promise<LiveMonitorSession> {
+    const [session] = await db
+      .update(liveMonitorSessions)
+      .set({ ...data, updated_at: new Date() })
+      .where(eq(liveMonitorSessions.id, id))
+      .returning();
+    return session;
+  }
+
+  async deleteLiveMonitorSession(id: string): Promise<void> {
+    await db.delete(liveMonitorSessions).where(eq(liveMonitorSessions.id, id));
+  }
+
+  async getActiveMonitoringSession(contractId: string): Promise<LiveMonitorSession | undefined> {
+    const [session] = await db
+      .select()
+      .from(liveMonitorSessions)
+      .where(and(
+        eq(liveMonitorSessions.contractId, contractId),
+        eq(liveMonitorSessions.status, 'active')
+      ))
+      .orderBy(desc(liveMonitorSessions.created_at))
+      .limit(1);
+    return session || undefined;
+  }
+
+  // Freelance Work Diary operations
+  async getFreelanceWorkDiary(filters?: { contractId?: string; clientId?: string; employeeId?: string; status?: string }): Promise<FreelanceWorkDiary[]> {
+    let query = db.select().from(freelanceWorkDiary);
+    
+    if (filters?.contractId || filters?.clientId || filters?.employeeId || filters?.status) {
+      const conditions = [];
+      if (filters.contractId) conditions.push(eq(freelanceWorkDiary.contractId, filters.contractId));
+      if (filters.clientId) conditions.push(eq(freelanceWorkDiary.clientId, filters.clientId));
+      if (filters.employeeId) conditions.push(eq(freelanceWorkDiary.employeeId, filters.employeeId));
+      if (filters.status) conditions.push(eq(freelanceWorkDiary.status, filters.status));
+      query = query.where(and(...conditions));
+    }
+    
+    return await query.orderBy(desc(freelanceWorkDiary.submitted_at));
+  }
+
+  async getFreelanceWorkDiaryEntry(id: string): Promise<FreelanceWorkDiary | undefined> {
+    const [entry] = await db.select().from(freelanceWorkDiary).where(eq(freelanceWorkDiary.id, id));
+    return entry || undefined;
+  }
+
+  async createFreelanceWorkDiaryEntry(entryData: InsertFreelanceWorkDiary): Promise<FreelanceWorkDiary> {
+    // Generate a unique entry ID
+    let entryId = `FWD-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
+    let attempts = 0;
+    const maxAttempts = 10;
+    
+    while (attempts < maxAttempts) {
+      const existing = await db.select().from(freelanceWorkDiary).where(eq(freelanceWorkDiary.entryId, entryId));
+      if (existing.length === 0) break;
+      entryId = `FWD-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
+      attempts++;
+    }
+    
+    if (attempts >= maxAttempts) {
+      throw new Error("Failed to generate unique entry ID");
+    }
+    
+    const [entry] = await db
+      .insert(freelanceWorkDiary)
+      .values({ ...entryData, entryId })
+      .returning();
+    return entry;
+  }
+
+  async updateFreelanceWorkDiaryEntry(id: string, data: Partial<FreelanceWorkDiary>): Promise<FreelanceWorkDiary> {
+    const [entry] = await db
+      .update(freelanceWorkDiary)
+      .set({ ...data, updated_at: new Date() })
+      .where(eq(freelanceWorkDiary.id, id))
+      .returning();
+    return entry;
+  }
+
+  async deleteFreelanceWorkDiaryEntry(id: string): Promise<void> {
+    await db.delete(freelanceWorkDiary).where(eq(freelanceWorkDiary.id, id));
+  }
+
+  async approveFreelanceWorkEntry(entryId: string, clientId: string, data: { clientRating?: number; clientFeedback?: string }): Promise<FreelanceWorkDiary> {
+    const [entry] = await db
+      .update(freelanceWorkDiary)
+      .set({
+        clientReviewed: true,
+        clientApproved: true,
+        clientRating: data.clientRating,
+        clientFeedback: data.clientFeedback,
+        verifiedAt: new Date(),
+        status: 'approved',
+        updated_at: new Date()
+      })
+      .where(and(
+        eq(freelanceWorkDiary.id, entryId),
+        eq(freelanceWorkDiary.clientId, clientId)
+      ))
+      .returning();
+    return entry;
   }
 }
 
