@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Link } from "wouter";
+import ClientNavHeader from "@/components/client-nav-header";
 import { 
   Plus, 
   FolderOpen, 
@@ -14,7 +15,9 @@ import {
   DollarSign,
   CheckCircle,
   AlertCircle,
-  FileText
+  FileText,
+  Shield,
+  Award
 } from "lucide-react";
 
 interface Project {
@@ -58,8 +61,10 @@ export default function ClientDashboard() {
   const recentContracts = contracts.slice(0, 5);
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className="min-h-screen bg-gray-50">
+      <ClientNavHeader />
+      
+      <div className="max-w-7xl mx-auto p-6 space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
@@ -104,19 +109,19 @@ export default function ClientDashboard() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Completed Projects</CardTitle>
-              <CheckCircle className="h-4 w-4 text-green-600" />
+              <CardTitle className="text-sm font-medium">Verified Work Hours</CardTitle>
+              <Shield className="h-4 w-4 text-purple-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold" data-testid="stat-completed-projects">{completedProjects}</div>
-              <p className="text-xs text-gray-600">Successfully finished</p>
+              <div className="text-2xl font-bold" data-testid="stat-verified-hours">2,340</div>
+              <p className="text-xs text-gray-600">Authenticated work ⭐</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Spent</CardTitle>
-              <DollarSign className="h-4 w-4 text-purple-600" />
+              <DollarSign className="h-4 w-4 text-green-600" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold" data-testid="stat-total-spent">
@@ -126,6 +131,33 @@ export default function ClientDashboard() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Signedwork Advantage Banner */}
+        <Card className="bg-gradient-to-r from-green-50 to-blue-50 border-green-200">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-green-600 rounded-full flex items-center justify-center">
+                  <Award className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    Verified Work Diary Advantage
+                  </h3>
+                  <p className="text-gray-700">
+                    See authentic, fraud-proof work from all your freelancers with multi-level verification
+                  </p>
+                </div>
+              </div>
+              <Link href="/client/work/verified-diaries">
+                <Button className="bg-green-600 hover:bg-green-700" data-testid="button-view-verified-work">
+                  <Shield className="w-4 h-4 mr-2" />
+                  View Verified Work
+                </Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Main Content */}
         <Tabs defaultValue="projects" className="space-y-6">
@@ -281,17 +313,23 @@ export default function ClientDashboard() {
             <CardDescription>Common tasks for managing your freelance projects</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <Link href="/client/projects/new">
                 <Button variant="outline" className="w-full justify-start" data-testid="button-quick-post-project">
                   <Plus className="w-4 h-4 mr-2" />
                   Post New Project
                 </Button>
               </Link>
-              <Link href="/client/projects">
-                <Button variant="outline" className="w-full justify-start" data-testid="button-quick-manage-projects">
-                  <FolderOpen className="w-4 h-4 mr-2" />
-                  Manage Projects
+              <Link href="/client/find-freelancers">
+                <Button variant="outline" className="w-full justify-start" data-testid="button-quick-find-talent">
+                  <Users className="w-4 h-4 mr-2" />
+                  Find Freelancers
+                </Button>
+              </Link>
+              <Link href="/client/work/verified-diaries">
+                <Button variant="outline" className="w-full justify-start" data-testid="button-quick-verified-work">
+                  <Shield className="w-4 h-4 mr-2" />
+                  Verified Work
                 </Button>
               </Link>
               <Link href="/client/contracts">

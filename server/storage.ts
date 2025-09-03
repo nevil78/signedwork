@@ -6240,7 +6240,7 @@ export class DatabaseStorage implements IStorage {
       query = query.where(and(...conditions));
     }
     
-    return await query.orderBy(desc(freelanceContracts.created_at));
+    return await query.orderBy(desc(freelanceContracts.createdAt));
   }
 
   async getFreelanceContract(id: string): Promise<FreelanceContract | undefined> {
@@ -6293,7 +6293,7 @@ export class DatabaseStorage implements IStorage {
         eq(freelanceContracts.employeeId, employeeId),
         eq(freelanceContracts.status, 'active')
       ))
-      .orderBy(desc(freelanceContracts.created_at));
+      .orderBy(desc(freelanceContracts.createdAt));
   }
 
   async getContractsForClient(clientId: string): Promise<FreelanceContract[]> {
@@ -6301,7 +6301,7 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(freelanceContracts)
       .where(eq(freelanceContracts.clientId, clientId))
-      .orderBy(desc(freelanceContracts.created_at));
+      .orderBy(desc(freelanceContracts.createdAt));
   }
 
   // Live Monitor Session operations
