@@ -1115,6 +1115,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         user = await storage.getEmployee(req.user.id);
       } else if (req.user.type === "company") {
         user = await storage.getCompany(req.user.id);
+      } else if (req.user.type === "client") {
+        user = await storage.getClient(req.user.id);
       } else if (req.user.type === "admin") {
         user = await storage.getAdmin(req.user.id);
       } else if (req.user.type === "manager") {
