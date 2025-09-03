@@ -409,7 +409,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         countryCode: "+1", // Default country code
       };
 
-      const client = await storage.createClient(clientData);
+      const client = await storage.createClientWithHashedPassword(clientData);
       
       // Remove password from response
       const { password: _, ...clientResponse } = client;
