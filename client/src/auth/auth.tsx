@@ -653,6 +653,19 @@ export default function AuthPage() {
   };
 
   const onClientSubmit = (data: ClientSignupData) => {
+    console.log("Client form submitted with data:", data);
+    
+    // Basic validation check
+    if (!data.firstName || !data.lastName || !data.email || !data.password) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    console.log("Calling clientRegistration.mutate");
     clientRegistration.mutate(data);
   };
 
