@@ -1366,7 +1366,7 @@ export const resetPasswordSchema = z.object({
 
 export const requestPasswordResetSchema = z.object({
   email: z.string().email("Invalid email format"),
-  userType: z.enum(["employee", "company"]),
+  userType: z.enum(["employee", "company", "client"]),
 });
 
 export const changePasswordSchema = z.object({

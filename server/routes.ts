@@ -6373,9 +6373,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (userType === 'employee') {
         user = await storage.getEmployeeByEmail(normalizedEmail);
         firstName = user?.firstName || "User";
-      } else {
+      } else if (userType === 'company') {
         user = await storage.getCompanyByEmail(normalizedEmail);
         firstName = user?.name || "User";
+      } else if (userType === 'client') {
+        user = await storage.getClientByEmail(normalizedEmail);
+        firstName = user?.firstName || "User";
       }
 
       if (!user) {
@@ -6386,12 +6389,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Account is deactivated. Please contact support." });
       }
 
-      // Check if email is verified - only allow password reset for verified emails
-      if (!user.emailVerified) {
-        return res.status(403).json({ 
-          message: "Email address must be verified before requesting password reset. Please verify your email from your profile page first." 
-        });
-      }
+      // Allow password reset for unverified emails - user owns the email so they can reset password
+      // Security: Reset link only goes to the registered email address, maintaining security
 
       // Generate OTP
       const otpCode = generateOTPCode();
@@ -6517,8 +6516,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let user = null;
       if (verification.userType === 'employee') {
         user = await storage.getEmployeeByEmail(email);
-      } else {
+      } else if (verification.userType === 'company') {
         user = await storage.getCompanyByEmail(email);
+      } else if (verification.userType === 'client') {
+        user = await storage.getClientByEmail(email);
       }
 
       if (!user || !user.isActive) {

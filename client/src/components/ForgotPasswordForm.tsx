@@ -92,7 +92,7 @@ export function ForgotPasswordForm({ onBack }: { onBack: () => void }) {
               <Label>Account Type</Label>
               <RadioGroup
                 value={requestForm.watch("userType")}
-                onValueChange={(value: "employee" | "company") => requestForm.setValue("userType", value)}
+                onValueChange={(value: "employee" | "company" | "client") => requestForm.setValue("userType", value)}
                 className="flex space-x-6"
                 data-testid="radio-group-account-type"
               >
@@ -103,6 +103,10 @@ export function ForgotPasswordForm({ onBack }: { onBack: () => void }) {
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="company" id="company" />
                   <Label htmlFor="company" className="cursor-pointer">Company</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="client" id="client" />
+                  <Label htmlFor="client" className="cursor-pointer">Client</Label>
                 </div>
               </RadioGroup>
             </div>
