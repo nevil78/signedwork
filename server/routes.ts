@@ -190,7 +190,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     secret: process.env.SESSION_SECRET || "your-secret-key-dev-123",
     store: sessionStore, // Use PostgreSQL session store
     resave: false, // Don't save session if unmodified
-    saveUninitialized: false, // Don't create session until something stored
+    saveUninitialized: true, // Create session for login functionality
     rolling: true, // Reset expiration on activity
     cookie: {
       secure: false, // Set to true in production with HTTPS
@@ -726,14 +726,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validatedData = loginSchema.parse(req.body);
       const { email, password, accountType } = validatedData;
       
-      // Clear any existing session before new login to prevent conflicts when switching account types
-      if (req.session) {
-        await new Promise<void>((resolve) => {
-          req.session.destroy((err) => {
-            if (err) console.log("Session cleanup warning:", err);
-            resolve();
-          });
-        });
+      // Clear existing user data from session but keep session alive
+      if (req.session && (req.session as any).user) {
+        delete (req.session as any).user;
       }
       
       // Normalize email to lowercase for case-insensitive matching
@@ -765,7 +760,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Email verification is completely optional - companies can login without verification
       
-      // Store user session
+      // Store user session (session middleware handles initialization)
       (req.session as any).user = {
         id: user.id,
         email: user.email,
