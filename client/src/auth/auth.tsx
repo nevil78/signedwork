@@ -15,6 +15,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { insertEmployeeSchema, insertCompanySchema, clientSignupSchema, loginSchema, type InsertEmployee, type InsertCompany, type ClientSignupData, type LoginData } from "@shared/schema";
+import { z } from "zod";
 import { Link, useLocation } from "wouter";
 import { PrefetchLink } from "@/components/PrefetchLink";
 import PrivacyPolicyModal from "@/components/PrivacyPolicyModal";
@@ -238,18 +239,28 @@ export default function AuthPage() {
     },
   });
 
-  const clientForm = useForm<ClientSignupData>({
-    resolver: zodResolver(clientSignupSchema),
+  // Simple client signup schema without confirmPassword for streamlined UX
+  const simpleClientSignupSchema = z.object({
+    firstName: z.string().min(1, "First name is required"),
+    lastName: z.string().min(1, "Last name is required"),
+    email: z.string().email("Invalid email format"),
+    password: z.string()
+      .min(8, "Password must be at least 8 characters")
+      .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+      .regex(/\d/, "Password must contain at least one number"),
+    location: z.string().min(1, "Please select your country"),
+  });
+
+  type SimpleClientSignupData = z.infer<typeof simpleClientSignupSchema>;
+
+  const clientForm = useForm<SimpleClientSignupData>({
+    resolver: zodResolver(simpleClientSignupSchema),
     mode: "onSubmit",
     defaultValues: {
       firstName: "",
       lastName: "",
       email: "",
-      phone: "",
-      countryCode: "+1",
       password: "",
-      company: "",
-      jobTitle: "",
       location: "",
     },
   });
@@ -652,7 +663,7 @@ export default function AuthPage() {
     companyRegistration.mutate(data);
   };
 
-  const onClientSubmit = (data: ClientSignupData) => {
+  const onClientSubmit = (data: SimpleClientSignupData) => {
     console.log("Client form submitted with data:", data);
     
     // Basic validation check
@@ -666,7 +677,7 @@ export default function AuthPage() {
     }
     
     console.log("Calling clientRegistration.mutate");
-    clientRegistration.mutate(data);
+    clientRegistration.mutate(data as any); // Convert to expected API format
   };
 
   const onLoginSubmit = (data: LoginData) => {
