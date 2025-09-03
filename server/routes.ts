@@ -1116,7 +1116,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else if (req.user.type === "company") {
         user = await storage.getCompany(req.user.id);
       } else if (req.user.type === "client") {
+        console.log("DEBUG: Getting client with ID:", req.user.id);
         user = await storage.getClient(req.user.id);
+        console.log("DEBUG: Client found:", user ? "YES" : "NO");
+        if (user) {
+          console.log("DEBUG: Client data:", { id: user.id, email: user.email, firstName: user.firstName });
+        }
       } else if (req.user.type === "admin") {
         user = await storage.getAdmin(req.user.id);
       } else if (req.user.type === "manager") {
