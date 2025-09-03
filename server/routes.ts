@@ -380,8 +380,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Client registration
   app.post("/api/auth/register/client", async (req, res) => {
     try {
-      const validatedData = insertClientSchema.parse(req.body);
-      const { email, password, firstName, lastName, companyName, phoneNumber, description } = validatedData;
+      const { email, password, firstName, lastName, location } = req.body;
+      
+      // Basic validation for required fields
+      if (!email || !password || !firstName || !lastName) {
+        return res.status(400).json({ 
+          message: "First name, last name, email, and password are required" 
+        });
+      }
       
       // Check if email already exists across all user types
       const emailExists = await storage.checkEmailExists(email);
@@ -397,9 +403,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         password: hashedPassword,
         firstName,
         lastName,
-        companyName: companyName || null,
-        phoneNumber: phoneNumber || null,
-        description: description || null,
+        phone: "", // Default empty phone since not collected in simplified form
+        location: location || null,
+        // Set default values for required fields
+        countryCode: "+1", // Default country code
       };
 
       const client = await storage.createClient(clientData);
@@ -408,7 +415,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { password: _, ...clientResponse } = client;
       
       res.status(201).json({ 
-        message: "Client account created successfully!",
+        message: "Client account created successfully! You can start posting projects.",
         client: clientResponse
       });
     } catch (error: any) {

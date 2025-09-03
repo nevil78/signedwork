@@ -474,16 +474,12 @@ export default function AuthPage() {
 
   const clientRegistration = useMutation({
     mutationFn: async (data: ClientSignupData) => {
-      return await apiRequest("POST", "/api/auth/signup/client", {
+      return await apiRequest("POST", "/api/auth/register/client", {
         firstName: data.firstName,
         lastName: data.lastName,
         email: data.email,
-        phone: data.phone,
-        countryCode: data.countryCode,
         password: data.password,
-        company: data.company,
-        jobTitle: data.jobTitle,
-        location: data.location,
+        location: data.location, // This is now the country
       });
     },
     onSuccess: (response: any) => {
@@ -1662,9 +1658,9 @@ export default function AuthPage() {
                         name="firstName"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>First Name *</FormLabel>
+                            <FormLabel>First Name</FormLabel>
                             <FormControl>
-                              <Input placeholder="Enter your first name" {...field} data-testid="input-client-first-name" />
+                              <Input placeholder="First name" {...field} data-testid="input-client-first-name" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -1676,9 +1672,9 @@ export default function AuthPage() {
                         name="lastName"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Last Name *</FormLabel>
+                            <FormLabel>Last Name</FormLabel>
                             <FormControl>
-                              <Input placeholder="Enter your last name" {...field} data-testid="input-client-last-name" />
+                              <Input placeholder="Last name" {...field} data-testid="input-client-last-name" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -1686,90 +1682,15 @@ export default function AuthPage() {
                       />
                     </div>
 
-                    {/* Contact Information */}
+                    {/* Work Email */}
                     <FormField
                       control={clientForm.control}
                       name="email"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Email Address *</FormLabel>
+                          <FormLabel>Work email address</FormLabel>
                           <FormControl>
-                            <Input type="email" placeholder="your@email.com" {...field} data-testid="input-client-email" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <FormField
-                        control={clientForm.control}
-                        name="countryCode"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Country Code *</FormLabel>
-                            <FormControl>
-                              <Input placeholder="+1" {...field} data-testid="input-client-country-code" />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={clientForm.control}
-                        name="phone"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Phone Number *</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Enter your phone number" {...field} data-testid="input-client-phone" />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
-                    {/* Company Information */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <FormField
-                        control={clientForm.control}
-                        name="company"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Company</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Your company name" {...field} data-testid="input-client-company" />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={clientForm.control}
-                        name="jobTitle"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Job Title</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Your job title" {...field} data-testid="input-client-job-title" />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
-                    <FormField
-                      control={clientForm.control}
-                      name="location"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Location</FormLabel>
-                          <FormControl>
-                            <Input placeholder="City, Country" {...field} data-testid="input-client-location" />
+                            <Input type="email" placeholder="name@company.com" {...field} data-testid="input-client-email" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -1782,15 +1703,60 @@ export default function AuthPage() {
                       name="password"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Password *</FormLabel>
+                          <FormLabel>Password</FormLabel>
                           <FormControl>
-                            <Input type="password" placeholder="Create a password" {...field} data-testid="input-client-password" />
+                            <Input type="password" placeholder="Password (8 or more characters)" {...field} data-testid="input-client-password" />
                           </FormControl>
                           <PasswordStrengthIndicator password={field.value || ""} />
                           <FormMessage />
                         </FormItem>
                       )}
                     />
+
+                    {/* Country */}
+                    <FormField
+                      control={clientForm.control}
+                      name="location"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Country</FormLabel>
+                          <FormControl>
+                            <Select onValueChange={field.onChange} defaultValue={field.value || ""}>
+                              <SelectTrigger data-testid="select-client-country">
+                                <SelectValue placeholder="Select your country" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="United States">United States</SelectItem>
+                                <SelectItem value="Canada">Canada</SelectItem>
+                                <SelectItem value="United Kingdom">United Kingdom</SelectItem>
+                                <SelectItem value="Australia">Australia</SelectItem>
+                                <SelectItem value="Germany">Germany</SelectItem>
+                                <SelectItem value="France">France</SelectItem>
+                                <SelectItem value="India">India</SelectItem>
+                                <SelectItem value="Other">Other</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {/* Optional email tips checkbox */}
+                    <div className="flex items-center space-x-2">
+                      <Checkbox id="email-tips" />
+                      <label htmlFor="email-tips" className="text-sm text-slate-600">
+                        Send me emails with tips on how to find talent that fits my needs
+                      </label>
+                    </div>
+
+                    {/* Terms Agreement */}
+                    <div className="flex items-start space-x-2">
+                      <Checkbox id="client-terms" required />
+                      <label htmlFor="client-terms" className="text-sm text-slate-600 leading-relaxed">
+                        Yes, I understand and agree to the Signedwork Terms of Service, including the User Agreement and Privacy Policy
+                      </label>
+                    </div>
                     
                     <Button 
                       type="submit" 
