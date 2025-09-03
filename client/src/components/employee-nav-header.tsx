@@ -4,7 +4,7 @@ import { FeedbackButton } from '@/components/FeedbackButton';
 import signedworkLogo from "@assets/Signed-work-Logo (1)_1755168042120.png";
 import { Button } from '@/components/ui/button';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { apiRequest } from '@/lib/queryClient';
+import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
@@ -103,6 +103,7 @@ export default function EmployeeNavHeader({ employeeId, employeeName }: Employee
       return await apiRequest("POST", "/api/auth/logout", {});
     },
     onSuccess: () => {
+      queryClient.clear(); // Clear all cached data for clean session reset
       setLocation("/");
     },
     onError: (error: any) => {
