@@ -4,7 +4,7 @@ import { useLocation } from "wouter";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  requireUserType?: "employee" | "company" | "admin" | "manager";
+  requireUserType?: "employee" | "company" | "admin" | "manager" | "client";
   fallbackPath?: string;
 }
 

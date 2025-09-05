@@ -46,6 +46,21 @@ import ClientProjects from "@/client/client-projects";
 import PostProject from "@/client/post-project";
 import ProjectDetails from "@/client/project-details";
 import ClientContracts from "@/client/client-contracts";
+// All 14 Client Navigation Pages
+import NewProject from "@/client/projects/new-project";
+import ManageJobs from "@/client/jobs/manage-jobs";
+import PendingOffers from "@/client/offers/pending-offers";
+import SearchTalent from "@/client/search-talent";
+import HiredTalent from "@/client/hired-talent";
+import SavedTalent from "@/client/saved-talent";
+import ActiveWork from "@/client/work/active-work";
+import Timesheets from "@/client/work/timesheets";
+import HourlyActivity from "@/client/work/hourly-activity";
+import TimeByFreelancer from "@/client/work/time-by-freelancer";
+import CustomExport from "@/client/work/export";
+import TransactionHistory from "@/client/reports/transactions";
+import SpendingByActivity from "@/client/reports/spending";
+import Messages from "@/client/messages";
 import FreelanceProjects from "@/employee/freelance-projects";
 import FreelanceProjectDetails from "@/employee/freelance-project-details";
 import FreelanceApply from "@/employee/freelance-apply";
@@ -144,6 +159,22 @@ function Router() {
       <Route path="/client/projects/new" component={() => <ProtectedRoute requireUserType="client"><PostProject /></ProtectedRoute>} />
       <Route path="/client/projects/:projectId" component={() => <ProtectedRoute requireUserType="client"><ProjectDetails /></ProtectedRoute>} />
       <Route path="/client/contracts" component={() => <ProtectedRoute requireUserType="client"><ClientContracts /></ProtectedRoute>} />
+      
+      {/* All 14 Client Navigation Dropdown Pages */}
+      <Route path="/client/projects/post" component={() => <ProtectedRoute requireUserType="client"><NewProject /></ProtectedRoute>} />
+      <Route path="/client/jobs" component={() => <ProtectedRoute requireUserType="client"><ManageJobs /></ProtectedRoute>} />
+      <Route path="/client/offers" component={() => <ProtectedRoute requireUserType="client"><PendingOffers /></ProtectedRoute>} />
+      <Route path="/client/search-talent" component={() => <ProtectedRoute requireUserType="client"><SearchTalent /></ProtectedRoute>} />
+      <Route path="/client/hired-talent" component={() => <ProtectedRoute requireUserType="client"><HiredTalent /></ProtectedRoute>} />
+      <Route path="/client/saved-talent" component={() => <ProtectedRoute requireUserType="client"><SavedTalent /></ProtectedRoute>} />
+      <Route path="/client/work/active" component={() => <ProtectedRoute requireUserType="client"><ActiveWork /></ProtectedRoute>} />
+      <Route path="/client/work/timesheets" component={() => <ProtectedRoute requireUserType="client"><Timesheets /></ProtectedRoute>} />
+      <Route path="/client/work/hourly" component={() => <ProtectedRoute requireUserType="client"><HourlyActivity /></ProtectedRoute>} />
+      <Route path="/client/work/time-by-freelancer" component={() => <ProtectedRoute requireUserType="client"><TimeByFreelancer /></ProtectedRoute>} />
+      <Route path="/client/work/export" component={() => <ProtectedRoute requireUserType="client"><CustomExport /></ProtectedRoute>} />
+      <Route path="/client/reports/transactions" component={() => <ProtectedRoute requireUserType="client"><TransactionHistory /></ProtectedRoute>} />
+      <Route path="/client/reports/spending" component={() => <ProtectedRoute requireUserType="client"><SpendingByActivity /></ProtectedRoute>} />
+      <Route path="/client/messages" component={() => <ProtectedRoute requireUserType="client"><Messages /></ProtectedRoute>} />
       
       {/* Legacy redirect - now protected */}
       <Route path="/employee-profile" component={() => <ProtectedRoute requireUserType="employee"><AuthenticatedRedirect to="/profile" requireUserType="employee" /></ProtectedRoute>} />

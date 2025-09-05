@@ -577,9 +577,9 @@ export default function NewProject() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="small">Small project (< 30 hours)</SelectItem>
+                          <SelectItem value="small">Small project (&lt; 30 hours)</SelectItem>
                           <SelectItem value="medium">Medium project (30-100 hours)</SelectItem>
-                          <SelectItem value="large">Large project (> 100 hours)</SelectItem>
+                          <SelectItem value="large">Large project (&gt; 100 hours)</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
