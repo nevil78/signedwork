@@ -5132,7 +5132,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Work entry not found" });
       }
       
-      if (existingEntry.status === 'approved') {
+      if (existingEntry.approvalStatus === 'approved') {
         return res.status(403).json({ 
           message: "Cannot edit approved work entry. Approved entries are immutable." 
         });
@@ -5152,6 +5152,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updateData = {
         ...req.body,
         status: 'pending', // Always reset to pending when employee updates
+        approvalStatus: 'pending_review', // Reset approval status for resubmission workflow
         companyFeedback: null, // Clear any previous company feedback
         companyRating: null, // Clear any previous company rating
         updatedAt: new Date()
@@ -5176,7 +5177,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Work entry not found" });
       }
       
-      if (existingEntry.status === 'approved') {
+      if (existingEntry.approvalStatus === 'approved') {
         return res.status(403).json({ 
           message: "Cannot edit approved work entry. Approved entries are immutable." 
         });
@@ -5220,7 +5221,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Work entry not found" });
       }
       
-      if (existingEntry.status === 'approved') {
+      if (existingEntry.approvalStatus === 'approved') {
         return res.status(403).json({ 
           message: "Cannot edit approved work entry. Approved entries are immutable." 
         });
@@ -5252,7 +5253,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Work entry not found" });
       }
       
-      if (existingEntry.status === 'approved') {
+      if (existingEntry.approvalStatus === 'approved') {
         return res.status(403).json({ 
           message: "Cannot delete approved work entry. Approved entries are immutable." 
         });
