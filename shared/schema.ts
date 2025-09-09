@@ -172,14 +172,10 @@ export const workEntries = pgTable("work_entries", {
   // External display vs internal tracking
   externalCompanyName: text("external_company_name"), // What external recruiters see: "HDFC"
   internalVerificationPath: text("internal_verification_path"), // Full path: "HDFC > Surat Branch > Sales Team > Manager X"
-  // Performance Metrics Fields
+  // Simplified Performance Fields
   roleType: text("role_type"), // sales, developer, trader, marketing, support, etc.
   difficultyLevel: text("difficulty_level").default("medium"), // low, medium, high, extreme
-  
-  // Quantifiable Performance Metrics
-  performanceValue: integer("performance_value"), // Main metric (sales amount, lines coded, etc.)
-  quantityMetric: integer("quantity_metric"), // Count metric (deals closed, features built, etc.)
-  qualityScore: integer("quality_score"), // Quality rating (0-100)
+  completionTime: integer("completion_time"), // Time taken to complete in hours
   tags: text("tags").array().default(sql`'{}'::text[]`), // tags for categorization
   achievements: text("achievements").array().default(sql`'{}'::text[]`), // key accomplishments
   challenges: text("challenges"), // challenges faced during work
@@ -1140,9 +1136,7 @@ export const insertWorkEntrySchema = createInsertSchema(workEntries).omit({
   }),
   roleType: z.string().optional(),
   difficultyLevel: z.string().optional(),
-  performanceValue: z.number().optional(),
-  quantityMetric: z.number().optional(),
-  qualityScore: z.number().min(0).max(100).optional(),
+  completionTime: z.number().optional(),
 }).refine((data) => {
   if (!data.endDate) return true;
   const [sd, sm, sy] = data.startDate.split("/").map(Number);

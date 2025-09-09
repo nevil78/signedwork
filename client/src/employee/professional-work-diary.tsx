@@ -37,26 +37,18 @@ interface WorkEntry {
   id: string;
   title: string;
   description?: string;
-  workType: string;
-  category?: string;
-  project?: string;
-  client?: string;
-  priority: string;
-  status: string;
-  approvalStatus?: string;
+  roleType: string;
+  difficultyLevel: string;
+  completionTime: number;
   startDate: string;
   endDate?: string;
-  estimatedHours?: number;
   actualHours?: number;
-  billable: boolean;
-  billableRate?: number;
   tags: string[];
   achievements: string[];
   challenges?: string;
   learnings?: string;
-  companyFeedback?: string;
-  companyRating?: number;
-  companyId: string; // Add missing companyId property
+  companyId: string;
+  teamId?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -185,9 +177,7 @@ export default function ProfessionalWorkDiary() {
       description: "",
       roleType: "",
       difficultyLevel: "medium",
-      performanceValue: 0,
-      quantityMetric: 0,
-      qualityScore: 0,
+      completionTime: 0,
       startDate: "",
       endDate: "",
       actualHours: 0,
@@ -279,9 +269,7 @@ export default function ProfessionalWorkDiary() {
       teamId: data.teamId || null,
       // Ensure numbers are properly set
       actualHours: data.actualHours || 0,
-      performanceValue: data.performanceValue || 0,
-      quantityMetric: data.quantityMetric || 0,
-      qualityScore: data.qualityScore || 0,
+      completionTime: data.completionTime || 0,
       // Ensure arrays are properly set
       tags: data.tags || [],
       achievements: data.achievements || [],
@@ -1192,61 +1180,19 @@ export default function ProfessionalWorkDiary() {
 
                 <FormField
                   control={workEntryForm.control}
-                  name="performanceValue"
+                  name="completionTime"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Performance Value</FormLabel>
+                      <FormLabel>Completion Time (hours)</FormLabel>
                       <FormControl>
                         <Input 
                           {...field} 
                           type="number" 
                           min="0"
+                          step="0.5"
                           value={field.value?.toString() || ""}
                           onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                          placeholder="e.g., Sales amount, Lines of code" 
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={workEntryForm.control}
-                  name="quantityMetric"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Quantity Metric</FormLabel>
-                      <FormControl>
-                        <Input 
-                          {...field} 
-                          type="number" 
-                          min="0"
-                          value={field.value?.toString() || ""}
-                          onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                          placeholder="e.g., Deals closed, Features built" 
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={workEntryForm.control}
-                  name="qualityScore"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Quality Score (0-100)</FormLabel>
-                      <FormControl>
-                        <Input 
-                          {...field} 
-                          type="number" 
-                          min="0"
-                          max="100"
-                          value={field.value?.toString() || ""}
-                          onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                          placeholder="Quality rating out of 100" 
+                          placeholder="Time taken to complete" 
                         />
                       </FormControl>
                       <FormMessage />

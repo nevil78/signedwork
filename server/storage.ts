@@ -1684,13 +1684,56 @@ export class DatabaseStorage implements IStorage {
   // Work entry operations
   async getWorkEntries(employeeId: string, companyId?: string): Promise<WorkEntry[]> {
     if (companyId) {
-      return await db.select().from(workEntries)
+      return await db
+        .select({
+          id: workEntries.id,
+          employeeId: workEntries.employeeId,
+          companyId: workEntries.companyId,
+          title: workEntries.title,
+          description: workEntries.description,
+          roleType: workEntries.roleType,
+          difficultyLevel: workEntries.difficultyLevel,
+          completionTime: workEntries.completionTime,
+          startDate: workEntries.startDate,
+          endDate: workEntries.endDate,
+          actualHours: workEntries.actualHours,
+          tags: workEntries.tags,
+          achievements: workEntries.achievements,
+          challenges: workEntries.challenges,
+          learnings: workEntries.learnings,
+          teamId: workEntries.teamId,
+          createdAt: workEntries.createdAt,
+          updatedAt: workEntries.updatedAt,
+        })
+        .from(workEntries)
         .where(and(
           eq(workEntries.employeeId, employeeId),
           eq(workEntries.companyId, companyId)
         ));
     }
-    return await db.select().from(workEntries).where(eq(workEntries.employeeId, employeeId));
+    return await db
+      .select({
+        id: workEntries.id,
+        employeeId: workEntries.employeeId,
+        companyId: workEntries.companyId,
+        title: workEntries.title,
+        description: workEntries.description,
+        roleType: workEntries.roleType,
+        difficultyLevel: workEntries.difficultyLevel,
+        completionTime: workEntries.completionTime,
+        startDate: workEntries.startDate,
+        endDate: workEntries.endDate,
+        actualHours: workEntries.actualHours,
+        tags: workEntries.tags,
+        achievements: workEntries.achievements,
+        challenges: workEntries.challenges,
+        learnings: workEntries.learnings,
+        teamId: workEntries.teamId,
+        createdAt: workEntries.createdAt,
+        updatedAt: workEntries.updatedAt,
+      })
+      .from(workEntries)
+      .where(eq(workEntries.employeeId, employeeId));
   }
 
   async getWorkEntry(id: string): Promise<WorkEntry | undefined> {
