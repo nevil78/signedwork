@@ -1594,8 +1594,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Show all companies (admin can see companies without verification documents)
-      // Remove passwords from response
-      const companiesResponse = filteredCompanies.map(({ password, ...comp }) => comp);
+      // Remove passwords from response and transform field names for frontend compatibility
+      const companiesResponse = filteredCompanies.map(({ password, ...comp }) => ({
+        ...comp,
+        workDiaryAccess: comp.work_diary_access
+      }));
       res.json(companiesResponse);
     } catch (error) {
       console.error("Get companies error:", error);
