@@ -817,7 +817,7 @@ export default function ProfessionalWorkDiary() {
                               <h3 className="text-lg font-semibold text-gray-900">{entry.title}</h3>
                               
                               {/* Essential badges only: Company Verified, Immutable, and Star Rating */}
-                              {(entry.status === 'approved' || entry.approvalStatus === 'approved') && (
+                              {entry.approvalStatus === 'approved' && (
                                 <>
                                   <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
                                     <Shield className="h-3 w-3 mr-1" />
@@ -929,7 +929,7 @@ export default function ProfessionalWorkDiary() {
                               const currentCompany = companies?.find(c => c.id === selectedCompany);
                               const isActiveEmployee = currentCompany?.isActive !== false;
                               
-                              if (entry.status === 'approved' || entry.approvalStatus === 'approved') {
+                              if (entry.approvalStatus === 'approved') {
                                 return (
                                   <Button 
                                     variant="outline" 
