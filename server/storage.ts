@@ -1784,7 +1784,24 @@ export class DatabaseStorage implements IStorage {
     
     const [newWorkEntry] = await db
       .insert(workEntries)
-      .values(workEntryWithApproval)
+      .values({
+        employeeId: workEntry.employeeId,
+        companyId: workEntry.companyId,
+        title: workEntry.title,
+        description: workEntry.description,
+        roleType: workEntry.roleType,
+        difficultyLevel: workEntry.difficultyLevel,
+        completionTime: workEntry.completionTime,
+        startDate: workEntry.startDate,
+        endDate: workEntry.endDate,
+        tags: workEntry.tags || [],
+        achievements: workEntry.achievements || [],
+        challenges: workEntry.challenges,
+        learnings: workEntry.learnings,
+        teamId: workEntry.teamId,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
       .returning();
     return newWorkEntry;
   }
