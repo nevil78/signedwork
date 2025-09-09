@@ -168,6 +168,12 @@ export const workEntries = pgTable("work_entries", {
   // Simple metadata
   tags: text("tags").array().default(sql`ARRAY[]::text[]`),
   achievements: text("achievements").array().default(sql`ARRAY[]::text[]`),
+  
+  // Company approval workflow
+  approvalStatus: text("approval_status").default("pending_review").notNull(), // pending_review, approved, needs_changes
+  companyFeedback: text("company_feedback"), // Feedback from company during review
+  companyRating: integer("company_rating"), // 1-5 star rating from company
+  
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
