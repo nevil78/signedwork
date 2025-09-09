@@ -48,6 +48,9 @@ interface WorkEntry {
   learnings?: string;
   companyId: string;
   teamId?: string | null;
+  approvalStatus?: 'pending_review' | 'approved' | 'needs_changes';
+  companyFeedback?: string;
+  companyRating?: number;
   createdAt: string;
   updatedAt: string;
 }
