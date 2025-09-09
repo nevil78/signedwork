@@ -152,37 +152,22 @@ export const workEntries = pgTable("work_entries", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   employeeId: varchar("employee_id").notNull().references(() => employees.id, { onDelete: "cascade" }),
   companyId: varchar("company_id").notNull().references(() => companies.id, { onDelete: "cascade" }),
-  branchId: varchar("branch_id").references(() => companyBranches.id), // Employee's branch when work was done
   teamId: varchar("team_id").references(() => companyTeams.id), // Employee's team when work was done
+  
+  // Core 7 simplified fields for maximum adoption
   title: text("title").notNull(),
-  description: text("description"),
+  roleType: text("role_type").notNull(), // Developer, Sales, Marketing, etc
+  difficultyLevel: text("difficulty_level").notNull(), // Low, Medium, High, Extreme
+  completionTime: integer("completion_time").notNull(), // Hours taken to complete
   startDate: text("start_date").notNull(),
-  endDate: text("end_date"),
-  actualHours: integer("actual_hours"), // actual time spent
-  approvalStatus: text("approval_status").notNull().default("pending_review"), // Company approval: pending_review, approved, needs_changes
-  // Enhanced hierarchical verification tracking
-  verifiedBy: varchar("verified_by").references(() => employees.id), // Employee ID who verified this work
-  verifiedByRole: text("verified_by_role"), // Role of verifier: "team_lead", "branch_manager", "company_admin"
-  verifiedByName: text("verified_by_name"), // Name for display: "Manager X, HDFC Surat"
-  verifiedAt: timestamp("verified_at"), // When verification was completed
-  // Manager approval tracking
-  approvedByManagerId: varchar("approved_by_manager_id").references(() => companyManagers.id), // Manager who approved
-  approvedByManagerName: text("approved_by_manager_name"), // Manager name for display
-  managerApprovalDate: timestamp("manager_approval_date"), // When manager approved
-  // External display vs internal tracking
-  externalCompanyName: text("external_company_name"), // What external recruiters see: "HDFC"
-  internalVerificationPath: text("internal_verification_path"), // Full path: "HDFC > Surat Branch > Sales Team > Manager X"
-  // Essential Work Fields Only
-  roleType: text("role_type"), // sales, developer, trader, marketing, support, etc.
-  difficultyLevel: text("difficulty_level").default("medium"), // low, medium, high, extreme
-  completionTime: integer("completion_time"), // Time taken to complete in hours
-  tags: text("tags").array().default(sql`'{}'::text[]`), // tags for categorization
-  achievements: text("achievements").array().default(sql`'{}'::text[]`), // key accomplishments
-  challenges: text("challenges"), // challenges faced during work
-  learnings: text("learnings"), // what was learned from this work
-  companyFeedback: text("company_feedback"), // feedback from company when requesting changes
-  companyRating: integer("company_rating"), // 1-5 rating from company
-  attachments: text("attachments").array().default(sql`'{}'::text[]`), // file URLs or paths
+  endDate: text("end_date").notNull(),
+  description: text("description").notNull(),
+  challenges: text("challenges"), // What challenges did you face?
+  learnings: text("learnings"), // What did you learn?
+  
+  // Simple metadata
+  tags: text("tags").array().default(sql`ARRAY[]::text[]`),
+  achievements: text("achievements").array().default(sql`ARRAY[]::text[]`),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -1112,33 +1097,25 @@ export const insertWorkEntrySchema = createInsertSchema(workEntries).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+  employeeId: true
 }).extend({
-  title: z.string()
-    .min(3, "Work title must be at least 3 characters long")
-    .max(150, "Work title must not exceed 150 characters")
-    .refine((val) => val.trim().length >= 3, {
-      message: "Work title cannot be empty or contain only spaces"
-    })
-    .refine((val) => /^[a-zA-Z0-9\s\-_.,!?()&:]+$/.test(val), {
-      message: "Work title contains invalid characters. Use only letters, numbers, spaces, and basic punctuation"
-    })
-    .refine((val) => !val.includes("  "), {
-      message: "Work title cannot contain consecutive spaces"
-    }),
+  companyId: z.string().min(1, "Company selection is required"),
+  title: z.string().min(1, "Work title is required").max(100, "Work title is too long"),
+  roleType: z.string().min(1, "Role type is required"),
+  difficultyLevel: z.string().min(1, "Difficulty level is required"), 
+  completionTime: z.number().min(1, "Completion time is required"),
   startDate: z.string().refine((val) => dateRegex.test(val), {
     message: "Start date must be in dd/mm/yyyy format"
   }),
-  endDate: z.string().optional().refine((val) => {
-    if (!val) return true;
-    return dateRegex.test(val);
-  }, {
+  endDate: z.string().refine((val) => dateRegex.test(val), {
     message: "End date must be in dd/mm/yyyy format"
   }),
-  roleType: z.string().optional(),
-  difficultyLevel: z.string().optional(),
-  completionTime: z.number().optional(),
+  description: z.string().min(1, "Description is required"),
+  challenges: z.string().optional(),
+  learnings: z.string().optional(),
+  tags: z.array(z.string()).optional(),
+  achievements: z.array(z.string()).optional(),
 }).refine((data) => {
-  if (!data.endDate) return true;
   const [sd, sm, sy] = data.startDate.split("/").map(Number);
   const [ed, em, ey] = data.endDate.split("/").map(Number);
   const start = new Date(sy, sm - 1, sd);
