@@ -1102,7 +1102,7 @@ export const insertWorkEntrySchema = createInsertSchema(workEntries).omit({
   endDate: z.string().refine((val) => dateRegex.test(val), {
     message: "End date must be in dd/mm/yyyy format"
   }),
-  description: z.string().min(1, "Description is required"),
+  description: z.string().optional(),
   challenges: z.string().optional(),
   learnings: z.string().optional(),
   tags: z.array(z.string()).optional(),
