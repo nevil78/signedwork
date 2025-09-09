@@ -788,17 +788,9 @@ export const workEntriesRelations = relations(workEntries, ({ one }) => ({
     fields: [workEntries.companyId],
     references: [companies.id],
   }),
-  branch: one(companyBranches, {
-    fields: [workEntries.branchId],
-    references: [companyBranches.id],
-  }),
   team: one(companyTeams, {
     fields: [workEntries.teamId],
     references: [companyTeams.id],
-  }),
-  verifier: one(employees, {
-    fields: [workEntries.verifiedBy],
-    references: [employees.id],
   }),
 }));
 
