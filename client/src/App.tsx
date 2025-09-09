@@ -115,6 +115,7 @@ function Router() {
       <Route path="/profile" component={() => <ProtectedRoute requireUserType="employee"><ProfessionalProfile /></ProtectedRoute>} />
       <Route path="/summary" component={() => <ProtectedRoute requireUserType="employee"><EmployeeSummaryDashboard /></ProtectedRoute>} />
       <Route path="/work-diary" component={() => <ProtectedRoute requireUserType="employee"><ProfessionalWorkDiary /></ProtectedRoute>} />
+      <Route path="/employee/professional-work-diary" component={() => <ProtectedRoute requireUserType="employee"><ProfessionalWorkDiary /></ProtectedRoute>} />
       <Route path="/work-diary/:companyId" component={() => <ProtectedRoute requireUserType="employee"><WorkDiaryCompany /></ProtectedRoute>} />
       <Route path="/legacy-profile" component={() => <ProtectedRoute requireUserType="employee"><Profile /></ProtectedRoute>} />
       <Route path="/job-discovery" component={() => <ProtectedRoute requireUserType="employee"><JobDiscoveryPage /></ProtectedRoute>} />
