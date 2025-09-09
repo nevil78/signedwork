@@ -332,13 +332,12 @@ export default function CompanyWorkEntries() {
               <User className="w-4 h-4" />
               Employee Submission Overview
             </h4>
-            <div className="text-sm text-amber-900 dark:text-amber-100 grid grid-cols-2 md:grid-cols-4 gap-2">
+            <div className="text-sm text-amber-900 dark:text-amber-100 grid grid-cols-2 md:grid-cols-3 gap-2">
               <div>Submitted: {entry.createdAt ? new Date(entry.createdAt).toLocaleDateString() : 'N/A'}</div>
               {entry.updatedAt !== entry.createdAt && (
                 <div>Updated: {entry.updatedAt ? new Date(entry.updatedAt).toLocaleDateString() : 'N/A'}</div>
               )}
-              <div>Work Type: <span className="font-medium">{entry.workType || 'task'}</span></div>
-              <div>Status: <span className="font-medium capitalize">{entry.status || 'pending'}</span></div>
+              <div>Role Type: <span className="font-medium">{entry.workType || 'task'}</span></div>
             </div>
           </div>
 
@@ -348,59 +347,54 @@ export default function CompanyWorkEntries() {
               <FileText className="w-4 h-4" />
               Work Details
             </h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
               <div className="space-y-2">
-                <p className="text-muted-foreground">Work Type:</p>
+                <p className="text-muted-foreground">Role Type:</p>
                 <Badge variant="outline" className="flex w-fit items-center gap-1">
                   <Briefcase className="w-3 h-3" />
                   {entry.workType || 'task'}
                 </Badge>
               </div>
               <div className="space-y-2">
-                <p className="text-muted-foreground">Employee Status:</p>
+                <p className="text-muted-foreground">Difficulty Level:</p>
                 <Badge variant="outline" className={`flex w-fit items-center gap-1 ${
-                  entry.status === 'completed' ? 'bg-green-50 text-green-700' : 
-                  entry.status === 'in_progress' ? 'bg-blue-50 text-blue-700' :
-                  entry.status === 'on_hold' ? 'bg-orange-50 text-orange-700' :
-                  'bg-gray-50 text-gray-700'
+                  entry.difficultyLevel === 'extreme' ? 'bg-red-50 text-red-700' : 
+                  entry.difficultyLevel === 'hard' ? 'bg-orange-50 text-orange-700' :
+                  entry.difficultyLevel === 'medium' ? 'bg-yellow-50 text-yellow-700' :
+                  'bg-green-50 text-green-700'
                 }`}>
-                  <Clock className="w-3 h-3" />
-                  {entry.status || 'pending'}
+                  <Target className="w-3 h-3" />
+                  {entry.difficultyLevel || 'not specified'}
                 </Badge>
               </div>
-              {entry.category && (
-                <div className="space-y-2">
-                  <p className="text-muted-foreground">Category:</p>
-                  <Badge variant="secondary" className="flex w-fit items-center gap-1">
-                    <Target className="w-3 h-3" />
-                    {entry.category}
-                  </Badge>
-                </div>
-              )}
-              {entry.project && (
-                <div className="space-y-2">
-                  <p className="text-muted-foreground">Project:</p>
-                  <p className="font-medium text-blue-600 dark:text-blue-400">{entry.project}</p>
-                </div>
-              )}
-              {/* Client information is excluded from company view for privacy */}
+              <div className="space-y-2">
+                <p className="text-muted-foreground">Completion Time:</p>
+                <Badge variant="outline" className="flex w-fit items-center gap-1">
+                  <Clock className="w-3 h-3" />
+                  {entry.hours || entry.completionTime || 0}h
+                </Badge>
+              </div>
             </div>
           </div>
 
           {/* Description */}
-          {entry.description && (
-            <div>
-              <h4 className="font-semibold text-sm text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
-                <FileText className="w-4 h-4" />
-                Work Description
-              </h4>
+          <div>
+            <h4 className="font-semibold text-sm text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
+              <FileText className="w-4 h-4" />
+              Work Description
+            </h4>
+            {entry.description && entry.description.trim() ? (
               <div className="text-sm bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800" data-testid={`work-entry-description-${entry.id}`}>
                 <div className="whitespace-pre-wrap text-blue-900 dark:text-blue-100 leading-relaxed break-words overflow-wrap-anywhere">
                   {entry.description}
                 </div>
               </div>
-            </div>
-          )}
+            ) : (
+              <div className="text-sm text-gray-500 italic p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
+                Employee did not provide a description for this work entry
+              </div>
+            )}
+          </div>
           
           {/* Timeline & Hours Section */}
           <div>
