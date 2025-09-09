@@ -183,18 +183,14 @@ export default function ProfessionalWorkDiary() {
     defaultValues: {
       title: "",
       description: "",
-      workType: "task",
-      category: "",
-      project: "",
-      client: "",
-      priority: "medium",
-      status: "pending",
+      roleType: "",
+      difficultyLevel: "medium",
+      performanceValue: 0,
+      quantityMetric: 0,
+      qualityScore: 0,
       startDate: "",
       endDate: "",
-      estimatedHours: 0,
       actualHours: 0,
-      billable: false,
-      billableRate: 0,
       tags: [],
       achievements: [],
       challenges: "",
@@ -282,9 +278,10 @@ export default function ProfessionalWorkDiary() {
       // Convert empty string to null for backend
       teamId: data.teamId || null,
       // Ensure numbers are properly set
-      estimatedHours: data.estimatedHours || 0,
       actualHours: data.actualHours || 0,
-      billableRate: data.billableRate || 0,
+      performanceValue: data.performanceValue || 0,
+      quantityMetric: data.quantityMetric || 0,
+      qualityScore: data.qualityScore || 0,
       // Ensure arrays are properly set
       tags: data.tags || [],
       achievements: data.achievements || [],
@@ -324,18 +321,14 @@ export default function ProfessionalWorkDiary() {
       workEntryForm.reset({
         title: "",
         description: "",
-        workType: "task",
-        category: "",
-        project: "",
-        client: "",
-        priority: "medium",
-        status: "pending",
+        roleType: "",
+        difficultyLevel: "medium",
+        performanceValue: 0,
+        quantityMetric: 0,
+        qualityScore: 0,
         startDate: "",
         endDate: "",
-        estimatedHours: 0,
         actualHours: 0,
-        billable: false,
-        billableRate: 0,
         tags: [],
         achievements: [],
         challenges: "",
@@ -1148,23 +1141,24 @@ export default function ProfessionalWorkDiary() {
 
                 <FormField
                   control={workEntryForm.control}
-                  name="workType"
+                  name="roleType"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Work Type *</FormLabel>
+                      <FormLabel>Role Type *</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue />
+                            <SelectValue placeholder="Select your role" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="task">Task</SelectItem>
-                          <SelectItem value="meeting">Meeting</SelectItem>
-                          <SelectItem value="project">Project</SelectItem>
-                          <SelectItem value="research">Research</SelectItem>
-                          <SelectItem value="documentation">Documentation</SelectItem>
-                          <SelectItem value="training">Training</SelectItem>
+                          <SelectItem value="sales">Sales Professional</SelectItem>
+                          <SelectItem value="developer">Developer</SelectItem>
+                          <SelectItem value="trader">Trader</SelectItem>
+                          <SelectItem value="marketing">Marketing</SelectItem>
+                          <SelectItem value="support">Support</SelectItem>
+                          <SelectItem value="manager">Manager</SelectItem>
+                          <SelectItem value="other">Other</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -1174,21 +1168,21 @@ export default function ProfessionalWorkDiary() {
 
                 <FormField
                   control={workEntryForm.control}
-                  name="priority"
+                  name="difficultyLevel"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Priority *</FormLabel>
+                      <FormLabel>Difficulty Level *</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue />
+                            <SelectValue placeholder="Select difficulty" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
                           <SelectItem value="low">Low</SelectItem>
                           <SelectItem value="medium">Medium</SelectItem>
                           <SelectItem value="high">High</SelectItem>
-                          <SelectItem value="urgent">Urgent</SelectItem>
+                          <SelectItem value="extreme">Extreme</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -1198,24 +1192,63 @@ export default function ProfessionalWorkDiary() {
 
                 <FormField
                   control={workEntryForm.control}
-                  name="status"
+                  name="performanceValue"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Status *</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="pending">Pending</SelectItem>
-                          <SelectItem value="in_progress">In Progress</SelectItem>
-                          <SelectItem value="completed">Completed</SelectItem>
-                          <SelectItem value="on_hold">On Hold</SelectItem>
-                          <SelectItem value="cancelled">Cancelled</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <FormLabel>Performance Value</FormLabel>
+                      <FormControl>
+                        <Input 
+                          {...field} 
+                          type="number" 
+                          min="0"
+                          value={field.value?.toString() || ""}
+                          onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                          placeholder="e.g., Sales amount, Lines of code" 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={workEntryForm.control}
+                  name="quantityMetric"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Quantity Metric</FormLabel>
+                      <FormControl>
+                        <Input 
+                          {...field} 
+                          type="number" 
+                          min="0"
+                          value={field.value?.toString() || ""}
+                          onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                          placeholder="e.g., Deals closed, Features built" 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={workEntryForm.control}
+                  name="qualityScore"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Quality Score (0-100)</FormLabel>
+                      <FormControl>
+                        <Input 
+                          {...field} 
+                          type="number" 
+                          min="0"
+                          max="100"
+                          value={field.value?.toString() || ""}
+                          onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                          placeholder="Quality rating out of 100" 
+                        />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}

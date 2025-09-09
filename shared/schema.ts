@@ -158,11 +158,7 @@ export const workEntries = pgTable("work_entries", {
   description: text("description"),
   startDate: text("start_date").notNull(),
   endDate: text("end_date"),
-  priority: text("priority").notNull().default("medium"), // low, medium, high, urgent
-  hours: integer("hours"), // optional hours field
-  estimatedHours: integer("estimated_hours"), // estimated time to complete
   actualHours: integer("actual_hours"), // actual time spent
-  status: text("status").notNull().default("pending"), // Employee task status: pending, in_progress, completed, on_hold
   approvalStatus: text("approval_status").notNull().default("pending_review"), // Company approval: pending_review, approved, needs_changes
   // Enhanced hierarchical verification tracking
   verifiedBy: varchar("verified_by").references(() => employees.id), // Employee ID who verified this work
@@ -176,12 +172,14 @@ export const workEntries = pgTable("work_entries", {
   // External display vs internal tracking
   externalCompanyName: text("external_company_name"), // What external recruiters see: "HDFC"
   internalVerificationPath: text("internal_verification_path"), // Full path: "HDFC > Surat Branch > Sales Team > Manager X"
-  workType: text("work_type").notNull().default("task"), // task, meeting, project, research, documentation, training
-  category: text("category"), // development, design, management, client_work, etc.
-  project: text("project"), // project name or identifier
-  client: text("client"), // if work is client-specific
-  billable: boolean("billable").default(false), // whether this work is billable
-  billableRate: integer("billable_rate"), // hourly rate if billable
+  // Performance Metrics Fields
+  roleType: text("role_type"), // sales, developer, trader, marketing, support, etc.
+  difficultyLevel: text("difficulty_level").default("medium"), // low, medium, high, extreme
+  
+  // Quantifiable Performance Metrics
+  performanceValue: integer("performance_value"), // Main metric (sales amount, lines coded, etc.)
+  quantityMetric: integer("quantity_metric"), // Count metric (deals closed, features built, etc.)
+  qualityScore: integer("quality_score"), // Quality rating (0-100)
   tags: text("tags").array().default(sql`'{}'::text[]`), // tags for categorization
   achievements: text("achievements").array().default(sql`'{}'::text[]`), // key accomplishments
   challenges: text("challenges"), // challenges faced during work
@@ -1140,6 +1138,11 @@ export const insertWorkEntrySchema = createInsertSchema(workEntries).omit({
   }, {
     message: "End date must be in dd/mm/yyyy format"
   }),
+  roleType: z.string().optional(),
+  difficultyLevel: z.string().optional(),
+  performanceValue: z.number().optional(),
+  quantityMetric: z.number().optional(),
+  qualityScore: z.number().min(0).max(100).optional(),
 }).refine((data) => {
   if (!data.endDate) return true;
   const [sd, sm, sy] = data.startDate.split("/").map(Number);
