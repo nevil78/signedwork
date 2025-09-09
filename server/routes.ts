@@ -2689,7 +2689,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Company not found" });
       }
       
-      if (!company.workDiaryAccess) {
+      if (!company.work_diary_access) {
         return res.status(403).json({ 
           message: "Work diary access is disabled. Please contact admin for approval.",
           workDiaryAccess: false,
