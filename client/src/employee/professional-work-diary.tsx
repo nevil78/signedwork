@@ -969,23 +969,17 @@ export default function ProfessionalWorkDiary() {
                                     workEntryForm.reset({
                                       title: entry.title,
                                       description: entry.description || "",
-                                      workType: entry.workType as "task" | "meeting" | "project" | "research" | "documentation" | "training",
-                                      category: entry.category || "",
-                                      project: entry.project || "",
-                                      client: entry.client || "",
-                                      priority: entry.priority as "low" | "medium" | "high" | "urgent",
-                                      status: entry.status as "pending" | "in_progress" | "completed" | "on_hold" | "cancelled",
+                                      roleType: entry.roleType,
+                                      difficultyLevel: entry.difficultyLevel,
+                                      completionTime: entry.completionTime || 0,
                                       startDate: entry.startDate,
                                       endDate: entry.endDate || "",
-                                      estimatedHours: entry.estimatedHours || 0,
-                                      actualHours: entry.actualHours || 0,
-                                      billable: entry.billable,
-                                      billableRate: entry.billableRate || 0,
                                       tags: entry.tags || [],
                                       achievements: entry.achievements || [],
                                       challenges: entry.challenges || "",
                                       learnings: entry.learnings || "",
-                                      companyId: entry.companyId // Use entry's original company ID
+                                      companyId: entry.companyId,
+                                      teamId: entry.teamId || ""
                                     });
                                     setIsAddDialogOpen(true);
                                   }}
