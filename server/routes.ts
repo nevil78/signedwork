@@ -2645,7 +2645,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const workEntries = await storage.getWorkEntriesForCompany(req.user.id);
-      res.json(workEntries);
+      
+      // Transform field names for frontend compatibility  
+      const transformedEntries = workEntries.map(entry => ({
+        ...entry,
+        workType: entry.roleType,
+        hours: entry.completionTime
+      }));
+      
+      res.json(transformedEntries);
     } catch (error) {
       console.error("Get company work entries error:", error);
       res.status(500).json({ message: "Failed to get work entries" });
@@ -2665,7 +2673,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const pendingEntries = await storage.getPendingWorkEntriesForCompany(req.user.id);
-      res.json(pendingEntries);
+      
+      // Transform field names for frontend compatibility
+      const transformedEntries = pendingEntries.map(entry => ({
+        ...entry,
+        workType: entry.roleType,
+        hours: entry.completionTime
+      }));
+      
+      res.json(transformedEntries);
     } catch (error) {
       console.error("Get pending work entries error:", error);
       res.status(500).json({ message: "Failed to get pending work entries" });
