@@ -172,7 +172,7 @@ export const workEntries = pgTable("work_entries", {
   // External display vs internal tracking
   externalCompanyName: text("external_company_name"), // What external recruiters see: "HDFC"
   internalVerificationPath: text("internal_verification_path"), // Full path: "HDFC > Surat Branch > Sales Team > Manager X"
-  // Simplified Performance Fields
+  // Essential Work Fields Only
   roleType: text("role_type"), // sales, developer, trader, marketing, support, etc.
   difficultyLevel: text("difficulty_level").default("medium"), // low, medium, high, extreme
   completionTime: integer("completion_time"), // Time taken to complete in hours

@@ -1696,7 +1696,6 @@ export class DatabaseStorage implements IStorage {
           completionTime: workEntries.completionTime,
           startDate: workEntries.startDate,
           endDate: workEntries.endDate,
-          actualHours: workEntries.actualHours,
           tags: workEntries.tags,
           achievements: workEntries.achievements,
           challenges: workEntries.challenges,

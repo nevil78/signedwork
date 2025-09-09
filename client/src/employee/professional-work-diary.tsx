@@ -42,7 +42,6 @@ interface WorkEntry {
   completionTime: number;
   startDate: string;
   endDate?: string;
-  actualHours?: number;
   tags: string[];
   achievements: string[];
   challenges?: string;
@@ -180,7 +179,6 @@ export default function ProfessionalWorkDiary() {
       completionTime: 0,
       startDate: "",
       endDate: "",
-      actualHours: 0,
       tags: [],
       achievements: [],
       challenges: "",
@@ -268,7 +266,6 @@ export default function ProfessionalWorkDiary() {
       // Convert empty string to null for backend
       teamId: data.teamId || null,
       // Ensure numbers are properly set
-      actualHours: data.actualHours || 0,
       completionTime: data.completionTime || 0,
       // Ensure arrays are properly set
       tags: data.tags || [],
