@@ -1148,8 +1148,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // For employees, allow inactive (ex-employee) access but with limited permissions
       // They can view their data but cannot create/edit entries
       
-      // Remove password from response
-      const { password, ...userResponse } = user;
+      // Remove password from response and transform field names for frontend compatibility
+      const { password, ...userData } = user;
+      
+      // Transform company-specific fields for frontend compatibility
+      let userResponse = userData;
+      if (req.user.type === "company" && 'work_diary_access' in userData) {
+        userResponse = {
+          ...userData,
+          workDiaryAccess: userData.work_diary_access
+        };
+      }
       
       console.log(`Session valid for user: ${req.user.id} (${req.user.type})`);
       res.json({ 
