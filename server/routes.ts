@@ -5018,14 +5018,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/work-entries", requireEmployee, async (req: any, res) => {
     
     try {
-      const validatedData = insertWorkEntrySchema.parse({
-        ...req.body,
+      const validatedData = insertWorkEntrySchema.parse(req.body);
+      const workEntryData = {
+        ...validatedData,
         employeeId: req.user.id
-      });
+      };
       
       // Check if employee is still active in the company
       const employeeCompanies = await storage.getEmployeeCompanyRelations(req.user.id);
-      const companyRelation = employeeCompanies.find(c => c.companyId === validatedData.companyId);
+      const companyRelation = employeeCompanies.find(c => c.companyId === workEntryData.companyId);
       
       if (!companyRelation || !companyRelation.isActive) {
         return res.status(403).json({ 
@@ -5033,15 +5034,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      const workEntry = await storage.createWorkEntry(validatedData);
+      const workEntry = await storage.createWorkEntry(workEntryData);
       
       // Emit real-time update to company dashboard
       emitRealTimeUpdate('work-entry-created', {
         workEntry,
         employeeId: req.user.id,
-        companyId: validatedData.companyId
+        companyId: workEntryData.companyId
       }, [
-        `company-${validatedData.companyId}`,
+        `company-${workEntryData.companyId}`,
         `user-${req.user.id}`
       ]);
       
@@ -5064,12 +5065,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/work-diary", requireEmployee, async (req: any, res) => {
     
     try {
-      const validatedData = insertWorkEntrySchema.parse({
-        ...req.body,
+      const validatedData = insertWorkEntrySchema.parse(req.body);
+      const workEntryData = {
+        ...validatedData,
         employeeId: req.user.id
-      });
+      };
       
-      const workEntry = await storage.createWorkEntry(validatedData);
+      const workEntry = await storage.createWorkEntry(workEntryData);
       res.status(201).json(workEntry);
     } catch (error: any) {
       if (error.name === "ZodError") {
