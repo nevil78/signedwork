@@ -1701,6 +1701,9 @@ export class DatabaseStorage implements IStorage {
           challenges: workEntries.challenges,
           learnings: workEntries.learnings,
           teamId: workEntries.teamId,
+          approvalStatus: workEntries.approvalStatus,
+          companyFeedback: workEntries.companyFeedback,
+          companyRating: workEntries.companyRating,
           createdAt: workEntries.createdAt,
           updatedAt: workEntries.updatedAt,
         })
@@ -1728,6 +1731,9 @@ export class DatabaseStorage implements IStorage {
         challenges: workEntries.challenges,
         learnings: workEntries.learnings,
         teamId: workEntries.teamId,
+        approvalStatus: workEntries.approvalStatus,
+        companyFeedback: workEntries.companyFeedback,
+        companyRating: workEntries.companyRating,
         createdAt: workEntries.createdAt,
         updatedAt: workEntries.updatedAt,
       })
