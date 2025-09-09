@@ -1707,7 +1707,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Update company work diary access
-      await storage.updateCompany(id, { workDiaryAccess });
+      await storage.updateCompany(id, { work_diary_access: workDiaryAccess });
       
       res.json({ 
         message: `Company work diary access ${workDiaryAccess ? 'enabled' : 'disabled'} successfully`,
@@ -2013,7 +2013,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const newWorkDiaryAccess = !company.work_diary_access;
       
       const updatedCompany = await storage.updateCompany(id, { 
-        workDiaryAccess: newWorkDiaryAccess 
+        work_diary_access: newWorkDiaryAccess 
       });
       
       // Log admin action
