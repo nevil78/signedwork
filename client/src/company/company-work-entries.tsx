@@ -402,7 +402,7 @@ export default function CompanyWorkEntries() {
               <Clock className="w-4 h-4" />
               Timeline & Hours
             </h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 text-sm">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 text-sm">
               <div className="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-lg">
                 <p className="text-muted-foreground">Start Date:</p>
                 <p className="flex items-center gap-1 font-medium text-green-600 dark:text-green-400" data-testid={`work-entry-start-date-${entry.id}`}>
