@@ -2010,7 +2010,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Admin can enable work diary access for any company regardless of verification status
       
       // Toggle work diary access
-      const newWorkDiaryAccess = !company.workDiaryAccess;
+      const newWorkDiaryAccess = !company.work_diary_access;
       
       const updatedCompany = await storage.updateCompany(id, { 
         workDiaryAccess: newWorkDiaryAccess 
