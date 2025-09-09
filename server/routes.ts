@@ -2624,7 +2624,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       // Check if company has work diary access enabled by admin
       const company = await storage.getCompany(req.user.id);
-      if (!company?.workDiaryAccess) {
+      if (!company?.work_diary_access) {
         return res.status(403).json({ 
           message: "Work diary access is disabled. Please contact admin for approval.",
           workDiaryAccess: false,
@@ -2644,7 +2644,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       // Check if company has work diary access enabled by admin
       const company = await storage.getCompany(req.user.id);
-      if (!company?.workDiaryAccess) {
+      if (!company?.work_diary_access) {
         return res.status(403).json({ 
           message: "Work diary access is disabled. Please contact admin for approval.",
           workDiaryAccess: false,
