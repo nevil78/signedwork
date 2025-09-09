@@ -95,11 +95,11 @@ const dateRegex = /^\d{2}\/\d{2}\/\d{4}$/;
 
 type WorkEntryFormData = z.infer<typeof insertWorkEntrySchema>;
 
-type WorkEntryStatus = "pending" | "approved" | "needs_changes";
+type WorkEntryStatus = "pending_review" | "approved" | "needs_changes";
 
 const getStatusBadge = (status: WorkEntryStatus) => {
   switch (status) {
-    case "pending":
+    case "pending_review":
       return (
         <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
           <Clock className="w-3 h-3 mr-1" />
@@ -356,7 +356,8 @@ export default function WorkDiaryCompany() {
       status: entry.status as
         | "pending"
         | "approved"
-        | "needs_changes"
+        | "needs_changes",
+      approvalStatus: (entry as any).approvalStatus as "pending_review" | "approved" | "needs_changes"
         | "in_progress"
         | "completed",
       workType: (entry.workType || "task") as
@@ -589,14 +590,14 @@ export default function WorkDiaryCompany() {
                       </CardDescription>
                     </div>
                     <div className="flex items-center gap-2">
-                      {getStatusBadge((entry as any).status || "pending")}
+                      {getStatusBadge((entry as any).approvalStatus || "pending_review")}
                       <span
                         className={`px-2 py-1 text-xs font-medium rounded-full ${getPriorityBadgeClass(entry.priority as WorkEntryPriority)}`}
                       >
                         {entry.priority}
                       </span>
                       {/* Only show edit/delete buttons if entry is not approved */}
-                      {(entry as any).status !== "approved" && (
+                      {(entry as any).approvalStatus !== "approved" && (
                         <>
                           <Button
                             variant="ghost"
@@ -617,7 +618,7 @@ export default function WorkDiaryCompany() {
                         </>
                       )}
                       {/* Show immutable indicator for approved entries */}
-                      {(entry as any).status === "approved" && (
+                      {(entry as any).approvalStatus === "approved" && (
                         <div className="flex items-center gap-1 text-green-600 text-xs">
                           <Lock className="h-3 w-3" />
                           <span>Verified & Locked</span>

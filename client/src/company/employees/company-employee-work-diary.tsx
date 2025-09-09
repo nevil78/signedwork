@@ -379,11 +379,11 @@ export default function CompanyEmployeeWorkDiary() {
                             Pending Review
                           </span>
                         </>
-                      ) : selectedWorkEntry.approvalStatus === 'revision_requested' ? (
+                      ) : selectedWorkEntry.approvalStatus === 'needs_changes' ? (
                         <>
                           <AlertCircle className="h-5 w-5 text-orange-600" />
                           <span className="text-orange-700 dark:text-orange-400 font-medium">
-                            Revision Requested
+                            Needs Changes
                           </span>
                         </>
                       ) : (
