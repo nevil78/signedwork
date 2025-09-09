@@ -1235,47 +1235,8 @@ export default function ProfessionalWorkDiary() {
                   )}
                 />
 
-                <FormField
-                  control={workEntryForm.control}
-                  name="category"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Category</FormLabel>
-                      <FormControl>
-                        <Input {...field} value={field.value || ""} placeholder="e.g., Development, Design, Management" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
 
-                <FormField
-                  control={workEntryForm.control}
-                  name="project"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Project</FormLabel>
-                      <FormControl>
-                        <Input {...field} value={field.value || ""} placeholder="e.g., Mobile App v2.0" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
 
-                <FormField
-                  control={workEntryForm.control}
-                  name="client"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Client</FormLabel>
-                      <FormControl>
-                        <Input {...field} value={field.value || ""} placeholder="e.g., ABC Corporation" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
 
                 <FormField
                   control={workEntryForm.control}
@@ -1389,90 +1350,9 @@ export default function ProfessionalWorkDiary() {
                   )}
                 />
 
-                <FormField
-                  control={workEntryForm.control}
-                  name="estimatedHours"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Estimated Hours</FormLabel>
-                      <FormControl>
-                        <Input 
-                          {...field} 
-                          type="number" 
-                          min="0" 
-                          step="0.5"
-                          value={field.value?.toString() || ""}
-                          onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                          placeholder="0" 
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
 
-                <FormField
-                  control={workEntryForm.control}
-                  name="actualHours"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Actual Hours</FormLabel>
-                      <FormControl>
-                        <Input 
-                          {...field} 
-                          type="number" 
-                          min="0" 
-                          step="0.5"
-                          value={field.value?.toString() || ""}
-                          onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                          placeholder="0" 
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
 
-                <FormField
-                  control={workEntryForm.control}
-                  name="billable"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                      <FormControl>
-                        <Checkbox
-                          checked={field.value || false}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                      <div className="space-y-1 leading-none">
-                        <FormLabel>Billable Work</FormLabel>
-                      </div>
-                    </FormItem>
-                  )}
-                />
 
-                {workEntryForm.watch("billable") && (
-                  <FormField
-                    control={workEntryForm.control}
-                    name="billableRate"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Hourly Rate</FormLabel>
-                        <FormControl>
-                          <Input 
-                            {...field} 
-                            type="number" 
-                            min="0"
-                            value={field.value?.toString() || ""}
-                            onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                            placeholder="0" 
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                )}
               </div>
 
               <FormField
