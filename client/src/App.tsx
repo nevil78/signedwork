@@ -16,7 +16,6 @@ import VerifyEmail from "@/auth/verify-email";
 import EmailOTPVerificationPage from "@/auth/email-otp-verification";
 import Dashboard from "@/employee/dashboard";
 import Profile from "@/employee/profile";
-import WorkDiaryCompany from "@/employee/work-diary-company";
 import ProfessionalProfile from "@/employee/professional-profile";
 import ProfessionalWorkDiary from "@/employee/professional-work-diary";
 import JobDiscoveryPage from "@/employee/job-discovery";
@@ -116,7 +115,6 @@ function Router() {
       <Route path="/summary" component={() => <ProtectedRoute requireUserType="employee"><EmployeeSummaryDashboard /></ProtectedRoute>} />
       <Route path="/work-diary" component={() => <ProtectedRoute requireUserType="employee"><ProfessionalWorkDiary /></ProtectedRoute>} />
       <Route path="/employee/professional-work-diary" component={() => <ProtectedRoute requireUserType="employee"><ProfessionalWorkDiary /></ProtectedRoute>} />
-      <Route path="/work-diary/:companyId" component={() => <ProtectedRoute requireUserType="employee"><WorkDiaryCompany /></ProtectedRoute>} />
       <Route path="/legacy-profile" component={() => <ProtectedRoute requireUserType="employee"><Profile /></ProtectedRoute>} />
       <Route path="/job-discovery" component={() => <ProtectedRoute requireUserType="employee"><JobDiscoveryPage /></ProtectedRoute>} />
       
