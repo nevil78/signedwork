@@ -1887,7 +1887,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getWorkEntriesForCompany(companyId: string): Promise<any[]> {
-    // Get all REVIEWED entries (approved or needs changes) - not pending review
+    // Get all work entries for the company (simplified schema)
     const result = await db
       .select({
         id: workEntries.id,
@@ -1895,28 +1895,16 @@ export class DatabaseStorage implements IStorage {
         companyId: workEntries.companyId,
         title: workEntries.title,
         description: workEntries.description,
+        roleType: workEntries.roleType,
+        difficultyLevel: workEntries.difficultyLevel,
+        completionTime: workEntries.completionTime,
         startDate: workEntries.startDate,
         endDate: workEntries.endDate,
-        priority: workEntries.priority,
-        hours: workEntries.hours,
-        actualHours: workEntries.actualHours,
-        estimatedHours: workEntries.estimatedHours,
-        status: workEntries.status, // Employee task status
-        approvalStatus: workEntries.approvalStatus, // Company approval status
-        companyFeedback: workEntries.companyFeedback,
-        companyRating: workEntries.companyRating,
-        // Add comprehensive work entry fields for reviewed entries too
-        workType: workEntries.workType,
-        category: workEntries.category,
-        project: workEntries.project,
-        client: workEntries.client, // Company can see but we hide in UI for privacy
-        billable: workEntries.billable,
-        billableRate: workEntries.billableRate,
         tags: workEntries.tags,
         achievements: workEntries.achievements,
         challenges: workEntries.challenges,
         learnings: workEntries.learnings,
-        attachments: workEntries.attachments,
+        teamId: workEntries.teamId,
         createdAt: workEntries.createdAt,
         updatedAt: workEntries.updatedAt,
         employeeName: sql<string>`CONCAT(${employees.firstName}, ' ', ${employees.lastName})`,
@@ -1924,16 +1912,13 @@ export class DatabaseStorage implements IStorage {
       })
       .from(workEntries)
       .innerJoin(employees, eq(workEntries.employeeId, employees.id))
-      .where(and(
-        eq(workEntries.companyId, companyId),
-        inArray(workEntries.approvalStatus, ["approved", "needs_changes"])
-      ));
+      .where(eq(workEntries.companyId, companyId));
       
     return result;
   }
 
   async getPendingWorkEntriesForCompany(companyId: string): Promise<any[]> {
-    // Get all entries awaiting company review - regardless of employee task status
+    // Get all work entries for the company (same as getWorkEntriesForCompany in simplified system)
     const result = await db
       .select({
         id: workEntries.id,
@@ -1941,28 +1926,16 @@ export class DatabaseStorage implements IStorage {
         companyId: workEntries.companyId,
         title: workEntries.title,
         description: workEntries.description,
+        roleType: workEntries.roleType,
+        difficultyLevel: workEntries.difficultyLevel,
+        completionTime: workEntries.completionTime,
         startDate: workEntries.startDate,
         endDate: workEntries.endDate,
-        priority: workEntries.priority,
-        hours: workEntries.hours,
-        actualHours: workEntries.actualHours,
-        estimatedHours: workEntries.estimatedHours,
-        status: workEntries.status, // Employee task status (could be anything)
-        approvalStatus: workEntries.approvalStatus, // This should be 'pending_review'
-        companyFeedback: workEntries.companyFeedback,
-        companyRating: workEntries.companyRating,
-        // Add comprehensive work entry fields that employees fill out
-        workType: workEntries.workType,
-        category: workEntries.category,
-        project: workEntries.project,
-        client: workEntries.client, // Company can see but we hide in UI for privacy
-        billable: workEntries.billable,
-        billableRate: workEntries.billableRate,
         tags: workEntries.tags,
         achievements: workEntries.achievements,
-        challenges: workEntries.challenges, // Key field for company review
-        learnings: workEntries.learnings, // Key field for company review
-        attachments: workEntries.attachments,
+        challenges: workEntries.challenges,
+        learnings: workEntries.learnings,
+        teamId: workEntries.teamId,
         createdAt: workEntries.createdAt,
         updatedAt: workEntries.updatedAt,
         employeeName: sql<string>`CONCAT(${employees.firstName}, ' ', ${employees.lastName})`,
@@ -1970,10 +1943,7 @@ export class DatabaseStorage implements IStorage {
       })
       .from(workEntries)
       .innerJoin(employees, eq(workEntries.employeeId, employees.id))
-      .where(and(
-        eq(workEntries.companyId, companyId), 
-        eq(workEntries.approvalStatus, "pending_review")
-      ));
+      .where(eq(workEntries.companyId, companyId));
       
     return result;
   }
