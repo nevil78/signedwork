@@ -161,7 +161,7 @@ export const workEntries = pgTable("work_entries", {
   completionTime: integer("completion_time").notNull(), // Hours taken to complete
   startDate: text("start_date").notNull(),
   endDate: text("end_date").notNull(),
-  description: text("description").notNull(),
+  description: text("description"),
   challenges: text("challenges"), // What challenges did you face?
   learnings: text("learnings"), // What did you learn?
   
