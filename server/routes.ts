@@ -2650,7 +2650,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const transformedEntries = workEntries.map(entry => ({
         ...entry,
         workType: entry.roleType,
-        hours: entry.completionTime
+        hours: entry.completionTime,
+        approvalStatus: entry.approvalStatus || entry.approval_status || 'pending_review',
+        companyFeedback: entry.companyFeedback || entry.company_feedback,
+        companyRating: entry.companyRating || entry.company_rating
       }));
       
       res.json(transformedEntries);
@@ -2678,7 +2681,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const transformedEntries = pendingEntries.map(entry => ({
         ...entry,
         workType: entry.roleType,
-        hours: entry.completionTime
+        hours: entry.completionTime,
+        approvalStatus: entry.approvalStatus || entry.approval_status || 'pending_review',
+        companyFeedback: entry.companyFeedback || entry.company_feedback,
+        companyRating: entry.companyRating || entry.company_rating
       }));
       
       res.json(transformedEntries);
