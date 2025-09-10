@@ -64,6 +64,7 @@ import FreelanceProjects from "@/employee/freelance-projects";
 import FreelanceProjectDetails from "@/employee/freelance-project-details";
 import FreelanceApply from "@/employee/freelance-apply";
 import SubscriptionPage from "@/pages/subscription";
+import BillingPage from "@/pages/billing";
 {/* CompanyManagerManagement consolidated into CompanyHierarchy */}
 import FeedbackPage from "@/employee/feedback";
 import ContactPage from "@/pages/contact";
@@ -108,6 +109,7 @@ function Router() {
       <Route path="/terms" component={() => <Suspense fallback={<PageLoader />}><TermsOfService /></Suspense>} />
       <Route path="/privacy" component={() => <Suspense fallback={<PageLoader />}><PrivacyPolicy /></Suspense>} />
       <Route path="/subscription" component={SubscriptionPage} />
+      <Route path="/billing" component={() => <ProtectedRoute><BillingPage /></ProtectedRoute>} />
       
       {/* Protected Routes - Authentication required */}
       <Route path="/dashboard" component={() => <ProtectedRoute><Dashboard /></ProtectedRoute>} />

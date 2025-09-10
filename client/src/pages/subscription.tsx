@@ -69,24 +69,7 @@ export default function SubscriptionPage() {
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
-  // Fetch user's current subscription (optional - ignore errors for non-logged users)
-  const { data: currentSubscription, isLoading: subscriptionLoading } = useQuery({
-    queryKey: ["/api/payments/subscription"],
-    queryFn: async () => {
-      try {
-        const response = await fetch("/api/payments/subscription", {
-          credentials: "include",
-        });
-        if (response.status === 404 || response.status === 401) return null; // No subscription or not logged in
-        if (!response.ok) throw new Error('Failed to fetch subscription');
-        return response.json();
-      } catch (error) {
-        console.log('Subscription fetch error (expected for non-logged users):', error);
-        return null;
-      }
-    },
-    retry: false // Don't retry auth failures
-  });
+  // This is now a public pricing page - no authentication needed
 
   // Cancel subscription mutation
   const cancelSubscription = useMutation({
@@ -192,44 +175,26 @@ export default function SubscriptionPage() {
           </p>
         </div>
 
-        {/* Current Subscription */}
-        {currentSubscription && (
-          <Card className="mb-8 border-green-200 bg-green-50">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Check className="h-5 w-5 text-green-600" />
-                Active Subscription
-              </CardTitle>
-              <CardDescription>
-                You're currently on the {currentSubscription.plan?.name} plan
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex justify-between items-center">
-                <div>
-                  <p className="text-sm text-gray-600">
-                    Current period: {formatDate(currentSubscription.currentPeriodStart)} - {formatDate(currentSubscription.currentPeriodEnd)}
-                  </p>
-                  {currentSubscription.cancelAtPeriodEnd && (
-                    <Badge variant="destructive" className="mt-1">
-                      Cancelled - Will end on {formatDate(currentSubscription.currentPeriodEnd)}
-                    </Badge>
-                  )}
-                </div>
-                {!currentSubscription.cancelAtPeriodEnd && (
-                  <Button
-                    variant="outline"
-                    onClick={() => cancelSubscription.mutate()}
-                    disabled={cancelSubscription.isPending}
-                    data-testid="button-cancel-subscription"
-                  >
-                    Cancel Subscription
-                  </Button>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        )}
+        {/* Notice for visitors */}
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8 text-center">
+          <h3 className="text-lg font-semibold text-blue-900 mb-2">Ready to Transform Your Professional Network?</h3>
+          <p className="text-blue-700 mb-4">Join thousands of professionals and companies already using Signedwork</p>
+          <div className="flex justify-center gap-4">
+            <Button 
+              onClick={() => window.location.href = '/auth?view=selection'}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              Start Free Trial
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => window.location.href = '/auth?view=login'}
+              className="border-blue-600 text-blue-600 hover:bg-blue-50"
+            >
+              Sign In
+            </Button>
+          </div>
+        </div>
 
         {/* Debug Info */}
         {plans.length === 0 && (
@@ -285,20 +250,16 @@ export default function SubscriptionPage() {
                 
                 <Separator className="mb-6" />
                 
-                {currentSubscription?.planId === plan.id ? (
-                  <Button disabled className="w-full" data-testid={`button-current-plan-${plan.name.toLowerCase()}`}>
-                    Current Plan
-                  </Button>
-                ) : (
-                  <RazorpayCheckout
-                    planId={plan.id}
-                    planName={plan.name}
-                    amount={plan.amount}
-                    currency={plan.currency}
-                    onSuccess={handlePaymentSuccess}
-                    onError={handlePaymentError}
-                  />
-                )}
+                {/* Public pricing page - redirect to signup */}
+                <Button 
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                  onClick={() => {
+                    window.location.href = '/auth?view=selection&selectedPlan=' + plan.id;
+                  }}
+                  data-testid={`button-get-started-${plan.name.toLowerCase()}`}
+                >
+                  Get Started with {plan.name}
+                </Button>
               </CardContent>
             </Card>
           )) : (
