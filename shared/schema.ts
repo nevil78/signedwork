@@ -1911,6 +1911,188 @@ export type InsertFreelanceContract = z.infer<typeof insertFreelanceContractSche
 export type InsertLiveMonitorSession = z.infer<typeof insertLiveMonitorSessionSchema>;
 export type InsertFreelanceWorkDiary = z.infer<typeof insertFreelanceWorkDiarySchema>;
 
+// ====================
+// PAYMENT SYSTEM TABLES
+// ====================
+
+// Subscription plans table
+export const subscriptionPlans = pgTable("subscription_plans", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  planId: varchar("plan_id").notNull().unique(), // PLAN-BASIC, PLAN-PRO, etc.
+  name: text("name").notNull(), // "Basic", "Pro", "Enterprise"
+  description: text("description"),
+  currency: text("currency").notNull().default("INR"),
+  amount: integer("amount").notNull(), // Amount in paise (₹1 = 100 paise)
+  interval: text("interval").notNull(), // "monthly", "yearly"
+  intervalCount: integer("interval_count").default(1), // billing frequency
+  features: text("features").array().default(sql`'{}'::text[]`), // Plan features
+  maxEmployees: integer("max_employees"), // Employee limit for companies
+  maxWorkEntries: integer("max_work_entries"), // Work entry limit
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// User subscriptions table  
+export const userSubscriptions = pgTable("user_subscriptions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  subscriptionId: varchar("subscription_id").notNull().unique(), // SUB-ABC123
+  userId: varchar("user_id").notNull(), // Can be employee or company ID
+  userType: text("user_type").notNull(), // "employee" or "company"
+  planId: varchar("plan_id").notNull().references(() => subscriptionPlans.id),
+  
+  // Razorpay subscription details
+  razorpaySubscriptionId: text("razorpay_subscription_id").unique(),
+  razorpayCustomerId: text("razorpay_customer_id"),
+  
+  // Subscription status and billing
+  status: text("status").notNull().default("active"), // "active", "past_due", "cancelled", "ended"
+  currentPeriodStart: timestamp("current_period_start").notNull(),
+  currentPeriodEnd: timestamp("current_period_end").notNull(),
+  cancelAtPeriodEnd: boolean("cancel_at_period_end").default(false),
+  cancelledAt: timestamp("cancelled_at"),
+  endedAt: timestamp("ended_at"),
+  
+  // Trial period
+  trialStart: timestamp("trial_start"),
+  trialEnd: timestamp("trial_end"),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Payment transactions table
+export const paymentTransactions = pgTable("payment_transactions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  transactionId: varchar("transaction_id").notNull().unique(), // TXN-ABC123
+  subscriptionId: varchar("subscription_id").references(() => userSubscriptions.id),
+  userId: varchar("user_id").notNull(),
+  userType: text("user_type").notNull(),
+  
+  // Razorpay payment details
+  razorpayPaymentId: text("razorpay_payment_id").unique(),
+  razorpayOrderId: text("razorpay_order_id"),
+  razorpaySignature: text("razorpay_signature"),
+  
+  // Transaction details
+  amount: integer("amount").notNull(), // Amount in paise
+  currency: text("currency").notNull().default("INR"),
+  status: text("status").notNull(), // "pending", "success", "failed", "refunded"
+  paymentMethod: text("payment_method"), // "card", "upi", "netbanking", etc.
+  description: text("description"),
+  
+  // Metadata
+  razorpayResponse: jsonb("razorpay_response"), // Store full Razorpay response
+  failureReason: text("failure_reason"),
+  refundAmount: integer("refund_amount"),
+  refundedAt: timestamp("refunded_at"),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Payment method cards table (for saved payment methods)
+export const paymentMethods = pgTable("payment_methods", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(),
+  userType: text("user_type").notNull(),
+  
+  // Razorpay payment method details
+  razorpayPaymentMethodId: text("razorpay_payment_method_id").unique(),
+  
+  // Card details (masked)
+  cardType: text("card_type"), // "credit", "debit"
+  cardNetwork: text("card_network"), // "visa", "mastercard", "rupay"
+  cardLast4: text("card_last4"), // Last 4 digits
+  cardExpMonth: integer("card_exp_month"),
+  cardExpYear: integer("card_exp_year"),
+  
+  // Method status
+  isDefault: boolean("is_default").default(false),
+  isActive: boolean("is_active").default(true),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Razorpay webhook events table
+export const webhookEvents = pgTable("webhook_events", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  razorpayEventId: text("razorpay_event_id").notNull().unique(),
+  eventType: text("event_type").notNull(), // "payment.captured", "subscription.charged", etc.
+  eventData: jsonb("event_data").notNull(), // Full webhook payload
+  processed: boolean("processed").default(false),
+  processedAt: timestamp("processed_at"),
+  errorMessage: text("error_message"),
+  retryCount: integer("retry_count").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Relations for payment tables
+export const subscriptionPlansRelations = relations(subscriptionPlans, ({ many }) => ({
+  subscriptions: many(userSubscriptions),
+}));
+
+export const userSubscriptionsRelations = relations(userSubscriptions, ({ one, many }) => ({
+  plan: one(subscriptionPlans, {
+    fields: [userSubscriptions.planId],
+    references: [subscriptionPlans.id],
+  }),
+  transactions: many(paymentTransactions),
+}));
+
+export const paymentTransactionsRelations = relations(paymentTransactions, ({ one }) => ({
+  subscription: one(userSubscriptions, {
+    fields: [paymentTransactions.subscriptionId],
+    references: [userSubscriptions.id],
+  }),
+}));
+
+// Insert schemas for payment tables
+export const insertSubscriptionPlanSchema = createInsertSchema(subscriptionPlans).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertUserSubscriptionSchema = createInsertSchema(userSubscriptions).omit({
+  id: true,
+  subscriptionId: true,
+  razorpaySubscriptionId: true,
+  razorpayCustomerId: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertPaymentTransactionSchema = createInsertSchema(paymentTransactions).omit({
+  id: true,
+  transactionId: true,
+  razorpayPaymentId: true,
+  razorpayOrderId: true,
+  razorpaySignature: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertPaymentMethodSchema = createInsertSchema(paymentMethods).omit({
+  id: true,
+  razorpayPaymentMethodId: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+// Payment types
+export type SubscriptionPlan = typeof subscriptionPlans.$inferSelect;
+export type UserSubscription = typeof userSubscriptions.$inferSelect;
+export type PaymentTransaction = typeof paymentTransactions.$inferSelect;
+export type PaymentMethod = typeof paymentMethods.$inferSelect;
+export type WebhookEvent = typeof webhookEvents.$inferSelect;
+
+export type InsertSubscriptionPlan = z.infer<typeof insertSubscriptionPlanSchema>;
+export type InsertUserSubscription = z.infer<typeof insertUserSubscriptionSchema>;
+export type InsertPaymentTransaction = z.infer<typeof insertPaymentTransactionSchema>;
+export type InsertPaymentMethod = z.infer<typeof insertPaymentMethodSchema>;
+
 // Additional client auth schemas
 export const clientSignupSchema = insertClientSchema.extend({
   confirmPassword: z.string().min(1, "Please confirm your password"),
