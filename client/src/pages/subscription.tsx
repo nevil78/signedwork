@@ -40,7 +40,7 @@ export default function SubscriptionPage() {
   const queryClient = useQueryClient();
 
   // Fetch subscription plans
-  const { data: plans = [], isLoading: plansLoading } = useQuery({
+  const { data: plans = [], isLoading: plansLoading, error: plansError } = useQuery({
     queryKey: ["/api/payments/plans"],
     queryFn: async () => {
       const response = await apiRequest("GET", "/api/payments/plans");
@@ -49,15 +49,16 @@ export default function SubscriptionPage() {
     }
   });
 
-  // Fetch user's current subscription
+  // Fetch user's current subscription (optional - ignore errors for non-logged users)
   const { data: currentSubscription, isLoading: subscriptionLoading } = useQuery({
     queryKey: ["/api/payments/subscription"],
     queryFn: async () => {
       const response = await apiRequest("GET", "/api/payments/subscription");
-      if (response.status === 404) return null; // No subscription
+      if (response.status === 404 || response.status === 401) return null; // No subscription or not logged in
       if (!response.ok) throw new Error('Failed to fetch subscription');
       return response.json();
-    }
+    },
+    retry: false // Don't retry auth failures
   });
 
   // Cancel subscription mutation
@@ -120,13 +121,29 @@ export default function SubscriptionPage() {
     return null;
   };
 
-  if (plansLoading || subscriptionLoading) {
+  if (plansLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
     );
   }
+
+  if (plansError) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-xl font-bold text-gray-900 mb-2">Error Loading Plans</h2>
+          <p className="text-gray-600">{plansError?.message || 'Failed to load subscription plans'}</p>
+          <p className="text-sm text-gray-500 mt-2">Debug: Check browser console for more details</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Debug log
+  console.log('Plans data:', plans);
+  console.log('Plans length:', plans?.length);
 
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4">
@@ -181,9 +198,16 @@ export default function SubscriptionPage() {
           </Card>
         )}
 
+        {/* Debug Info */}
+        {plans.length === 0 && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-8">
+            <p className="text-yellow-800">No subscription plans found. Check console for details.</p>
+          </div>
+        )}
+
         {/* Pricing Plans */}
         <div className="grid md:grid-cols-3 gap-8 mb-12">
-          {plans.map((plan: SubscriptionPlan) => (
+          {plans && plans.length > 0 ? plans.map((plan: SubscriptionPlan) => (
             <Card 
               key={plan.id} 
               className={`relative transition-all duration-300 hover:shadow-lg ${
@@ -244,7 +268,11 @@ export default function SubscriptionPage() {
                 )}
               </CardContent>
             </Card>
-          ))}
+          )) : (
+            <div className="col-span-3 text-center py-12">
+              <p className="text-gray-500">No subscription plans available at the moment.</p>
+            </div>
+          )}
         </div>
 
         {/* Features Comparison */}

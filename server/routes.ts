@@ -8662,7 +8662,7 @@ This message was sent through the Signedwork contact form.
     key_secret: process.env.RAZORPAY_KEY_SECRET,
   });
 
-  // Get subscription plans
+  // Get subscription plans (public endpoint - no auth required)
   app.get("/api/payments/plans", async (req, res) => {
     try {
       const plans = await storage.getSubscriptionPlans();
