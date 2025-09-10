@@ -134,6 +134,23 @@ export function RazorpayCheckout({ planId, planName, amount, currency, onSuccess
 
     } catch (error: any) {
       console.error('Payment initiation error:', error);
+      
+      // Check if it's an authentication error
+      if (error.message?.includes('Not authenticated') || error.message?.includes('401') || 
+          error.toString?.().includes('401') || error.toString?.().includes('Not authenticated')) {
+        toast({
+          title: "Login Required",
+          description: "Please log in to subscribe to a plan",
+          variant: "destructive",
+        });
+        
+        // Redirect to login page after a short delay
+        setTimeout(() => {
+          window.location.href = '/auth?view=login&accountType=employee&redirect=subscription';
+        }, 2000);
+        return;
+      }
+      
       toast({
         title: "Payment Failed",
         description: error.message || "Failed to initiate payment. Please try again.",
