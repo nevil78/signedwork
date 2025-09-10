@@ -29,6 +29,8 @@ import { OTPEmailService } from "./otpEmailService";
 import { SignupVerificationService } from "./signupVerificationService";
 import { sendEmail } from "./sendgrid";
 import { aiJobService, type EmployeeProfile } from "./aiJobService";
+import Razorpay from "razorpay";
+import crypto from "crypto";
 
 // Phase 5: Enterprise Real-time Communication System
 let io: SocketIOServer;
@@ -8642,6 +8644,270 @@ This message was sent through the Signedwork contact form.
     } catch (error) {
       console.error('Error updating work diary entry:', error);
       res.status(500).json({ message: 'Failed to update work diary entry' });
+    }
+  });
+
+  // ====================
+  // RAZORPAY PAYMENT ROUTES
+  // ====================
+
+  // Initialize Razorpay
+  
+  if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
+    console.warn('Razorpay API keys not found. Payment functionality will be disabled.');
+  }
+
+  const razorpay = new Razorpay({
+    key_id: process.env.RAZORPAY_KEY_ID,
+    key_secret: process.env.RAZORPAY_KEY_SECRET,
+  });
+
+  // Get subscription plans
+  app.get("/api/payments/plans", async (req, res) => {
+    try {
+      const plans = await storage.getSubscriptionPlans();
+      res.json(plans);
+    } catch (error: any) {
+      console.error('Error fetching subscription plans:', error);
+      res.status(500).json({ message: 'Failed to fetch subscription plans' });
+    }
+  });
+
+  // Create Razorpay order for subscription
+  app.post("/api/payments/create-order", requireAuth, async (req: any, res) => {
+    try {
+      const { planId } = req.body;
+      
+      if (!planId) {
+        return res.status(400).json({ message: 'Plan ID is required' });
+      }
+
+      // Get plan details
+      const plan = await storage.getSubscriptionPlan(planId);
+      if (!plan) {
+        return res.status(404).json({ message: 'Subscription plan not found' });
+      }
+
+      // Create Razorpay order
+      const orderOptions = {
+        amount: plan.amount, // Amount in paise
+        currency: plan.currency,
+        receipt: `order_${Date.now()}`,
+        notes: {
+          planId: plan.id,
+          userId: req.user.id,
+          userType: req.user.type,
+        },
+      };
+
+      const order = await razorpay.orders.create(orderOptions);
+
+      // Store pending transaction
+      const transactionData = {
+        userId: req.user.id,
+        userType: req.user.type,
+        razorpayOrderId: order.id,
+        amount: plan.amount,
+        currency: plan.currency,
+        status: 'pending',
+        description: `Subscription to ${plan.name} plan`,
+      };
+
+      const transaction = await storage.createPaymentTransaction(transactionData);
+
+      res.json({
+        orderId: order.id,
+        amount: order.amount,
+        currency: order.currency,
+        transactionId: transaction.transactionId,
+        planName: plan.name,
+      });
+    } catch (error: any) {
+      console.error('Error creating Razorpay order:', error);
+      res.status(500).json({ message: 'Failed to create payment order' });
+    }
+  });
+
+  // Verify payment and create subscription
+  app.post("/api/payments/verify", requireAuth, async (req: any, res) => {
+    try {
+      const {
+        razorpay_order_id,
+        razorpay_payment_id,
+        razorpay_signature,
+        transactionId,
+      } = req.body;
+
+      // Verify signature
+      const expectedSignature = crypto
+        .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
+        .update(`${razorpay_order_id}|${razorpay_payment_id}`)
+        .digest('hex');
+
+      if (expectedSignature !== razorpay_signature) {
+        return res.status(400).json({ message: 'Invalid payment signature' });
+      }
+
+      // Update transaction as successful
+      const transaction = await storage.updatePaymentTransaction(transactionId, {
+        razorpayPaymentId: razorpay_payment_id,
+        razorpaySignature: razorpay_signature,
+        status: 'success',
+      });
+
+      if (!transaction) {
+        return res.status(404).json({ message: 'Transaction not found' });
+      }
+
+      // Get payment details from Razorpay
+      const payment = await razorpay.payments.fetch(razorpay_payment_id);
+
+      // Create subscription
+      const planId = payment.notes?.planId;
+      if (!planId) {
+        return res.status(400).json({ message: 'Plan ID not found in payment' });
+      }
+
+      const plan = await storage.getSubscriptionPlan(planId);
+      if (!plan) {
+        return res.status(404).json({ message: 'Subscription plan not found' });
+      }
+
+      // Calculate subscription period
+      const currentPeriodStart = new Date();
+      const currentPeriodEnd = new Date(currentPeriodStart);
+      
+      if (plan.interval === 'monthly') {
+        currentPeriodEnd.setMonth(currentPeriodEnd.getMonth() + plan.intervalCount);
+      } else if (plan.interval === 'yearly') {
+        currentPeriodEnd.setFullYear(currentPeriodEnd.getFullYear() + plan.intervalCount);
+      }
+
+      // Create subscription
+      const subscriptionData = {
+        userId: req.user.id,
+        userType: req.user.type,
+        planId: plan.id,
+        status: 'active',
+        currentPeriodStart,
+        currentPeriodEnd,
+      };
+
+      const subscription = await storage.createUserSubscription(subscriptionData);
+
+      // Update transaction with subscription ID
+      await storage.updatePaymentTransaction(transactionId, {
+        subscriptionId: subscription.id,
+      });
+
+      res.json({
+        message: 'Payment verified and subscription created successfully',
+        subscription,
+        transaction,
+      });
+    } catch (error: any) {
+      console.error('Error verifying payment:', error);
+      res.status(500).json({ message: 'Failed to verify payment' });
+    }
+  });
+
+  // Get user's current subscription
+  app.get("/api/payments/subscription", requireAuth, async (req: any, res) => {
+    try {
+      const subscription = await storage.getUserSubscription(req.user.id, req.user.type);
+      if (!subscription) {
+        return res.status(404).json({ message: 'No active subscription found' });
+      }
+
+      res.json(subscription);
+    } catch (error: any) {
+      console.error('Error fetching user subscription:', error);
+      res.status(500).json({ message: 'Failed to fetch subscription' });
+    }
+  });
+
+  // Cancel subscription
+  app.post("/api/payments/subscription/cancel", requireAuth, async (req: any, res) => {
+    try {
+      const subscription = await storage.getUserSubscription(req.user.id, req.user.type);
+      if (!subscription) {
+        return res.status(404).json({ message: 'No active subscription found' });
+      }
+
+      const updatedSubscription = await storage.updateUserSubscription(subscription.id, {
+        cancelAtPeriodEnd: true,
+        cancelledAt: new Date(),
+      });
+
+      res.json({
+        message: 'Subscription will be cancelled at the end of current period',
+        subscription: updatedSubscription,
+      });
+    } catch (error: any) {
+      console.error('Error cancelling subscription:', error);
+      res.status(500).json({ message: 'Failed to cancel subscription' });
+    }
+  });
+
+  // Get payment history
+  app.get("/api/payments/history", requireAuth, async (req: any, res) => {
+    try {
+      const transactions = await storage.getUserPaymentTransactions(req.user.id, req.user.type);
+      res.json(transactions);
+    } catch (error: any) {
+      console.error('Error fetching payment history:', error);
+      res.status(500).json({ message: 'Failed to fetch payment history' });
+    }
+  });
+
+  // Razorpay webhook handler
+  app.post("/api/payments/webhook", async (req, res) => {
+    try {
+      const webhookSignature = req.headers['x-razorpay-signature'];
+      const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
+
+      if (webhookSecret) {
+        const expectedSignature = crypto
+          .createHmac('sha256', webhookSecret)
+          .update(JSON.stringify(req.body))
+          .digest('hex');
+
+        if (expectedSignature !== webhookSignature) {
+          return res.status(400).json({ message: 'Invalid webhook signature' });
+        }
+      }
+
+      const event = req.body;
+
+      // Store webhook event
+      await storage.createWebhookEvent({
+        razorpayEventId: event.event,
+        eventType: event.event,
+        eventData: event.payload,
+      });
+
+      // Process specific events
+      switch (event.event) {
+        case 'payment.captured':
+          // Handle successful payment
+          console.log('Payment captured:', event.payload.payment.entity);
+          break;
+        case 'payment.failed':
+          // Handle failed payment
+          console.log('Payment failed:', event.payload.payment.entity);
+          break;
+        case 'subscription.charged':
+          // Handle subscription charge
+          console.log('Subscription charged:', event.payload.subscription.entity);
+          break;
+        default:
+          console.log('Unhandled webhook event:', event.event);
+      }
+
+      res.json({ status: 'ok' });
+    } catch (error: any) {
+      console.error('Error processing webhook:', error);
+      res.status(500).json({ message: 'Failed to process webhook' });
     }
   });
 

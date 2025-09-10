@@ -5,6 +5,8 @@ import {
   recruiterProfiles, candidatePipelines, candidateInteractions, recruitmentAnalytics, savedSearches,
   // Freelancer marketplace tables
   clients, freelanceProjects, projectProposals, freelanceContracts, liveMonitorSessions, freelanceWorkDiary,
+  // Payment system tables
+  subscriptionPlans, userSubscriptions, paymentTransactions, paymentMethods, webhookEvents,
   type Employee, type Company, type InsertEmployee, type InsertCompany,
   type Experience, type Education, type Certification, type Project, type Endorsement, type WorkEntry, type EmployeeCompany,
   type InsertExperience, type InsertEducation, type InsertCertification, 
@@ -24,7 +26,10 @@ import {
   type InsertRecruiterProfile, type InsertCandidatePipeline, type InsertCandidateInteraction, type InsertRecruitmentAnalytic, type InsertSavedSearch,
   // Freelancer marketplace types
   type Client, type FreelanceProject, type ProjectProposal, type FreelanceContract, type LiveMonitorSession, type FreelanceWorkDiary,
-  type InsertClient, type InsertFreelanceProject, type InsertProjectProposal, type InsertFreelanceContract, type InsertLiveMonitorSession, type InsertFreelanceWorkDiary
+  type InsertClient, type InsertFreelanceProject, type InsertProjectProposal, type InsertFreelanceContract, type InsertLiveMonitorSession, type InsertFreelanceWorkDiary,
+  // Payment system types
+  type SubscriptionPlan, type UserSubscription, type PaymentTransaction, type PaymentMethod, type WebhookEvent,
+  type InsertSubscriptionPlan, type InsertUserSubscription, type InsertPaymentTransaction, type InsertPaymentMethod
 } from "@shared/schema";
 
 type EmailVerification = typeof emailVerifications.$inferSelect;
@@ -6491,6 +6496,156 @@ export class DatabaseStorage implements IStorage {
       ))
       .returning();
     return entry;
+  }
+
+  // ====================
+  // PAYMENT SYSTEM METHODS
+  // ====================
+
+  // Subscription Plans
+  async getSubscriptionPlans(): Promise<SubscriptionPlan[]> {
+    return await db.select().from(subscriptionPlans).where(eq(subscriptionPlans.isActive, true));
+  }
+
+  async getSubscriptionPlan(id: string): Promise<SubscriptionPlan | undefined> {
+    const [plan] = await db.select().from(subscriptionPlans).where(eq(subscriptionPlans.id, id));
+    return plan || undefined;
+  }
+
+  async createSubscriptionPlan(planData: InsertSubscriptionPlan): Promise<SubscriptionPlan> {
+    let planId = `PLAN-${Math.random().toString(36).substr(2, 8).toUpperCase()}`;
+    let attempts = 0;
+    const maxAttempts = 10;
+    
+    while (attempts < maxAttempts) {
+      const existing = await db.select().from(subscriptionPlans).where(eq(subscriptionPlans.planId, planId));
+      if (existing.length === 0) break;
+      planId = `PLAN-${Math.random().toString(36).substr(2, 8).toUpperCase()}`;
+      attempts++;
+    }
+    
+    const [plan] = await db
+      .insert(subscriptionPlans)
+      .values({ ...planData, planId })
+      .returning();
+    return plan;
+  }
+
+  // User Subscriptions
+  async getUserSubscription(userId: string, userType: string): Promise<UserSubscription | undefined> {
+    const [subscription] = await db
+      .select()
+      .from(userSubscriptions)
+      .where(and(
+        eq(userSubscriptions.userId, userId),
+        eq(userSubscriptions.userType, userType),
+        eq(userSubscriptions.status, 'active')
+      ));
+    return subscription || undefined;
+  }
+
+  async createUserSubscription(subscriptionData: InsertUserSubscription): Promise<UserSubscription> {
+    let subscriptionId = `SUB-${Math.random().toString(36).substr(2, 8).toUpperCase()}`;
+    let attempts = 0;
+    const maxAttempts = 10;
+    
+    while (attempts < maxAttempts) {
+      const existing = await db.select().from(userSubscriptions).where(eq(userSubscriptions.subscriptionId, subscriptionId));
+      if (existing.length === 0) break;
+      subscriptionId = `SUB-${Math.random().toString(36).substr(2, 8).toUpperCase()}`;
+      attempts++;
+    }
+    
+    const [subscription] = await db
+      .insert(userSubscriptions)
+      .values({ ...subscriptionData, subscriptionId })
+      .returning();
+    return subscription;
+  }
+
+  async updateUserSubscription(id: string, data: Partial<UserSubscription>): Promise<UserSubscription> {
+    const [subscription] = await db
+      .update(userSubscriptions)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(userSubscriptions.id, id))
+      .returning();
+    return subscription;
+  }
+
+  // Payment Transactions
+  async createPaymentTransaction(transactionData: InsertPaymentTransaction): Promise<PaymentTransaction> {
+    let transactionId = `TXN-${Math.random().toString(36).substr(2, 8).toUpperCase()}`;
+    let attempts = 0;
+    const maxAttempts = 10;
+    
+    while (attempts < maxAttempts) {
+      const existing = await db.select().from(paymentTransactions).where(eq(paymentTransactions.transactionId, transactionId));
+      if (existing.length === 0) break;
+      transactionId = `TXN-${Math.random().toString(36).substr(2, 8).toUpperCase()}`;
+      attempts++;
+    }
+    
+    const [transaction] = await db
+      .insert(paymentTransactions)
+      .values({ ...transactionData, transactionId })
+      .returning();
+    return transaction;
+  }
+
+  async updatePaymentTransaction(transactionId: string, data: Partial<PaymentTransaction>): Promise<PaymentTransaction | undefined> {
+    const [transaction] = await db
+      .update(paymentTransactions)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(paymentTransactions.transactionId, transactionId))
+      .returning();
+    return transaction || undefined;
+  }
+
+  async getUserPaymentTransactions(userId: string, userType: string): Promise<PaymentTransaction[]> {
+    return await db
+      .select()
+      .from(paymentTransactions)
+      .where(and(
+        eq(paymentTransactions.userId, userId),
+        eq(paymentTransactions.userType, userType)
+      ))
+      .orderBy(desc(paymentTransactions.createdAt));
+  }
+
+  // Webhook Events
+  async createWebhookEvent(eventData: { razorpayEventId: string; eventType: string; eventData: any }): Promise<WebhookEvent> {
+    const [event] = await db
+      .insert(webhookEvents)
+      .values(eventData)
+      .returning();
+    return event;
+  }
+
+  async markWebhookEventProcessed(id: string): Promise<void> {
+    await db
+      .update(webhookEvents)
+      .set({ processed: true, processedAt: new Date() })
+      .where(eq(webhookEvents.id, id));
+  }
+
+  // Payment Methods (for future use)
+  async createPaymentMethod(methodData: InsertPaymentMethod): Promise<PaymentMethod> {
+    const [method] = await db
+      .insert(paymentMethods)
+      .values(methodData)
+      .returning();
+    return method;
+  }
+
+  async getUserPaymentMethods(userId: string, userType: string): Promise<PaymentMethod[]> {
+    return await db
+      .select()
+      .from(paymentMethods)
+      .where(and(
+        eq(paymentMethods.userId, userId),
+        eq(paymentMethods.userType, userType),
+        eq(paymentMethods.isActive, true)
+      ));
   }
 }
 
