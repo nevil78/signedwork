@@ -43,12 +43,26 @@ export default function SubscriptionPage() {
   const { data: plans = [], isLoading: plansLoading, error: plansError } = useQuery({
     queryKey: ["/api/payments/plans"],
     queryFn: async () => {
-      const response = await apiRequest("GET", "/api/payments/plans");
-      // Handle both success (200) and not modified (304) as successful
-      if (!response.ok && response.status !== 304) {
-        throw new Error(`Failed to fetch plans: ${response.status} ${response.statusText}`);
+      try {
+        // Use direct fetch to handle 304 responses properly
+        const response = await fetch("/api/payments/plans", {
+          credentials: "include",
+        });
+        
+        console.log('API Response:', response.status, response.ok);
+        
+        // 200 = success, 304 = not modified (cached, still valid)
+        if (response.ok || response.status === 304) {
+          const data = await response.json();
+          console.log('Plans received:', data);
+          return data;
+        } else {
+          throw new Error(`HTTP ${response.status}: ${response.statusText || 'Unknown error'}`);
+        }
+      } catch (error) {
+        console.error('Fetch error:', error);
+        throw error;
       }
-      return response.json();
     },
     retry: 1,
     staleTime: 5 * 60 * 1000, // 5 minutes
@@ -58,10 +72,17 @@ export default function SubscriptionPage() {
   const { data: currentSubscription, isLoading: subscriptionLoading } = useQuery({
     queryKey: ["/api/payments/subscription"],
     queryFn: async () => {
-      const response = await apiRequest("GET", "/api/payments/subscription");
-      if (response.status === 404 || response.status === 401) return null; // No subscription or not logged in
-      if (!response.ok) throw new Error('Failed to fetch subscription');
-      return response.json();
+      try {
+        const response = await fetch("/api/payments/subscription", {
+          credentials: "include",
+        });
+        if (response.status === 404 || response.status === 401) return null; // No subscription or not logged in
+        if (!response.ok) throw new Error('Failed to fetch subscription');
+        return response.json();
+      } catch (error) {
+        console.log('Subscription fetch error (expected for non-logged users):', error);
+        return null;
+      }
     },
     retry: false // Don't retry auth failures
   });
