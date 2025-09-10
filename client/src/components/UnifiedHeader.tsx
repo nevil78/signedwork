@@ -39,7 +39,7 @@ export default function UnifiedHeader({
               <a href="#features" className="text-slate-600 hover:text-slate-900">Features</a>
               <a href="#enterprise" className="text-slate-600 hover:text-slate-900">Enterprise</a>
               <a href="#testimonials" className="text-slate-600 hover:text-slate-900">Testimonials</a>
-              <a href="#pricing" className="text-slate-600 hover:text-slate-900">Pricing</a>
+              <Link href="/subscription" className="text-slate-600 hover:text-slate-900">Pricing</Link>
             </div>
           )}
 
