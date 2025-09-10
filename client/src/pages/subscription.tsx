@@ -44,9 +44,14 @@ export default function SubscriptionPage() {
     queryKey: ["/api/payments/plans"],
     queryFn: async () => {
       const response = await apiRequest("GET", "/api/payments/plans");
-      if (!response.ok) throw new Error('Failed to fetch plans');
+      // Handle both success (200) and not modified (304) as successful
+      if (!response.ok && response.status !== 304) {
+        throw new Error(`Failed to fetch plans: ${response.status} ${response.statusText}`);
+      }
       return response.json();
-    }
+    },
+    retry: 1,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
   // Fetch user's current subscription (optional - ignore errors for non-logged users)
@@ -144,6 +149,8 @@ export default function SubscriptionPage() {
   // Debug log
   console.log('Plans data:', plans);
   console.log('Plans length:', plans?.length);
+  console.log('Plans error:', plansError);
+  console.log('Loading state:', plansLoading);
 
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4">
