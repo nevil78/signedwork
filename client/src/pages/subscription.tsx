@@ -8,6 +8,7 @@ import { RazorpayCheckout } from "@/components/RazorpayCheckout";
 import { useToast } from "@/hooks/use-toast";
 import { Check, Crown, Star, Zap, Users, Building, X } from "lucide-react";
 import { useState } from "react";
+import UnifiedHeader from "@/components/UnifiedHeader";
 
 interface SubscriptionPlan {
   id: string;
@@ -174,7 +175,11 @@ export default function SubscriptionPage() {
   console.log('Loading state:', plansLoading);
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4">
+    <div className="min-h-screen bg-gray-50">
+      {/* Navigation Header */}
+      <UnifiedHeader showBackButton={true} showAuthButtons={true} currentPage="landing" />
+      
+      <div className="py-12 px-4">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="text-center mb-12">
@@ -346,6 +351,7 @@ export default function SubscriptionPage() {
           </div>
         </div>
       </div>
+    </div>
     </div>
   );
 }
