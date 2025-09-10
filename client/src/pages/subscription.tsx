@@ -181,7 +181,7 @@ export default function SubscriptionPage() {
           <p className="text-blue-700 mb-4">Join thousands of professionals and companies already using Signedwork</p>
           <div className="flex justify-center gap-4">
             <Button 
-              onClick={() => window.location.href = '/auth?view=selection'}
+              onClick={() => window.location.href = '/auth?view=company'}
               className="bg-blue-600 hover:bg-blue-700 text-white"
             >
               Start Free Trial
@@ -250,11 +250,11 @@ export default function SubscriptionPage() {
                 
                 <Separator className="mb-6" />
                 
-                {/* Public pricing page - redirect to signup */}
+                {/* Public pricing page - redirect to company signup */}
                 <Button 
                   className="w-full bg-blue-600 hover:bg-blue-700 text-white"
                   onClick={() => {
-                    window.location.href = '/auth?view=selection&selectedPlan=' + plan.id;
+                    window.location.href = '/auth?view=company&selectedPlan=' + plan.id;
                   }}
                   data-testid={`button-get-started-${plan.name.toLowerCase()}`}
                 >
