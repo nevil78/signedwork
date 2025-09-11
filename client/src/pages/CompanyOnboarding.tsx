@@ -13,7 +13,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { CheckCircle, Sparkles, Building, Users, CreditCard, ArrowRight, Target, TrendingUp, Shield, Zap, UserPlus, Mail, Crown, User, Settings, Plus, X, Loader2 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { CheckCircle, Sparkles, Building, Users, CreditCard, ArrowRight, Target, TrendingUp, Shield, Zap, UserPlus, Mail, Crown, User, Settings, Plus, X, Loader2, Star, ThumbsUp, Brain } from "lucide-react";
 import OnboardingWizard, { useOnboardingWizard } from "@/components/OnboardingWizard";
 import UnifiedHeader from "@/components/UnifiedHeader";
 import { apiRequest } from "@/lib/queryClient";
@@ -936,12 +937,496 @@ function TeamSetupStep({ context }: { context: any }) {
   );
 }
 
+// Plan Selection Form Schema
+const planSelectionSchema = z.object({
+  selectedPlan: z.string().min(1, "Please select a plan"),
+  customizeFeatures: z.boolean().optional(),
+});
+
+type PlanSelectionData = z.infer<typeof planSelectionSchema>;
+
+interface SubscriptionPlan {
+  id: string;
+  planId: string;
+  name: string;
+  description: string;
+  amount: number;
+  currency: string;
+  interval: string;
+  features: string[];
+  maxEmployees?: number;
+  maxWorkEntries?: number;
+  isActive: boolean;
+}
+
+
+// Plan Recommendation Algorithm
+const getRecommendedPlan = (organizationData: any, plans: SubscriptionPlan[]) => {
+  if (!organizationData || plans.length === 0) return null;
+
+  const { companySize, primaryGoals, industry } = organizationData;
+  
+  // Score each plan based on company requirements
+  const planScores = plans.map(plan => {
+    let score = 0;
+    let reasons = [];
+
+    // Company Size Scoring
+    if (companySize === "1-10") {
+      if (plan.planId === "PLAN-BASIC") {
+        score += 40;
+        reasons.push("Perfect for small teams starting out");
+      } else if (plan.planId === "PLAN-PRO") {
+        score += 25;
+        reasons.push("Room for growth as your team expands");
+      }
+    } else if (companySize === "11-50") {
+      if (plan.planId === "PLAN-PRO") {
+        score += 40;
+        reasons.push("Ideal size range for Pro plan features");
+      } else if (plan.planId === "PLAN-BASIC") {
+        score += 15;
+        reasons.push("May be limiting for larger teams");
+      } else if (plan.planId === "PLAN-ENTERPRISE") {
+        score += 25;
+        reasons.push("Full feature set for growing company");
+      }
+    } else if (companySize === "51-200" || companySize === "201-500") {
+      if (plan.planId === "PLAN-ENTERPRISE") {
+        score += 40;
+        reasons.push("Designed for large organizations");
+      } else if (plan.planId === "PLAN-PRO") {
+        score += 30;
+        reasons.push("Good feature set but may need more capacity");
+      }
+    } else if (companySize === "501-1000" || companySize === "1000+") {
+      if (plan.planId === "PLAN-ENTERPRISE") {
+        score += 45;
+        reasons.push("Essential for enterprise-scale operations");
+      }
+    }
+
+    // Primary Goals Scoring
+    if (primaryGoals?.includes("verify-work")) {
+      if (plan.planId === "PLAN-PRO" || plan.planId === "PLAN-ENTERPRISE") {
+        score += 20;
+        reasons.push("Includes verified work entries feature");
+      }
+    }
+    
+    if (primaryGoals?.includes("track-productivity")) {
+      if (plan.planId === "PLAN-PRO" || plan.planId === "PLAN-ENTERPRISE") {
+        score += 15;
+        reasons.push("Advanced analytics for productivity tracking");
+      }
+    }
+    
+    if (primaryGoals?.includes("compliance-reporting")) {
+      if (plan.planId === "PLAN-ENTERPRISE") {
+        score += 25;
+        reasons.push("Advanced security and reporting features");
+      }
+    }
+    
+    if (primaryGoals?.includes("hire-freelancers")) {
+      if (plan.planId === "PLAN-PRO" || plan.planId === "PLAN-ENTERPRISE") {
+        score += 15;
+        reasons.push("Team management for freelancers");
+      }
+    }
+
+    // Industry-specific scoring - comprehensive rules for all industries
+    switch (industry) {
+      case "finance":
+        if (plan.planId === "PLAN-ENTERPRISE") {
+          score += 30;
+          reasons.push("Essential compliance and security features for financial services");
+        } else if (plan.planId === "PLAN-PRO") {
+          score += 20;
+          reasons.push("Good compliance features, but Enterprise recommended for full regulatory support");
+        }
+        break;
+        
+      case "healthcare":
+        if (plan.planId === "PLAN-ENTERPRISE") {
+          score += 35;
+          reasons.push("HIPAA compliance and advanced security features required for healthcare");
+        } else if (plan.planId === "PLAN-PRO") {
+          score += 15;
+          reasons.push("Basic security features, but Enterprise recommended for healthcare compliance");
+        }
+        break;
+        
+      case "technology":
+        if (plan.planId === "PLAN-PRO") {
+          score += 25;
+          reasons.push("Perfect for growing tech teams with analytics and scalability features");
+        } else if (plan.planId === "PLAN-ENTERPRISE") {
+          score += 20;
+          reasons.push("Advanced features for large tech organizations");
+        } else if (plan.planId === "PLAN-BASIC") {
+          score += 10;
+          reasons.push("Good for tech startups, but Pro recommended for growth");
+        }
+        break;
+        
+      case "consulting":
+        if (plan.planId === "PLAN-PRO") {
+          score += 30;
+          reasons.push("Ideal for professional services with time tracking and team management");
+        } else if (plan.planId === "PLAN-ENTERPRISE") {
+          score += 20;
+          reasons.push("Advanced features for large consulting firms");
+        }
+        break;
+        
+      case "manufacturing":
+        if (plan.planId === "PLAN-ENTERPRISE") {
+          score += 25;
+          reasons.push("Complex workforce management and compliance features for manufacturing");
+        } else if (plan.planId === "PLAN-PRO") {
+          score += 20;
+          reasons.push("Good team management, but Enterprise recommended for large operations");
+        }
+        break;
+        
+      case "real-estate":
+        if (plan.planId === "PLAN-ENTERPRISE") {
+          score += 25;
+          reasons.push("Transaction tracking and compliance features for real estate");
+        } else if (plan.planId === "PLAN-PRO") {
+          score += 20;
+          reasons.push("Good project management for real estate teams");
+        }
+        break;
+        
+      case "marketing":
+        if (plan.planId === "PLAN-PRO") {
+          score += 25;
+          reasons.push("Collaboration and project management features perfect for marketing teams");
+        } else if (plan.planId === "PLAN-BASIC") {
+          score += 15;
+          reasons.push("Good for small marketing teams, Pro recommended for agencies");
+        }
+        break;
+        
+      case "media":
+        if (plan.planId === "PLAN-PRO") {
+          score += 25;
+          reasons.push("Project-based work management ideal for media and creative teams");
+        } else if (plan.planId === "PLAN-ENTERPRISE") {
+          score += 15;
+          reasons.push("Advanced features for large media organizations");
+        }
+        break;
+        
+      case "education":
+        if (plan.planId === "PLAN-BASIC") {
+          score += 20;
+          reasons.push("Cost-effective solution perfect for educational institutions");
+        } else if (plan.planId === "PLAN-PRO") {
+          score += 25;
+          reasons.push("Enhanced features for larger educational organizations");
+        } else if (plan.planId === "PLAN-ENTERPRISE") {
+          score += 15;
+          reasons.push("Full feature set for large educational systems");
+        }
+        break;
+        
+      case "retail":
+        if (plan.planId === "PLAN-BASIC") {
+          score += 15;
+          reasons.push("Good for small retail operations");
+        } else if (plan.planId === "PLAN-PRO") {
+          score += 25;
+          reasons.push("Team management features ideal for retail chains");
+        } else if (plan.planId === "PLAN-ENTERPRISE") {
+          score += 20;
+          reasons.push("Advanced features for large retail organizations");
+        }
+        break;
+        
+      case "non-profit":
+        if (plan.planId === "PLAN-BASIC") {
+          score += 25;
+          reasons.push("Budget-friendly option perfect for non-profit organizations");
+        } else if (plan.planId === "PLAN-PRO") {
+          score += 20;
+          reasons.push("Good features for larger non-profits with more complex needs");
+        }
+        break;
+        
+      case "other":
+        // Neutral scoring for undefined industries
+        if (plan.planId === "PLAN-PRO") {
+          score += 15;
+          reasons.push("Balanced feature set for diverse business needs");
+        } else if (plan.planId === "PLAN-BASIC") {
+          score += 10;
+          reasons.push("Good starting point, can upgrade as needs grow");
+        }
+        break;
+    }
+
+    return { plan, score, reasons };
+  });
+
+  // Sort by score and return top recommendation
+  planScores.sort((a, b) => b.score - a.score);
+  return planScores[0];
+};
+
 function PlanSelectionStep({ context }: { context: any }) {
+  const form = useForm<PlanSelectionData>({
+    resolver: zodResolver(planSelectionSchema),
+    defaultValues: {
+      selectedPlan: context.wizardData?.planSelection?.selectedPlan || "",
+      customizeFeatures: context.wizardData?.planSelection?.customizeFeatures || false,
+    },
+  });
+
+  // Fetch subscription plans
+  const { data: plans = [], isLoading: plansLoading, error: plansError } = useQuery({
+    queryKey: ["/api/payments/plans"],
+  });
+
+  const organizationData = context.wizardData?.organization;
+  const recommendation = getRecommendedPlan(organizationData, plans);
+
+  const onSubmit = (data: PlanSelectionData) => {
+    const selectedPlan = plans.find(plan => plan.id === data.selectedPlan);
+    context.onComplete({
+      ...data,
+      planDetails: selectedPlan,
+    });
+  };
+
+  const getPlanIcon = (planName: string) => {
+    switch (planName.toLowerCase()) {
+      case 'basic':
+        return <Star className="h-6 w-6 text-blue-500" />;
+      case 'pro':
+        return <Crown className="h-6 w-6 text-purple-500" />;
+      case 'enterprise':
+        return <Building className="h-6 w-6 text-orange-500" />;
+      default:
+        return <Zap className="h-6 w-6 text-green-500" />;
+    }
+  };
+
+  const formatPrice = (amount: number, currency: string) => {
+    return `₹${(amount / 100).toLocaleString('en-IN')}`;
+  };
+
+  if (plansLoading) {
+    return (
+      <div className="max-w-4xl mx-auto space-y-6">
+        <div className="text-center space-y-4">
+          <div className="bg-blue-100 rounded-full p-3 mx-auto w-fit">
+            <CreditCard className="h-8 w-8 text-blue-600" />
+          </div>
+          <h2 className="text-3xl font-bold text-slate-900">Loading your personalized recommendations...</h2>
+        </div>
+        <div className="flex justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        </div>
+      </div>
+    );
+  }
+
+  if (plansError || plans.length === 0) {
+    return (
+      <div className="max-w-4xl mx-auto space-y-6">
+        <div className="text-center space-y-4">
+          <h2 className="text-3xl font-bold text-slate-900">Unable to load plans</h2>
+          <p className="text-slate-600">Please try again or contact support</p>
+          <Button onClick={context.onPrevious} variant="outline">
+            Go Back
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="text-center space-y-4">
-      <h2 className="text-2xl font-bold">Plan Selection</h2>
-      <p className="text-slate-600">Choose the perfect plan...</p>
-      <Button onClick={context.onComplete}>Complete Step</Button>
+    <div className="max-w-5xl mx-auto space-y-6">
+      {/* Header */}
+      <div className="text-center space-y-4">
+        <div className="flex items-center justify-center mb-4">
+          <div className="bg-purple-100 rounded-full p-3">
+            <Brain className="h-8 w-8 text-purple-600" />
+          </div>
+        </div>
+        <h2 className="text-3xl font-bold text-slate-900">Choose your perfect plan</h2>
+        <p className="text-lg text-slate-600">
+          Based on your company size and goals, we've found the best option for you
+        </p>
+      </div>
+
+      {/* AI Recommendation */}
+      {recommendation && (
+        <Card className="border-green-200 bg-green-50/50">
+          <CardContent className="pt-6">
+            <div className="flex items-start gap-4">
+              <div className="bg-green-100 rounded-full p-2 flex-shrink-0">
+                <ThumbsUp className="h-5 w-5 text-green-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-green-800 mb-2">
+                  🎯 AI Recommendation: {recommendation.plan.name} Plan
+                </h3>
+                <div className="space-y-1">
+                  {recommendation.reasons.map((reason, index) => (
+                    <p key={index} className="text-sm text-green-700">
+                      • {reason}
+                    </p>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          
+          {/* Plan Selection */}
+          <FormField
+            control={form.control}
+            name="selectedPlan"
+            render={({ field }) => (
+              <FormItem>
+                <FormControl>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {plans.map((plan) => {
+                      const isRecommended = recommendation?.plan.id === plan.id;
+                      const isSelected = field.value === plan.id;
+                      
+                      return (
+                        <div
+                          key={plan.id}
+                          className={`relative border-2 rounded-xl p-6 cursor-pointer transition-all hover:shadow-lg ${
+                            isSelected 
+                              ? 'border-blue-500 bg-blue-50 shadow-lg' 
+                              : 'border-slate-200 bg-white hover:border-slate-300'
+                          } ${
+                            isRecommended ? 'ring-2 ring-green-400 ring-opacity-50' : ''
+                          }`}
+                          onClick={() => field.onChange(plan.id)}
+                          data-testid={`plan-card-${plan.name.toLowerCase()}`}
+                        >
+                          {isRecommended && (
+                            <Badge 
+                              className="absolute -top-2 -right-2 bg-green-500 text-white"
+                              data-testid="badge-recommended"
+                            >
+                              Recommended
+                            </Badge>
+                          )}
+                          
+                          {plan.name.toLowerCase() === 'pro' && !isRecommended && (
+                            <Badge 
+                              variant="destructive" 
+                              className="absolute -top-2 -right-2"
+                            >
+                              Most Popular
+                            </Badge>
+                          )}
+
+                          <div className="text-center space-y-4">
+                            {getPlanIcon(plan.name)}
+                            
+                            <div>
+                              <h3 className="text-xl font-bold text-slate-900">{plan.name}</h3>
+                              <p className="text-sm text-slate-600 mt-1">{plan.description}</p>
+                            </div>
+
+                            <div className="text-center">
+                              <div className="text-3xl font-bold text-slate-900">
+                                {formatPrice(plan.amount, plan.currency)}
+                              </div>
+                              <p className="text-sm text-slate-600">per month</p>
+                            </div>
+
+                            <div className="space-y-3 text-left">
+                              {plan.features.map((feature, index) => (
+                                <div key={index} className="flex items-start gap-2">
+                                  <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0 mt-0.5" />
+                                  <span className="text-sm text-slate-600">{feature}</span>
+                                </div>
+                              ))}
+                              
+                              {plan.maxEmployees && (
+                                <div className="flex items-center gap-2">
+                                  <Users className="h-4 w-4 text-blue-500 flex-shrink-0" />
+                                  <span className="text-sm text-slate-600">
+                                    Up to {plan.maxEmployees} employees
+                                  </span>
+                                </div>
+                              )}
+                              
+                              {plan.maxWorkEntries && (
+                                <div className="flex items-center gap-2">
+                                  <Zap className="h-4 w-4 text-orange-500 flex-shrink-0" />
+                                  <span className="text-sm text-slate-600">
+                                    Up to {plan.maxWorkEntries} work entries/month
+                                  </span>
+                                </div>
+                              )}
+
+                              {!plan.maxEmployees && plan.name === 'Enterprise' && (
+                                <div className="flex items-center gap-2">
+                                  <Users className="h-4 w-4 text-blue-500 flex-shrink-0" />
+                                  <span className="text-sm text-slate-600">Unlimited employees</span>
+                                </div>
+                              )}
+                              
+                              {!plan.maxWorkEntries && plan.name !== 'Basic' && (
+                                <div className="flex items-center gap-2">
+                                  <Zap className="h-4 w-4 text-orange-500 flex-shrink-0" />
+                                  <span className="text-sm text-slate-600">Unlimited work entries</span>
+                                </div>
+                              )}
+                            </div>
+
+                            {isSelected && (
+                              <div className="flex items-center justify-center gap-2 text-blue-600">
+                                <CheckCircle className="h-5 w-5" />
+                                <span className="font-medium">Selected</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/* Action Buttons */}
+          <div className="flex justify-between pt-6">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={context.onPrevious}
+              data-testid="button-previous-step"
+            >
+              Back
+            </Button>
+            <Button 
+              type="submit"
+              data-testid="button-continue-step"
+            >
+              Continue to Payment
+              <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
+          </div>
+        </form>
+      </Form>
     </div>
   );
 }
