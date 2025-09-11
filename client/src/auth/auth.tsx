@@ -96,7 +96,8 @@ PasswordInput.displayName = "PasswordInput";
 export default function AuthPage() {
   // Check URL parameters for initial view using wouter
   const [location, setLocation] = useLocation();
-  const urlParams = new URLSearchParams(location.split('?')[1] || '');
+  // Use window.location.search to get query parameters since wouter location doesn't include them
+  const urlParams = new URLSearchParams(window.location.search);
   const viewParam = urlParams.get('view') as AuthView | null;
   
   const [currentView, setCurrentView] = useState<AuthView>(viewParam || "selection");
@@ -118,10 +119,11 @@ export default function AuthPage() {
 
   // Handle URL view parameters dynamically
   useEffect(() => {
-    const urlParams = new URLSearchParams(location.split('?')[1] || '');
+    // Use window.location.search to get query parameters since wouter location doesn't include them
+    const urlParams = new URLSearchParams(window.location.search);
     const currentViewParam = urlParams.get('view') as AuthView | null;
     
-    console.log('Auth page URL params:', location);
+    console.log('Auth page URL params:', window.location.pathname + window.location.search);
     console.log('View parameter:', currentViewParam);
     
     if (currentViewParam) {
