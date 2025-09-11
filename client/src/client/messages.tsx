@@ -229,7 +229,7 @@ export default function Messages() {
       conversationId: "conv1",
       senderId: "freelancer1",
       receiverId: "client1",
-      content: "Hi! It's going well. I've integrated Stripe and the basic payment flow is working. Currently working on error handling and validation.",
+      content: "Hi! It's going well. I've integrated Razorpay and the basic payment flow is working. Currently working on error handling and validation.",
       timestamp: "2024-01-20T14:10:00Z",
       readAt: "2024-01-20T14:12:00Z",
       type: "text"

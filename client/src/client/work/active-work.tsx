@@ -196,7 +196,7 @@ export default function ActiveWork() {
       recentActivity: [
         {
           date: "2024-01-20",
-          description: "Implemented Stripe payment gateway and order processing",
+          description: "Implemented Razorpay payment gateway and order processing",
           hoursLogged: 6.5,
           verified: true
         },

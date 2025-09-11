@@ -278,7 +278,7 @@ POST /api/company/teams
 - Admin panel with user management
 
 ### **Phase 2: Enhanced Features** 🚧
-- Payment integration (Stripe/PayPal)
+- Payment integration (Razorpay)
 - Advanced matching algorithms
 - Mobile application development
 - Enhanced analytics dashboard

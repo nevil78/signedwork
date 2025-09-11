@@ -155,7 +155,7 @@ export default function ManageJobs() {
       proposalCount: 12,
       viewCount: 89,
       postedAt: "2024-01-15T10:00:00Z",
-      skillsRequired: ["React", "Node.js", "MongoDB", "Stripe"],
+      skillsRequired: ["React", "Node.js", "MongoDB", "Razorpay"],
       experienceLevel: "intermediate",
       projectType: "fixed_price"
     }
