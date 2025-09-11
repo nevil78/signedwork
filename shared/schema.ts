@@ -259,6 +259,52 @@ export const companyOnboarding = pgTable("company_onboarding", {
   index("company_onboarding_step_idx").on(table.currentStep),
 ]);
 
+// Onboarding Analytics Tables for Comprehensive Tracking
+export const onboardingAnalytics = pgTable("onboarding_analytics", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  companyId: varchar("company_id").references(() => companies.id, { onDelete: "cascade" }), // Now optional for admin access
+  eventType: text("event_type").notNull(), // 'step_started', 'step_completed', 'step_skipped', 'validation_error', 'drop_off'
+  stepId: text("step_id").notNull(), // 'welcome', 'organization-details', 'team-setup', 'plan-selection', 'payment'
+  stepNumber: integer("step_number").notNull(),
+  sessionId: varchar("session_id").notNull(), // Track session for funnel analysis
+  eventData: jsonb("event_data").default(sql`'{}'::jsonb`), // Store additional event context
+  timeSpent: integer("time_spent"), // Time spent on step in milliseconds
+  userAgent: text("user_agent"), // Browser/device info for analytics
+  ipAddress: text("ip_address"), // For geographic analytics (anonymized)
+  errorDetails: text("error_details"), // Store error info for validation_error events
+  timestamp: timestamp("timestamp").defaultNow(),
+}, (table) => [
+  index("onboarding_analytics_company_idx").on(table.companyId),
+  index("onboarding_analytics_event_type_idx").on(table.eventType),
+  index("onboarding_analytics_step_idx").on(table.stepId),
+  index("onboarding_analytics_timestamp_idx").on(table.timestamp),
+  index("onboarding_analytics_session_idx").on(table.sessionId),
+]);
+
+export const onboardingFunnelMetrics = pgTable("onboarding_funnel_metrics", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  date: text("date").notNull(), // YYYY-MM-DD for daily aggregation
+  stepId: text("step_id").notNull(),
+  stepNumber: integer("step_number").notNull(),
+  totalStarted: integer("total_started").default(0),
+  totalCompleted: integer("total_completed").default(0),
+  totalSkipped: integer("total_skipped").default(0),
+  totalDroppedOff: integer("total_dropped_off").default(0),
+  avgTimeSpent: numeric("avg_time_spent"), // Average time in milliseconds
+  validationErrors: integer("validation_errors").default(0),
+  conversionRate: numeric("conversion_rate"), // Percentage as decimal (0.0 - 1.0)
+  dropOffRate: numeric("drop_off_rate"), // Percentage as decimal (0.0 - 1.0)
+  companySize: text("company_size"), // For segmented analytics (1-10, 11-50, etc.)
+  industry: text("industry"), // For segmented analytics
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  unique("onboarding_funnel_date_step_segment_unique").on(table.date, table.stepId, table.companySize, table.industry),
+  index("onboarding_funnel_date_idx").on(table.date),
+  index("onboarding_funnel_step_idx").on(table.stepId),
+  index("onboarding_funnel_company_size_idx").on(table.companySize),
+  index("onboarding_funnel_industry_idx").on(table.industry),
+]);
+
 // New table for company invitation codes
 export const companyInvitationCodes = pgTable("company_invitation_codes", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -1096,7 +1142,25 @@ export const employeesRelationsUpdated = relations(employees, ({ many }) => ({
   freelanceWorkDiary: many(freelanceWorkDiary),
 }));
 
-// Insert schemas
+// Enhanced analytics insert schema with proper validation
+export const insertOnboardingAnalyticsSchema = createInsertSchema(onboardingAnalytics, {
+  eventType: z.enum(['step_started', 'step_completed', 'step_skipped', 'validation_error', 'drop_off']),
+  stepId: z.string().min(1, "Step ID is required"),
+  stepNumber: z.number().int().min(1, "Step number must be at least 1"),
+  sessionId: z.string().min(1, "Session ID is required"),
+  timeSpent: z.number().int().min(0).optional(),
+  errorDetails: z.string().optional(),
+  eventData: z.record(z.any()).optional(),
+}).omit({
+  id: true,
+  timestamp: true,
+});
+
+export const insertOnboardingFunnelMetricsSchema = createInsertSchema(onboardingFunnelMetrics).omit({
+  id: true,
+  updatedAt: true,
+});
+
 export const insertEmployeeSchema = createInsertSchema(employees).omit({
   id: true,
   employeeId: true,

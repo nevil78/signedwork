@@ -22,6 +22,26 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import signedworkLogo from "@assets/Signed-work-Logo (1)_1755168042120.png";
 
+// Analytics tracking utilities
+const generateSessionId = () => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+const trackOnboardingEvent = async (eventData: {
+  eventType: 'step_started' | 'step_completed' | 'step_skipped' | 'validation_error' | 'drop_off';
+  stepId: string;
+  stepNumber: number;
+  sessionId: string;
+  eventData?: Record<string, any>;
+  timeSpent?: number;
+  errorDetails?: string;
+}) => {
+  try {
+    await apiRequest("POST", "/api/analytics/onboarding/track", eventData);
+  } catch (error) {
+    console.warn('Analytics tracking failed (non-critical):', error);
+    // Analytics failures should never break the user experience
+  }
+};
+
 // Enhanced validation utilities
 interface ValidationState {
   isValid: boolean;
@@ -1976,6 +1996,30 @@ export default function CompanyOnboarding() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
+  
+  // Analytics tracking state with localStorage persistence
+  const [sessionId] = useState(() => {
+    const saved = localStorage.getItem('onboarding_session_id');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        // Check if session is less than 24 hours old
+        if (Date.now() - parsed.timestamp < 24 * 60 * 60 * 1000) {
+          return parsed.sessionId;
+        }
+      } catch (error) {
+        console.warn('Failed to parse saved session ID:', error);
+      }
+    }
+    const newSessionId = generateSessionId();
+    localStorage.setItem('onboarding_session_id', JSON.stringify({
+      sessionId: newSessionId,
+      timestamp: Date.now()
+    }));
+    return newSessionId;
+  });
+  const [stepStartTime, setStepStartTime] = useState<Date>(new Date());
+  const [analyticsStepData, setAnalyticsStepData] = useState<Record<string, any>>({});
 
   // Define wizard steps first
   const wizardSteps = [
@@ -2050,7 +2094,7 @@ export default function CompanyOnboarding() {
     },
   });
 
-  // Helper functions for step ID/number mapping
+  // Enhanced analytics helpers with time tracking
   const stepIdToNumber = (stepId: string): number => {
     const index = wizardSteps.findIndex(step => step.id === stepId);
     return index >= 0 ? index + 1 : 1;
@@ -2060,6 +2104,80 @@ export default function CompanyOnboarding() {
     const step = wizardSteps[stepNumber - 1];
     return step?.id || wizardSteps[0]?.id || "welcome";
   };
+
+  // Track validation errors when they occur
+  const trackValidationError = useCallback(async (
+    stepId: string,
+    errors: string[],
+    fieldErrors?: Record<string, any>
+  ) => {
+    const timeSpent = Date.now() - stepStartTime.getTime();
+    
+    await trackAnalyticsEvent('validation_error', stepId, {
+      timeSpent,
+      errorDetails: JSON.stringify({ errors, fieldErrors }),
+      eventData: {
+        errorCount: errors.length,
+        errorTypes: errors.map(err => err.split(':')[0]).filter(Boolean),
+        hasFieldErrors: Boolean(fieldErrors && Object.keys(fieldErrors).length > 0)
+      }
+    });
+  }, [trackAnalyticsEvent, stepStartTime]);
+
+  // Track drop-off events when user navigates away or closes page
+  const trackDropOff = useCallback(async (reason: string) => {
+    const timeSpent = Date.now() - stepStartTime.getTime();
+    
+    await trackAnalyticsEvent('drop_off', currentStepId, {
+      timeSpent,
+      eventData: {
+        dropOffReason: reason,
+        completedSteps: Array.from(completedSteps).length,
+        totalSteps: wizardSteps.length,
+        progressPercentage: (Array.from(completedSteps).length / wizardSteps.length) * 100
+      }
+    });
+  }, [trackAnalyticsEvent, stepStartTime, currentStepId, completedSteps, wizardSteps.length]);
+
+  // Set up drop-off tracking on page unload and navigation
+  useEffect(() => {
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      // Fire drop_off event but don't wait for it to prevent blocking page unload
+      trackDropOff('page_unload').catch(console.warn);
+    };
+
+    const handlePopState = () => {
+      trackDropOff('browser_navigation').catch(console.warn);
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('popstate', handlePopState);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [trackDropOff]);
+
+  // Analytics tracking function with proper error handling
+  const trackAnalyticsEvent = useCallback(async (
+    eventType: 'step_started' | 'step_completed' | 'step_skipped' | 'validation_error' | 'drop_off',
+    stepId: string,
+    additionalData?: { timeSpent?: number; errorDetails?: string; eventData?: Record<string, any> }
+  ) => {
+    try {
+      await trackOnboardingEvent({
+        eventType,
+        stepId,
+        stepNumber: stepIdToNumber(stepId),
+        sessionId,
+        ...additionalData,
+      });
+    } catch (error) {
+      console.warn('Analytics tracking failed (non-critical):', error);
+      // Never let analytics failures break the user experience
+    }
+  }, [sessionId, stepIdToNumber]);
 
   // Initialize wizard with loaded progress or defaults
   const initialStepId = progressData?.currentStep ? 
@@ -2071,6 +2189,33 @@ export default function CompanyOnboarding() {
     new Set<string>();
 
   const initialWizardData = progressData?.wizardData || {};
+
+  // Track step changes for analytics
+  const handleStepChange = useCallback(async (newStepId: string) => {
+    // Track step started for new step
+    await trackAnalyticsEvent('step_started', newStepId);
+    
+    // Update step start time for time tracking
+    setStepStartTime(new Date());
+    
+    // Update current step
+    setCurrentStepId(newStepId);
+  }, [trackAnalyticsEvent, setCurrentStepId]);
+
+  // Handle step skip with analytics
+  const handleStepSkip = useCallback(async (stepId: string) => {
+    const timeSpent = Date.now() - stepStartTime.getTime();
+    
+    // Track step skip analytics with enhanced data
+    await trackAnalyticsEvent('step_skipped', stepId, {
+      timeSpent,
+      eventData: { 
+        skipReason: 'user_choice',
+        stepProgress: (Array.from(completedSteps).length / wizardSteps.length) * 100,
+        isOptionalStep: wizardSteps.find(step => step.id === stepId)?.isOptional || false
+      }
+    });
+  }, [trackAnalyticsEvent, stepStartTime, completedSteps, wizardSteps]);
 
   const {
     currentStepId,
@@ -2087,7 +2232,16 @@ export default function CompanyOnboarding() {
     initialWizardData
   });
 
-  const handleStepComplete = (stepId: string, data: any) => {
+  const handleStepComplete = async (stepId: string, data: any) => {
+    // Calculate time spent on this step
+    const timeSpent = Date.now() - stepStartTime.getTime();
+    
+    // Track step completion analytics
+    await trackAnalyticsEvent('step_completed', stepId, {
+      timeSpent,
+      eventData: { stepData: data }
+    });
+    
     completeStep(stepId, data);
     
     // Calculate step numbers using helper functions
@@ -2110,7 +2264,17 @@ export default function CompanyOnboarding() {
     saveProgressMutation.mutate(progressData);
   };
 
-  const handleWizardComplete = () => {
+  const handleWizardComplete = async () => {
+    // Track final step completion with wizard completion context
+    const timeSpent = Date.now() - stepStartTime.getTime();
+    await trackAnalyticsEvent('step_completed', currentStepId, {
+      timeSpent,
+      eventData: { 
+        wizardCompleted: true,
+        completionType: wizardData?.payment?.subscriptionActive ? 'paid' : 'trial'
+      }
+    });
+
     console.log("Onboarding complete!", { wizardData });
     
     // Mark as completed and save final progress
@@ -2197,6 +2361,14 @@ export default function CompanyOnboarding() {
     saveProgressMutation.mutate(progressData);
   };
 
+  // Track initial step start when component mounts or current step changes
+  useEffect(() => {
+    if (currentStepId && !isLoadingProgress) {
+      trackAnalyticsEvent('step_started', currentStepId);
+      setStepStartTime(new Date());
+    }
+  }, [currentStepId, isLoadingProgress, trackAnalyticsEvent]);
+
   // Show loading state while fetching progress
   if (isLoadingProgress) {
     return (
@@ -2239,8 +2411,10 @@ currentPage="landing"
         currentStepId={currentStepId}
         completedSteps={completedSteps}
         wizardData={wizardData}
-        onStepChange={setCurrentStepId}
+        onStepChange={handleStepChange}
         onStepComplete={handleStepComplete}
+        onStepSkip={handleStepSkip}
+        onValidationError={trackValidationError}
         onWizardComplete={handleWizardComplete}
         onSaveProgress={handleSaveProgress}
         allowSkipping={true}

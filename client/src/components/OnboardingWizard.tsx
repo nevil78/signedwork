@@ -42,6 +42,7 @@ interface OnboardingWizardProps extends Omit<React.HTMLAttributes<HTMLDivElement
   onStepSkip?: (stepId: string) => void;
   onWizardComplete: (allData: Record<string, any>) => void;
   onSaveProgress?: (data: { currentStepId: string; completedSteps: string[]; wizardData: Record<string, any> }) => void;
+  onValidationError?: (stepId: string, errors: string[], fieldErrors?: Record<string, any>) => void;
   allowSkipping?: boolean;
   showStepNavigation?: boolean;
 }
@@ -57,6 +58,7 @@ export default function OnboardingWizard({
   onStepSkip,
   onWizardComplete,
   onSaveProgress,
+  onValidationError,
   className = "",
   allowSkipping = true,
   showStepNavigation = true,
@@ -133,12 +135,16 @@ export default function OnboardingWizard({
 
   const handleCompleteStep = useCallback(() => {
     if (!stepValidation.isValid && !currentStep?.isOptional) {
+      // Track validation error on failed completion attempt
+      if (stepValidation.errors.length > 0) {
+        onValidationError?.(currentStepId, stepValidation.errors);
+      }
       return;
     }
     
     onStepComplete(currentStepId, stepData);
     // Note: No auto-advance - let parent decide flow
-  }, [stepValidation.isValid, currentStep?.isOptional, currentStepId, stepData, onStepComplete]);
+  }, [stepValidation.isValid, stepValidation.errors, currentStep?.isOptional, currentStepId, stepData, onStepComplete, onValidationError]);
 
   const handleSkipStep = useCallback(() => {
     if (!currentStep?.canSkip && !currentStep?.isOptional) {
@@ -164,10 +170,15 @@ export default function OnboardingWizard({
     }
   }, [currentStep]);
   
-  // Handle validation updates from steps
+  // Handle validation updates from steps with error tracking
   const handleSetValid = useCallback((valid: boolean, errors: string[] = []) => {
     setStepValidation({ isValid: valid, errors });
-  }, []);
+    
+    // Track validation errors when they occur
+    if (!valid && errors.length > 0) {
+      onValidationError?.(currentStepId, errors);
+    }
+  }, [currentStepId, onValidationError]);
   
   // Keyboard navigation
   const handleKeyDown = useCallback((e: KeyboardEvent) => {

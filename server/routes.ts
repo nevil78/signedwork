@@ -17,7 +17,7 @@ import {
   insertFeedbackSchema, feedbackResponseSchema, contactFormSchema,
   insertFreelanceProjectSchema, insertProjectProposalSchema, insertFreelanceContractSchema,
   insertLiveMonitorSessionSchema, insertFreelanceWorkDiarySchema,
-  insertTeamInvitationSchema,
+  insertTeamInvitationSchema, insertOnboardingAnalyticsSchema,
   workEntries, employees, companies, clients
 } from "@shared/schema";
 import { db } from "./db";
@@ -8767,6 +8767,102 @@ This message was sent through the Signedwork contact form.
         isAvailable: false, 
         message: "Failed to check plan availability" 
       });
+    }
+  });
+
+  // ====================
+  // ONBOARDING ANALYTICS ROUTES
+  // ====================
+
+  // Track onboarding events (for analytics)
+  app.post("/api/analytics/onboarding/track", requireAuth, async (req: any, res) => {
+    try {
+      const user = req.session?.user;
+      
+      // Allow both company and admin access
+      if (!user || (user.type !== 'company' && user.type !== 'admin')) {
+        return res.status(403).json({ message: "Access denied. Company or admin account required." });
+      }
+
+      // Use Zod validation as per project requirements
+      const validation = insertOnboardingAnalyticsSchema.safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ 
+          message: "Invalid request data",
+          errors: validation.error.issues.map(issue => ({
+            field: issue.path.join('.'),
+            message: issue.message
+          }))
+        });
+      }
+
+      const validatedData = validation.data;
+
+      // Track the event (non-blocking - analytics shouldn't break the flow)
+      await storage.trackOnboardingEvent({
+        ...validatedData,
+        companyId: user.type === 'company' ? user.id : validatedData.companyId, // For admin access, use provided companyId
+        userAgent: req.get('User-Agent'),
+        ipAddress: req.ip,
+      });
+
+      res.status(200).json({ success: true });
+    } catch (error: any) {
+      console.error('Analytics tracking error:', error);
+      // Don't fail - analytics shouldn't break the user experience
+      res.status(200).json({ success: true, warning: 'Analytics tracking failed' });
+    }
+  });
+
+  // Get onboarding analytics (admin and company access with proper scoping)
+  app.get("/api/analytics/onboarding", requireAuth, async (req: any, res) => {
+    try {
+      const user = req.session?.user;
+      
+      if (user?.type === 'company') {
+        // SECURITY: Companies can only view their own analytics - prevent cross-tenant data access
+        const analytics = await storage.getOnboardingAnalytics({
+          companyId: user.id, // Force company scoping for security
+          limit: parseInt(req.query.limit as string) || 50
+        });
+        return res.json(analytics);
+      } else if (user?.type === 'admin') {
+        // Admins can view all analytics or specific company if companyId is provided
+        const requestedCompanyId = req.query.companyId as string;
+        const analytics = await storage.getOnboardingAnalytics({
+          companyId: requestedCompanyId, // Optional company scoping for admin
+          limit: parseInt(req.query.limit as string) || 50
+        });
+        return res.json(analytics);
+      } else {
+        return res.status(403).json({ message: "Admin or company access required" });
+      }
+    } catch (error: any) {
+      console.error('Error fetching onboarding analytics:', error);
+      res.status(500).json({ message: 'Failed to fetch analytics data' });
+    }
+  });
+
+  // Get funnel metrics (admin and company access with proper scoping)
+  app.get("/api/analytics/onboarding/funnel", requireAuth, async (req: any, res) => {
+    try {
+      const user = req.session?.user;
+      
+      if (user?.type === 'company') {
+        // CRITICAL SECURITY FIX: Companies can only view their own funnel data
+        const dropOffRates = await storage.calculateDropOffRates(user.id); // Force company scoping
+        return res.json(dropOffRates);
+      } else if (user?.type === 'admin') {
+        // Admins can view all funnel data or specific company if companyId is provided
+        const requestedCompanyId = req.query.companyId as string;
+        const dropOffRates = await storage.calculateDropOffRates(requestedCompanyId); // Optional company scoping for admin
+        return res.json(dropOffRates);
+      } else {
+        return res.status(403).json({ message: "Admin or company access required" });
+      }
+    } catch (error: any) {
+      console.error('Error calculating funnel metrics:', error);
+      res.status(500).json({ message: 'Failed to calculate funnel metrics' });
     }
   });
 

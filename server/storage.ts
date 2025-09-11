@@ -6835,6 +6835,180 @@ export class DatabaseStorage implements IStorage {
       throw new Error('Failed to load onboarding progress');
     }
   }
+
+  // ====================
+  // ONBOARDING ANALYTICS OPERATIONS
+  // ====================
+
+  async trackOnboardingEvent(data: {
+    companyId: string;
+    eventType: 'step_started' | 'step_completed' | 'step_skipped' | 'validation_error' | 'drop_off';
+    stepId: string;
+    stepNumber: number;
+    sessionId: string;
+    eventData?: Record<string, any>;
+    timeSpent?: number;
+    userAgent?: string;
+    ipAddress?: string;
+    errorDetails?: string;
+  }): Promise<any> {
+    try {
+      const [event] = await db.insert(onboardingAnalytics).values({
+        companyId: data.companyId,
+        eventType: data.eventType,
+        stepId: data.stepId,
+        stepNumber: data.stepNumber,
+        sessionId: data.sessionId,
+        eventData: data.eventData || {},
+        timeSpent: data.timeSpent,
+        userAgent: data.userAgent,
+        ipAddress: data.ipAddress,
+        errorDetails: data.errorDetails,
+      }).returning();
+
+      console.log(`[ANALYTICS] Tracked ${data.eventType} for company ${data.companyId} on step ${data.stepId}`);
+      return event;
+    } catch (error) {
+      console.error('Error tracking onboarding event:', error);
+      // Don't throw - analytics should never break the flow
+      return null;
+    }
+  }
+
+  async getOnboardingAnalytics(filters?: {
+    companyId?: string;
+    eventType?: string;
+    stepId?: string;
+    dateFrom?: Date;
+    dateTo?: Date;
+    limit?: number;
+  }): Promise<any[]> {
+    try {
+      let query = db.select().from(onboardingAnalytics);
+      
+      if (filters?.companyId) {
+        query = query.where(eq(onboardingAnalytics.companyId, filters.companyId));
+      }
+      
+      if (filters?.eventType) {
+        query = query.where(eq(onboardingAnalytics.eventType, filters.eventType));
+      }
+      
+      if (filters?.stepId) {
+        query = query.where(eq(onboardingAnalytics.stepId, filters.stepId));
+      }
+
+      const results = await query
+        .orderBy(desc(onboardingAnalytics.timestamp))
+        .limit(filters?.limit || 100);
+
+      return results;
+    } catch (error) {
+      console.error('Error fetching onboarding analytics:', error);
+      return [];
+    }
+  }
+
+  async getOnboardingFunnelMetrics(filters?: {
+    dateFrom?: string;
+    dateTo?: string;
+    companySize?: string;
+    industry?: string;
+  }): Promise<any[]> {
+    try {
+      let query = db.select().from(onboardingFunnelMetrics);
+      
+      // Add filters if provided
+      if (filters?.dateFrom) {
+        query = query.where(sql`${onboardingFunnelMetrics.date} >= ${filters.dateFrom}`);
+      }
+      
+      if (filters?.dateTo) {
+        query = query.where(sql`${onboardingFunnelMetrics.date} <= ${filters.dateTo}`);
+      }
+      
+      if (filters?.companySize) {
+        query = query.where(eq(onboardingFunnelMetrics.companySize, filters.companySize));
+      }
+      
+      if (filters?.industry) {
+        query = query.where(eq(onboardingFunnelMetrics.industry, filters.industry));
+      }
+
+      return await query.orderBy(desc(onboardingFunnelMetrics.date), onboardingFunnelMetrics.stepNumber);
+    } catch (error) {
+      console.error('Error fetching funnel metrics:', error);
+      return [];
+    }
+  }
+
+  async calculateDropOffRates(companyId?: string): Promise<{
+    stepId: string;
+    stepNumber: number;
+    totalStarted: number;
+    totalCompleted: number;
+    dropOffRate: number;
+    conversionRate: number;
+  }[]> {
+    try {
+      const steps = ['welcome', 'organization-details', 'team-setup', 'plan-selection', 'payment'];
+      const results = [];
+
+      for (let i = 0; i < steps.length; i++) {
+        const stepId = steps[i];
+        const stepNumber = i + 1;
+
+        // Build where conditions with company scoping for security
+        const baseConditions = [
+          eq(onboardingAnalytics.stepId, stepId)
+        ];
+        
+        // CRITICAL SECURITY: Filter by companyId when provided to prevent cross-tenant data exposure
+        if (companyId) {
+          baseConditions.push(eq(onboardingAnalytics.companyId, companyId));
+        }
+
+        // Count started events with proper company scoping
+        const startedQuery = await db
+          .select({ count: sql<number>`count(*)::int` })
+          .from(onboardingAnalytics)
+          .where(and(
+            ...baseConditions,
+            eq(onboardingAnalytics.eventType, 'step_started')
+          ));
+        
+        const totalStarted = startedQuery[0]?.count || 0;
+
+        // Count completed events with proper company scoping
+        const completedQuery = await db
+          .select({ count: sql<number>`count(*)::int` })
+          .from(onboardingAnalytics)
+          .where(and(
+            ...baseConditions,
+            eq(onboardingAnalytics.eventType, 'step_completed')
+          ));
+        
+        const totalCompleted = completedQuery[0]?.count || 0;
+
+        const dropOffRate = totalStarted > 0 ? (totalStarted - totalCompleted) / totalStarted : 0;
+        const conversionRate = totalStarted > 0 ? totalCompleted / totalStarted : 0;
+
+        results.push({
+          stepId,
+          stepNumber,
+          totalStarted,
+          totalCompleted,
+          dropOffRate: Math.round(dropOffRate * 1000) / 1000, // 3 decimal places
+          conversionRate: Math.round(conversionRate * 1000) / 1000
+        });
+      }
+
+      return results;
+    } catch (error) {
+      console.error('Error calculating drop-off rates:', error);
+      return [];
+    }
+  }
 }
 
 export const storage = new DatabaseStorage();
