@@ -9002,5 +9002,86 @@ This message was sent through the Signedwork contact form.
     }
   });
 
+  // Save company onboarding progress
+  app.post("/api/companies/onboarding/progress", requireAuth, async (req: any, res) => {
+    try {
+      const user = req.session?.user;
+      if (!user || user.type !== 'company') {
+        return res.status(403).json({ message: "Access denied. Company account required." });
+      }
+
+      const { currentStep, completedSteps, wizardData, isCompleted } = req.body;
+
+      // Validate required fields
+      if (typeof currentStep !== 'number' || !Array.isArray(completedSteps) || !wizardData) {
+        return res.status(400).json({ 
+          message: "Invalid progress data. Required: currentStep, completedSteps, wizardData" 
+        });
+      }
+
+      // Validate step numbers (dynamic based on actual steps)
+      const maxSteps = 5; // Can be made dynamic if needed
+      if (currentStep < 1 || currentStep > maxSteps) {
+        return res.status(400).json({ message: `Invalid current step. Must be between 1 and ${maxSteps}.` });
+      }
+
+      if (completedSteps.some((step: any) => typeof step !== 'number' || step < 1 || step > maxSteps)) {
+        return res.status(400).json({ message: `Invalid completed steps. All must be numbers between 1 and ${maxSteps}.` });
+      }
+
+      const progressData = {
+        currentStep,
+        completedSteps,
+        wizardData,
+        ...(typeof isCompleted === 'boolean' && { isCompleted })
+      };
+
+      const savedProgress = await storage.saveCompanyOnboardingProgress(user.id, progressData);
+
+      res.json({
+        message: "Progress saved successfully",
+        progress: {
+          currentStep: savedProgress.currentStep,
+          completedSteps: savedProgress.completedSteps,
+          wizardData: savedProgress.wizardData,
+          isCompleted: savedProgress.isCompleted,
+          lastActiveAt: savedProgress.lastActiveAt
+        }
+      });
+    } catch (error) {
+      console.error("Save onboarding progress error:", error);
+      res.status(500).json({ message: "Failed to save onboarding progress" });
+    }
+  });
+
+  // Load company onboarding progress
+  app.get("/api/companies/onboarding/progress", requireAuth, async (req: any, res) => {
+    try {
+      const user = req.session?.user;
+      if (!user || user.type !== 'company') {
+        return res.status(403).json({ message: "Access denied. Company account required." });
+      }
+
+      const progress = await storage.getCompanyOnboardingProgress(user.id);
+
+      if (!progress) {
+        // Return default progress if none exists
+        res.json({
+          currentStep: 1,
+          completedSteps: [],
+          wizardData: {},
+          isCompleted: false,
+          startedAt: null,
+          lastActiveAt: null
+        });
+      } else {
+        res.json(progress);
+      }
+    } catch (error) {
+      console.error("Load onboarding progress error:", error);
+      res.status(500).json({ message: "Failed to load onboarding progress" });
+    }
+  });
+
   return httpServer;
 }

@@ -814,6 +814,26 @@ export interface IStorage {
   updateFreelanceWorkDiaryEntry(id: string, data: Partial<FreelanceWorkDiary>): Promise<FreelanceWorkDiary>;
   deleteFreelanceWorkDiaryEntry(id: string): Promise<void>;
   approveFreelanceWorkEntry(entryId: string, clientId: string, data: { clientRating?: number; clientFeedback?: string }): Promise<FreelanceWorkDiary>;
+
+  // Company Onboarding operations
+  getCompanyOnboarding(companyId: string): Promise<CompanyOnboarding | undefined>;
+  createCompanyOnboarding(companyId: string): Promise<CompanyOnboarding>;
+  updateCompanyOnboarding(companyId: string, data: Partial<CompanyOnboarding>): Promise<CompanyOnboarding>;
+  isCompanyOnboardingComplete(companyId: string): Promise<boolean>;
+  saveCompanyOnboardingProgress(companyId: string, progressData: {
+    currentStep: number;
+    completedSteps: number[];
+    wizardData: Record<string, any>;
+    isCompleted?: boolean;
+  }): Promise<CompanyOnboarding>;
+  getCompanyOnboardingProgress(companyId: string): Promise<{
+    currentStep: number;
+    completedSteps: number[];
+    wizardData: Record<string, any>;
+    isCompleted: boolean;
+    startedAt?: Date;
+    lastActiveAt?: Date;
+  } | null>;
 }
 
 export interface JobSearchFilters {
@@ -6751,6 +6771,69 @@ export class DatabaseStorage implements IStorage {
   async isCompanyOnboardingComplete(companyId: string): Promise<boolean> {
     const onboarding = await this.getCompanyOnboarding(companyId);
     return onboarding?.isCompleted || false;
+  }
+
+  async saveCompanyOnboardingProgress(companyId: string, progressData: {
+    currentStep: number;
+    completedSteps: number[];
+    wizardData: Record<string, any>;
+    isCompleted?: boolean;
+  }): Promise<CompanyOnboarding> {
+    try {
+      // First, check if onboarding record exists
+      let existingOnboarding = await this.getCompanyOnboarding(companyId);
+      
+      if (!existingOnboarding) {
+        // Create onboarding record if it doesn't exist
+        existingOnboarding = await this.createCompanyOnboarding(companyId);
+      }
+
+      // Update with new progress data
+      const updateData = {
+        currentStep: progressData.currentStep,
+        completedSteps: progressData.completedSteps,
+        wizardData: progressData.wizardData,
+        lastActiveAt: new Date(),
+        ...(progressData.isCompleted !== undefined && {
+          isCompleted: progressData.isCompleted,
+          ...(progressData.isCompleted && { completedAt: new Date() })
+        })
+      };
+
+      return await this.updateCompanyOnboarding(companyId, updateData);
+    } catch (error) {
+      console.error('Error saving company onboarding progress:', error);
+      throw new Error('Failed to save onboarding progress');
+    }
+  }
+
+  async getCompanyOnboardingProgress(companyId: string): Promise<{
+    currentStep: number;
+    completedSteps: number[];
+    wizardData: Record<string, any>;
+    isCompleted: boolean;
+    startedAt?: Date;
+    lastActiveAt?: Date;
+  } | null> {
+    try {
+      const onboarding = await this.getCompanyOnboarding(companyId);
+      
+      if (!onboarding) {
+        return null;
+      }
+
+      return {
+        currentStep: onboarding.currentStep || 1,
+        completedSteps: onboarding.completedSteps || [],
+        wizardData: (onboarding.wizardData as Record<string, any>) || {},
+        isCompleted: onboarding.isCompleted || false,
+        startedAt: onboarding.startedAt || undefined,
+        lastActiveAt: onboarding.lastActiveAt || undefined,
+      };
+    } catch (error) {
+      console.error('Error getting company onboarding progress:', error);
+      throw new Error('Failed to load onboarding progress');
+    }
   }
 }
 

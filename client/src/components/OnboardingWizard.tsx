@@ -568,12 +568,23 @@ export function WizardExample() {
   );
 }
 
-// Enhanced hook for managing wizard state
-export function useOnboardingWizard(steps: WizardStep[], initialStepId?: string) {
+// Enhanced hook for managing wizard state with progress initialization
+export function useOnboardingWizard(
+  steps: WizardStep[], 
+  initialStepId?: string,
+  options?: {
+    initialCompletedSteps?: Set<string>;
+    initialWizardData?: Record<string, any>;
+  }
+) {
   const firstStepId = steps[0]?.id || '';
   const [currentStepId, setCurrentStepId] = useState(initialStepId || firstStepId);
-  const [completedSteps, setCompletedSteps] = useState<Set<string>>(new Set());
-  const [wizardData, setWizardData] = useState<Record<string, any>>({});
+  const [completedSteps, setCompletedSteps] = useState<Set<string>>(
+    options?.initialCompletedSteps || new Set()
+  );
+  const [wizardData, setWizardData] = useState<Record<string, any>>(
+    options?.initialWizardData || {}
+  );
   const [isLoading, setIsLoading] = useState(false);
 
   const completeStep = useCallback((stepId: string, data: any) => {

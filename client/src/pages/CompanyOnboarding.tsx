@@ -13,13 +13,12 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle, Sparkles, Building, Users, CreditCard, ArrowRight, Target, TrendingUp, Shield, Zap, UserPlus, Mail, Crown, User, Settings, Plus, X, Loader2, Star, ThumbsUp, Brain } from "lucide-react";
 import OnboardingWizard, { useOnboardingWizard } from "@/components/OnboardingWizard";
 import UnifiedHeader from "@/components/UnifiedHeader";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { useMutation } from "@tanstack/react-query";
 import signedworkLogo from "@assets/Signed-work-Logo (1)_1755168042120.png";
 
 // Welcome Step Component
@@ -1442,6 +1441,10 @@ function PaymentStep({ context }: { context: any }) {
 }
 
 export default function CompanyOnboarding() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const [, setLocation] = useLocation();
+
   // Define wizard steps first
   const wizardSteps = [
     {
@@ -1453,7 +1456,7 @@ export default function CompanyOnboarding() {
     },
     {
       id: "organization",
-      title: "Organization",
+      title: "Organization", 
       description: "Company details and structure",
       isOptional: false,
       render: (context: any) => <OrganizationDetailsStep context={context} />
@@ -1461,12 +1464,12 @@ export default function CompanyOnboarding() {
     {
       id: "team-setup",
       title: "Team Setup",
-      description: "Roles and team members",
+      description: "Roles and team members", 
       isOptional: true,
       render: (context: any) => <TeamSetupStep context={context} />
     },
     {
-      id: "plan-selection",
+      id: "plan-selection", 
       title: "Plan Selection",
       description: "Choose your perfect plan",
       isOptional: false,
@@ -1474,12 +1477,67 @@ export default function CompanyOnboarding() {
     },
     {
       id: "payment",
-      title: "Payment",
+      title: "Payment", 
       description: "Secure payment setup",
       isOptional: false,
       render: (context: any) => <PaymentStep context={context} />
     }
   ];
+
+  // Load existing onboarding progress
+  const { data: progressData, isLoading: isLoadingProgress, error: progressError } = useQuery({
+    queryKey: ['/api/companies/onboarding/progress'],
+    queryFn: () => apiRequest('GET', '/api/companies/onboarding/progress'),
+    retry: 1,
+    refetchOnWindowFocus: false,
+  });
+
+  // Mutation for saving progress
+  const saveProgressMutation = useMutation({
+    mutationFn: async (progressData: { 
+      currentStep: number; 
+      completedSteps: number[]; 
+      wizardData: Record<string, any>;
+      isCompleted?: boolean;
+    }) => {
+      return apiRequest('POST', '/api/companies/onboarding/progress', progressData);
+    },
+    onSuccess: (response) => {
+      // Update cache
+      queryClient.setQueryData(['/api/companies/onboarding/progress'], response.progress);
+      console.log('Progress saved successfully:', response);
+    },
+    onError: (error: any) => {
+      console.error('Failed to save progress:', error);
+      toast({
+        title: "Failed to save progress",
+        description: "Your progress couldn't be saved. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Helper functions for step ID/number mapping
+  const stepIdToNumber = (stepId: string): number => {
+    const index = wizardSteps.findIndex(step => step.id === stepId);
+    return index >= 0 ? index + 1 : 1;
+  };
+
+  const stepNumberToId = (stepNumber: number): string => {
+    const step = wizardSteps[stepNumber - 1];
+    return step?.id || wizardSteps[0]?.id || "welcome";
+  };
+
+  // Initialize wizard with loaded progress or defaults
+  const initialStepId = progressData?.currentStep ? 
+    stepNumberToId(progressData.currentStep) : 
+    "welcome";
+
+  const initialCompletedSteps = progressData?.completedSteps ? 
+    new Set(progressData.completedSteps.map((stepNumber: number) => stepNumberToId(stepNumber)).filter(Boolean)) :
+    new Set<string>();
+
+  const initialWizardData = progressData?.wizardData || {};
 
   const {
     currentStepId,
@@ -1491,29 +1549,103 @@ export default function CompanyOnboarding() {
     progress,
     isWizardComplete,
     saveProgress
-  } = useOnboardingWizard(wizardSteps, "welcome");
+  } = useOnboardingWizard(wizardSteps, initialStepId, {
+    initialCompletedSteps,
+    initialWizardData
+  });
 
   const handleStepComplete = (stepId: string, data: any) => {
     completeStep(stepId, data);
+    
+    // Calculate step numbers using helper functions
+    const currentStepNumber = stepIdToNumber(currentStepId);
+    const completedStepNumbers = Array.from(completedSteps).map(id => stepIdToNumber(id)).filter(num => num > 0);
+
+    // Add current step to completed steps if not already included
+    const stepBeingCompletedNumber = stepIdToNumber(stepId);
+    if (!completedStepNumbers.includes(stepBeingCompletedNumber)) {
+      completedStepNumbers.push(stepBeingCompletedNumber);
+    }
+
     // Save progress to backend
-    saveProgress({
-      currentStepId,
-      completedSteps: Array.from(completedSteps),
+    const progressData = {
+      currentStep: currentStepNumber,
+      completedSteps: completedStepNumbers.sort(),
       wizardData: { ...wizardData, [stepId]: data }
-    });
+    };
+
+    saveProgressMutation.mutate(progressData);
   };
 
   const handleWizardComplete = () => {
     console.log("Onboarding complete!", { wizardData });
-    // Redirect to dashboard or completion page
-    // setLocation("/company-dashboard");
+    
+    // Mark as completed and save final progress
+    const completedStepIndices = wizardSteps.map((_, index) => index + 1);
+    const finalProgressData = {
+      currentStep: wizardSteps.length,
+      completedSteps: completedStepIndices,
+      wizardData,
+      isCompleted: true
+    };
+
+    saveProgressMutation.mutate(finalProgressData);
+
+    toast({
+      title: "Onboarding Complete! 🎉",
+      description: "Welcome to Signedwork! Your account is now fully set up.",
+    });
+
+    // Redirect to company dashboard
+    setTimeout(() => {
+      setLocation("/company-dashboard");
+    }, 2000);
   };
 
   const handleSaveProgress = (data: any) => {
-    console.log("Saving progress:", data);
-    // API call to save progress to backend
-    // apiRequest("POST", "/api/companies/onboarding/progress", data);
+    // This function is called by OnboardingWizard for auto-saving
+    // Convert step IDs to numbers for backend storage using helper functions
+    const currentStepNumber = stepIdToNumber(data.currentStepId);
+    const completedStepNumbers = data.completedSteps.map((stepId: string) => stepIdToNumber(stepId)).filter((num: number) => num > 0);
+
+    const progressData = {
+      currentStep: currentStepNumber,
+      completedSteps: completedStepNumbers,
+      wizardData: data.wizardData
+    };
+
+    saveProgressMutation.mutate(progressData);
   };
+
+  // Show loading state while fetching progress
+  if (isLoadingProgress) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <Loader2 className="w-8 h-8 animate-spin mx-auto text-blue-600" />
+          <p className="text-slate-600">Loading your onboarding progress...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state if progress loading failed
+  if (progressError) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="text-center space-y-4 max-w-md">
+          <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto">
+            <X className="w-6 h-6 text-red-600" />
+          </div>
+          <h2 className="text-xl font-semibold text-slate-900">Failed to Load Progress</h2>
+          <p className="text-slate-600">We couldn't load your onboarding progress. Please refresh the page to try again.</p>
+          <Button onClick={() => window.location.reload()} variant="outline">
+            Refresh Page
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50">
