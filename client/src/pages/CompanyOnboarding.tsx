@@ -29,16 +29,16 @@ function WelcomeStep({ context }: { context: any }) {
   const [, setLocation] = useLocation();
 
   return (
-    <div className="max-w-2xl mx-auto text-center space-y-8">
+    <div className="max-w-4xl mx-auto text-center space-y-6 md:space-y-8 px-4">
       {/* Hero Section */}
-      <div className="space-y-4">
-        <div className="flex justify-center mb-6">
-          <img src={signedworkLogo} alt="Signedwork" className="h-16 w-auto" />
+      <div className="space-y-3 md:space-y-4">
+        <div className="flex justify-center mb-4 md:mb-6">
+          <img src={signedworkLogo} alt="Signedwork" className="h-12 md:h-16 w-auto" />
         </div>
-        <h1 className="text-3xl font-bold text-slate-900" data-testid="welcome-title">
+        <h1 className="text-2xl md:text-3xl font-bold text-slate-900" data-testid="welcome-title">
           Welcome to Signedwork! 🎉
         </h1>
-        <p className="text-xl text-slate-600" data-testid="welcome-subtitle">
+        <p className="text-lg md:text-xl text-slate-600 px-4" data-testid="welcome-subtitle">
           You've successfully created your company account. Let's set up your organization in just a few quick steps.
         </p>
       </div>
@@ -52,44 +52,44 @@ function WelcomeStep({ context }: { context: any }) {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid md:grid-cols-2 gap-4">
-            <div className="flex items-start space-x-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
+            <div className="flex items-start space-x-3 p-2 sm:p-0">
               <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
                 <Building className="w-4 h-4 text-blue-600" />
               </div>
               <div>
-                <h4 className="font-semibold text-slate-900">Organization Details</h4>
-                <p className="text-sm text-slate-600">Company size, industry, and goals</p>
+                <h4 className="font-semibold text-slate-900 text-sm md:text-base">Organization Details</h4>
+                <p className="text-xs md:text-sm text-slate-600">Company size, industry, and goals</p>
               </div>
             </div>
             
-            <div className="flex items-start space-x-3">
+            <div className="flex items-start space-x-3 p-2 sm:p-0">
               <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
                 <Users className="w-4 h-4 text-green-600" />
               </div>
               <div>
-                <h4 className="font-semibold text-slate-900">Team Structure</h4>
-                <p className="text-sm text-slate-600">Set up roles and invite team members</p>
+                <h4 className="font-semibold text-slate-900 text-sm md:text-base">Team Structure</h4>
+                <p className="text-xs md:text-sm text-slate-600">Set up roles and invite team members</p>
               </div>
             </div>
             
-            <div className="flex items-start space-x-3">
+            <div className="flex items-start space-x-3 p-2 sm:p-0">
               <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
                 <CheckCircle className="w-4 h-4 text-purple-600" />
               </div>
               <div>
-                <h4 className="font-semibold text-slate-900">Perfect Plan</h4>
-                <p className="text-sm text-slate-600">We'll recommend the best plan for your needs</p>
+                <h4 className="font-semibold text-slate-900 text-sm md:text-base">Perfect Plan</h4>
+                <p className="text-xs md:text-sm text-slate-600">We'll recommend the best plan for your needs</p>
               </div>
             </div>
             
-            <div className="flex items-start space-x-3">
+            <div className="flex items-start space-x-3 p-2 sm:p-0">
               <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
                 <CreditCard className="w-4 h-4 text-orange-600" />
               </div>
               <div>
-                <h4 className="font-semibold text-slate-900">Secure Payment</h4>
-                <p className="text-sm text-slate-600">Quick and secure payment setup</p>
+                <h4 className="font-semibold text-slate-900 text-sm md:text-base">Secure Payment</h4>
+                <p className="text-xs md:text-sm text-slate-600">Quick and secure payment setup</p>
               </div>
             </div>
           </div>
@@ -97,12 +97,12 @@ function WelcomeStep({ context }: { context: any }) {
       </Card>
 
       {/* Time Estimate */}
-      <div className="bg-blue-50 rounded-lg p-6">
+      <div className="bg-blue-50 rounded-lg p-4 md:p-6">
         <div className="flex items-center justify-center space-x-2 text-blue-800">
           <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
-          <span className="font-medium">Estimated time: 5-7 minutes</span>
+          <span className="font-medium text-sm md:text-base">Estimated time: 5-7 minutes</span>
         </div>
-        <p className="text-blue-700 text-sm mt-2 text-center">
+        <p className="text-blue-700 text-xs md:text-sm mt-2 text-center px-2">
           You can save your progress and complete this later if needed
         </p>
       </div>
@@ -183,16 +183,16 @@ function OrganizationDetailsStep({ context }: { context: any }) {
   };
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
+    <div className="max-w-4xl mx-auto space-y-4 md:space-y-6 px-4">
       {/* Header */}
-      <div className="text-center space-y-4">
-        <div className="flex items-center justify-center mb-4">
-          <div className="bg-blue-100 rounded-full p-3">
-            <Building className="h-8 w-8 text-blue-600" />
+      <div className="text-center space-y-3 md:space-y-4">
+        <div className="flex items-center justify-center mb-3 md:mb-4">
+          <div className="bg-blue-100 rounded-full p-2 md:p-3">
+            <Building className="h-6 w-6 md:h-8 md:w-8 text-blue-600" />
           </div>
         </div>
-        <h2 className="text-3xl font-bold text-slate-900">Tell us about your organization</h2>
-        <p className="text-lg text-slate-600">
+        <h2 className="text-xl md:text-3xl font-bold text-slate-900">Tell us about your organization</h2>
+        <p className="text-sm md:text-lg text-slate-600 px-2">
           This helps us customize Signedwork to fit your business needs
         </p>
       </div>
@@ -523,16 +523,16 @@ function TeamSetupStep({ context }: { context: any }) {
   const roleSuggestions = getRoleSuggestions();
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-4xl mx-auto space-y-4 md:space-y-6 px-4">
       {/* Header */}
-      <div className="text-center space-y-4">
-        <div className="flex items-center justify-center mb-4">
-          <div className="bg-green-100 rounded-full p-3">
-            <Users className="h-8 w-8 text-green-600" />
+      <div className="text-center space-y-3 md:space-y-4">
+        <div className="flex items-center justify-center mb-3 md:mb-4">
+          <div className="bg-green-100 rounded-full p-2 md:p-3">
+            <Users className="h-6 w-6 md:h-8 md:w-8 text-green-600" />
           </div>
         </div>
-        <h2 className="text-3xl font-bold text-slate-900">Set up your team structure</h2>
-        <p className="text-lg text-slate-600">
+        <h2 className="text-xl md:text-3xl font-bold text-slate-900">Set up your team structure</h2>
+        <p className="text-sm md:text-lg text-slate-600 px-2">
           Define key roles and invite your initial team members to get started
         </p>
       </div>
@@ -638,15 +638,16 @@ function TeamSetupStep({ context }: { context: any }) {
                 <CardContent className="space-y-4">
                   
                   {/* Role Suggestions */}
-                  <div className="p-4 bg-slate-50 rounded-lg">
-                    <Label className="text-sm font-medium mb-3 block">Quick suggestions based on your company size:</Label>
-                    <div className="flex flex-wrap gap-2">
+                  <div className="p-3 md:p-4 bg-slate-50 rounded-lg">
+                    <Label className="text-sm font-medium mb-2 md:mb-3 block">Quick suggestions based on your company size:</Label>
+                    <div className="flex flex-wrap gap-1.5 md:gap-2">
                       {roleSuggestions.map((suggestion) => (
                         <Button
                           key={suggestion}
                           type="button"
                           variant="outline"
                           size="sm"
+                          className="text-xs md:text-sm h-8 md:h-9 px-2 md:px-3 min-h-[44px] md:min-h-auto"
                           onClick={() => {
                             const currentRoles = rolesFieldArray.fields;
                             const emptyIndex = currentRoles.findIndex((_, index) => {
@@ -662,24 +663,25 @@ function TeamSetupStep({ context }: { context: any }) {
                           }}
                           data-testid={`button-role-suggestion-${suggestion.toLowerCase().replace(/[^a-z0-9]/g, '-')}`}
                         >
-                          <Plus className="w-3 h-3 mr-1" />
-                          {suggestion}
+                          <Plus className="w-3 h-3 mr-0.5 md:mr-1" />
+                          <span className="truncate">{suggestion}</span>
                         </Button>
                       ))}
                     </div>
                   </div>
 
                   {/* Role List */}
-                  <div className="space-y-4">
+                  <div className="space-y-3 md:space-y-4">
                     {rolesFieldArray.fields.map((field, index) => (
-                      <div key={field.id} className="p-4 border rounded-lg space-y-3">
+                      <div key={field.id} className="p-3 md:p-4 border rounded-lg space-y-3">
                         <div className="flex justify-between items-start">
-                          <h4 className="font-medium">Role {index + 1}</h4>
+                          <h4 className="font-medium text-sm md:text-base">Role {index + 1}</h4>
                           {rolesFieldArray.fields.length > 1 && (
                             <Button
                               type="button"
                               variant="ghost"
                               size="sm"
+                              className="min-h-[44px] md:min-h-auto h-9"
                               onClick={() => rolesFieldArray.remove(index)}
                               data-testid={`button-remove-role-${index}`}
                             >
@@ -688,7 +690,7 @@ function TeamSetupStep({ context }: { context: any }) {
                           )}
                         </div>
                         
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
                           <FormField
                             control={form.control}
                             name={`initialRoles.${index}.title`}
@@ -754,7 +756,7 @@ function TeamSetupStep({ context }: { context: any }) {
                     type="button"
                     variant="outline"
                     onClick={() => rolesFieldArray.append({ title: "", department: "", description: "" })}
-                    className="w-full"
+                    className="w-full h-11 text-sm md:text-base"
                     data-testid="button-add-role"
                   >
                     <Plus className="w-4 h-4 mr-2" />
@@ -774,14 +776,15 @@ function TeamSetupStep({ context }: { context: any }) {
                     Send invitations to your first team members (optional - you can do this later)
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-3 md:space-y-4">
                   {invitationsFieldArray.fields.length === 0 ? (
-                    <div className="text-center py-6 bg-slate-50 rounded-lg">
-                      <Mail className="h-8 w-8 text-slate-400 mx-auto mb-3" />
-                      <p className="text-slate-600 mb-4">No invitations added yet</p>
+                    <div className="text-center py-4 md:py-6 bg-slate-50 rounded-lg">
+                      <Mail className="h-6 w-6 md:h-8 md:w-8 text-slate-400 mx-auto mb-2 md:mb-3" />
+                      <p className="text-slate-600 mb-3 md:mb-4 text-sm md:text-base">No invitations added yet</p>
                       <Button
                         type="button"
                         onClick={() => invitationsFieldArray.append({ email: "", role: "", message: "" })}
+                        className="h-11"
                         data-testid="button-add-first-invitation"
                       >
                         <Plus className="w-4 h-4 mr-2" />
@@ -790,18 +793,19 @@ function TeamSetupStep({ context }: { context: any }) {
                     </div>
                   ) : (
                     <>
-                      <div className="space-y-4">
+                      <div className="space-y-3 md:space-y-4">
                         {invitationsFieldArray.fields.map((field, index) => {
                           const availableRoles = watchCurrentRoles?.filter((role: any) => role?.title && role.title.trim()) || [];
                           
                           return (
-                            <div key={field.id} className="p-4 border rounded-lg space-y-3">
+                            <div key={field.id} className="p-3 md:p-4 border rounded-lg space-y-3">
                               <div className="flex justify-between items-start">
-                                <h4 className="font-medium">Invitation {index + 1}</h4>
+                                <h4 className="font-medium text-sm md:text-base">Invitation {index + 1}</h4>
                                 <Button
                                   type="button"
                                   variant="ghost"
                                   size="sm"
+                                  className="min-h-[44px] md:min-h-auto h-9"
                                   onClick={() => invitationsFieldArray.remove(index)}
                                   data-testid={`button-remove-invitation-${index}`}
                                 >
@@ -809,7 +813,7 @@ function TeamSetupStep({ context }: { context: any }) {
                                 </Button>
                               </div>
                               
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
                                 <FormField
                                   control={form.control}
                                   name={`invitations.${index}.email`}
@@ -889,7 +893,7 @@ function TeamSetupStep({ context }: { context: any }) {
                         type="button"
                         variant="outline"
                         onClick={() => invitationsFieldArray.append({ email: "", role: "", message: "" })}
-                        className="w-full"
+                        className="w-full h-11 text-sm md:text-base"
                         data-testid="button-add-invitation"
                       >
                         <Plus className="w-4 h-4 mr-2" />
@@ -903,12 +907,13 @@ function TeamSetupStep({ context }: { context: any }) {
           )}
 
           {/* Action Buttons */}
-          <div className="flex justify-between pt-6">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-0 sm:justify-between pt-4 md:pt-6">
             <Button 
               type="button" 
               variant="outline" 
               onClick={context.onPrevious}
               disabled={sendInvitationsMutation.isPending}
+              className="w-full sm:w-auto h-11 order-2 sm:order-1"
               data-testid="button-previous-step"
             >
               Back
@@ -916,6 +921,7 @@ function TeamSetupStep({ context }: { context: any }) {
             <Button 
               type="submit"
               disabled={sendInvitationsMutation.isPending}
+              className="w-full sm:w-auto h-11 order-1 sm:order-2"
               data-testid="button-continue-step"
             >
               {sendInvitationsMutation.isPending ? (
@@ -1324,7 +1330,7 @@ function PlanSelectionStep({ context }: { context: any }) {
             render={({ field }) => (
               <FormItem>
                 <FormControl>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
                     {plans.map((plan) => {
                       const isRecommended = recommendation?.plan.id === plan.id;
                       const currentFormData = form.getValues();
@@ -1578,14 +1584,14 @@ function PaymentStep({ context }: { context: any }) {
   };
 
   return (
-    <div className="text-center space-y-6 max-w-2xl mx-auto">
+    <div className="text-center space-y-4 md:space-y-6 max-w-4xl mx-auto px-4">
       {/* Header */}
       <div className="space-y-2">
-        <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-green-100 rounded-full">
-          <CreditCard className="w-8 h-8 text-green-600" />
+        <div className="flex items-center justify-center w-12 h-12 md:w-16 md:h-16 mx-auto mb-3 md:mb-4 bg-green-100 rounded-full">
+          <CreditCard className="w-6 h-6 md:w-8 md:h-8 text-green-600" />
         </div>
-        <h2 className="text-2xl font-bold text-slate-900">Complete Your Subscription</h2>
-        <p className="text-slate-600">
+        <h2 className="text-xl md:text-2xl font-bold text-slate-900">Complete Your Subscription</h2>
+        <p className="text-sm md:text-base text-slate-600 px-2">
           You're almost done! Complete your payment to activate your {planName} subscription.
         </p>
       </div>
@@ -1593,20 +1599,20 @@ function PaymentStep({ context }: { context: any }) {
       {/* Plan Summary Card */}
       {selectedPlan && (
         <Card className="border-green-200 bg-green-50/50">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div className="text-left">
-                <h3 className="font-semibold text-slate-900">{selectedPlan.name} Plan</h3>
+          <CardContent className="p-4 md:p-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
+              <div className="text-left flex-1">
+                <h3 className="font-semibold text-slate-900 text-base md:text-lg">{selectedPlan.name} Plan</h3>
                 <p className="text-sm text-slate-600">{selectedPlan.description}</p>
-                <div className="text-sm text-slate-500 mt-1">
+                <div className="text-xs md:text-sm text-slate-500 mt-1">
                   For {organizationData?.companyName || "your organization"}
                 </div>
               </div>
-              <div className="text-right">
-                <div className="text-2xl font-bold text-green-600">
+              <div className="text-left sm:text-right w-full sm:w-auto">
+                <div className="text-xl md:text-2xl font-bold text-green-600">
                   ₹{(selectedPlan.amount / 100).toLocaleString()}
                 </div>
-                <div className="text-sm text-slate-500">
+                <div className="text-xs md:text-sm text-slate-500">
                   per {selectedPlan.interval || 'month'}
                 </div>
               </div>
@@ -1637,11 +1643,12 @@ function PaymentStep({ context }: { context: any }) {
       </div>
 
       {/* Action Buttons */}
-      <div className="flex justify-between pt-4">
+      <div className="flex flex-col sm:flex-row gap-3 sm:gap-0 sm:justify-between pt-4">
         <Button 
           type="button" 
           variant="outline" 
           onClick={context.onPrevious}
+          className="w-full sm:w-auto h-11 order-2 sm:order-1"
           data-testid="button-previous-step"
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
@@ -1657,6 +1664,7 @@ function PaymentStep({ context }: { context: any }) {
               trialAccount: true 
             });
           }}
+          className="w-full sm:w-auto h-11 order-1 sm:order-2 text-sm"
           data-testid="button-skip-payment"
         >
           Start Free Trial Instead

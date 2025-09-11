@@ -165,11 +165,13 @@ export function RazorpayCheckout({ planId, planName, amount, currency, onSuccess
     <Button
       onClick={handlePayment}
       disabled={loading || !scriptLoaded}
-      className="w-full"
+      className="w-full h-12 text-base font-medium"
       data-testid="button-razorpay-checkout"
     >
       {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-      {loading ? 'Processing...' : `Pay ₹${amount / 100} for ${planName}`}
+      <span className="truncate">
+        {loading ? 'Processing...' : `Pay ₹${amount / 100} for ${planName}`}
+      </span>
     </Button>
   );
 }

@@ -205,24 +205,25 @@ export default function OnboardingWizard({
       {...divProps}
     >
       {/* Header */}
-      <div className="bg-white border-b border-slate-200 sticky top-0 z-50">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <h1 className="text-2xl font-bold text-slate-900" data-testid="wizard-title">
+      <div className="bg-white border-b border-slate-200 sticky top-0 z-50 safe-area-top">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
+            <div className="flex items-center justify-between sm:justify-start">
+              <h1 className="text-lg sm:text-2xl font-bold text-slate-900 truncate" data-testid="wizard-title">
                 {title}
               </h1>
-              <Badge variant="secondary" data-testid="wizard-progress-badge">
-                Step {currentStepIndex + 1} of {totalSteps}
+              <Badge variant="secondary" className="ml-2 text-xs" data-testid="wizard-progress-badge">
+                {currentStepIndex + 1}/{totalSteps}
               </Badge>
             </div>
-            <div className="text-sm text-slate-600" data-testid="wizard-progress-text">
-              {Math.round(progressPercentage)}% Complete ({completedCount}/{totalSteps} steps)
+            <div className="text-xs sm:text-sm text-slate-600 text-right" data-testid="wizard-progress-text">
+              <span className="font-medium">{Math.round(progressPercentage)}% Complete</span>
+              <span className="hidden sm:inline"> ({completedCount}/{totalSteps} steps)</span>
             </div>
           </div>
           
           {/* Progress Bar */}
-          <div className="mt-4">
+          <div className="mt-3 sm:mt-4">
             <Progress 
               value={progressPercentage} 
               className="h-2" 
@@ -236,21 +237,21 @@ export default function OnboardingWizard({
       {/* Stepper Navigation */}
       {showStepNavigation && (
         <nav className="bg-white border-b border-slate-100" role="navigation" aria-label="Wizard steps">
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-            <ol className="flex items-center justify-between">
-              {steps.map((step, index) => {
-                const isActive = step.id === currentStepId;
-                const isCompleted = isStepCompleted(step.id);
-                const canNavigate = isCompleted || step.id === currentStepId;
-                
-                return (
-                  <li key={step.id} className="flex items-center">
-                    {/* Step Circle */}
-                    <div className="flex items-center">
+          <div className="max-w-4xl mx-auto px-2 sm:px-6 lg:px-8 py-4 sm:py-6">
+            {/* Mobile: Horizontal scroll */}
+            <div className="md:hidden">
+              <div className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory scrollbar-hide">
+                {steps.map((step, index) => {
+                  const isActive = step.id === currentStepId;
+                  const isCompleted = isStepCompleted(step.id);
+                  const canNavigate = isCompleted || step.id === currentStepId;
+                  
+                  return (
+                    <div key={step.id} className="flex flex-col items-center min-w-0 snap-center">
                       <button
                         type="button"
                         className={cn(
-                          "flex items-center justify-center w-8 h-8 rounded-full border-2 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2",
+                          "flex items-center justify-center w-11 h-11 rounded-full border-2 text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 flex-shrink-0",
                           isActive ? "border-blue-600 bg-blue-600 text-white" :
                           isCompleted ? "border-green-500 bg-green-500 text-white hover:bg-green-600" :
                           canNavigate ? "border-slate-300 bg-white text-slate-500 hover:border-slate-400" :
@@ -269,8 +270,58 @@ export default function OnboardingWizard({
                         )}
                       </button>
                       
-                      {/* Step Title (Hidden on mobile) */}
-                      <div className="hidden md:block ml-3">
+                      {/* Mobile Step Title */}
+                      <div className="mt-1 text-center min-w-0 max-w-[80px]">
+                        <div className={cn(
+                          "text-xs font-medium truncate",
+                          isActive ? "text-blue-600" :
+                          isCompleted ? "text-green-600" :
+                          "text-slate-500"
+                        )} data-testid={`step-title-${step.id}`}>
+                          {step.title}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+            
+            {/* Desktop: Traditional horizontal layout */}
+            <ol className="hidden md:flex items-center justify-between">
+              {steps.map((step, index) => {
+                const isActive = step.id === currentStepId;
+                const isCompleted = isStepCompleted(step.id);
+                const canNavigate = isCompleted || step.id === currentStepId;
+                
+                return (
+                  <li key={step.id} className="flex items-center">
+                    {/* Step Circle */}
+                    <div className="flex items-center">
+                      <button
+                        type="button"
+                        className={cn(
+                          "flex items-center justify-center w-11 h-11 rounded-full border-2 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2",
+                          isActive ? "border-blue-600 bg-blue-600 text-white" :
+                          isCompleted ? "border-green-500 bg-green-500 text-white hover:bg-green-600" :
+                          canNavigate ? "border-slate-300 bg-white text-slate-500 hover:border-slate-400" :
+                          "border-slate-200 bg-slate-50 text-slate-300 cursor-not-allowed"
+                        )}
+                        disabled={!canNavigate}
+                        onClick={() => canNavigate && onStepChange(step.id)}
+                        data-testid={`step-circle-${step.id}`}
+                        aria-current={isActive ? "step" : undefined}
+                        aria-label={`${step.title}${isCompleted ? ' (completed)' : isActive ? ' (current)' : ''}`}
+                      >
+                        {isCompleted ? (
+                          <Check className="w-4 h-4" aria-hidden="true" />
+                        ) : (
+                          <span aria-hidden="true">{index + 1}</span>
+                        )}
+                      </button>
+                      
+                      {/* Step Title */}
+                      <div className="ml-3">
                         <div className={cn(
                           "text-sm font-medium",
                           isActive ? "text-blue-600" :
@@ -307,34 +358,34 @@ export default function OnboardingWizard({
       )}
 
       {/* Main Content */}
-      <main className="flex-1 py-8" role="main">
+      <main className="flex-1 py-4 sm:py-8 pb-24 sm:pb-8" role="main">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           
           {/* Step Content Card */}
-          <Card className="mb-8" data-testid="step-content-card">
-            <CardHeader className="border-b border-slate-100">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-xl font-semibold text-slate-900" data-testid="current-step-title">
-                    {currentStep?.title}
+          <Card className="mb-4 sm:mb-8" data-testid="step-content-card">
+            <CardHeader className="border-b border-slate-100 p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <h2 className="text-lg sm:text-xl font-semibold text-slate-900 flex flex-wrap items-center gap-2" data-testid="current-step-title">
+                    <span className="truncate">{currentStep?.title}</span>
                     {currentStep?.isOptional && (
-                      <Badge variant="outline" className="ml-2">Optional</Badge>
+                      <Badge variant="outline" className="text-xs flex-shrink-0">Optional</Badge>
                     )}
                   </h2>
-                  <p className="text-slate-600 mt-1" data-testid="current-step-description">
+                  <p className="text-sm sm:text-base text-slate-600 mt-1" data-testid="current-step-description">
                     {currentStep?.description}
                   </p>
                   
                   {/* Validation Errors */}
                   {!stepValidation.isValid && stepValidation.errors.length > 0 && (
                     <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-md" role="alert">
-                      <div className="flex items-center">
-                        <AlertCircle className="w-4 h-4 text-red-600 mr-2 flex-shrink-0" aria-hidden="true" />
-                        <div>
+                      <div className="flex items-start">
+                        <AlertCircle className="w-4 h-4 text-red-600 mr-2 flex-shrink-0 mt-0.5" aria-hidden="true" />
+                        <div className="min-w-0">
                           <p className="text-sm font-medium text-red-800">Please fix the following issues:</p>
-                          <ul className="mt-1 text-sm text-red-700 list-disc list-inside">
+                          <ul className="mt-1 text-sm text-red-700 list-disc list-inside space-y-1">
                             {stepValidation.errors.map((error, index) => (
-                              <li key={index}>{error}</li>
+                              <li key={index} className="break-words">{error}</li>
                             ))}
                           </ul>
                         </div>
@@ -347,87 +398,155 @@ export default function OnboardingWizard({
                 {allowSkipping && (currentStep?.canSkip || currentStep?.isOptional) && (
                   <Button
                     variant="ghost"
+                    size="sm"
                     onClick={handleSkipStep}
-                    className="text-slate-500 hover:text-slate-700"
+                    className="text-slate-500 hover:text-slate-700 flex-shrink-0 h-9"
                     data-testid="skip-step-button"
                     aria-label="Skip this step"
                   >
                     <SkipForward className="w-4 h-4 mr-2" aria-hidden="true" />
-                    Skip this step
+                    <span className="hidden sm:inline">Skip this step</span>
+                    <span className="sm:hidden">Skip</span>
                   </Button>
                 )}
               </div>
             </CardHeader>
             
-            <CardContent className="p-8">
+            <CardContent className="p-4 sm:p-6 lg:p-8">
               {/* Render current step with context */}
               {currentStep?.render(stepContext)}
             </CardContent>
           </Card>
 
           {/* Navigation Footer */}
-          <nav className="flex items-center justify-between bg-white p-6 rounded-lg shadow-sm border border-slate-200" role="navigation" aria-label="Step navigation">
-            <Button
-              variant="outline"
-              onClick={handlePreviousStep}
-              disabled={currentStepIndex === 0}
-              className="flex items-center"
-              data-testid="previous-step-button"
-              aria-label="Go to previous step"
-            >
-              <ChevronLeft className="w-4 h-4 mr-2" aria-hidden="true" />
-              Previous
-            </Button>
-            
-            <div className="text-center">
-              <div className="text-sm text-slate-600">
-                Step {currentStepIndex + 1} of {totalSteps}
-              </div>
-              {currentStep?.isOptional && (
-                <div className="text-xs text-slate-500 mt-1">
-                  This step is optional
+          <nav 
+            className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-slate-200 p-3 sm:static sm:bg-white sm:backdrop-blur-none sm:border-t-0 sm:p-6 sm:rounded-lg sm:shadow-sm sm:border sm:border-slate-200 z-40 safe-area-bottom" 
+            role="navigation" 
+            aria-label="Step navigation"
+          >
+            {/* Mobile Layout */}
+            <div className="sm:hidden">
+              <div className="flex items-center justify-between gap-3 mb-3">
+                <Button
+                  variant="outline"
+                  onClick={handlePreviousStep}
+                  disabled={currentStepIndex === 0}
+                  className="flex items-center h-11 px-4 flex-1"
+                  data-testid="previous-step-button"
+                  aria-label="Go to previous step"
+                >
+                  <ChevronLeft className="w-4 h-4 mr-1" aria-hidden="true" />
+                  <span className="text-sm">Previous</span>
+                </Button>
+                
+                <div className="text-center px-2">
+                  <div className="text-xs font-medium text-slate-900">
+                    {currentStepIndex + 1} of {totalSteps}
+                  </div>
+                  {currentStep?.isOptional && (
+                    <div className="text-xs text-slate-500">
+                      Optional
+                    </div>
+                  )}
                 </div>
-              )}
-              <div className="text-xs text-slate-400 mt-1">
-                Use arrow keys to navigate
+                
+                <Button
+                  onClick={handleNextStep}
+                  disabled={!canProceedToNext}
+                  className="flex items-center h-11 px-4 flex-1"
+                  data-testid="next-step-button"
+                  aria-label={isLastStep ? "Complete wizard" : "Go to next step"}
+                >
+                  <span className="text-sm mr-1">
+                    {isLastStep ? "Complete" : "Next"}
+                  </span>
+                  {isLastStep ? (
+                    <ArrowRight className="w-4 h-4" aria-hidden="true" />
+                  ) : (
+                    <ChevronRight className="w-4 h-4" aria-hidden="true" />
+                  )}
+                </Button>
               </div>
-            </div>
-            
-            <div className="flex items-center space-x-3">
-              {/* Complete Step Button */}
+              
+              {/* Complete Step Button (Mobile) */}
               {!isStepCompleted(currentStepId) && (
                 <Button
                   onClick={handleCompleteStep}
                   disabled={!stepValidation.isValid && !currentStep?.isOptional}
-                  className="bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300"
+                  className="w-full h-11 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300"
                   data-testid="complete-step-button"
                   aria-label="Mark this step as complete"
                 >
                   <Check className="w-4 h-4 mr-2" aria-hidden="true" />
-                  Complete Step
+                  <span className="text-sm font-medium">Complete Step</span>
                 </Button>
               )}
-              
-              {/* Next Button */}
+            </div>
+            
+            {/* Desktop Layout */}
+            <div className="hidden sm:flex items-center justify-between">
               <Button
-                onClick={handleNextStep}
-                disabled={!canProceedToNext}
-                className="flex items-center"
-                data-testid="next-step-button"
-                aria-label={isLastStep ? "Complete wizard" : "Go to next step"}
+                variant="outline"
+                onClick={handlePreviousStep}
+                disabled={currentStepIndex === 0}
+                className="flex items-center h-11"
+                data-testid="previous-step-button"
+                aria-label="Go to previous step"
               >
-                {isLastStep ? (
-                  <>
-                    Complete Setup
-                    <ArrowRight className="w-4 h-4 ml-2" aria-hidden="true" />
-                  </>
-                ) : (
-                  <>
-                    Next
-                    <ChevronRight className="w-4 h-4 ml-2" aria-hidden="true" />
-                  </>
-                )}
+                <ChevronLeft className="w-4 h-4 mr-2" aria-hidden="true" />
+                Previous
               </Button>
+              
+              <div className="text-center">
+                <div className="text-sm text-slate-600">
+                  Step {currentStepIndex + 1} of {totalSteps}
+                </div>
+                {currentStep?.isOptional && (
+                  <div className="text-xs text-slate-500 mt-1">
+                    This step is optional
+                  </div>
+                )}
+                <div className="text-xs text-slate-400 mt-1">
+                  Use arrow keys to navigate
+                </div>
+              </div>
+              
+              <div className="flex items-center space-x-3">
+                {/* Complete Step Button */}
+                {!isStepCompleted(currentStepId) && (
+                  <Button
+                    onClick={handleCompleteStep}
+                    disabled={!stepValidation.isValid && !currentStep?.isOptional}
+                    className="bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 h-11"
+                    data-testid="complete-step-button"
+                    aria-label="Mark this step as complete"
+                  >
+                    <Check className="w-4 h-4 mr-2" aria-hidden="true" />
+                    Complete Step
+                  </Button>
+                )}
+                
+                {/* Next Button */}
+                <Button
+                  onClick={handleNextStep}
+                  disabled={!canProceedToNext}
+                  className="flex items-center h-11"
+                  data-testid="next-step-button"
+                  aria-label={isLastStep ? "Complete wizard" : "Go to next step"}
+                >
+                  {isLastStep ? (
+                    <>
+                      Complete Setup
+                      <ArrowRight className="w-4 h-4 ml-2" aria-hidden="true" />
+                    </>
+                  ) : (
+                    <>
+                      Next
+                      <ChevronRight className="w-4 h-4 ml-2" aria-hidden="true" />
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
           </nav>
         </div>
