@@ -231,6 +231,34 @@ export const companies = pgTable("companies", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Company onboarding progress tracking
+export const companyOnboarding = pgTable("company_onboarding", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  companyId: varchar("company_id").notNull().references(() => companies.id, { onDelete: "cascade" }),
+  currentStep: integer("current_step").default(1), // Current step number (1-5)
+  completedSteps: integer("completed_steps").array().default(sql`'{}'::integer[]`), // Array of completed step numbers
+  wizardData: jsonb("wizard_data").default(sql`'{}'::jsonb`), // Store wizard form data
+  isCompleted: boolean("is_completed").default(false),
+  completedAt: timestamp("completed_at"),
+  startedAt: timestamp("started_at").defaultNow(),
+  lastActiveAt: timestamp("last_active_at").defaultNow(),
+  skipReason: text("skip_reason"), // If user skips the wizard
+  completionPercentage: integer("completion_percentage").default(0), // Progress percentage (0-100)
+  // Specific step completion tracking for easier queries
+  welcomeCompleted: boolean("welcome_completed").default(false), // Step 1
+  orgDetailsCompleted: boolean("org_details_completed").default(false), // Step 2  
+  teamSetupCompleted: boolean("team_setup_completed").default(false), // Step 3
+  planSelectionCompleted: boolean("plan_selection_completed").default(false), // Step 4
+  paymentCompleted: boolean("payment_completed").default(false), // Step 5
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  unique("company_onboarding_company_unique").on(table.companyId), // One onboarding per company
+  index("company_onboarding_company_idx").on(table.companyId),
+  index("company_onboarding_completed_idx").on(table.isCompleted),
+  index("company_onboarding_step_idx").on(table.currentStep),
+]);
+
 // New table for company invitation codes
 export const companyInvitationCodes = pgTable("company_invitation_codes", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -803,7 +831,7 @@ export const workEntriesRelations = relations(workEntries, ({ one }) => ({
   }),
 }));
 
-export const companiesRelations = relations(companies, ({ many }) => ({
+export const companiesRelations = relations(companies, ({ one, many }) => ({
   jobListings: many(jobListings),
   profileViews: many(profileViews),
   companyEmployees: many(companyEmployees),
@@ -813,6 +841,15 @@ export const companiesRelations = relations(companies, ({ many }) => ({
   teams: many(companyTeams),
   workEntries: many(workEntries),
   managers: many(companyManagers),
+  onboarding: one(companyOnboarding), // One-to-one onboarding relation
+}));
+
+// Company onboarding relations
+export const companyOnboardingRelations = relations(companyOnboarding, ({ one }) => ({
+  company: one(companies, {
+    fields: [companyOnboarding.companyId],
+    references: [companies.id],
+  }),
 }));
 
 // New hierarchy relations
@@ -1166,6 +1203,20 @@ export const insertCompanySchema = createInsertSchema(companies).omit({
     .optional()
     .refine((val) => !val || val.length === 10, "PAN must be exactly 10 characters")
     .refine((val) => !val || /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(val), "Invalid PAN format. Example: ABCDE1234F"),
+});
+
+// Company onboarding insert schema
+export const insertCompanyOnboardingSchema = createInsertSchema(companyOnboarding).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  startedAt: true,
+  lastActiveAt: true,
+}).extend({
+  currentStep: z.number().min(1).max(5).optional(),
+  completedSteps: z.array(z.number().min(1).max(5)).optional(),
+  wizardData: z.record(z.any()).optional(), // JSON object for wizard data
+  completionPercentage: z.number().min(0).max(100).optional(),
 });
 
 // Insert schemas for hierarchy tables
