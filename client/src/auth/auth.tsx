@@ -454,12 +454,17 @@ export default function AuthPage() {
       
       toast({
         title: "Account Created Successfully!",
-        description: response.message || "Your company account has been created. You can verify your email later to unlock all features.",
+        description: response.message || "Your company account has been created successfully!",
       });
       
-      // Direct redirect to company login instead of verification screen
+      // Since user is now automatically logged in, redirect directly to dashboard
       setTimeout(() => {
-        setCurrentView("company-login");
+        if (response.authenticated && response.userType === "company") {
+          setLocation("/company-dashboard");
+        } else {
+          // Fallback to login view if something went wrong
+          setCurrentView("company-login");
+        }
       }, 1500);
     },
     onError: (error: any) => {

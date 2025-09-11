@@ -621,19 +621,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Create company account with simplified data and default values for DB constraints
-      console.log("Creating company with data:", {
-        name: name.trim(),
-        email: email.toLowerCase().trim(),
-        password: "[HIDDEN]",
-        address: '',
-        city: '',
-        state: '',
-        pincode: '',
-        industry: '',
-        size: '',
-        establishmentYear: new Date().getFullYear().toString()
-      });
-      
       const company = await storage.createCompany({
         name: name.trim(),
         email: email.toLowerCase().trim(),
@@ -655,16 +642,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         gstVerificationStatus: 'pending'
       });
       
-      console.log("Company created successfully:", company?.id || "NO ID RETURNED");
+      // Store user in session to auto-login after signup
+      const sessionUser = {
+        id: company.id,
+        email: company.email,
+        name: company.name,
+        userType: 'company' as const,
+        emailVerified: company.emailVerified || false
+      };
+
+      (req.session as any).user = sessionUser;
 
       res.status(201).json({ 
-        message: "Company account created successfully! You can verify your email later to unlock all features.",
+        message: "Company account created successfully! Redirecting to dashboard...",
         user: {
           id: company.id,
           name: company.name,
           email: company.email,
           emailVerified: false
-        }
+        },
+        userType: "company",
+        authenticated: true
       });
     } catch (error: any) {
       console.error("Company signup error:", error);
