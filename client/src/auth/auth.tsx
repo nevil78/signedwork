@@ -116,7 +116,6 @@ export default function AuthPage() {
   }, []);
   const { toast } = useToast();
 
-
   // Handle URL view parameters dynamically
   useEffect(() => {
     const urlParams = new URLSearchParams(location.split('?')[1] || '');
@@ -181,8 +180,6 @@ export default function AuthPage() {
       return () => clearTimeout(timer);
     }
   }, [currentView, countdown]);
-
-
 
   const employeeForm = useForm<InsertEmployee>({
     resolver: zodResolver(insertEmployeeSchema),
@@ -291,25 +288,21 @@ export default function AuthPage() {
   const validateRequiredFields = () => {
     if (currentView !== "company" || !hasUserStartedFilling) return;
     
-    const values = companyForm.getValues();
+    const { name, email, password } = companyForm.getValues();
     const errors: Record<string, boolean> = {};
     
-    // Debug: Log form values to understand what's happening
-    console.log("Form validation - current values:", values);
-    
-    // Only show red borders for truly empty required fields
+    // Only check the 3 essential fields for simplified form
     const isEmpty = (value: string | undefined | null) => !value || value.trim() === "";
     
-    if (isEmpty(values.name)) errors.name = true;
-    if (isEmpty(values.industry)) errors.industry = true;
-    if (isEmpty(values.size)) errors.size = true;
-    if (isEmpty(values.establishmentYear)) errors.establishmentYear = true;
-    if (isEmpty(values.address)) errors.address = true;
-    if (isEmpty(values.city)) errors.city = true;
-    if (isEmpty(values.email)) errors.email = true;
-    if (isEmpty(values.password)) errors.password = true;
+    if (isEmpty(name)) errors.name = true;
+    if (isEmpty(email)) errors.email = true;
+    if (isEmpty(password)) errors.password = true;
     
-    console.log("Field errors being set:", errors);
+    // Check terms acceptance
+    if (!companyTermsAccepted) {
+      errors.companyTerms = true;
+    }
+    
     setFieldErrors(errors);
   };
 
@@ -323,8 +316,6 @@ export default function AuthPage() {
       return () => subscription.unsubscribe();
     }
   }, [currentView, companyForm, hasUserStartedFilling]);
-
-  // Don't run any initial validation - only validate after user starts interacting
 
   // Reset employee form on page load/view change to employee view
   useEffect(() => {
@@ -457,7 +448,7 @@ export default function AuthPage() {
         location: data.address,
         email: data.email,
         password: data.password,
-        establishmentYear: parseInt(data.establishmentYear), // Convert string to number for API
+        establishmentYear: data.establishmentYear ? parseInt(data.establishmentYear) : undefined, // Convert string to number for API
         cin: data.cin,
         panNumber: data.panNumber
       });
@@ -627,31 +618,26 @@ export default function AuthPage() {
   const validateCompanyForm = () => {
     const data = companyForm.getValues();
     
-    // Include all required fields including address components
-    const requiredFields = ['name', 'industry', 'size', 'establishmentYear', 'address', 'city', 'state', 'pincode', 'email', 'password'];
-    let hasEmptyFields = false;
+    // Only require the 3 essential fields for simplified registration
+    const requiredFields = ['name', 'email', 'password'];
     const newErrors: Record<string, boolean> = {};
+    
+    const isEmpty = (v?: string | null) => !v || v.trim() === "";
     
     requiredFields.forEach(field => {
       const value = data[field as keyof InsertCompany];
-      if (!value || value.toString().trim() === "") {
+      if (isEmpty(value as string)) {
         newErrors[field] = true;
-        hasEmptyFields = true;
       } else {
         newErrors[field] = false;
       }
     });
     
-    // Check company terms checkbox using React state
-    if (!companyTermsAccepted) {
-      newErrors.companyTerms = true;
-      hasEmptyFields = true;
-    } else {
-      newErrors.companyTerms = false;
-    }
+    // Check company terms checkbox
+    newErrors.companyTerms = !companyTermsAccepted;
     
     setFieldErrors(prev => ({ ...prev, ...newErrors }));
-    return !hasEmptyFields;
+    return !Object.values(newErrors).some(Boolean);
   };
 
   const onCompanySubmit = (data: InsertCompany) => {
@@ -761,9 +747,6 @@ export default function AuthPage() {
                   Sign in
                 </Button>
               </p>
-              
-
-
             </div>
           </div>
         </main>
@@ -805,8 +788,9 @@ export default function AuthPage() {
                 </div>
                 
                 <Form {...employeeForm}>
-                  <form onSubmit={employeeForm.handleSubmit(onEmployeeSubmit)} className="space-y-6" autoComplete="off">
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <form onSubmit={employeeForm.handleSubmit(onEmployeeSubmit)} className="space-y-6">
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <FormField
                         control={employeeForm.control}
                         name="firstName"
@@ -815,29 +799,25 @@ export default function AuthPage() {
                             <FormLabel>First Name *</FormLabel>
                             <FormControl>
                               <Input 
-                                placeholder="John" 
+                                placeholder="First name" 
                                 {...field}
                                 className={getFieldErrorClass("firstName", fieldState)}
-                                autoComplete="off"
                                 onChange={(e) => {
-                                  // Auto-capitalize first letter
-                                  const value = e.target.value;
-                                  const capitalized = value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
-                                  field.onChange(capitalized);
+                                  field.onChange(e);
                                   // Clear error on change
-                                  if (value.trim()) {
+                                  if (e.target.value.trim()) {
                                     setFieldErrors(prev => ({ ...prev, firstName: false }));
                                   }
                                 }}
                                 onBlur={() => handleFieldBlur("firstName")}
-                                style={{ textTransform: 'capitalize' }}
-                                data-testid="input-firstName"
+                                data-testid="input-first-name"
                               />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
+                      
                       <FormField
                         control={employeeForm.control}
                         name="lastName"
@@ -846,23 +826,18 @@ export default function AuthPage() {
                             <FormLabel>Last Name *</FormLabel>
                             <FormControl>
                               <Input 
-                                placeholder="Doe" 
+                                placeholder="Last name" 
                                 {...field}
                                 className={getFieldErrorClass("lastName", fieldState)}
-                                autoComplete="off"
                                 onChange={(e) => {
-                                  // Auto-capitalize first letter
-                                  const value = e.target.value;
-                                  const capitalized = value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
-                                  field.onChange(capitalized);
+                                  field.onChange(e);
                                   // Clear error on change
-                                  if (value.trim()) {
+                                  if (e.target.value.trim()) {
                                     setFieldErrors(prev => ({ ...prev, lastName: false }));
                                   }
                                 }}
                                 onBlur={() => handleFieldBlur("lastName")}
-                                style={{ textTransform: 'capitalize' }}
-                                data-testid="input-lastName"
+                                data-testid="input-last-name"
                               />
                             </FormControl>
                             <FormMessage />
@@ -876,14 +851,13 @@ export default function AuthPage() {
                       name="email"
                       render={({ field, fieldState }) => (
                         <FormItem>
-                          <FormLabel>Email Address *</FormLabel>
+                          <FormLabel>Work Email *</FormLabel>
                           <FormControl>
                             <Input 
                               type="email" 
-                              placeholder="john.doe@example.com" 
+                              placeholder="your@email.com" 
                               {...field}
                               className={getFieldErrorClass("email", fieldState)}
-                              autoComplete="off"
                               onChange={(e) => {
                                 field.onChange(e);
                                 // Clear error on change
@@ -903,75 +877,29 @@ export default function AuthPage() {
                     <FormField
                       control={employeeForm.control}
                       name="phone"
-                      render={({ field, fieldState }) => {
-                        const countryCode = employeeForm.watch("countryCode");
-                        const getPlaceholder = (code: string) => {
-                          switch (code) {
-                            case '+91': return "9876543210";
-                            case '+1': return "2345678901";
-                            case '+44': return "2012345678";
-                            case '+49': return "3012345678";
-                            default: return "1234567890";
-                          }
-                        };
-                        
-                        const getMaxLength = (code: string) => {
-                          switch (code) {
-                            case '+91': return 10;
-                            case '+1': return 10;
-                            case '+44': return 11;
-                            case '+49': return 12;
-                            default: return 15;
-                          }
-                        };
-
-                        return (
-                          <FormItem>
-                            <FormLabel>Phone Number *</FormLabel>
-                            <FormControl>
-                              <div className="flex">
-                                <FormField
-                                  control={employeeForm.control}
-                                  name="countryCode"
-                                  render={({ field: countryField }) => (
-                                    <Select onValueChange={countryField.onChange} defaultValue={countryField.value}>
-                                      <SelectTrigger className="w-20 rounded-r-none">
-                                        <SelectValue />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        <SelectItem value="+1">+1</SelectItem>
-                                        <SelectItem value="+91">+91</SelectItem>
-                                        <SelectItem value="+44">+44</SelectItem>
-                                        <SelectItem value="+49">+49</SelectItem>
-                                      </SelectContent>
-                                    </Select>
-                                  )}
-                                />
-                                <Input
-                                  type="tel"
-                                  placeholder={getPlaceholder(countryCode || "+1")}
-                                  className={`rounded-l-none border-l-0 ${getFieldErrorClass("phone", fieldState)}`}
-                                  maxLength={getMaxLength(countryCode || "+1")}
-                                  autoComplete="off"
-                                  {...field}
-                                  onChange={(e) => {
-                                    // Allow only digits
-                                    const value = e.target.value.replace(/\D/g, '');
-                                    field.onChange(value);
-                                    // Clear error on change
-                                    if (value.trim()) {
-                                      setFieldErrors(prev => ({ ...prev, phone: false }));
-                                    }
-                                  }}
-                                  onBlur={() => handleFieldBlur("phone")}
-                                  data-testid="input-phone"
-                                />
-                              </div>
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        );
-                      }}
+                      render={({ field, fieldState }) => (
+                        <FormItem>
+                          <FormLabel>Phone Number *</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="tel" 
+                              placeholder="1234567890" 
+                              {...field}
+                              className={getFieldErrorClass("phone", fieldState)}
+                              onChange={(e) => {
+                                field.onChange(e);
+                                // Clear error on change
+                                if (e.target.value.trim()) {
+                                  setFieldErrors(prev => ({ ...prev, phone: false }));
+                                }
+                              }}
+                              onBlur={() => handleFieldBlur("phone")}
+                              data-testid="input-phone"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
                     />
                     
                     <FormField
@@ -1104,34 +1032,6 @@ export default function AuthPage() {
   }
 
   if (currentView === "company") {
-    const industries = [
-      "Technology",
-      "Healthcare", 
-      "Finance",
-      "Education",
-      "Manufacturing",
-      "Retail",
-      "Construction",
-      "Transportation",
-      "Energy",
-      "Media & Entertainment",
-      "Real Estate",
-      "Consulting",
-      "Food & Beverage",
-      "Telecommunications",
-      "Government",
-      "Non-profit",
-      "Other"
-    ];
-
-    const indianStates = [
-      "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", 
-      "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka",
-      "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram",
-      "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu",
-      "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal"
-    ];
-
     return (
       <div className="min-h-screen bg-slate-50">
         <header className="bg-white shadow-sm border-b border-slate-200">
@@ -1165,417 +1065,97 @@ export default function AuthPage() {
                 </div>
                 
                 <Form {...companyForm}>
-                  <form onSubmit={companyForm.handleSubmit(onCompanySubmit)} className="space-y-8">
-                    {/* Company Information Section */}
-                    <div className="space-y-6">
-                      <div className="border-b border-slate-200 pb-4">
-                        <h3 className="text-lg font-semibold text-slate-900">Company Information</h3>
-                        <p className="text-sm text-slate-600">Basic details about your organization</p>
-                      </div>
-                      
-                      <FormField
-                        control={companyForm.control}
-                        name="name"
-                        render={({ field, fieldState }) => (
-                          <FormItem>
-                            <FormLabel>Organization Name *</FormLabel>
-                            <FormControl>
-                              <Input 
-                                placeholder="Acme Corporation Pvt Ltd" 
-                                {...field}
-                                className={getFieldErrorClass("name", fieldState)}
-                                onChange={(e) => {
-                                  field.onChange(e);
-                                  // Mark that user has started filling the form
-                                  if (!hasUserStartedFilling) {
-                                    setHasUserStartedFilling(true);
-                                  }
-                                  // Immediate validation on field change
-                                  setTimeout(() => validateRequiredFields(), 0);
-                                }}
-                                data-testid="input-company-name"
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={companyForm.control}
-                        name="description"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Company Description</FormLabel>
-                            <FormControl>
-                              <Textarea 
-                                placeholder="Brief description of your company's mission, services, and values..."
-                                rows={4}
-                                className="resize-none"
-                                {...field}
-                                value={field.value || ""}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                        <FormField
-                          control={companyForm.control}
-                          name="industry"
-                          render={({ field, fieldState }) => (
-                            <FormItem>
-                              <FormLabel>Industry Sector *</FormLabel>
-                              <Select onValueChange={(value) => {
-                                field.onChange(value);
-                                // Mark that user has started filling the form
+                  <form onSubmit={companyForm.handleSubmit(onCompanySubmit)} className="space-y-6">
+                    {/* Simplified Company Registration - Following Hubstaff's Approach */}
+                    <p className="text-sm text-slate-600 mb-6">
+                      Get started with just the basics. You can add more details later in your company setup wizard.
+                    </p>
+                    
+                    <FormField
+                      control={companyForm.control}
+                      name="name"
+                      render={({ field, fieldState }) => (
+                        <FormItem>
+                          <FormLabel>Company Name *</FormLabel>
+                          <FormControl>
+                            <Input 
+                              placeholder="Acme Corporation" 
+                              {...field}
+                              className={getFieldErrorClass("name", fieldState)}
+                              onChange={(e) => {
+                                field.onChange(e);
                                 if (!hasUserStartedFilling) {
                                   setHasUserStartedFilling(true);
                                 }
-                                // Immediate validation
                                 setTimeout(() => validateRequiredFields(), 0);
-                              }} value={field.value || ""}>
-                                <FormControl>
-                                  <SelectTrigger className={getFieldErrorClass("industry", fieldState)}>
-                                    <SelectValue placeholder="Select industry" />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  {industries.map((industry) => (
-                                    <SelectItem key={industry} value={industry}>
-                                      {industry}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        
-                        <FormField
-                          control={companyForm.control}
-                          name="size"
-                          render={({ field, fieldState }) => (
-                            <FormItem>
-                              <FormLabel>Company Size *</FormLabel>
-                              <Select onValueChange={(value) => {
-                                field.onChange(value);
-                                // Mark that user has started filling the form
+                              }}
+                              data-testid="input-company-name"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={companyForm.control}
+                      name="email"
+                      render={({ field, fieldState }) => (
+                        <FormItem>
+                          <FormLabel>Work Email *</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="email" 
+                              placeholder="admin@acme.com" 
+                              {...field}
+                              className={getFieldErrorClass("email", fieldState)}
+                              onChange={(e) => {
+                                field.onChange(e);
                                 if (!hasUserStartedFilling) {
                                   setHasUserStartedFilling(true);
                                 }
-                                // Immediate validation
-                                setTimeout(() => validateRequiredFields(), 0);
-                              }} value={field.value || ""}>
-                                <FormControl>
-                                  <SelectTrigger className={getFieldErrorClass("size", fieldState)}>
-                                    <SelectValue placeholder="Select size" />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  <SelectItem value="1-10">1-10 employees</SelectItem>
-                                  <SelectItem value="11-50">11-50 employees</SelectItem>
-                                  <SelectItem value="51-200">51-200 employees</SelectItem>
-                                  <SelectItem value="201-500">201-500 employees</SelectItem>
-                                  <SelectItem value="501-1000">501-1000 employees</SelectItem>
-                                  <SelectItem value="1000+">1000+ employees</SelectItem>
-                                </SelectContent>
-                              </Select>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-                      
-                      <FormField
-                        control={companyForm.control}
-                        name="establishmentYear"
-                        render={({ field, fieldState }) => (
-                          <FormItem>
-                            <FormLabel>Establishment Year *</FormLabel>
-                            <FormControl>
-                              <Input 
-                                type="text" 
-                                inputMode="numeric"
-                                placeholder="2020" 
-                                maxLength={4}
-                                {...field}
-                                className={getFieldErrorClass("establishmentYear", fieldState)}
-                                autoComplete="off"
-                                onChange={(e) => {
-                                  // Allow only digits and empty string, max 4 characters
-                                  const value = e.target.value.replace(/\D/g, '').slice(0, 4);
-                                  field.onChange(value);
-                                  if (value.trim()) {
-                                    setFieldErrors(prev => ({ ...prev, establishmentYear: false }));
-                                    companyForm.clearErrors("establishmentYear");
-                                  }
-                                }}
-                                onBlur={() => handleFieldBlur("establishmentYear")}
-                                data-testid="input-establishment-year"
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
-                    {/* Legal Information Section */}
-                    <div className="space-y-6">
-                      <div className="border-b border-slate-200 pb-4">
-                        <h3 className="text-lg font-semibold text-slate-900">Legal Information</h3>
-                        <p className="text-sm text-slate-600">
-                          Optional: CIN number enhances company verification and credibility.
-                        </p>
-                      </div>
-                      
-                      <FormField
-                        control={companyForm.control}
-                        name="registrationNumber"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>GST Number</FormLabel>
-                            <FormControl>
-                              <Input 
-                                placeholder="22AAAAA0000A1Z5 (OPTIONAL)" 
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={companyForm.control}
-                        name="panNumber"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>PAN Number</FormLabel>
-                            <FormControl>
-                              <Input 
-                                placeholder="ABCDE1234F (Optional)" 
-                                {...field}
-                                className="uppercase"
-                                maxLength={10}
-                                onChange={(e) => field.onChange(e.target.value.toUpperCase())}
-                              />
-                            </FormControl>
-                            <p className="text-xs text-slate-500">
-                              10-character PAN number. Format: ABCDE1234F
-                            </p>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={companyForm.control}
-                        name="cin"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Corporate Identification Number (CIN)</FormLabel>
-                            <FormControl>
-                              <Input 
-                                placeholder="L12345AB2020PLC123456 (Optional)" 
-                                {...field}
-                                className="uppercase"
-                                maxLength={21}
-                                onChange={(e) => field.onChange(e.target.value.toUpperCase())}
-                              />
-                            </FormControl>
-                            <p className="text-xs text-slate-500">
-                              21-character CIN number from MCA registration. Format: L12345AB2020PLC123456
-                            </p>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
-                    {/* Address Information Section */}
-                    <div className="space-y-6">
-                      <div className="border-b border-slate-200 pb-4">
-                        <h3 className="text-lg font-semibold text-slate-900">Headquarters Address</h3>
-                        <p className="text-sm text-slate-600">Primary business location</p>
-                      </div>
-                      
-                      <FormField
-                        control={companyForm.control}
-                        name="address"
-                        render={({ field, fieldState }) => (
-                          <FormItem>
-                            <FormLabel>Business Address *</FormLabel>
-                            <FormControl>
-                              <Textarea 
-                                placeholder="Building Name, Street Address, Area" 
-                                rows={3}
-                                className={`resize-none ${getFieldErrorClass("address", fieldState)}`}
-                                {...field}
-                                onChange={(e) => {
-                                  field.onChange(e);
-                                  // Mark that user has started filling the form
-                                  if (!hasUserStartedFilling) {
-                                    setHasUserStartedFilling(true);
-                                  }
-                                  // Immediate validation
-                                  setTimeout(() => validateRequiredFields(), 0);
-                                }}
-                                data-testid="input-business-address"
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                        <FormField
-                          control={companyForm.control}
-                          name="city"
-                          render={({ field, fieldState }) => (
-                            <FormItem>
-                              <FormLabel>City *</FormLabel>
-                              <FormControl>
-                                <Input 
-                                  placeholder="Mumbai" 
-                                  {...field}
-                                  value={field.value || ""}
-                                  className={getFieldErrorClass("city", fieldState)}
-                                  onChange={(e) => {
-                                    // Auto-capitalize first letter of each word
-                                    const value = e.target.value;
-                                    const capitalized = value.replace(/\b\w/g, l => l.toUpperCase());
-                                    field.onChange(capitalized);
-                                    if (capitalized.trim()) {
-                                      setFieldErrors(prev => ({ ...prev, city: false }));
-                                      companyForm.clearErrors("city");
-                                    }
-                                  }}
-                                  onBlur={() => handleFieldBlur("city")}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        
-                        <FormField
-                          control={companyForm.control}
-                          name="state"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>State *</FormLabel>
-                              <Select onValueChange={(value) => {
-                                field.onChange(value);
-                                if (value) {
-                                  setFieldErrors(prev => ({ ...prev, state: false }));
-                                  companyForm.clearErrors("state");
+                                if (e.target.value.trim()) {
+                                  setFieldErrors(prev => ({ ...prev, email: false }));
+                                  companyForm.clearErrors("email");
                                 }
-                              }} value={field.value || ""}>
-                                <FormControl>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Select state" />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  {indianStates.map((state) => (
-                                    <SelectItem key={state} value={state}>
-                                      {state}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        
-                        <FormField
-                          control={companyForm.control}
-                          name="pincode"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Pincode *</FormLabel>
-                              <FormControl>
-                                <Input placeholder="400001" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Account Information Section */}
-                    <div className="space-y-6">
-                      <div className="border-b border-slate-200 pb-4">
-                        <h3 className="text-lg font-semibold text-slate-900">Account Information</h3>
-                        <p className="text-sm text-slate-600">Login credentials and contact details</p>
-                      </div>
-                      
-                      <FormField
-                        control={companyForm.control}
-                        name="email"
-                        render={({ field, fieldState }) => (
-                          <FormItem>
-                            <FormLabel>Company Email *</FormLabel>
-                            <FormControl>
-                              <Input 
-                                type="email" 
-                                placeholder="contact@acmecorp.com" 
-                                {...field}
-                                className={getFieldErrorClass("email", fieldState)}
-                                onChange={(e) => {
+                              }}
+                              onBlur={() => handleFieldBlur("email")}
+                              data-testid="input-company-email"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={companyForm.control}
+                      name="password"
+                      render={({ field, fieldState }) => (
+                        <FormItem>
+                          <FormLabel>Password *</FormLabel>
+                          <FormControl>
+                            <PasswordInput 
+                              field={{
+                                ...field,
+                                onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
                                   field.onChange(e);
                                   if (e.target.value.trim()) {
-                                    setFieldErrors(prev => ({ ...prev, email: false }));
-                                    companyForm.clearErrors("email");
+                                    setFieldErrors(prev => ({ ...prev, password: false }));
+                                    companyForm.clearErrors("password");
                                   }
-                                }}
-                                onBlur={() => handleFieldBlur("email")}
-                                data-testid="input-company-email"
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={companyForm.control}
-                        name="password"
-                        render={({ field, fieldState }) => (
-                          <FormItem>
-                            <FormLabel>Password *</FormLabel>
-                            <FormControl>
-                              <PasswordInput 
-                                field={{
-                                  ...field,
-                                  onChange: (e: any) => {
-                                    field.onChange(e);
-                                    // Clear error on change
-                                    if (e.target.value.trim()) {
-                                      setFieldErrors(prev => ({ ...prev, password: false }));
-                                      companyForm.clearErrors("password");
-                                    }
-                                  },
-                                  onBlur: () => handleFieldBlur("password")
-                                }} 
-                                placeholder="••••••••" 
-                                className={getFieldErrorClass("password", fieldState)}
-                              />
-                            </FormControl>
-                            <PasswordStrengthIndicator password={field.value || ""} />
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
+                                },
+                                onBlur: () => handleFieldBlur("password")
+                              }} 
+                              placeholder="••••••••" 
+                              className={getFieldErrorClass("password", fieldState)}
+                            />
+                          </FormControl>
+                          <PasswordStrengthIndicator password={field.value || ""} />
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                     
                     <div className="flex items-center space-x-2">
                       <Checkbox 
@@ -1668,12 +1248,19 @@ export default function AuthPage() {
           <div className="max-w-2xl mx-auto">
             <Card className="rounded-2xl shadow-xl min-h-[600px]">
               <CardContent className="p-8">
-                <div className="text-center mb-8">
-                  <div className="w-20 h-20 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Shield className="text-purple-600 text-3xl" />
+                <div className="flex items-center mb-6">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-slate-400 hover:text-slate-600 mr-3"
+                    onClick={() => setCurrentView("selection")}
+                  >
+                    <ArrowLeft className="text-lg" />
+                  </Button>
+                  <div>
+                    <h2 className="text-2xl font-bold text-slate-900">Join as a Client</h2>
+                    <p className="text-sm text-slate-600">Create your client account to hire freelancers</p>
                   </div>
-                  <h2 className="text-2xl font-bold text-slate-900">Join as a Client</h2>
-                  <p className="text-slate-600 mt-2">Create your client account to hire freelancers</p>
                 </div>
                 
                 <Form {...clientForm}>
@@ -1733,7 +1320,7 @@ export default function AuthPage() {
                         <FormItem>
                           <FormLabel>Password</FormLabel>
                           <FormControl>
-                            <Input type="password" placeholder="Password (8 or more characters)" {...field} data-testid="input-client-password" />
+                            <PasswordInput field={field} placeholder="Password (8 or more characters)" />
                           </FormControl>
                           <PasswordStrengthIndicator password={field.value || ""} />
                           <FormMessage />
@@ -1811,6 +1398,16 @@ export default function AuthPage() {
             </Card>
           </div>
         </main>
+        
+        {/* Legal Modals */}
+        <PrivacyPolicyModal 
+          isOpen={showPrivacyModal} 
+          onClose={() => setShowPrivacyModal(false)} 
+        />
+        <TermsOfServiceModal 
+          isOpen={showTermsModal} 
+          onClose={() => setShowTermsModal(false)} 
+        />
       </div>
     );
   }
@@ -2352,7 +1949,7 @@ export default function AuthPage() {
                         className="p-0 h-auto text-primary hover:text-primary-dark font-medium"
                         onClick={() => setCurrentView("login")}
                       >
-                        Sign in here
+                        Sign in
                       </Button>
                     </p>
                   </div>
@@ -2365,30 +1962,12 @@ export default function AuthPage() {
     );
   }
 
-  // Fallback for any unhandled currentView values
-  console.log('Unhandled currentView:', currentView, 'redirecting to login');
-  
-  // Use setTimeout instead of useEffect to avoid hooks violation
-  setTimeout(() => {
-    setCurrentView('login');
-  }, 0);
-  
+  // Default return - should not reach here but prevents compilation errors
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center">
       <div className="text-center">
-        <p className="text-slate-600 mb-4">Loading...</p>
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+        <h2 className="text-xl font-semibold text-slate-900">Loading...</h2>
       </div>
-      
-      {/* Legal Modals */}
-      <PrivacyPolicyModal 
-        isOpen={showPrivacyModal} 
-        onClose={() => setShowPrivacyModal(false)} 
-      />
-      <TermsOfServiceModal 
-        isOpen={showTermsModal} 
-        onClose={() => setShowTermsModal(false)} 
-      />
     </div>
   );
 }

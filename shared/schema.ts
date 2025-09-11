@@ -1148,15 +1148,13 @@ export const insertCompanySchema = createInsertSchema(companies).omit({
     .max(12, "Password max length should be 12")
     .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
     .regex(/\d/, "Password must contain at least one number"),
-  pincode: z.string().min(5, "Pincode must be at least 5 digits"),
+  // Make all other fields optional for simplified registration
+  pincode: z.string().optional(),
   registrationNumber: z.string().optional(),
-  industry: z.string().min(1, "Please select an industry"),
+  industry: z.string().optional(),
   establishmentYear: z.string()
-    .min(1, "Establishment year is required")
-    .refine((val) => {
-      const year = parseInt(val);
-      return !isNaN(year) && year >= 1800 && year <= new Date().getFullYear();
-    }, "Invalid establishment year"),
+    .optional()
+    .refine((val) => !val || (val && !isNaN(parseInt(val)) && parseInt(val) >= 1800 && parseInt(val) <= new Date().getFullYear()), "Invalid establishment year"),
   cin: z.string()
     .optional()
     .refine((val) => !val || val.length === 21, "CIN must be exactly 21 characters")
