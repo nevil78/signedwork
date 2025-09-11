@@ -14,9 +14,10 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { CheckCircle, Sparkles, Building, Users, CreditCard, ArrowRight, Target, TrendingUp, Shield, Zap, UserPlus, Mail, Crown, User, Settings, Plus, X, Loader2, Star, ThumbsUp, Brain } from "lucide-react";
+import { CheckCircle, Sparkles, Building, Users, CreditCard, ArrowRight, ArrowLeft, Target, TrendingUp, Shield, Zap, UserPlus, Mail, Crown, User, Settings, Plus, X, Loader2, Star, ThumbsUp, Brain } from "lucide-react";
 import OnboardingWizard, { useOnboardingWizard } from "@/components/OnboardingWizard";
 import UnifiedHeader from "@/components/UnifiedHeader";
+import { RazorpayCheckout } from "@/components/RazorpayCheckout";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import signedworkLogo from "@assets/Signed-work-Logo (1)_1755168042120.png";
@@ -1496,11 +1497,171 @@ function PlanSelectionStep({ context }: { context: any }) {
 }
 
 function PaymentStep({ context }: { context: any }) {
+  const { toast } = useToast();
+  const [, setLocation] = useLocation();
+  
+  // Get plan data from previous steps
+  const planData = context.wizardData?.planSelection;
+  const organizationData = context.wizardData?.organization;
+  
+  // Check if plan was skipped
+  if (planData?.skipped) {
+    return (
+      <div className="text-center space-y-6 max-w-2xl mx-auto">
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-6">
+          <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-amber-100 rounded-full">
+            <CreditCard className="w-8 h-8 text-amber-600" />
+          </div>
+          <h2 className="text-2xl font-bold text-slate-900 mb-2">Choose Your Plan First</h2>
+          <p className="text-slate-600 mb-6">
+            You skipped plan selection earlier. Please choose a subscription plan to activate your account and access all features.
+          </p>
+          
+          <div className="flex justify-center gap-4">
+            <Button
+              variant="outline"
+              onClick={() => {
+                // Go back to plan selection step
+                context.onStepChange("plan-selection");
+              }}
+              data-testid="button-back-to-plans"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Choose Plan
+            </Button>
+            <Button
+              onClick={() => {
+                // Skip payment and complete onboarding (trial mode)
+                context.onComplete({ 
+                  paymentSkipped: true, 
+                  reason: "trial_mode",
+                  trialAccount: true 
+                });
+              }}
+              data-testid="button-continue-trial"
+            >
+              Continue with Free Trial
+              <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
+  // Payment step for selected plan
+  const selectedPlan = planData?.planDetails;
+  const planName = selectedPlan?.name || "Selected Plan";
+  
+  const handlePaymentSuccess = (paymentId: string) => {
+    toast({
+      title: "🎉 Welcome to Signedwork!",
+      description: `Payment successful! Your ${planName} subscription is now active.`,
+    });
+    
+    // Complete onboarding with payment success
+    context.onComplete({
+      paymentId,
+      subscriptionActive: true,
+      planId: selectedPlan?.id,
+      planName: selectedPlan?.name
+    });
+  };
+
+  const handlePaymentError = (error: any) => {
+    console.error('Payment error:', error);
+    toast({
+      title: "Payment Failed",
+      description: "There was an issue processing your payment. Please try again or contact support.",
+      variant: "destructive",
+    });
+  };
+
   return (
-    <div className="text-center space-y-4">
-      <h2 className="text-2xl font-bold">Payment Setup</h2>
-      <p className="text-slate-600">Secure payment processing...</p>
-      <Button onClick={context.onComplete}>Complete Step</Button>
+    <div className="text-center space-y-6 max-w-2xl mx-auto">
+      {/* Header */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-green-100 rounded-full">
+          <CreditCard className="w-8 h-8 text-green-600" />
+        </div>
+        <h2 className="text-2xl font-bold text-slate-900">Complete Your Subscription</h2>
+        <p className="text-slate-600">
+          You're almost done! Complete your payment to activate your {planName} subscription.
+        </p>
+      </div>
+
+      {/* Plan Summary Card */}
+      {selectedPlan && (
+        <Card className="border-green-200 bg-green-50/50">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div className="text-left">
+                <h3 className="font-semibold text-slate-900">{selectedPlan.name} Plan</h3>
+                <p className="text-sm text-slate-600">{selectedPlan.description}</p>
+                <div className="text-sm text-slate-500 mt-1">
+                  For {organizationData?.companyName || "your organization"}
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="text-2xl font-bold text-green-600">
+                  ₹{(selectedPlan.amount / 100).toLocaleString()}
+                </div>
+                <div className="text-sm text-slate-500">
+                  per {selectedPlan.interval || 'month'}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Payment Action */}
+      <div className="space-y-4">
+        <RazorpayCheckout
+          planId={selectedPlan?.id || ""}
+          planName={planName}
+          amount={selectedPlan?.amount || 0}
+          currency={selectedPlan?.currency || "INR"}
+          onSuccess={handlePaymentSuccess}
+          onError={handlePaymentError}
+        />
+
+        <div className="flex items-center justify-center gap-2 text-sm text-slate-500">
+          <Shield className="w-4 h-4" />
+          <span>Secure payment powered by Razorpay</span>
+        </div>
+        
+        <div className="text-xs text-slate-400">
+          By completing your purchase, you agree to our Terms of Service and Privacy Policy
+        </div>
+      </div>
+
+      {/* Action Buttons */}
+      <div className="flex justify-between pt-4">
+        <Button 
+          type="button" 
+          variant="outline" 
+          onClick={context.onPrevious}
+          data-testid="button-previous-step"
+        >
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back
+        </Button>
+        <Button
+          variant="ghost"
+          onClick={() => {
+            // Skip payment and continue with limited trial
+            context.onComplete({ 
+              paymentSkipped: true, 
+              reason: "trial_requested",
+              trialAccount: true 
+            });
+          }}
+          data-testid="button-skip-payment"
+        >
+          Start Free Trial Instead
+        </Button>
+      </div>
     </div>
   );
 }
