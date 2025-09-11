@@ -2,10 +2,41 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Field Error Styling */
+/* Enhanced Field Error Styling with Animation */
 .field-error {
   border-color: #ef4444 !important;
   box-shadow: 0 0 0 1px #ef4444;
+  animation: shake 0.3s ease-in-out;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+
+/* Success field styling */
+.field-success {
+  border-color: #10b981 !important;
+  box-shadow: 0 0 0 1px #10b981;
+}
+
+/* Warning field styling */
+.field-warning {
+  border-color: #f59e0b !important;
+  box-shadow: 0 0 0 1px #f59e0b;
+}
+
+/* Error state animations */
+.validation-error-enter {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+.validation-error-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.2s, transform 0.2s;
 }
 
 :root {

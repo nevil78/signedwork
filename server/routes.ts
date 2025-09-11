@@ -8737,6 +8737,39 @@ This message was sent through the Signedwork contact form.
     }
   });
 
+  // Enhanced validation: Check plan availability (public endpoint)
+  app.get("/api/payments/plans/:planId/availability", async (req, res) => {
+    try {
+      const { planId } = req.params;
+      
+      // Get all available plans
+      const plans = await storage.getSubscriptionPlans();
+      const plan = plans.find(p => p.id === planId);
+      
+      if (!plan) {
+        return res.status(404).json({ 
+          isAvailable: false, 
+          error: "Plan not found" 
+        });
+      }
+      
+      // Check if plan is currently available
+      const isAvailable = true; // Always available for now - you can add more complex logic
+      
+      res.json({
+        isAvailable,
+        planId,
+        planName: plan.name
+      });
+    } catch (error: any) {
+      console.error("Error checking plan availability:", error);
+      res.status(500).json({ 
+        isAvailable: false, 
+        message: "Failed to check plan availability" 
+      });
+    }
+  });
+
   // Create Razorpay order for subscription
   app.post("/api/payments/create-order", requireAuth, async (req: any, res) => {
     try {

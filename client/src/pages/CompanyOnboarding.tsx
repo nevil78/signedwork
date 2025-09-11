@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useLocation } from "wouter";
 import { useForm, useFieldArray, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -21,6 +21,55 @@ import { RazorpayCheckout } from "@/components/RazorpayCheckout";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import signedworkLogo from "@assets/Signed-work-Logo (1)_1755168042120.png";
+
+// Enhanced validation utilities
+interface ValidationState {
+  isValid: boolean;
+  errors: string[];
+  warnings: string[];
+  fieldStates: Record<string, 'error' | 'warning' | 'success' | 'default'>;
+}
+
+// Enhanced field state helper
+const getEnhancedFieldClass = (fieldState: any, customState?: 'error' | 'warning' | 'success') => {
+  if (customState === 'error' || fieldState?.error) {
+    return "field-error";
+  }
+  if (customState === 'success') {
+    return "field-success";
+  }
+  if (customState === 'warning') {
+    return "field-warning";
+  }
+  return "";
+};
+
+// Async validation for plan availability
+const validatePlanAvailability = async (planId: string): Promise<{ isValid: boolean; message?: string }> => {
+  try {
+    const response = await apiRequest("GET", `/api/payments/plans/${planId}/availability`);
+    return { isValid: true };
+  } catch (error) {
+    return { 
+      isValid: false, 
+      message: "This plan is currently unavailable. Please select a different plan." 
+    };
+  }
+};
+
+// Enhanced validation messages
+const getValidationMessage = (field: string, value: any): string => {
+  const messages: Record<string, string> = {
+    companySize: "Please select your company size to help us recommend the best plan for you",
+    industry: "Your industry helps us customize features and provide relevant insights",
+    primaryGoals: "Select at least one goal so we can prioritize the right features for your team", 
+    teamStructure: "Understanding your team structure helps us set up the right permissions",
+    selectedPlan: "Please choose a plan that fits your organization's needs",
+    initialRoles: "Add at least one role to define your team structure"
+  };
+  
+  return messages[field] || `Please provide a valid ${field.replace(/([A-Z])/g, ' $1').toLowerCase()}`;
+};
 
 // Welcome Step Component
 function WelcomeStep({ context }: { context: any }) {
@@ -156,19 +205,31 @@ function WelcomeStep({ context }: { context: any }) {
   );
 }
 
-// Organization Details Form Schema
+// Enhanced Organization Details Form Schema with better error messages
 const organizationDetailsSchema = z.object({
-  companySize: z.string().min(1, "Please select your company size"),
-  industry: z.string().min(1, "Please select your industry"),
-  primaryGoals: z.array(z.string()).min(1, "Please select at least one primary goal"),
-  teamStructure: z.string().min(1, "Please select your team structure"),
+  companySize: z.string().min(1, "Please select your company size to help us recommend the best plan for you"),
+  industry: z.string().min(1, "Your industry helps us customize features and provide relevant insights"),
+  primaryGoals: z.array(z.string()).min(1, "Select at least one goal so we can prioritize the right features for your team"),
+  teamStructure: z.string().min(1, "Understanding your team structure helps us set up the right permissions"),
+}).refine((data) => {
+  // Cross-validation: Large companies should consider enterprise features
+  if ((data.companySize === '201-500' || data.companySize === '501-1000' || data.companySize === '1000+') && 
+      !data.primaryGoals.includes('enterprise-management')) {
+    return true; // Still valid, but we can show a helpful suggestion
+  }
+  return true;
+}, {
+  message: "For larger organizations, consider enterprise management features for better control",
+  path: ["primaryGoals"]
 });
 
 type OrganizationDetailsData = z.infer<typeof organizationDetailsSchema>;
 
 function OrganizationDetailsStep({ context }: { context: any }) {
+  const { toast } = useToast();
   const form = useForm<OrganizationDetailsData>({
     resolver: zodResolver(organizationDetailsSchema),
+    mode: 'onChange', // Enable real-time validation
     defaultValues: {
       companySize: context.wizardData?.organization?.companySize || "",
       industry: context.wizardData?.organization?.industry || "",
@@ -177,7 +238,56 @@ function OrganizationDetailsStep({ context }: { context: any }) {
     },
   });
 
+  // Watch all form values for real-time validation
+  const watchedValues = useWatch({ control: form.control });
+  const [validationState, setValidationState] = useState<ValidationState>({
+    isValid: false,
+    errors: [],
+    warnings: [],
+    fieldStates: {}
+  });
+
+  // Real-time validation with useEffect
+  useEffect(() => {
+    const { companySize, industry, primaryGoals, teamStructure } = watchedValues;
+    const newState: ValidationState = {
+      isValid: true,
+      errors: [],
+      warnings: [],
+      fieldStates: {}
+    };
+
+    // Set field states based on completion
+    newState.fieldStates.companySize = companySize ? 'success' : 'default';
+    newState.fieldStates.industry = industry ? 'success' : 'default';
+    newState.fieldStates.primaryGoals = primaryGoals?.length > 0 ? 'success' : 'default';
+    newState.fieldStates.teamStructure = teamStructure ? 'success' : 'default';
+
+    // Generate helpful warnings for large companies
+    if ((companySize === '201-500' || companySize === '501-1000' || companySize === '1000+') && 
+        !primaryGoals?.includes('enterprise-management')) {
+      newState.warnings.push('For larger organizations, consider enterprise management features for better control and compliance.');
+    }
+
+    // Industry-specific suggestions
+    if (industry === 'healthcare' && !primaryGoals?.includes('compliance-reporting')) {
+      newState.warnings.push('Healthcare organizations often benefit from compliance and reporting features.');
+    }
+
+    if (industry === 'finance' && !primaryGoals?.includes('verify-work')) {
+      newState.warnings.push('Financial services typically require robust work verification systems.');
+    }
+
+    setValidationState(newState);
+  }, [watchedValues]);
+
   const onSubmit = (data: OrganizationDetailsData) => {
+    // Show success toast
+    toast({
+      title: "Organization details saved!",
+      description: "Your information helps us customize the perfect setup for you.",
+    });
+    
     // Pass the organization data to the wizard
     context.onComplete(data);
   };
@@ -197,6 +307,22 @@ function OrganizationDetailsStep({ context }: { context: any }) {
         </p>
       </div>
 
+      {/* Enhanced validation warnings */}
+      {validationState.warnings.length > 0 && (
+        <Card className="border-orange-200 bg-orange-50">
+          <CardContent className="p-4">
+            <div className="space-y-2">
+              {validationState.warnings.map((warning, index) => (
+                <p key={index} className="text-sm text-orange-700 flex items-start gap-2">
+                  <span className="text-orange-500">⚠️</span>
+                  {warning}
+                </p>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Form */}
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -207,12 +333,15 @@ function OrganizationDetailsStep({ context }: { context: any }) {
               <FormField
                 control={form.control}
                 name="companySize"
-                render={({ field }) => (
+                render={({ field, fieldState }) => (
                   <FormItem>
                     <FormLabel className="text-base font-medium">How many people work at your company?</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
-                        <SelectTrigger data-testid="select-company-size">
+                        <SelectTrigger 
+                          data-testid="select-company-size"
+                          className={getEnhancedFieldClass(fieldState, validationState.fieldStates.companySize)}
+                        >
                           <SelectValue placeholder="Select company size" />
                         </SelectTrigger>
                       </FormControl>
@@ -405,29 +534,74 @@ function OrganizationDetailsStep({ context }: { context: any }) {
   );
 }
 
-// Team Setup Form Schema
+// Enhanced Team Setup Form Schema with better validation
 const teamSetupSchema = z.object({
   initialRoles: z.array(z.object({
-    title: z.string().min(1, "Role title is required"),
+    title: z.string()
+      .min(1, "Role title is required")
+      .min(2, "Role title must be at least 2 characters")
+      .max(50, "Role title must be less than 50 characters")
+      .refine((title) => /^[a-zA-Z\s\-]+$/.test(title), {
+        message: "Role title can only contain letters, spaces, and hyphens"
+      }),
     department: z.string().optional(),
-    description: z.string().optional(),
-  })).min(1, "Please add at least one role"),
+    description: z.string()
+      .max(200, "Description must be less than 200 characters")
+      .optional(),
+  })).min(1, "Add at least one role to define your team structure")
+    .max(20, "Maximum 20 roles allowed for initial setup"),
   teamStructure: z.string().min(1, "Please select how you want to structure your team"),
   invitations: z.array(z.object({
-    email: z.string().email("Invalid email format"),
-    role: z.string().min(1, "Role is required"),
-    message: z.string().optional(),
+    email: z.string()
+      .email("Please enter a valid email address")
+      .refine(async (email) => {
+        // Basic domain validation
+        const domain = email.split('@')[1];
+        return domain && domain.includes('.');
+      }, "Please use a valid email domain"),
+    role: z.string().min(1, "Please assign a role to this invitation"),
+    message: z.string()
+      .max(500, "Personal message must be less than 500 characters")
+      .optional(),
   })).optional(),
   setupLater: z.boolean().optional(),
+}).refine((data) => {
+  // Cross-validation: If not setting up later, require proper team structure
+  if (!data.setupLater) {
+    return data.initialRoles.length > 0;
+  }
+  return true;
+}, {
+  message: "Please add at least one role or choose to set up your team later",
+  path: ["initialRoles"]
+}).refine((data) => {
+  // Validation: Check for duplicate role titles
+  if (data.initialRoles) {
+    const titles = data.initialRoles.map(role => role.title.toLowerCase().trim());
+    const uniqueTitles = new Set(titles);
+    return titles.length === uniqueTitles.size;
+  }
+  return true;
+}, {
+  message: "Role titles must be unique. Please use different names for each role",
+  path: ["initialRoles"]
 });
 
 type TeamSetupData = z.infer<typeof teamSetupSchema>;
 
 function TeamSetupStep({ context }: { context: any }) {
   const { toast } = useToast();
+  const [validationState, setValidationState] = useState<ValidationState>({
+    isValid: false,
+    errors: [],
+    warnings: [],
+    fieldStates: {}
+  });
+  const [isValidatingEmails, setIsValidatingEmails] = useState(false);
   
   const form = useForm<TeamSetupData>({
     resolver: zodResolver(teamSetupSchema),
+    mode: "onChange", // Enable real-time validation
     defaultValues: {
       initialRoles: context.wizardData?.teamSetup?.initialRoles || [{ title: "", department: "", description: "" }],
       teamStructure: context.wizardData?.teamSetup?.teamStructure || "",
@@ -943,17 +1117,28 @@ function TeamSetupStep({ context }: { context: any }) {
   );
 }
 
-// Plan Selection Form Schema - Union type for proper validation
+// Enhanced Plan Selection Form Schema with async validation
 const planSelectionSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("selected"),
-    selectedPlan: z.string().min(1, "Please select a plan"),
+    selectedPlan: z.string()
+      .min(1, "Please choose a plan that fits your organization's needs")
+      .refine(async (planId) => {
+        // Async validation for plan availability
+        const validation = await validatePlanAvailability(planId);
+        return validation.isValid;
+      }, {
+        message: "This plan is currently unavailable. Please select a different plan."
+      }),
     customizeFeatures: z.boolean().optional(),
   }),
   z.object({
     type: z.literal("skipped"),
     skipped: z.literal(true),
-    reason: z.string().optional(),
+    reason: z.string()
+      .min(1, "Please provide a brief reason for skipping plan selection")
+      .max(200, "Reason must be less than 200 characters")
+      .optional(),
   })
 ]);
 
@@ -1191,10 +1376,12 @@ const getRecommendedPlan = (organizationData: any, plans: SubscriptionPlan[]) =>
 };
 
 function PlanSelectionStep({ context }: { context: any }) {
+  const { toast } = useToast();
   const existingData = context.wizardData?.planSelection;
   
   const form = useForm<PlanSelectionData>({
     resolver: zodResolver(planSelectionSchema),
+    mode: 'onChange', // Enable real-time validation
     defaultValues: existingData?.skipped ? {
       type: "skipped",
       skipped: true,
@@ -1206,6 +1393,16 @@ function PlanSelectionStep({ context }: { context: any }) {
     },
   });
 
+  // Real-time validation state
+  const watchedValues = useWatch({ control: form.control });
+  const [validationState, setValidationState] = useState<ValidationState>({
+    isValid: false,
+    errors: [],
+    warnings: [],
+    fieldStates: {}
+  });
+  const [isPlanValidating, setIsPlanValidating] = useState(false);
+
   // Fetch subscription plans
   const { data: plans = [], isLoading: plansLoading, error: plansError } = useQuery({
     queryKey: ["/api/payments/plans"],
@@ -1214,8 +1411,80 @@ function PlanSelectionStep({ context }: { context: any }) {
   const organizationData = context.wizardData?.organization;
   const recommendation = getRecommendedPlan(organizationData, plans);
 
-  const onSubmit = (data: PlanSelectionData) => {
+  // Real-time validation with async plan validation
+  useEffect(() => {
+    const validateAsync = async () => {
+      const newState: ValidationState = {
+        isValid: true,
+        errors: [],
+        warnings: [],
+        fieldStates: {}
+      };
+
+      if (watchedValues.type === "selected" && watchedValues.selectedPlan) {
+        setIsPlanValidating(true);
+        
+        try {
+          // Check plan availability
+          const validation = await validatePlanAvailability(watchedValues.selectedPlan);
+          
+          if (!validation.isValid) {
+            newState.fieldStates.selectedPlan = 'error';
+            newState.errors.push(validation.message || "Selected plan is not available");
+            newState.isValid = false;
+          } else {
+            newState.fieldStates.selectedPlan = 'success';
+            
+            // Check for plan-specific warnings
+            const selectedPlan = plans.find(p => p.id === watchedValues.selectedPlan);
+            const orgData = context.wizardData?.organization;
+            
+            if (selectedPlan && orgData) {
+              // Warning for large companies choosing basic plan
+              if ((orgData.companySize === '201-500' || orgData.companySize === '501-1000' || orgData.companySize === '1000+') && 
+                  selectedPlan.name.toLowerCase() === 'basic') {
+                newState.warnings.push('Basic plan may not provide sufficient features for larger organizations. Consider Pro or Enterprise for better scalability.');
+              }
+              
+              // Warning for enterprise features on smaller plans
+              if (orgData.primaryGoals?.includes('enterprise-management') && 
+                  selectedPlan.name.toLowerCase() !== 'enterprise') {
+                newState.warnings.push('For enterprise management features, consider upgrading to Enterprise plan.');
+              }
+            }
+          }
+        } catch (error) {
+          newState.fieldStates.selectedPlan = 'error';
+          newState.errors.push("Unable to validate plan availability. Please try again.");
+          newState.isValid = false;
+        } finally {
+          setIsPlanValidating(false);
+        }
+      }
+
+      setValidationState(newState);
+    };
+
+    if (watchedValues.type === "selected") {
+      validateAsync();
+    } else {
+      // For skipped type, clear validation
+      setValidationState({
+        isValid: true,
+        errors: [],
+        warnings: [],
+        fieldStates: {}
+      });
+    }
+  }, [watchedValues, plans, context.wizardData]);
+
+  const onSubmit = async (data: PlanSelectionData) => {
     if (data.type === "skipped") {
+      toast({
+        title: "Plan selection skipped",
+        description: "You can choose a plan later from your dashboard.",
+      });
+      
       context.onComplete({
         skipped: true,
         reason: data.reason || "user_choice"
@@ -1224,12 +1493,41 @@ function PlanSelectionStep({ context }: { context: any }) {
     }
     
     if (data.type === "selected") {
-      const selectedPlan = plans.find(plan => plan.id === data.selectedPlan);
-      context.onComplete({
-        selectedPlan: data.selectedPlan,
-        customizeFeatures: data.customizeFeatures,
-        planDetails: selectedPlan,
-      });
+      // Final validation before submission
+      try {
+        setIsPlanValidating(true);
+        const validation = await validatePlanAvailability(data.selectedPlan);
+        
+        if (!validation.isValid) {
+          toast({
+            title: "Plan unavailable",
+            description: validation.message || "The selected plan is currently unavailable. Please choose a different plan.",
+            variant: "destructive",
+          });
+          return;
+        }
+        
+        const selectedPlan = plans.find(plan => plan.id === data.selectedPlan);
+        
+        toast({
+          title: "Perfect choice! 🎉",
+          description: `${selectedPlan?.name} plan selected. Let's proceed to secure payment setup.`,
+        });
+        
+        context.onComplete({
+          selectedPlan: data.selectedPlan,
+          customizeFeatures: data.customizeFeatures,
+          planDetails: selectedPlan,
+        });
+      } catch (error) {
+        toast({
+          title: "Validation failed",
+          description: "Unable to validate your plan selection. Please try again.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsPlanValidating(false);
+      }
     }
   };
 
