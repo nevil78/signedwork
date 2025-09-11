@@ -642,7 +642,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         gstVerificationStatus: 'pending'
       });
       
-      // Store user in session to auto-login after signup
+      // Store user in session to auto-login after signup (regenerate for security)
+      req.session.regenerate((err) => {
+        if (err) {
+          console.error("Session regeneration failed:", err);
+        }
+      });
+
       const sessionUser = {
         id: company.id,
         email: company.email,
