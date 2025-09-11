@@ -183,10 +183,11 @@ export const companies = pgTable("companies", {
   companyId: varchar("company_id").notNull().unique(), // Human-readable unique ID like CMP-ABC123
   name: text("name").notNull(),
   description: text("description"),
-  address: text("address").notNull(),
-  city: text("city").notNull(),
-  state: text("state").notNull(),
-  pincode: text("pincode").notNull(),
+  // Address fields - Optional (collected in onboarding wizard)
+  address: text("address"),
+  city: text("city"),
+  state: text("state"),
+  pincode: text("pincode"),
   registrationType: text("registration_type"), // CIN, PAN, or GST (optional)
   registrationNumber: text("registration_number"), // Registration number (optional)
   cin: text("cin").unique(), // Corporate Identification Number (21 characters) - Optional
@@ -209,10 +210,12 @@ export const companies = pgTable("companies", {
   gstVerifiedAt: timestamp("gst_verified_at"),
   gstVerifiedBy: varchar("gst_verified_by"), // Admin ID who verified
   isBasicDetailsLocked: boolean("is_basic_details_locked").default(false),
-  industry: text("industry").notNull(),
+  // Company details - Optional (collected in onboarding wizard)
+  industry: text("industry"),
+  size: text("size"),
+  establishmentYear: text("establishment_year"),
+  // Required fields for simplified registration
   email: text("email").notNull().unique(),
-  size: text("size").notNull(),
-  establishmentYear: text("establishment_year").notNull(),
   password: text("password").notNull(),
   emailVerified: boolean("email_verified").default(false),
   // PAN/CIN Verification fields

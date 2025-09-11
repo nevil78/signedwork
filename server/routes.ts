@@ -303,9 +303,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { email, password, name, description, industryType, companySize, location, cin, panNumber } = req.body;
       
-      if (!email || !password || !name || !industryType) {
+      if (!email || !password || !name) {
         return res.status(400).json({ 
-          message: "Email, password, company name, and industry type are required" 
+          message: "Company name, email, and password are required" 
         });
       }
 
@@ -318,17 +318,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Hash password
       const hashedPassword = await bcrypt.hash(password, 10);
 
-      // Handle empty CIN and PAN strings
+      // Simplified company data for initial registration
       const companyData = {
         email,
         password: hashedPassword,
         name,
-        description: description || null,
-        industryType,
-        companySize: companySize || null,
-        location: location || null,
-        cin: cin && cin.trim() ? cin.trim() : undefined,
-        panNumber: panNumber && panNumber.trim() ? panNumber.trim() : undefined,
+        // All other fields are optional and will be collected in onboarding wizard
         cinVerificationStatus: "pending" as const,
         panVerificationStatus: "pending" as const,
         workDiaryAccess: false, // Explicitly disable work diary access - admin must enable it
@@ -605,18 +600,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Company signup - direct account creation (no verification required)
+  // Company signup - simplified registration following Hubstaff approach
   app.post("/api/auth/signup/company", async (req, res) => {
     try {
-      const { 
-        name, description, industryType, companySize, location, 
-        email, password, cin, panNumber, gstNumber
-      } = req.body;
+      const { name, email, password } = req.body;
       
-      // Basic validation
-      if (!name || !email || !password || !industryType) {
+      // Simplified validation - only require essential fields
+      if (!name || !email || !password) {
         return res.status(400).json({ 
-          message: "Company name, email, password, and industry type are required" 
+          message: "Company name, email, and password are required" 
         });
       }
 
@@ -628,35 +620,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Parse location into components
-      const [address = '', city = '', state = '', pincode = ''] = 
-        location ? location.split(', ') : [];
-
-      // Create company account directly
+      // Create company account with simplified data and default values for DB constraints
+      console.log("Creating company with data:", {
+        name: name.trim(),
+        email: email.toLowerCase().trim(),
+        password: "[HIDDEN]",
+        address: '',
+        city: '',
+        state: '',
+        pincode: '',
+        industry: '',
+        size: '',
+        establishmentYear: new Date().getFullYear().toString()
+      });
+      
       const company = await storage.createCompany({
         name: name.trim(),
-        description: description?.trim() || '',
-        address: address.trim(),
-        city: city.trim(), 
-        state: state.trim(),
-        pincode: pincode.trim(),
-        registrationType: 'other',
-        registrationNumber: '',
-        industry: industryType,
         email: email.toLowerCase().trim(),
-        size: companySize || '',
-        establishmentYear: new Date().getFullYear(),
         password: password,
+        // Provide proper defaults for fields that still have NOT NULL constraints in DB
+        address: '', // Will be collected in onboarding wizard
+        city: '', // Will be collected in onboarding wizard  
+        state: '', // Will be collected in onboarding wizard
+        pincode: '', // Will be collected in onboarding wizard
+        industry: '', // Will be collected in onboarding wizard
+        size: '', // Will be collected in onboarding wizard
+        establishmentYear: new Date().getFullYear().toString(), // Default to current year as string
+        // Standard defaults
         isActive: true,
         emailVerified: false, // Will verify later via OTP
         verificationStatus: 'unverified',
-        cin: cin?.trim() || null,
         cinVerificationStatus: 'pending',
-        panNumber: panNumber?.trim() || null,
         panVerificationStatus: 'pending',
-        gstNumber: gstNumber?.trim() || null,
         gstVerificationStatus: 'pending'
       });
+      
+      console.log("Company created successfully:", company?.id || "NO ID RETURNED");
 
       res.status(201).json({ 
         message: "Company account created successfully! You can verify your email later to unlock all features.",

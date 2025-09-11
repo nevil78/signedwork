@@ -442,15 +442,9 @@ export default function AuthPage() {
     mutationFn: async (data: InsertCompany) => {
       return await apiRequest("POST", "/api/auth/signup/company", {
         name: data.name,
-        description: data.description,
-        industryType: data.industry,
-        companySize: data.size,
-        location: data.address,
         email: data.email,
-        password: data.password,
-        establishmentYear: data.establishmentYear ? parseInt(data.establishmentYear) : undefined, // Convert string to number for API
-        cin: data.cin,
-        panNumber: data.panNumber
+        password: data.password
+        // All other fields will be collected later in the onboarding wizard
       });
     },
     onSuccess: (response: any) => {
