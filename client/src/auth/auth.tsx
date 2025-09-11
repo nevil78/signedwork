@@ -99,7 +99,7 @@ export default function AuthPage() {
   const urlParams = new URLSearchParams(location.split('?')[1] || '');
   const viewParam = urlParams.get('view') as AuthView | null;
   
-  const [currentView, setCurrentView] = useState<AuthView>(viewParam || "login");
+  const [currentView, setCurrentView] = useState<AuthView>(viewParam || "selection");
   const [loginError, setLoginError] = useState<boolean>(false);
   const [verificationEmail, setVerificationEmail] = useState<string>("");
   const [otp, setOTP] = useState("");
