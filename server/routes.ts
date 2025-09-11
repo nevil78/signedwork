@@ -82,21 +82,43 @@ function updateUserActivity(socketId: string) {
 
 // Authentication middleware
 function requireAuth(req: any, res: any, next: any) {
-  console.log("Session debug:", {
+  console.log("🔧 [REQUIRE AUTH DEBUG] Session details:", {
     sessionId: req.sessionID,
     hasSession: !!req.session,
     sessionUser: req.session?.user,
-    sessionCookie: req.headers.cookie
+    sessionUserType: req.session?.user?.type,
+    sessionUserId: req.session?.user?.id,
+    sessionUserEmail: req.session?.user?.email,
+    sessionCookie: req.headers.cookie,
+    requestUrl: req.url,
+    requestMethod: req.method,
+    timestamp: new Date().toISOString()
   });
   
   const sessionUser = req.session?.user;
   if (!sessionUser) {
-    console.log("No session user found, returning 401");
+    console.log("🚨 [REQUIRE AUTH DEBUG] No session user found, returning 401");
     return res.status(401).json({ message: "Not authenticated" });
   }
   
-  console.log(`Session valid for user: ${sessionUser.id} (${sessionUser.type})`);
-  req.user = sessionUser;
+  // CRITICAL FIX: Add compatibility shim for legacy sessions with 'userType'
+  const type = sessionUser.type ?? sessionUser.userType;
+  if (!type) {
+    console.log("🚨 [REQUIRE AUTH DEBUG] No user type found in session, returning 401");
+    return res.status(401).json({ message: "Invalid session - no user type" });
+  }
+  
+  // Normalize session data to use 'type' consistently
+  const normalizedUser = { ...sessionUser, type };
+  if (!sessionUser.type && sessionUser.userType) {
+    // Update legacy session to use correct field name
+    req.session.user = normalizedUser;
+    console.log("🔧 [REQUIRE AUTH DEBUG] Updated legacy session userType → type");
+  }
+  
+  console.log(`🔧 [REQUIRE AUTH DEBUG] Session valid for user: ${normalizedUser.id} (${normalizedUser.type})`);
+  console.log("🔧 [REQUIRE AUTH DEBUG] Setting req.user to:", normalizedUser);
+  req.user = normalizedUser;
   next();
 }
 
@@ -322,15 +344,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Simplified company data for initial registration
       const companyData = {
         email,
-        password: hashedPassword,
+        password: hashedPassword, // Already hashed, use createCompanyWithHashedPassword
         name,
+        // Provide default values for required fields (will be updated in onboarding)
+        address: "Not provided", // Default address value (will be updated in onboarding)
         // All other fields are optional and will be collected in onboarding wizard
         cinVerificationStatus: "pending" as const,
         panVerificationStatus: "pending" as const,
         workDiaryAccess: false, // Explicitly disable work diary access - admin must enable it
       };
 
-      const company = await storage.createCompany(companyData);
+      // CRITICAL FIX: Use createCompanyWithHashedPassword to avoid double hashing
+      const company = await storage.createCompanyWithHashedPassword(companyData);
+      
+      // CRITICAL FIX: Create session for the newly registered company (like login does)
+      (req.session as any).user = {
+        id: company.id,
+        email: company.email,
+        name: company.name,
+        type: "company", // Use 'type' not 'userType' for consistency
+        emailVerified: company.emailVerified || false,
+      };
+      
+      // DEBUG: Log session creation details
+      console.log("🔧 [COMPANY REGISTRATION DEBUG] Session created:", {
+        sessionId: req.sessionID,
+        sessionUser: (req.session as any).user,
+        companyId: company.id,
+        companyEmail: company.email,
+        sessionType: (req.session as any).user?.type,
+        timestamp: new Date().toISOString()
+      });
+
+      // Record login session for tracking (same as login endpoint)
+      try {
+        await storage.createLoginSession({
+          sessionId: req.sessionID,
+          userId: company.id,
+          userType: 'company',
+          loginAt: new Date(),
+          ipAddress: req.ip || 'unknown',
+          userAgent: req.get('User-Agent') || 'unknown',
+          deviceType: req.get('User-Agent')?.includes('Mobile') ? 'Mobile' : 'Desktop',
+          location: 'Unknown'
+        });
+      } catch (sessionError) {
+        console.error("Failed to record company registration session:", sessionError);
+        // Don't fail the registration if session recording fails
+      }
       
       // Emit real-time updates for admin panel if CIN or PAN is provided
       if (company.cin) {
@@ -363,9 +424,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message += " PAN verification is pending.";
       }
       
+      // CRITICAL FIX: Return authentication status so frontend knows user is logged in
       res.status(201).json({ 
         message,
-        company: companyResponse
+        company: companyResponse,
+        authenticated: true,
+        userType: "company",
+        user: {
+          id: company.id,
+          email: company.email,
+          type: "company"
+        }
       });
     } catch (error: any) {
       console.error("Company registration error:", error);
@@ -1123,22 +1192,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/auth/user", requireAuth, async (req: any, res) => {
     
     try {
+      console.log("🔧 [AUTH USER DEBUG] Starting user lookup:", {
+        reqUserId: req.user?.id,
+        reqUserType: req.user?.type,
+        reqUserEmail: req.user?.email,
+        reqUserFull: req.user,
+        sessionId: req.sessionID,
+        timestamp: new Date().toISOString()
+      });
+      
       let user = null;
       
       if (req.user.type === "employee") {
+        console.log("🔧 [AUTH USER DEBUG] Looking up employee with ID:", req.user.id);
         user = await storage.getEmployee(req.user.id);
       } else if (req.user.type === "company") {
+        console.log("🔧 [AUTH USER DEBUG] Looking up company with ID:", req.user.id);
         user = await storage.getCompany(req.user.id);
       } else if (req.user.type === "client") {
+        console.log("🔧 [AUTH USER DEBUG] Looking up client with ID:", req.user.id);
         user = await storage.getClient(req.user.id);
       } else if (req.user.type === "admin") {
+        console.log("🔧 [AUTH USER DEBUG] Looking up admin with ID:", req.user.id);
         user = await storage.getAdmin(req.user.id);
       } else if (req.user.type === "manager") {
+        console.log("🔧 [AUTH USER DEBUG] Looking up manager with ID:", req.user.id);
         user = await storage.getManager(req.user.id);
+      } else {
+        console.log("🚨 [AUTH USER DEBUG] Unknown user type:", req.user.type);
       }
       
+      console.log("🔧 [AUTH USER DEBUG] Database lookup result:", {
+        userFound: !!user,
+        userType: req.user.type,
+        userId: req.user.id,
+        dbUser: user ? { id: user.id, email: (user as any).email } : null
+      });
+      
       if (!user) {
-        console.log(`User not found in database for ID: ${req.user.id}, type: ${req.user.type}`);
+        console.log(`🚨 [AUTH USER DEBUG] User not found in database for ID: ${req.user.id}, type: ${req.user.type}`);
         // Clear invalid session
         req.session.destroy(() => {});
         return res.status(401).json({ message: "Session invalid - user not found" });

@@ -459,10 +459,10 @@ export default function AuthPage() {
         description: response.message || "Your company account has been created successfully!",
       });
       
-      // Since user is now automatically logged in, redirect directly to dashboard
+      // CRITICAL FIX: Redirect to onboarding wizard instead of dashboard
       setTimeout(() => {
         if (response.authenticated && response.userType === "company") {
-          setLocation("/company-dashboard");
+          setLocation("/company-onboarding");
         } else {
           // Fallback to login view if something went wrong
           setCurrentView("company-login");

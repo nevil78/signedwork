@@ -2105,6 +2105,33 @@ export default function CompanyOnboarding() {
     return step?.id || wizardSteps[0]?.id || "welcome";
   };
 
+  // Analytics tracking function with proper error handling - MOVED UP to avoid initialization issues
+  const trackAnalyticsEvent = useCallback(async (
+    eventType: 'step_started' | 'step_completed' | 'step_skipped' | 'validation_error' | 'drop_off',
+    stepId: string,
+    data?: {
+      timeSpent?: number;
+      errorDetails?: string;
+      eventData?: Record<string, any>;
+    }
+  ) => {
+    try {
+      // Use sessionId as fallback for analytics when user data not available
+      await trackOnboardingEvent({
+        eventType,
+        stepId,
+        stepNumber: stepIdToNumber(stepId),
+        sessionId,
+        timeSpent: data?.timeSpent || 0,
+        errorDetails: data?.errorDetails || null,
+        eventData: data?.eventData || {}
+      });
+    } catch (error) {
+      console.warn('Analytics tracking failed (non-critical):', error);
+      // Never let analytics failures break the user experience
+    }
+  }, [sessionId, stepIdToNumber]);
+
   // Track validation errors when they occur
   const trackValidationError = useCallback(async (
     stepId: string,
@@ -2124,60 +2151,7 @@ export default function CompanyOnboarding() {
     });
   }, [trackAnalyticsEvent, stepStartTime]);
 
-  // Track drop-off events when user navigates away or closes page
-  const trackDropOff = useCallback(async (reason: string) => {
-    const timeSpent = Date.now() - stepStartTime.getTime();
-    
-    await trackAnalyticsEvent('drop_off', currentStepId, {
-      timeSpent,
-      eventData: {
-        dropOffReason: reason,
-        completedSteps: Array.from(completedSteps).length,
-        totalSteps: wizardSteps.length,
-        progressPercentage: (Array.from(completedSteps).length / wizardSteps.length) * 100
-      }
-    });
-  }, [trackAnalyticsEvent, stepStartTime, currentStepId, completedSteps, wizardSteps.length]);
 
-  // Set up drop-off tracking on page unload and navigation
-  useEffect(() => {
-    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-      // Fire drop_off event but don't wait for it to prevent blocking page unload
-      trackDropOff('page_unload').catch(console.warn);
-    };
-
-    const handlePopState = () => {
-      trackDropOff('browser_navigation').catch(console.warn);
-    };
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    window.addEventListener('popstate', handlePopState);
-
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-      window.removeEventListener('popstate', handlePopState);
-    };
-  }, [trackDropOff]);
-
-  // Analytics tracking function with proper error handling
-  const trackAnalyticsEvent = useCallback(async (
-    eventType: 'step_started' | 'step_completed' | 'step_skipped' | 'validation_error' | 'drop_off',
-    stepId: string,
-    additionalData?: { timeSpent?: number; errorDetails?: string; eventData?: Record<string, any> }
-  ) => {
-    try {
-      await trackOnboardingEvent({
-        eventType,
-        stepId,
-        stepNumber: stepIdToNumber(stepId),
-        sessionId,
-        ...additionalData,
-      });
-    } catch (error) {
-      console.warn('Analytics tracking failed (non-critical):', error);
-      // Never let analytics failures break the user experience
-    }
-  }, [sessionId, stepIdToNumber]);
 
   // Initialize wizard with loaded progress or defaults
   const initialStepId = progressData?.currentStep ? 
@@ -2231,6 +2205,41 @@ export default function CompanyOnboarding() {
     initialCompletedSteps,
     initialWizardData
   });
+
+  // CRITICAL FIX: Track drop-off events - MOVED AFTER useOnboardingWizard to access currentStepId
+  const trackDropOff = useCallback(async (reason: string) => {
+    const timeSpent = Date.now() - stepStartTime.getTime();
+    
+    await trackAnalyticsEvent('drop_off', currentStepId, {
+      timeSpent,
+      eventData: {
+        dropOffReason: reason,
+        completedSteps: Array.from(completedSteps).length,
+        totalSteps: wizardSteps.length,
+        progressPercentage: (Array.from(completedSteps).length / wizardSteps.length) * 100
+      }
+    });
+  }, [trackAnalyticsEvent, stepStartTime, currentStepId, completedSteps, wizardSteps.length]);
+
+  // Set up drop-off tracking on page unload and navigation
+  useEffect(() => {
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      // Fire drop_off event but don't wait for it to prevent blocking page unload
+      trackDropOff('page_unload').catch(console.warn);
+    };
+
+    const handlePopState = () => {
+      trackDropOff('browser_navigation').catch(console.warn);
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('popstate', handlePopState);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [trackDropOff]);
 
   const handleStepComplete = async (stepId: string, data: any) => {
     // Calculate time spent on this step
