@@ -72,6 +72,11 @@ import {
   CreditCard,
   Eye,
   Settings,
+  BarChart3,
+  Activity,
+  PieChart,
+  Target,
+  Filter,
 } from "lucide-react";
 
 export default function AdminDashboard() {
@@ -103,6 +108,18 @@ export default function AdminDashboard() {
   // Fetch companies
   const { data: companies } = useQuery({
     queryKey: ["/api/admin/companies"],
+    retry: false,
+  });
+
+  // Fetch onboarding analytics
+  const { data: analyticsData } = useQuery({
+    queryKey: ["/api/analytics/onboarding"],
+    retry: false,
+  });
+
+  // Fetch funnel metrics
+  const { data: funnelMetrics } = useQuery({
+    queryKey: ["/api/analytics/onboarding/funnel"],
     retry: false,
   });
 
@@ -256,10 +273,11 @@ export default function AdminDashboard() {
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           {/* Desktop Tabs */}
           <div className="hidden lg:block mb-8">
-            <TabsList className="grid grid-cols-4 w-full">
+            <TabsList className="grid grid-cols-5 w-full">
               <TabsTrigger value="overview" className="text-sm">Overview</TabsTrigger>
               <TabsTrigger value="employees" className="text-sm">Employees</TabsTrigger>
               <TabsTrigger value="companies" className="text-sm">Companies</TabsTrigger>
+              <TabsTrigger value="analytics" className="text-sm">Analytics</TabsTrigger>
               <TabsTrigger value="feedback" className="text-sm">Feedback</TabsTrigger>
             </TabsList>
           </div>
@@ -275,6 +293,7 @@ export default function AdminDashboard() {
                 <option value="overview">Overview</option>
                 <option value="employees">Employees</option>
                 <option value="companies">Companies</option>
+                <option value="analytics">Analytics</option>
                 <option value="feedback">Feedback</option>
               </select>
             </div>
@@ -845,6 +864,221 @@ export default function AdminDashboard() {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Analytics Tab */}
+          <TabsContent value="analytics">
+            <div className="space-y-6">
+              {/* Analytics Header */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2">
+                    <BarChart3 className="h-5 w-5 text-blue-600" />
+                    <span>Onboarding Analytics</span>
+                  </CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    Monitor company onboarding performance, completion rates, and drop-off points
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {/* Total Sessions */}
+                    <Card className="border border-blue-200">
+                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium text-blue-700">Total Sessions</CardTitle>
+                        <Activity className="h-4 w-4 text-blue-600" />
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold text-blue-800">
+                          {(funnelMetrics as any)?.totalSessions || 0}
+                        </div>
+                        <p className="text-xs text-muted-foreground">Onboarding attempts</p>
+                      </CardContent>
+                    </Card>
+
+                    {/* Completion Rate */}
+                    <Card className="border border-green-200">
+                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium text-green-700">Completion Rate</CardTitle>
+                        <Target className="h-4 w-4 text-green-600" />
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold text-green-800">
+                          {(funnelMetrics as any)?.overallCompletionRate ? `${(funnelMetrics as any).overallCompletionRate.toFixed(1)}%` : "0%"}
+                        </div>
+                        <p className="text-xs text-muted-foreground">Successfully completed</p>
+                      </CardContent>
+                    </Card>
+
+                    {/* Drop-off Rate */}
+                    <Card className="border border-red-200">
+                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium text-red-700">Drop-off Rate</CardTitle>
+                        <TrendingUp className="h-4 w-4 text-red-600" />
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold text-red-800">
+                          {(funnelMetrics as any)?.overallDropOffRate ? `${(funnelMetrics as any).overallDropOffRate.toFixed(1)}%` : "0%"}
+                        </div>
+                        <p className="text-xs text-muted-foreground">Abandoned onboarding</p>
+                      </CardContent>
+                    </Card>
+
+                    {/* Avg Time to Complete */}
+                    <Card className="border border-purple-200">
+                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium text-purple-700">Avg. Completion Time</CardTitle>
+                        <Calendar className="h-4 w-4 text-purple-600" />
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold text-purple-800">
+                          {(funnelMetrics as any)?.avgCompletionTime ? `${Math.round((funnelMetrics as any).avgCompletionTime)}m` : "N/A"}
+                        </div>
+                        <p className="text-xs text-muted-foreground">Minutes to complete</p>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Step-by-Step Funnel Analysis */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2">
+                    <PieChart className="h-5 w-5 text-indigo-600" />
+                    <span>Step-by-Step Funnel Analysis</span>
+                  </CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    Breakdown of user progress and drop-off points at each onboarding step
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  {(funnelMetrics as any)?.stepMetrics && (funnelMetrics as any).stepMetrics.length > 0 ? (
+                    <div className="space-y-4">
+                      {(funnelMetrics as any).stepMetrics.map((step: any, index: number) => (
+                        <div key={step.stepId} className="border rounded-lg p-4">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center space-x-3">
+                              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold ${
+                                step.completionRate >= 80 ? 'bg-green-500' :
+                                step.completionRate >= 60 ? 'bg-yellow-500' : 'bg-red-500'
+                              }`}>
+                                {index + 1}
+                              </div>
+                              <div>
+                                <h4 className="font-semibold">{step.stepName || step.stepId}</h4>
+                                <p className="text-sm text-muted-foreground">Step {step.stepNumber}</p>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-lg font-bold">{step.completionRate.toFixed(1)}%</div>
+                              <div className="text-sm text-muted-foreground">
+                                {step.completed} of {step.started} completed
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {/* Progress bar */}
+                          <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div 
+                              className={`h-2 rounded-full ${
+                                step.completionRate >= 80 ? 'bg-green-500' :
+                                step.completionRate >= 60 ? 'bg-yellow-500' : 'bg-red-500'
+                              }`}
+                              style={{ width: `${step.completionRate}%` }}
+                            ></div>
+                          </div>
+                          
+                          <div className="flex justify-between text-sm text-muted-foreground mt-2">
+                            <span>Started: {step.started}</span>
+                            <span>Completed: {step.completed}</span>
+                            <span>Drop-off: {step.dropOff}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <Alert>
+                      <AlertDescription>No funnel data available yet. Analytics will populate as companies complete onboarding.</AlertDescription>
+                    </Alert>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Recent Analytics Events */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2">
+                    <Activity className="h-5 w-5 text-gray-600" />
+                    <span>Recent Onboarding Events</span>
+                  </CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    Latest onboarding activities and events across all companies
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  {(analyticsData as any[]) && (analyticsData as any[]).length > 0 ? (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Timestamp</TableHead>
+                          <TableHead>Company</TableHead>
+                          <TableHead>Event Type</TableHead>
+                          <TableHead>Step</TableHead>
+                          <TableHead>Time Spent</TableHead>
+                          <TableHead>Status</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {(analyticsData as any[]).slice(0, 20).map((event: any) => (
+                          <TableRow key={event.id}>
+                            <TableCell className="text-sm">
+                              {format(new Date(event.timestamp), "MMM dd, HH:mm")}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center space-x-2">
+                                <Building className="h-3 w-3 text-muted-foreground" />
+                                <span className="text-sm">{event.companyName || event.companyId}</span>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant={
+                                event.eventType === 'step_completed' ? 'default' :
+                                event.eventType === 'step_started' ? 'outline' :
+                                event.eventType === 'step_skipped' ? 'secondary' :
+                                event.eventType === 'validation_error' ? 'destructive' :
+                                event.eventType === 'drop_off' ? 'destructive' : 'outline'
+                              }>
+                                {event.eventType.replace('_', ' ')}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-sm">
+                              Step {event.stepNumber}: {event.stepId}
+                            </TableCell>
+                            <TableCell className="text-sm">
+                              {event.timeSpent ? `${Math.round(event.timeSpent / 1000)}s` : 'N/A'}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center space-x-1">
+                                {event.eventType === 'step_completed' && <CheckCircle className="h-3 w-3 text-green-500" />}
+                                {event.eventType === 'validation_error' && <XCircle className="h-3 w-3 text-red-500" />}
+                                {event.eventType === 'drop_off' && <XCircle className="h-3 w-3 text-red-500" />}
+                                {event.eventType === 'step_started' && <Activity className="h-3 w-3 text-blue-500" />}
+                                {event.eventType === 'step_skipped' && <MessageSquare className="h-3 w-3 text-yellow-500" />}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  ) : (
+                    <Alert>
+                      <AlertDescription>No recent analytics events found. Data will appear as companies progress through onboarding.</AlertDescription>
+                    </Alert>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
 
           {/* Feedback Tab */}
