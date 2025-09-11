@@ -122,6 +122,9 @@ export default function AuthPage() {
     const urlParams = new URLSearchParams(location.split('?')[1] || '');
     const currentViewParam = urlParams.get('view') as AuthView | null;
     
+    console.log('Auth page URL params:', location);
+    console.log('View parameter:', currentViewParam);
+    
     if (currentViewParam) {
       // Map legacy view names to current view names
       if (currentViewParam === 'employee-register') {
@@ -129,6 +132,7 @@ export default function AuthPage() {
       } else if (currentViewParam === 'company-register') {
         setCurrentView('company');
       } else if (currentViewParam as AuthView) {
+        console.log('Setting current view to:', currentViewParam);
         setCurrentView(currentViewParam as AuthView);
       }
     }
