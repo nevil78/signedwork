@@ -518,7 +518,7 @@ export default function AuthPage() {
     mutationFn: async (data: LoginData) => {
       return await apiRequest("POST", "/api/auth/login", data);
     },
-    onSuccess: (response: any) => {
+    onSuccess: async (response: any) => {
       console.log("Login successful, response:", response);
       // Redirect based on user type
       if (response.userType === "employee") {
@@ -527,9 +527,26 @@ export default function AuthPage() {
       } else if (response.userType === "client") {
         console.log("Redirecting to client dashboard");
         setLocation("/client/dashboard");
-      } else {
-        console.log("Redirecting to company dashboard");
-        setLocation("/company-dashboard");
+      } else if (response.userType === "company") {
+        console.log("Company login successful, checking onboarding status");
+        try {
+          // Check if company onboarding is complete
+          const onboardingResponse = await apiRequest("GET", "/api/company/onboarding/status");
+          console.log("Onboarding status:", onboardingResponse);
+          
+          if (onboardingResponse.isCompleted) {
+            console.log("Company onboarding complete, redirecting to dashboard");
+            setLocation("/company-dashboard");
+          } else {
+            console.log("Company onboarding incomplete, redirecting to onboarding");
+            setLocation("/company-onboarding");
+          }
+        } catch (error) {
+          console.error("Error checking onboarding status:", error);
+          // Fallback to onboarding if we can't determine status
+          console.log("Error checking status, defaulting to onboarding");
+          setLocation("/company-onboarding");
+        }
       }
     },
     onError: (error: any) => {

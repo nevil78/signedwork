@@ -95,14 +95,15 @@ export default function OnboardingWizard({
   const progressPercentage = totalSteps > 0 ? (completedCount / totalSteps) * 100 : 0;
 
   // Save draft data - defined before functions that use it
-  const saveDraft = useCallback((data?: any) => {
+  const saveDraft = useCallback((stepId?: string, data?: any) => {
+    const targetStepId = stepId || currentStepId;
     const saveData = data || stepData;
     onSaveProgress?.({
-      currentStepId,
+      currentStepId: targetStepId,
       completedSteps: Array.from(completedSteps),
       wizardData: {
         ...wizardData,
-        [currentStepId]: saveData
+        [targetStepId]: saveData
       }
     });
   }, [currentStepId, completedSteps, wizardData, stepData, onSaveProgress]);
@@ -111,22 +112,24 @@ export default function OnboardingWizard({
     const nextIndex = currentStepIndex + 1;
     if (nextIndex < totalSteps) {
       const nextStepId = steps[nextIndex].id;
+      // Save current step data before navigating
+      saveDraft(currentStepId);
       onStepChange(nextStepId);
-      saveDraft();
     } else {
       // Last step - complete wizard
       onWizardComplete(wizardData);
     }
-  }, [currentStepIndex, totalSteps, steps, onStepChange, wizardData, onWizardComplete, saveDraft]);
+  }, [currentStepIndex, totalSteps, steps, currentStepId, onStepChange, wizardData, onWizardComplete, saveDraft]);
 
   const handlePreviousStep = useCallback(() => {
     const prevIndex = currentStepIndex - 1;
     if (prevIndex >= 0) {
       const prevStepId = steps[prevIndex].id;
+      // Save current step data before navigating
+      saveDraft(currentStepId);
       onStepChange(prevStepId);
-      saveDraft();
     }
-  }, [currentStepIndex, steps, onStepChange, saveDraft]);
+  }, [currentStepIndex, steps, currentStepId, onStepChange, saveDraft]);
 
   const handleCompleteStep = useCallback(() => {
     if (!stepValidation.isValid && !currentStep?.isOptional) {

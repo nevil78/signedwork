@@ -87,6 +87,7 @@ function PageLoader() {
 
 import NotFound from "@/pages/not-found";
 import LandingPage from "@/pages/landing";
+import CompanyOnboarding from "@/pages/CompanyOnboarding";
 
 function Router() {
   return (
@@ -128,6 +129,7 @@ function Router() {
       <Route path="/employee/freelance/projects/:projectId/apply" component={() => <ProtectedRoute requireUserType="employee"><FreelanceApply /></ProtectedRoute>} />
       
       {/* Company Protected Routes */}
+      <Route path="/company-onboarding" component={() => <ProtectedRoute requireUserType="company"><CompanyOnboarding /></ProtectedRoute>} />
       <Route path="/company-dashboard" component={() => <ProtectedRoute requireUserType="company"><CompanyDashboard /></ProtectedRoute>} />
       {/* Company Settings - Multiple Route Support */}
       <Route path="/company-settings" component={() => <ProtectedRoute requireUserType="company"><CompanySettings /></ProtectedRoute>} />

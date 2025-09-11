@@ -8914,5 +8914,32 @@ This message was sent through the Signedwork contact form.
     }
   });
 
+  // Company onboarding status endpoint
+  app.get("/api/company/onboarding/status", requireAuth, async (req: any, res) => {
+    try {
+      const user = req.session?.user;
+      if (!user || user.type !== 'company') {
+        return res.status(403).json({ message: "Access denied. Company account required." });
+      }
+
+      let onboarding = await storage.getCompanyOnboarding(user.id);
+      
+      if (!onboarding) {
+        // Create onboarding record if it doesn't exist
+        onboarding = await storage.createCompanyOnboarding(user.id);
+      }
+
+      res.json({
+        isCompleted: onboarding.isCompleted || false,
+        currentStep: onboarding.currentStep || 1,
+        completedSteps: onboarding.completedSteps || [],
+        completionPercentage: onboarding.completionPercentage || 0
+      });
+    } catch (error) {
+      console.error("Get onboarding status error:", error);
+      res.status(500).json({ message: "Failed to get onboarding status" });
+    }
+  });
+
   return httpServer;
 }

@@ -3,6 +3,8 @@ import {
   companyInvitationCodes, companyEmployees, companyBranches, companyTeams, teamMembers, companyManagers, managerPermissions, jobListings, jobApplications, savedJobs, jobAlerts, profileViews, admins, emailVerifications, userFeedback, loginSessions,
   skills, skillTrends, userSkillPreferences, skillAnalytics, pendingUsers,
   recruiterProfiles, candidatePipelines, candidateInteractions, recruitmentAnalytics, savedSearches,
+  // Company onboarding table
+  companyOnboarding,
   // Freelancer marketplace tables
   clients, freelanceProjects, projectProposals, freelanceContracts, liveMonitorSessions, freelanceWorkDiary,
   // Payment system tables
@@ -31,6 +33,10 @@ import {
   type SubscriptionPlan, type UserSubscription, type PaymentTransaction, type PaymentMethod, type WebhookEvent,
   type InsertSubscriptionPlan, type InsertUserSubscription, type InsertPaymentTransaction, type InsertPaymentMethod
 } from "@shared/schema";
+
+// Company onboarding types
+type CompanyOnboarding = typeof companyOnboarding.$inferSelect;
+type InsertCompanyOnboarding = typeof companyOnboarding.$inferInsert;
 
 type EmailVerification = typeof emailVerifications.$inferSelect;
 type InsertEmailVerification = typeof emailVerifications.$inferInsert;
@@ -6646,6 +6652,37 @@ export class DatabaseStorage implements IStorage {
         eq(paymentMethods.userType, userType),
         eq(paymentMethods.isActive, true)
       ));
+  }
+
+  // Company Onboarding Methods
+  async getCompanyOnboarding(companyId: string): Promise<CompanyOnboarding | undefined> {
+    const [onboarding] = await db
+      .select()
+      .from(companyOnboarding)
+      .where(eq(companyOnboarding.companyId, companyId));
+    return onboarding || undefined;
+  }
+
+  async createCompanyOnboarding(companyId: string): Promise<CompanyOnboarding> {
+    const [onboarding] = await db
+      .insert(companyOnboarding)
+      .values({ companyId })
+      .returning();
+    return onboarding;
+  }
+
+  async updateCompanyOnboarding(companyId: string, data: Partial<CompanyOnboarding>): Promise<CompanyOnboarding> {
+    const [onboarding] = await db
+      .update(companyOnboarding)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(companyOnboarding.companyId, companyId))
+      .returning();
+    return onboarding;
+  }
+
+  async isCompanyOnboardingComplete(companyId: string): Promise<boolean> {
+    const onboarding = await this.getCompanyOnboarding(companyId);
+    return onboarding?.isCompleted || false;
   }
 }
 
