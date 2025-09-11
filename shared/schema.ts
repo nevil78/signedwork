@@ -270,6 +270,26 @@ export const companyInvitationCodes = pgTable("company_invitation_codes", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Team invitations table for email invitations during onboarding
+export const teamInvitations = pgTable("team_invitations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  companyId: varchar("company_id").notNull().references(() => companies.id, { onDelete: "cascade" }),
+  email: text("email").notNull(),
+  role: text("role").notNull(),
+  message: text("message"),
+  status: varchar("status", { length: 20 }).notNull().default("pending"), // pending, sent, accepted, expired
+  invitationToken: varchar("invitation_token").unique(),
+  tokenExpiry: timestamp("token_expiry"),
+  sentAt: timestamp("sent_at"),
+  acceptedAt: timestamp("accepted_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("team_invitations_company_idx").on(table.companyId),
+  index("team_invitations_email_idx").on(table.email),
+  index("team_invitations_token_idx").on(table.invitationToken),
+]);
+
 // Company branches table for hierarchical structure (HDFC Surat, HDFC Mumbai, etc.)
 export const companyBranches = pgTable("company_branches", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -1273,6 +1293,21 @@ export const insertCompanyInvitationCodeSchema = createInsertSchema(companyInvit
   createdAt: true,
 });
 
+export const insertTeamInvitationSchema = createInsertSchema(teamInvitations).omit({
+  id: true,
+  status: true,
+  invitationToken: true,
+  tokenExpiry: true,
+  sentAt: true,
+  acceptedAt: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  email: z.string().email("Invalid email format"),
+  role: z.string().min(1, "Role is required"),
+  message: z.string().optional(),
+});
+
 
 
 export const insertJobListingSchema = createInsertSchema(jobListings).omit({
@@ -1436,6 +1471,7 @@ export type EmployeeCompany = typeof employeeCompanies.$inferSelect;
 export type WorkEntry = typeof workEntries.$inferSelect;
 export type Company = typeof companies.$inferSelect;
 export type CompanyInvitationCode = typeof companyInvitationCodes.$inferSelect;
+export type TeamInvitation = typeof teamInvitations.$inferSelect;
 export type CompanyEmployee = typeof companyEmployees.$inferSelect;
 export type TeamMember = typeof teamMembers.$inferSelect;
 export type CompanyBranch = typeof companyBranches.$inferSelect;
@@ -1455,6 +1491,7 @@ export type InsertManagerPermission = z.infer<typeof insertManagerPermissionSche
 export type InsertWorkEntry = z.infer<typeof insertWorkEntrySchema>;
 export type InsertCompany = z.infer<typeof insertCompanySchema>;
 export type InsertCompanyInvitationCode = z.infer<typeof insertCompanyInvitationCodeSchema>;
+export type InsertTeamInvitation = z.infer<typeof insertTeamInvitationSchema>;
 export type InsertCompanyEmployee = z.infer<typeof insertCompanyEmployeeSchema>;
 export type InsertTeamMember = z.infer<typeof insertTeamMemberSchema>;
 export type InsertCompanyBranch = z.infer<typeof insertCompanyBranchSchema>;

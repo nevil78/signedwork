@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
-import { useForm } from "react-hook-form";
+import { useForm, useFieldArray, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,16 +11,21 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { CheckCircle, Sparkles, Building, Users, CreditCard, ArrowRight, Target, TrendingUp, Shield, Zap } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { CheckCircle, Sparkles, Building, Users, CreditCard, ArrowRight, Target, TrendingUp, Shield, Zap, UserPlus, Mail, Crown, User, Settings, Plus, X, Loader2 } from "lucide-react";
 import OnboardingWizard, { useOnboardingWizard } from "@/components/OnboardingWizard";
 import UnifiedHeader from "@/components/UnifiedHeader";
 import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { useMutation } from "@tanstack/react-query";
 import signedworkLogo from "@assets/Signed-work-Logo (1)_1755168042120.png";
 
 // Welcome Step Component
 function WelcomeStep({ context }: { context: any }) {
   const { onComplete } = context;
   const [isReady, setIsReady] = useState(false);
+  const [, setLocation] = useLocation();
 
   return (
     <div className="max-w-2xl mx-auto text-center space-y-8">
@@ -399,12 +404,534 @@ function OrganizationDetailsStep({ context }: { context: any }) {
   );
 }
 
+// Team Setup Form Schema
+const teamSetupSchema = z.object({
+  initialRoles: z.array(z.object({
+    title: z.string().min(1, "Role title is required"),
+    department: z.string().optional(),
+    description: z.string().optional(),
+  })).min(1, "Please add at least one role"),
+  teamStructure: z.string().min(1, "Please select how you want to structure your team"),
+  invitations: z.array(z.object({
+    email: z.string().email("Invalid email format"),
+    role: z.string().min(1, "Role is required"),
+    message: z.string().optional(),
+  })).optional(),
+  setupLater: z.boolean().optional(),
+});
+
+type TeamSetupData = z.infer<typeof teamSetupSchema>;
+
 function TeamSetupStep({ context }: { context: any }) {
+  const { toast } = useToast();
+  
+  const form = useForm<TeamSetupData>({
+    resolver: zodResolver(teamSetupSchema),
+    defaultValues: {
+      initialRoles: context.wizardData?.teamSetup?.initialRoles || [{ title: "", department: "", description: "" }],
+      teamStructure: context.wizardData?.teamSetup?.teamStructure || "",
+      invitations: context.wizardData?.teamSetup?.invitations || [],
+      setupLater: context.wizardData?.teamSetup?.setupLater || false,
+    },
+  });
+
+  const rolesFieldArray = useFieldArray({
+    control: form.control,
+    name: "initialRoles"
+  });
+
+  const invitationsFieldArray = useFieldArray({
+    control: form.control,
+    name: "invitations"
+  });
+
+  const watchSetupLater = useWatch({ control: form.control, name: "setupLater" });
+  const watchCurrentRoles = useWatch({ control: form.control, name: "initialRoles" });
+
+  // Mutation for sending invitations
+  const sendInvitationsMutation = useMutation({
+    mutationFn: async (invitations: any[]) => {
+      return apiRequest("POST", "/api/company/invitations", { invitations });
+    },
+    onSuccess: (response) => {
+      toast({
+        title: "Invitations sent successfully! 📧",
+        description: `${response.count} invitation(s) have been sent to your team members.`,
+      });
+    },
+    onError: (error: any) => {
+      console.error("Send invitations error:", error);
+      toast({
+        title: "Failed to send invitations",
+        description: error.message || "An error occurred while sending invitations. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const onSubmit = async (data: TeamSetupData) => {
+    if (data.setupLater) {
+      // If setup later is checked, pass minimal data
+      context.onComplete({ setupLater: true });
+      return;
+    }
+
+    try {
+      // If there are invitations to send, call the API
+      if (data.invitations && data.invitations.length > 0) {
+        // Filter out invitations with empty emails
+        const validInvitations = data.invitations.filter(inv => inv.email && inv.email.trim() !== '');
+        
+        if (validInvitations.length > 0) {
+          const response = await sendInvitationsMutation.mutateAsync(validInvitations);
+          
+          // Pass full team setup data with invitation response
+          context.onComplete({
+            ...data,
+            invitationResponse: response,
+            invitationsSent: validInvitations.length
+          });
+        } else {
+          // No valid invitations, just pass the data
+          context.onComplete(data);
+        }
+      } else {
+        // No invitations, just pass the data
+        context.onComplete(data);
+      }
+    } catch (error) {
+      // Error is already handled by the mutation, but we don't want to proceed
+      console.error("Error in team setup:", error);
+    }
+  };
+
+  // Common role suggestions based on company size from previous step
+  const getRoleSuggestions = () => {
+    const orgData = context.wizardData?.organization;
+    const size = orgData?.companySize;
+    
+    if (size === "1-10") {
+      return ["Founder/CEO", "Developer", "Designer", "Sales", "Marketing"];
+    } else if (size === "11-50") {
+      return ["CEO/Manager", "Team Lead", "Developer", "Designer", "Sales Manager", "HR Coordinator", "Marketing Specialist"];
+    } else {
+      return ["CEO", "Department Head", "Team Lead", "Manager", "Senior Developer", "HR Manager", "Sales Director", "Marketing Manager"];
+    }
+  };
+
+  const roleSuggestions = getRoleSuggestions();
+
   return (
-    <div className="text-center space-y-4">
-      <h2 className="text-2xl font-bold">Team Setup</h2>
-      <p className="text-slate-600">Set up your team structure...</p>
-      <Button onClick={context.onComplete}>Complete Step</Button>
+    <div className="max-w-4xl mx-auto space-y-6">
+      {/* Header */}
+      <div className="text-center space-y-4">
+        <div className="flex items-center justify-center mb-4">
+          <div className="bg-green-100 rounded-full p-3">
+            <Users className="h-8 w-8 text-green-600" />
+          </div>
+        </div>
+        <h2 className="text-3xl font-bold text-slate-900">Set up your team structure</h2>
+        <p className="text-lg text-slate-600">
+          Define key roles and invite your initial team members to get started
+        </p>
+      </div>
+
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          
+          {/* Setup Later Option */}
+          <Card className="border-blue-200 bg-blue-50/50">
+            <CardContent className="pt-6">
+              <FormField
+                control={form.control}
+                name="setupLater"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        data-testid="checkbox-setup-later"
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel className="text-base font-medium">
+                        Skip team setup for now
+                      </FormLabel>
+                      <FormDescription>
+                        You can set up your team structure and invite members later from your dashboard
+                      </FormDescription>
+                    </div>
+                  </FormItem>
+                )}
+              />
+            </CardContent>
+          </Card>
+
+          {!watchSetupLater && (
+            <>
+              {/* Team Structure */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Settings className="h-5 w-5" />
+                    Team Organization
+                  </CardTitle>
+                  <CardDescription>
+                    Choose how you want to organize your team members
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <FormField
+                    control={form.control}
+                    name="teamStructure"
+                    render={({ field }) => (
+                      <FormItem className="space-y-3">
+                        <FormControl>
+                          <RadioGroup
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                            className="grid grid-cols-1 gap-4"
+                          >
+                            <div className="flex items-center space-x-3 p-4 border rounded-lg hover:bg-slate-50">
+                              <RadioGroupItem value="single-team" id="single-team" data-testid="radio-team-single" />
+                              <Label htmlFor="single-team" className="flex-1 cursor-pointer">
+                                <div className="font-medium">Single team</div>
+                                <div className="text-sm text-slate-600">Everyone works together as one team</div>
+                              </Label>
+                            </div>
+                            <div className="flex items-center space-x-3 p-4 border rounded-lg hover:bg-slate-50">
+                              <RadioGroupItem value="departments" id="dept" data-testid="radio-team-departments" />
+                              <Label htmlFor="dept" className="flex-1 cursor-pointer">
+                                <div className="font-medium">Multiple departments</div>
+                                <div className="text-sm text-slate-600">Organize by functional departments (Engineering, Sales, etc.)</div>
+                              </Label>
+                            </div>
+                            <div className="flex items-center space-x-3 p-4 border rounded-lg hover:bg-slate-50">
+                              <RadioGroupItem value="project-teams" id="projects" data-testid="radio-team-projects" />
+                              <Label htmlFor="projects" className="flex-1 cursor-pointer">
+                                <div className="font-medium">Project-based teams</div>
+                                <div className="text-sm text-slate-600">Create teams around specific projects or clients</div>
+                              </Label>
+                            </div>
+                          </RadioGroup>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </CardContent>
+              </Card>
+
+              {/* Key Roles */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Crown className="h-5 w-5" />
+                    Define Key Roles
+                  </CardTitle>
+                  <CardDescription>
+                    Add the main roles and positions you need in your organization
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  
+                  {/* Role Suggestions */}
+                  <div className="p-4 bg-slate-50 rounded-lg">
+                    <Label className="text-sm font-medium mb-3 block">Quick suggestions based on your company size:</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {roleSuggestions.map((suggestion) => (
+                        <Button
+                          key={suggestion}
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const currentRoles = rolesFieldArray.fields;
+                            const emptyIndex = currentRoles.findIndex((_, index) => {
+                              const roleValue = form.getValues(`initialRoles.${index}.title`);
+                              return !roleValue || roleValue.trim() === "";
+                            });
+                            
+                            if (emptyIndex >= 0) {
+                              form.setValue(`initialRoles.${emptyIndex}.title`, suggestion);
+                            } else {
+                              rolesFieldArray.append({ title: suggestion, department: "", description: "" });
+                            }
+                          }}
+                          data-testid={`button-role-suggestion-${suggestion.toLowerCase().replace(/[^a-z0-9]/g, '-')}`}
+                        >
+                          <Plus className="w-3 h-3 mr-1" />
+                          {suggestion}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Role List */}
+                  <div className="space-y-4">
+                    {rolesFieldArray.fields.map((field, index) => (
+                      <div key={field.id} className="p-4 border rounded-lg space-y-3">
+                        <div className="flex justify-between items-start">
+                          <h4 className="font-medium">Role {index + 1}</h4>
+                          {rolesFieldArray.fields.length > 1 && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => rolesFieldArray.remove(index)}
+                              data-testid={`button-remove-role-${index}`}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <FormField
+                            control={form.control}
+                            name={`initialRoles.${index}.title`}
+                            render={({ field: fieldProps }) => (
+                              <FormItem>
+                                <FormLabel htmlFor={`role-title-${index}`}>Role Title *</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    id={`role-title-${index}`}
+                                    placeholder="e.g., Senior Developer"
+                                    {...fieldProps}
+                                    data-testid={`input-role-title-${index}`}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name={`initialRoles.${index}.department`}
+                            render={({ field: fieldProps }) => (
+                              <FormItem>
+                                <FormLabel htmlFor={`role-department-${index}`}>Department (Optional)</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    id={`role-department-${index}`}
+                                    placeholder="e.g., Engineering"
+                                    {...fieldProps}
+                                    data-testid={`input-role-department-${index}`}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                        
+                        <FormField
+                          control={form.control}
+                          name={`initialRoles.${index}.description`}
+                          render={({ field: fieldProps }) => (
+                            <FormItem>
+                              <FormLabel htmlFor={`role-description-${index}`}>Description (Optional)</FormLabel>
+                              <FormControl>
+                                <Textarea
+                                  id={`role-description-${index}`}
+                                  placeholder="Brief description of responsibilities..."
+                                  className="min-h-[80px]"
+                                  {...fieldProps}
+                                  data-testid={`textarea-role-description-${index}`}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    ))}
+                  </div>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => rolesFieldArray.append({ title: "", department: "", description: "" })}
+                    className="w-full"
+                    data-testid="button-add-role"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Another Role
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Team Invitations */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <UserPlus className="h-5 w-5" />
+                    Invite Initial Team Members
+                  </CardTitle>
+                  <CardDescription>
+                    Send invitations to your first team members (optional - you can do this later)
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {invitationsFieldArray.fields.length === 0 ? (
+                    <div className="text-center py-6 bg-slate-50 rounded-lg">
+                      <Mail className="h-8 w-8 text-slate-400 mx-auto mb-3" />
+                      <p className="text-slate-600 mb-4">No invitations added yet</p>
+                      <Button
+                        type="button"
+                        onClick={() => invitationsFieldArray.append({ email: "", role: "", message: "" })}
+                        data-testid="button-add-first-invitation"
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Send Your First Invitation
+                      </Button>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="space-y-4">
+                        {invitationsFieldArray.fields.map((field, index) => {
+                          const availableRoles = watchCurrentRoles?.filter((role: any) => role?.title && role.title.trim()) || [];
+                          
+                          return (
+                            <div key={field.id} className="p-4 border rounded-lg space-y-3">
+                              <div className="flex justify-between items-start">
+                                <h4 className="font-medium">Invitation {index + 1}</h4>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => invitationsFieldArray.remove(index)}
+                                  data-testid={`button-remove-invitation-${index}`}
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </div>
+                              
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <FormField
+                                  control={form.control}
+                                  name={`invitations.${index}.email`}
+                                  render={({ field: fieldProps }) => (
+                                    <FormItem>
+                                      <FormLabel htmlFor={`invitation-email-${index}`}>Email Address *</FormLabel>
+                                      <FormControl>
+                                        <Input
+                                          id={`invitation-email-${index}`}
+                                          type="email"
+                                          placeholder="colleague@example.com"
+                                          {...fieldProps}
+                                          data-testid={`input-invitation-email-${index}`}
+                                        />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                                <FormField
+                                  control={form.control}
+                                  name={`invitations.${index}.role`}
+                                  render={({ field: fieldProps }) => (
+                                    <FormItem>
+                                      <FormLabel htmlFor={`invitation-role-${index}`}>Role *</FormLabel>
+                                      <Select
+                                        onValueChange={fieldProps.onChange}
+                                        value={fieldProps.value}
+                                      >
+                                        <FormControl>
+                                          <SelectTrigger data-testid={`select-invitation-role-${index}`}>
+                                            <SelectValue placeholder="Select role" />
+                                          </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                          {availableRoles.map((role: any, roleIndex: number) => (
+                                            <SelectItem key={`${role.title}-${roleIndex}`} value={role.title}>
+                                              {role.title}
+                                            </SelectItem>
+                                          ))}
+                                          {availableRoles.length === 0 && (
+                                            <SelectItem value="team-member">Team Member</SelectItem>
+                                          )}
+                                        </SelectContent>
+                                      </Select>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                              </div>
+                              
+                              <FormField
+                                control={form.control}
+                                name={`invitations.${index}.message`}
+                                render={({ field: fieldProps }) => (
+                                  <FormItem>
+                                    <FormLabel htmlFor={`invitation-message-${index}`}>Personal Message (Optional)</FormLabel>
+                                    <FormControl>
+                                      <Textarea
+                                        id={`invitation-message-${index}`}
+                                        placeholder="Hi! I'd love to have you join our team at..."
+                                        className="min-h-[80px]"
+                                        {...fieldProps}
+                                        data-testid={`textarea-invitation-message-${index}`}
+                                      />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => invitationsFieldArray.append({ email: "", role: "", message: "" })}
+                        className="w-full"
+                        data-testid="button-add-invitation"
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Add Another Invitation
+                      </Button>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+            </>
+          )}
+
+          {/* Action Buttons */}
+          <div className="flex justify-between pt-6">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={context.onPrevious}
+              disabled={sendInvitationsMutation.isPending}
+              data-testid="button-previous-step"
+            >
+              Back
+            </Button>
+            <Button 
+              type="submit"
+              disabled={sendInvitationsMutation.isPending}
+              data-testid="button-continue-step"
+            >
+              {sendInvitationsMutation.isPending ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Sending Invitations...
+                </>
+              ) : (
+                <>
+                  {watchSetupLater ? "Skip Team Setup" : "Continue"}
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </>
+              )}
+            </Button>
+          </div>
+        </form>
+      </Form>
     </div>
   );
 }

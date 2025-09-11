@@ -17,6 +17,7 @@ import {
   insertFeedbackSchema, feedbackResponseSchema, contactFormSchema,
   insertFreelanceProjectSchema, insertProjectProposalSchema, insertFreelanceContractSchema,
   insertLiveMonitorSessionSchema, insertFreelanceWorkDiarySchema,
+  insertTeamInvitationSchema,
   workEntries, employees, companies, clients
 } from "@shared/schema";
 import { db } from "./db";
@@ -2484,6 +2485,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Generate invitation code error:", error);
       res.status(500).json({ message: "Failed to generate invitation code" });
+    }
+  });
+
+  // Team Invitations Routes - PROTECTED ROUTE
+  app.post("/api/company/invitations", requireCompany, async (req: any, res) => {
+    
+    try {
+      const { invitations } = req.body;
+      
+      if (!invitations || !Array.isArray(invitations) || invitations.length === 0) {
+        return res.status(400).json({ message: "Invitations array is required and cannot be empty" });
+      }
+      
+      // Validate each invitation
+      const validatedInvitations = [];
+      for (const invitation of invitations) {
+        try {
+          const validatedInvitation = insertTeamInvitationSchema.parse({
+            ...invitation,
+            companyId: req.user.id
+          });
+          validatedInvitations.push(validatedInvitation);
+        } catch (validationError) {
+          console.error('Invitation validation error:', validationError);
+          return res.status(400).json({ 
+            message: "Invalid invitation data", 
+            error: fromZodError(validationError).toString()
+          });
+        }
+      }
+      
+      // Create invitations in database
+      const createdInvitations = await storage.createTeamInvitations(validatedInvitations);
+      
+      // Update invitation status to 'sent' and set sentAt timestamp
+      const updatedInvitations = [];
+      for (const invitation of createdInvitations) {
+        const updated = await storage.updateTeamInvitationStatus(
+          invitation.id, 
+          'sent', 
+          new Date()
+        );
+        updatedInvitations.push(updated);
+      }
+      
+      // Emit real-time update
+      emitRealTimeUpdate('teamInvitationsSent', {
+        companyId: req.user.id,
+        invitations: updatedInvitations,
+        count: updatedInvitations.length
+      });
+      
+      res.json({
+        message: `${updatedInvitations.length} invitation(s) sent successfully`,
+        invitations: updatedInvitations,
+        count: updatedInvitations.length
+      });
+    } catch (error) {
+      console.error("Send invitations error:", error);
+      res.status(500).json({ message: "Failed to send invitations" });
     }
   });
 

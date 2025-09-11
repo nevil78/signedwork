@@ -1,6 +1,6 @@
 import { 
   employees, companies, experiences, educations, certifications, projects, endorsements, workEntries, employeeCompanies,
-  companyInvitationCodes, companyEmployees, companyBranches, companyTeams, teamMembers, companyManagers, managerPermissions, jobListings, jobApplications, savedJobs, jobAlerts, profileViews, admins, emailVerifications, userFeedback, loginSessions,
+  companyInvitationCodes, teamInvitations, companyEmployees, companyBranches, companyTeams, teamMembers, companyManagers, managerPermissions, jobListings, jobApplications, savedJobs, jobAlerts, profileViews, admins, emailVerifications, userFeedback, loginSessions,
   skills, skillTrends, userSkillPreferences, skillAnalytics, pendingUsers,
   recruiterProfiles, candidatePipelines, candidateInteractions, recruitmentAnalytics, savedSearches,
   // Company onboarding table
@@ -13,7 +13,7 @@ import {
   type Experience, type Education, type Certification, type Project, type Endorsement, type WorkEntry, type EmployeeCompany,
   type InsertExperience, type InsertEducation, type InsertCertification, 
   type InsertProject, type InsertEndorsement, type InsertWorkEntry, type InsertEmployeeCompany,
-  type CompanyInvitationCode, type CompanyEmployee, type InsertCompanyInvitationCode, type InsertCompanyEmployee,
+  type CompanyInvitationCode, type TeamInvitation, type CompanyEmployee, type InsertCompanyInvitationCode, type InsertTeamInvitation, type InsertCompanyEmployee,
   type TeamMember, type InsertTeamMember,
   type CompanyBranch, type CompanyTeam, type InsertCompanyBranch, type InsertCompanyTeam,
   type CompanyManager, type ManagerPermission, type InsertCompanyManager, type InsertManagerPermission,
@@ -300,6 +300,13 @@ export interface IStorage {
   generateInvitationCode(companyId: string): Promise<CompanyInvitationCode>;
   validateInvitationCode(code: string): Promise<CompanyInvitationCode | null>;
   useInvitationCode(code: string, employeeId: string): Promise<CompanyEmployee>;
+  
+  // Team invitation operations for onboarding
+  createTeamInvitation(invitation: InsertTeamInvitation): Promise<TeamInvitation>;
+  createTeamInvitations(invitations: InsertTeamInvitation[]): Promise<TeamInvitation[]>;
+  getTeamInvitation(id: string): Promise<TeamInvitation | undefined>;
+  getTeamInvitationsByCompany(companyId: string): Promise<TeamInvitation[]>;
+  updateTeamInvitationStatus(id: string, status: string, sentAt?: Date): Promise<TeamInvitation>;
   
   // Company employees operations
   getCompanyEmployees(companyId: string): Promise<CompanyEmployee[]>;
@@ -2120,6 +2127,67 @@ export class DatabaseStorage implements IStorage {
       .returning();
       
     return companyEmployee;
+  }
+
+  // Team invitation operations for onboarding
+  async createTeamInvitation(invitation: InsertTeamInvitation): Promise<TeamInvitation> {
+    const [result] = await db
+      .insert(teamInvitations)
+      .values(invitation)
+      .returning();
+      
+    return result;
+  }
+
+  async createTeamInvitations(invitations: InsertTeamInvitation[]): Promise<TeamInvitation[]> {
+    if (invitations.length === 0) {
+      return [];
+    }
+    
+    const results = await db
+      .insert(teamInvitations)
+      .values(invitations)
+      .returning();
+      
+    return results;
+  }
+
+  async getTeamInvitation(id: string): Promise<TeamInvitation | undefined> {
+    const [result] = await db
+      .select()
+      .from(teamInvitations)
+      .where(eq(teamInvitations.id, id));
+      
+    return result;
+  }
+
+  async getTeamInvitationsByCompany(companyId: string): Promise<TeamInvitation[]> {
+    const results = await db
+      .select()
+      .from(teamInvitations)
+      .where(eq(teamInvitations.companyId, companyId))
+      .orderBy(desc(teamInvitations.createdAt));
+      
+    return results;
+  }
+
+  async updateTeamInvitationStatus(id: string, status: string, sentAt?: Date): Promise<TeamInvitation> {
+    const updateData: Partial<TeamInvitation> = {
+      status,
+      updatedAt: new Date(),
+    };
+    
+    if (sentAt) {
+      updateData.sentAt = sentAt;
+    }
+    
+    const [result] = await db
+      .update(teamInvitations)
+      .set(updateData)
+      .where(eq(teamInvitations.id, id))
+      .returning();
+      
+    return result;
   }
 
   async getCompanyEmployees(companyId: string): Promise<any[]> {
