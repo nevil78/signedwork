@@ -936,11 +936,19 @@ function TeamSetupStep({ context }: { context: any }) {
   );
 }
 
-// Plan Selection Form Schema
-const planSelectionSchema = z.object({
-  selectedPlan: z.string().min(1, "Please select a plan"),
-  customizeFeatures: z.boolean().optional(),
-});
+// Plan Selection Form Schema - Union type for proper validation
+const planSelectionSchema = z.discriminatedUnion("type", [
+  z.object({
+    type: z.literal("selected"),
+    selectedPlan: z.string().min(1, "Please select a plan"),
+    customizeFeatures: z.boolean().optional(),
+  }),
+  z.object({
+    type: z.literal("skipped"),
+    skipped: z.literal(true),
+    reason: z.string().optional(),
+  })
+]);
 
 type PlanSelectionData = z.infer<typeof planSelectionSchema>;
 
@@ -1176,11 +1184,18 @@ const getRecommendedPlan = (organizationData: any, plans: SubscriptionPlan[]) =>
 };
 
 function PlanSelectionStep({ context }: { context: any }) {
+  const existingData = context.wizardData?.planSelection;
+  
   const form = useForm<PlanSelectionData>({
     resolver: zodResolver(planSelectionSchema),
-    defaultValues: {
-      selectedPlan: context.wizardData?.planSelection?.selectedPlan || "",
-      customizeFeatures: context.wizardData?.planSelection?.customizeFeatures || false,
+    defaultValues: existingData?.skipped ? {
+      type: "skipped",
+      skipped: true,
+      reason: existingData.reason || ""
+    } : {
+      type: "selected",
+      selectedPlan: existingData?.selectedPlan || "",
+      customizeFeatures: existingData?.customizeFeatures || false,
     },
   });
 
@@ -1193,11 +1208,22 @@ function PlanSelectionStep({ context }: { context: any }) {
   const recommendation = getRecommendedPlan(organizationData, plans);
 
   const onSubmit = (data: PlanSelectionData) => {
-    const selectedPlan = plans.find(plan => plan.id === data.selectedPlan);
-    context.onComplete({
-      ...data,
-      planDetails: selectedPlan,
-    });
+    if (data.type === "skipped") {
+      context.onComplete({
+        skipped: true,
+        reason: data.reason || "user_choice"
+      });
+      return;
+    }
+    
+    if (data.type === "selected") {
+      const selectedPlan = plans.find(plan => plan.id === data.selectedPlan);
+      context.onComplete({
+        selectedPlan: data.selectedPlan,
+        customizeFeatures: data.customizeFeatures,
+        planDetails: selectedPlan,
+      });
+    }
   };
 
   const getPlanIcon = (planName: string) => {
@@ -1300,7 +1326,8 @@ function PlanSelectionStep({ context }: { context: any }) {
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {plans.map((plan) => {
                       const isRecommended = recommendation?.plan.id === plan.id;
-                      const isSelected = field.value === plan.id;
+                      const currentFormData = form.getValues();
+                      const isSelected = currentFormData.type === "selected" && currentFormData.selectedPlan === plan.id;
                       
                       return (
                         <div
@@ -1312,7 +1339,11 @@ function PlanSelectionStep({ context }: { context: any }) {
                           } ${
                             isRecommended ? 'ring-2 ring-green-400 ring-opacity-50' : ''
                           }`}
-                          onClick={() => field.onChange(plan.id)}
+                          onClick={() => {
+                            form.setValue("type", "selected");
+                            form.setValue("selectedPlan", plan.id);
+                            field.onChange(plan.id);
+                          }}
                           data-testid={`plan-card-${plan.name.toLowerCase()}`}
                         >
                           {isRecommended && (
@@ -1406,6 +1437,40 @@ function PlanSelectionStep({ context }: { context: any }) {
             )}
           />
 
+          {/* Complete Later Option */}
+          <Card className="border-blue-200 bg-blue-50/50 mt-8">
+            <CardContent className="pt-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-start gap-3">
+                  <div className="bg-blue-100 rounded-full p-2 flex-shrink-0">
+                    <ArrowRight className="h-4 w-4 text-blue-600" />
+                  </div>
+                  <div>
+                    <h4 className="font-medium text-blue-800">Not sure which plan to choose?</h4>
+                    <p className="text-sm text-blue-700">
+                      You can explore your dashboard first and choose a plan later that fits your needs.
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    // Set form to skipped state and submit
+                    form.setValue("type", "skipped");
+                    form.setValue("skipped", true);
+                    form.setValue("reason", "explore_first");
+                    form.handleSubmit(onSubmit)();
+                  }}
+                  className="bg-white border-blue-300 text-blue-700 hover:bg-blue-100"
+                  data-testid="button-skip-plan-selection"
+                >
+                  Explore First
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Action Buttons */}
           <div className="flex justify-between pt-6">
             <Button 
@@ -1472,7 +1537,8 @@ export default function CompanyOnboarding() {
       id: "plan-selection", 
       title: "Plan Selection",
       description: "Choose your perfect plan",
-      isOptional: false,
+      isOptional: true,
+      canSkip: true,
       render: (context: any) => <PlanSelectionStep context={context} />
     },
     {
