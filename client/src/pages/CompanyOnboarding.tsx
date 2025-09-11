@@ -1809,23 +1809,70 @@ export default function CompanyOnboarding() {
     
     // Mark as completed and save final progress
     const completedStepIndices = wizardSteps.map((_, index) => index + 1);
+    
+    // Determine completion context based on wizard data
+    const paymentData = wizardData?.payment;
+    const planData = wizardData?.planSelection;
+    
+    const completionType = paymentData?.subscriptionActive ? 'paid' :
+                          paymentData?.paymentSkipped || paymentData?.trialAccount ? 'trial' :
+                          planData?.skipped ? 'freemium' : 'completed';
+    
     const finalProgressData = {
       currentStep: wizardSteps.length,
       completedSteps: completedStepIndices,
-      wizardData,
+      wizardData: {
+        ...wizardData,
+        completionMetadata: {
+          completedAt: new Date().toISOString(),
+          completionType,
+          subscriptionActive: paymentData?.subscriptionActive || false,
+          selectedPlan: planData?.planDetails?.name || null,
+          trialAccount: paymentData?.trialAccount || false,
+          organizationSetup: Boolean(wizardData?.organization),
+          teamSetup: Boolean(wizardData?.teamSetup && !wizardData.teamSetup.setupLater),
+          planSelected: Boolean(planData && !planData.skipped)
+        }
+      },
       isCompleted: true
     };
 
     saveProgressMutation.mutate(finalProgressData);
 
+    // Show appropriate completion message based on completion type
+    const completionMessages = {
+      paid: {
+        title: "🎉 Welcome to Signedwork Premium!",
+        description: `Your ${planData?.planDetails?.name || 'Premium'} subscription is active. Let's get started!`,
+      },
+      trial: {
+        title: "🚀 Welcome to Signedwork!",
+        description: "You're on a free trial. Upgrade anytime to unlock all features.",
+      },
+      freemium: {
+        title: "✨ Welcome to Signedwork!",
+        description: "Your account is set up! You can choose a plan later from your dashboard.",
+      },
+      completed: {
+        title: "🎉 Onboarding Complete!",
+        description: "Welcome to Signedwork! Your account is now fully set up.",
+      }
+    };
+
+    const message = completionMessages[completionType] || completionMessages.completed;
+    
     toast({
-      title: "Onboarding Complete! 🎉",
-      description: "Welcome to Signedwork! Your account is now fully set up.",
+      title: message.title,
+      description: message.description,
     });
 
-    // Redirect to company dashboard
+    // Redirect to appropriate dashboard section based on completion context
+    const redirectPath = completionType === 'trial' || completionType === 'freemium' 
+      ? "/company-dashboard?welcome=true&upgrade=true"
+      : "/company-dashboard?welcome=true";
+
     setTimeout(() => {
-      setLocation("/company-dashboard");
+      setLocation(redirectPath);
     }, 2000);
   };
 
