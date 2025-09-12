@@ -63,12 +63,19 @@ export const queryClient = new QueryClient({
     queries: {
       queryFn: getQueryFn({ on401: "throw" }),
       refetchInterval: false,
+      refetchIntervalInBackground: false,
+      refetchOnMount: false,
       refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
       staleTime: Infinity,
+      gcTime: Infinity, // Keep data in cache forever
       retry: false,
+      retryOnMount: false,
+      enabled: true, // Queries are enabled by default, but won't auto-refetch
     },
     mutations: {
       retry: false,
+      retryDelay: 0,
     },
   },
 });
