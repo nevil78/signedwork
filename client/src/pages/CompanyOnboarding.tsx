@@ -2164,33 +2164,6 @@ export default function CompanyOnboarding() {
 
   const initialWizardData = progressData?.wizardData || {};
 
-  // Track step changes for analytics
-  const handleStepChange = useCallback(async (newStepId: string) => {
-    // Track step started for new step
-    await trackAnalyticsEvent('step_started', newStepId);
-    
-    // Update step start time for time tracking
-    setStepStartTime(new Date());
-    
-    // Update current step
-    setCurrentStepId(newStepId);
-  }, [trackAnalyticsEvent, setCurrentStepId]);
-
-  // Handle step skip with analytics
-  const handleStepSkip = useCallback(async (stepId: string) => {
-    const timeSpent = Date.now() - stepStartTime.getTime();
-    
-    // Track step skip analytics with enhanced data
-    await trackAnalyticsEvent('step_skipped', stepId, {
-      timeSpent,
-      eventData: { 
-        skipReason: 'user_choice',
-        stepProgress: (Array.from(completedSteps).length / wizardSteps.length) * 100,
-        isOptionalStep: wizardSteps.find(step => step.id === stepId)?.isOptional || false
-      }
-    });
-  }, [trackAnalyticsEvent, stepStartTime, completedSteps, wizardSteps]);
-
   const {
     currentStepId,
     setCurrentStepId,
@@ -2240,6 +2213,33 @@ export default function CompanyOnboarding() {
       window.removeEventListener('popstate', handlePopState);
     };
   }, [trackDropOff]);
+
+  // CRITICAL FIX: Track step changes for analytics - MOVED AFTER useOnboardingWizard to access setCurrentStepId
+  const handleStepChange = useCallback(async (newStepId: string) => {
+    // Track step started for new step
+    await trackAnalyticsEvent('step_started', newStepId);
+    
+    // Update step start time for time tracking
+    setStepStartTime(new Date());
+    
+    // Update current step
+    setCurrentStepId(newStepId);
+  }, [trackAnalyticsEvent, setCurrentStepId]);
+
+  // CRITICAL FIX: Handle step skip with analytics - MOVED AFTER useOnboardingWizard to access completedSteps
+  const handleStepSkip = useCallback(async (stepId: string) => {
+    const timeSpent = Date.now() - stepStartTime.getTime();
+    
+    // Track step skip analytics with enhanced data
+    await trackAnalyticsEvent('step_skipped', stepId, {
+      timeSpent,
+      eventData: { 
+        skipReason: 'user_choice',
+        stepProgress: (Array.from(completedSteps).length / wizardSteps.length) * 100,
+        isOptionalStep: wizardSteps.find(step => step.id === stepId)?.isOptional || false
+      }
+    });
+  }, [trackAnalyticsEvent, stepStartTime, completedSteps, wizardSteps]);
 
   const handleStepComplete = async (stepId: string, data: any) => {
     // Calculate time spent on this step

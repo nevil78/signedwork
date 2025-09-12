@@ -19,36 +19,29 @@ export const useAutoRefresh = () => {
     };
   }, []);
 
-  // Auto-refresh intervals based on data sensitivity
+  // Auto-refresh intervals - DISABLED to fix API flooding
   const intervals = {
-    // Critical employee data - refresh frequently
-    profile: 45000, // 45 seconds
-    dashboard: 30000, // 30 seconds
-    companies: 30000, // 30 seconds
-    workEntries: 20000, // 20 seconds
-    
-    // User session and authentication
-    session: 60000, // 1 minute
-    auth: 60000, // 1 minute
-    
-    // Analytics and insights
-    analytics: 45000, // 45 seconds
-    insights: 60000, // 1 minute
-    
-    // Job-related data
-    jobSearch: 5 * 60 * 1000, // 5 minutes
-    savedJobs: 60000, // 1 minute
-    applications: 45000, // 45 seconds
-    recommendations: 3 * 60 * 1000, // 3 minutes
-    trendingSkills: 10 * 60 * 1000, // 10 minutes
+    profile: false,
+    dashboard: false,
+    companies: false,
+    workEntries: false,
+    session: false,
+    auth: false,
+    analytics: false,
+    insights: false,
+    jobSearch: false,
+    savedJobs: false,
+    applications: false,
+    recommendations: false,
+    trendingSkills: false,
   };
 
-  // Default query options for auto-refresh
+  // Default query options for auto-refresh - ALL DISABLED
   const getRefreshOptions = (type: keyof typeof intervals) => ({
-    refetchInterval: isOnline ? intervals[type] : false, // Only refresh when online
-    refetchOnWindowFocus: true,
-    refetchOnReconnect: true,
-    refetchIntervalInBackground: false, // Don't refresh in background tabs
+    refetchInterval: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchIntervalInBackground: false,
   });
 
   return {
