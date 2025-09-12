@@ -5,7 +5,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AuthenticatedRedirect } from "@/components/AuthenticatedRedirect";
-import { useSessionHeartbeat } from "@/hooks/useSessionHeartbeat";
+// TEMPORARILY DISABLE to debug API flooding
+// import { useSessionHeartbeat } from "@/hooks/useSessionHeartbeat";
 import AuthPage from "@/auth/auth";
 import { ForgotPasswordPage } from "@/auth/forgot-password";
 import { ChangePasswordPage } from "@/auth/change-password";
@@ -111,10 +112,10 @@ function Router() {
       <Route path="/privacy" component={() => <Suspense fallback={<PageLoader />}><PrivacyPolicy /></Suspense>} />
       <Route path="/subscription" component={SubscriptionPage} />
       <Route path="/billing" component={() => <ProtectedRoute><BillingPage /></ProtectedRoute>} />
-      
+
       {/* Protected Routes - Authentication required */}
       <Route path="/dashboard" component={() => <ProtectedRoute><Dashboard /></ProtectedRoute>} />
-      
+
       {/* Employee Protected Routes */}
       <Route path="/profile" component={() => <ProtectedRoute requireUserType="employee"><ProfessionalProfile /></ProtectedRoute>} />
       <Route path="/summary" component={() => <ProtectedRoute requireUserType="employee"><EmployeeSummaryDashboard /></ProtectedRoute>} />
@@ -122,12 +123,12 @@ function Router() {
       <Route path="/employee/professional-work-diary" component={() => <ProtectedRoute requireUserType="employee"><ProfessionalWorkDiary /></ProtectedRoute>} />
       <Route path="/legacy-profile" component={() => <ProtectedRoute requireUserType="employee"><Profile /></ProtectedRoute>} />
       <Route path="/job-discovery" component={() => <ProtectedRoute requireUserType="employee"><JobDiscoveryPage /></ProtectedRoute>} />
-      
+
       {/* Employee Freelance Routes */}
       <Route path="/employee/freelance/projects" component={() => <ProtectedRoute requireUserType="employee"><FreelanceProjects /></ProtectedRoute>} />
       <Route path="/employee/freelance/projects/:projectId" component={() => <ProtectedRoute requireUserType="employee"><FreelanceProjectDetails /></ProtectedRoute>} />
       <Route path="/employee/freelance/projects/:projectId/apply" component={() => <ProtectedRoute requireUserType="employee"><FreelanceApply /></ProtectedRoute>} />
-      
+
       {/* Company Protected Routes */}
       <Route path="/company-onboarding" component={() => <ProtectedRoute requireUserType="company"><CompanyOnboarding /></ProtectedRoute>} />
       <Route path="/company-dashboard" component={() => <ProtectedRoute requireUserType="company"><CompanyDashboard /></ProtectedRoute>} />
@@ -143,7 +144,7 @@ function Router() {
       <Route path="/work-verification" component={() => <ProtectedRoute requireUserType="company"><WorkVerification /></ProtectedRoute>} />
       <Route path="/company-employee/:employeeId" component={() => <ProtectedRoute requireUserType="company"><CompanyEmployeeProfile /></ProtectedRoute>} />
       <Route path="/employee-work-diary/:employeeId" component={() => <ProtectedRoute requireUserType="company"><CompanyEmployeeWorkDiary /></ProtectedRoute>} />
-      
+
       {/* Admin Protected Routes */}
       <Route path="/admin/login" component={AdminLogin} />
       <Route path="/admin" component={() => <ProtectedRoute requireUserType="admin"><AdminDashboard /></ProtectedRoute>} />
@@ -151,20 +152,20 @@ function Router() {
       <Route path="/admin/verifications" component={() => <ProtectedRoute requireUserType="admin"><AdminVerifications /></ProtectedRoute>} />
       <Route path="/admin/feedback" component={() => <ProtectedRoute requireUserType="admin"><AdminFeedback /></ProtectedRoute>} />
       <Route path="/admin/setup" component={AdminSetup} />
-      
+
       {/* Manager Protected Routes */}
       <Route path="/manager/login" component={ManagerLogin} />
       <Route path="/manager/dashboard" component={() => <ProtectedRoute requireUserType="manager"><ManagerDashboard /></ProtectedRoute>} />
       <Route path="/manager/work-entries" component={() => <ProtectedRoute requireUserType="manager"><ManagerWorkEntries /></ProtectedRoute>} />
       <Route path="/manager/employees" component={() => <ProtectedRoute requireUserType="manager"><ManagerEmployees /></ProtectedRoute>} />
-      
+
       {/* Client Protected Routes - Freelancer Marketplace */}
       <Route path="/client/dashboard" component={() => <ProtectedRoute requireUserType="client"><ClientDashboard /></ProtectedRoute>} />
       <Route path="/client/projects" component={() => <ProtectedRoute requireUserType="client"><ClientProjects /></ProtectedRoute>} />
       <Route path="/client/projects/new" component={() => <ProtectedRoute requireUserType="client"><PostProject /></ProtectedRoute>} />
       <Route path="/client/projects/:projectId" component={() => <ProtectedRoute requireUserType="client"><ProjectDetails /></ProtectedRoute>} />
       <Route path="/client/contracts" component={() => <ProtectedRoute requireUserType="client"><ClientContracts /></ProtectedRoute>} />
-      
+
       {/* All 14 Client Navigation Dropdown Pages */}
       <Route path="/client/projects/post" component={() => <ProtectedRoute requireUserType="client"><NewProject /></ProtectedRoute>} />
       <Route path="/client/jobs" component={() => <ProtectedRoute requireUserType="client"><ManageJobs /></ProtectedRoute>} />
@@ -180,7 +181,7 @@ function Router() {
       <Route path="/client/reports/transactions" component={() => <ProtectedRoute requireUserType="client"><TransactionHistory /></ProtectedRoute>} />
       <Route path="/client/reports/spending" component={() => <ProtectedRoute requireUserType="client"><SpendingByActivity /></ProtectedRoute>} />
       <Route path="/client/messages" component={() => <ProtectedRoute requireUserType="client"><Messages /></ProtectedRoute>} />
-      
+
       {/* Legacy redirect - now protected */}
       <Route path="/employee-profile" component={() => <ProtectedRoute requireUserType="employee"><AuthenticatedRedirect to="/profile" requireUserType="employee" /></ProtectedRoute>} />
 
@@ -191,7 +192,12 @@ function Router() {
 
 function App() {
   // Initialize session heartbeat to keep sessions alive
-  useSessionHeartbeat();
+  // TEMPORARILY DISABLED to debug API flooding
+  // useSessionHeartbeat();
+  const { user, isLoading, userType } = useAuth();
+  // TEMPORARILY DISABLED to debug API flooding
+  // const socket = useSocket(user?.id);
+
 
   return (
     <QueryClientProvider client={queryClient}>
