@@ -201,6 +201,15 @@ async function requireManagerPermission(permission: string) {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Lightweight health check endpoint
+  app.get("/healthz", (req, res) => {
+    res.status(200).send("OK");
+  });
+  
+  app.head("/healthz", (req, res) => {
+    res.status(200).end();
+  });
+
   // Session configuration
   // Create database session store
   const pgStore = connectPg(session);
