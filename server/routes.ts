@@ -226,30 +226,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     name: 'sessionId', // Custom session name
   }));
 
-  // Add comprehensive HEAD /api handler to identify flooding source
-  app.head("/api", (req, res) => {
-    console.log("🚨 API FLOODING DEBUG:", {
-      ip: req.ip,
-      userAgent: req.get('User-Agent'),
-      referer: req.get('Referer'),
-      origin: req.get('Origin'),
-      headers: Object.keys(req.headers),
-      timestamp: new Date().toISOString(),
-      sessionId: req.sessionID,
-      hasSession: !!req.session,
-      cookies: req.headers.cookie ? 'present' : 'none'
-    });
-    res.status(200).end();
-  });
-
-  // Also log ALL requests to /api to see the pattern
-  app.use('/api', (req, res, next) => {
-    if (req.method === 'HEAD') {
-      console.log("🔍 HEAD request to:", req.path, "from:", req.ip);
-    }
-    next();
-  });
-
   // Session heartbeat endpoint to keep sessions alive - PROTECTED ROUTE
   app.post("/api/auth/heartbeat", requireAuth, (req: any, res) => {
     

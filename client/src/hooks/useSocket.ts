@@ -10,19 +10,13 @@ export function useSocket(userId?: string) {
   useEffect(() => {
     if (!userId) return;
 
-    // Initialize socket connection - DISABLE polling to prevent API flooding
+    // Initialize socket connection
     socketRef.current = io('/', {
-      transports: ['websocket'], // Only use websocket, no polling fallback
-      upgrade: false,
-      rememberUpgrade: false,
-      autoConnect: false // Don't auto-connect to prevent immediate requests
+      transports: ['websocket', 'polling']
     });
 
     const socket = socketRef.current;
 
-    // Manually connect only when needed
-    socket.connect();
-    
     socket.on('connect', () => {
       console.log('Connected to server');
       // Join user-specific room
