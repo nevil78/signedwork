@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Signedwork - Professional Networking & Freelancer Marketplace Platform
 
 ![Signedwork Logo](./attached_assets/Signed-work-Logo%20(1)_1755168042120.png)
@@ -342,3 +343,6 @@ This project is proprietary software developed for Signedwork platform. All righ
 **Built with ❤️ using React, Express.js, PostgreSQL, and deployed on Replit**
 
 *Signedwork - Where Professionals Connect, Collaborate, and Grow*
+=======
+# signedwork
+>>>>>>> 0280daa95e44f6a79c8eddee111085ec30bd6955
